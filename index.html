@@ -17,9 +17,8 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-#signal{position:fixed;inset:0;pointer-events:none;border:6px solid var(--idle);transition:border-color .12s,border-width .12s;z-index:20}
-#signal.on{border-color:var(--go);border-width:14px}
-#signal.lead{border-color:#e3a21a;border-width:14px}
+#signal{position:fixed;inset:0;pointer-events:none;border:14px solid #7a5434;transition:border-color .12s;z-index:20}
+#signal.on{border-color:var(--go)}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
@@ -132,12 +131,9 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     </g>
   </g>
   </g><!-- /room -->
-  <!-- model learners, seen from behind, facing the teacher (group scene only) -->
+  <!-- the model learner, seen from behind, facing the teacher (classroom scene only) -->
   <g id="classroom" class="fade" opacity="0">
-    <g class="lb" transform="translate(62,560)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#6a8f5a"/><circle r="34" cy="0" fill="#c98f6b"/><path d="M-34 4 q-2-40 34-42 q36 2 34 42 q-6 10-34 12 q-28-2-34-12z" fill="#2f2620"/></g>
-    <g class="lb" transform="translate(160,590)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#8a6bb0"/><circle r="34" cy="0" fill="#f0c8a8"/><path d="M-38 30 q-6-70 38-72 q44 2 38 72 q-10 14-38 14 q-28 0-38-14z" fill="#d8b04a"/></g>
-    <g class="lb" transform="translate(252,575)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#c9823a"/><circle r="34" cy="0" fill="#a8704f"/><path d="M-34 2 q-2-38 34-40 q36 2 34 40 q-6 6-34 8 q-28-2-34-8z" fill="#1e1a17"/></g>
-    <g class="lb" transform="translate(346,600)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#3f6f86"/><circle r="34" cy="0" fill="#e2b48e"/><path d="M-34 6 q-2-42 34-44 q36 2 34 44 q-6 4-34 6 q-28-2-34-6z" fill="#7a4a2a"/><path d="M-30 -4 q30-16 60 0" stroke="#a9a9a9" stroke-width="5" fill="none"/></g>
+    <g class="lb" transform="translate(200,585)"><rect x="-58" y="48" width="116" height="120" rx="12" fill="#5b4636"/><path d="M-66 170 v-70 q0-46 50-54 h32 q50 8 50 54 v70z" fill="#6a8f5a"/><circle r="42" cy="0" fill="#c98f6b"/><path d="M-42 6 q-2-50 42-52 q44 2 42 52 q-8 12-42 14 q-34-2-42-14z" fill="#2f2620"/></g>
   </g>
   <!-- restart and delayed-test symbols (no words) -->
   <g id="icoRestart" class="fade" opacity="0">
@@ -278,7 +274,7 @@ function speakOne(text, opts={}){
 }
 async function say(units, who="tutor"){
   if(typeof units==="string") units=[units];
-  caption((who==="group"?"[groupe] ":"")+units.join(" · "));
+  caption((who==="group"?"[élève] ":"")+units.join(" · "));
   const tutorTalks = who!=="group", groupTalks = who!=="tutor";
   if(tutorTalks) document.getElementById("tutor").classList.add("talk");
   if(groupTalks) document.getElementById("classroom").classList.add("gtalk");
@@ -297,9 +293,10 @@ async function say(units, who="tutor"){
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recogBroken = !SR;
 const signalEl = document.getElementById("signal");
-// "listen": green border, microphone open. "lead": amber border, say it together; microphone closed
-// so the app never hears its own voice. false: idle.
-function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen"); signalEl.classList.toggle("lead", state==="lead"); }
+// The border is always shown. Brown: no response wanted. Green: respond now.
+// "listen" = green with the microphone open; "lead" = green while the teacher says it with the learner,
+// microphone closed so the app never hears its own voice; false = brown.
+function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen" || state==="lead"); }
 
 function normalise(t){
   return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-]/g," ").replace(/\s+/g," ").trim();
@@ -426,7 +423,7 @@ async function flashIcon(which){
   rest(); const el=document.getElementById(which==="restart"?"icoRestart":"icoBookmark");
   el.style.opacity=1; await sleep(900); el.style.opacity=0; await sleep(250);
 }
-// two scenes: the classroom (teacher and model learners facing her) and one-to-one (teacher facing the learner)
+// two scenes: the classroom (teacher and one model learner facing her) and one-to-one (teacher facing the learner)
 let scene="one";
 async function setScene(which){
   if(which===scene) return; scene=which;
@@ -467,11 +464,11 @@ async function giveTask(task, {retest=false, firstSeen=null}={}){
   await setPortraits(task.paulSide);
   if(task.model && !retest){
     if(task.group){
-      // classroom: the teacher models, the model learners answer; the learner watches
+      // classroom: the teacher models, the model learner answers; the learner watches
       await setScene("class");
       await gestureEar(); await say(PHR.ecoute);
       await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
-      await gesturePalm(); await say(PHR.avous); await pointAt(task.target); await say(task.questionUnits);
+      await gesturePalm(); await say(PHR.atoi); await pointAt(task.target); await say(task.questionUnits);
       await say(task.answerUnits, "group"); rest(); await sleep(300);
       // the group fades: one-to-one. Lead: the teacher says it with the learner; amber border, microphone closed
       await setScene("one");
