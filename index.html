@@ -19,6 +19,9 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 #signal{position:fixed;inset:0;pointer-events:none;border:14px solid #7a5434;transition:border-color .12s;z-index:20}
 #signal.on{border-color:var(--go)}
+#signal.on.hear{border-width:20px}
+#flag{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(66px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
+#flag.hit{background:#f3d36b;opacity:1}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
@@ -133,6 +136,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   </g><!-- /room -->
   <!-- the model learner, seen from behind, facing the teacher (classroom scene only) -->
   <g id="classroom" class="fade" opacity="0">
+    <rect id="mlGlow" class="fade" opacity="0" x="122" y="531" width="156" height="200" rx="30" fill="none" stroke="var(--go)" stroke-width="12"/>
     <g class="lb" transform="translate(200,585)"><rect x="-58" y="48" width="116" height="120" rx="12" fill="#5b4636"/><path d="M-66 170 v-70 q0-46 50-54 h32 q50 8 50 54 v70z" fill="#6a8f5a"/><circle r="42" cy="0" fill="#c98f6b"/><path d="M-42 6 q-2-50 42-52 q44 2 42 52 q-8 12-42 14 q-34-2-42-14z" fill="#2f2620"/></g>
   </g>
   <!-- restart and delayed-test symbols (no words) -->
@@ -165,6 +169,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <button id="gF" aria-label="femme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><path d="M38 34 h20 q6 0 8 6 l18 56 h-72 l18 -56 q2 -6 8 -6z" fill="#2b2f36"/><rect x="35" y="94" width="11" height="52" rx="5" fill="#2b2f36"/><rect x="50" y="94" width="11" height="52" rx="5" fill="#2b2f36"/></svg></button>
 </div>
 <div id="play"><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button></div>
+<button id="flag" aria-label="Tester flag"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 22V3h11l-1.5 4L16 11H7v11z" fill="#6b7079"/></svg></button>
 <button id="gear" aria-label="Tester panel"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#6b7079" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.4l1.9 1.5-2 3.4-2.3-.9c-.6.5-1.2.8-1.9 1.1l-.3 2.4h-4l-.3-2.4c-.7-.3-1.3-.6-1.9-1.1l-2.3.9-2-3.4 1.9-1.5a7 7 0 010-2.2L1.6 8.6l2-3.4 2.3.9c.6-.5 1.2-.8 1.9-1.1L8.1 2.6h4l.3 2.4c.7.3 1.3.6 1.9 1.1l2.3-.9 2 3.4-1.9 1.5a7 7 0 010 2.2z"/></svg></button>
 
 <aside id="panel" hidden>
@@ -199,7 +204,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-07.4";
+const APP_VERSION="2026-11-07.5";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -217,10 +222,10 @@ let READY=false;
    elision or liaison unit (C'est) is never split.
    ============================================================ */
 const PEOPLE = {
-  paul:  {name:"Paul",  accept:["paul","pol","paule","pôle","pole"]},
-  julie: {name:"Julie", accept:["julie","juli","julye"]}
+  paul:  {name:"Paul",  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour"]},
+  julie: {name:"Julie", accept:["julie","juli","julye","jolie","joli","july","julia","juliette"]}
 };
-const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","c'","s'","cé","sé"];
+const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","sai","cet","c'","s'","cé","sé"];
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
 function T(id, paulSide, target, model, group=false, tag="new"){ return {id, paulSide, target, model, group, tag,
@@ -249,10 +254,14 @@ const LESSONS = [{
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], ftc:{},
+const defaults = () => ({stateVer:2, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9}});
 let S = defaults();
-function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{}); } }catch(e){} }
+function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
+  // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
+  if(!s.stateVer || s.stateVer<2){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:2});
+    S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version 2026-11-07.5 (earlier errors were listening faults)", heard:[]}); }
+  } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
 
 /* ============================================================
@@ -287,6 +296,8 @@ function speakOne(text, opts={}){
 }
 async function say(units, who="tutor"){
   if(typeof units==="string") units=[units];
+  stopRec();                                   // the microphone is never open while the app speaks
+  recentSaid.push(units.join(" ")); trace("say["+who+"]: "+units.join(" · "));
   caption((who==="group"?"[élève] ":"")+units.join(" · "));
   const tutorTalks = who!=="group", groupTalks = who!=="tutor";
   if(tutorTalks) document.getElementById("tutor").classList.add("talk");
@@ -312,63 +323,113 @@ const signalEl = document.getElementById("signal");
 function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen" || state==="lead"); }
 
 function normalise(t){
-  return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-]/g," ").replace(/\s+/g," ").trim();
+  return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-…]/g," ").replace(/\s+/g," ").trim();
 }
-// judge: expected = [CEST, name] or [name]; returns {ok, reason}
-function judge(text, expect){
+function lev(a,b){ const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+  let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; }
+  return prev[n]; }
+const fold = w => w.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/^g(?=[ie])/,"j");
+// which name a word is: an exact listed form, or (closed set) clearly nearest one name, same first sound, at most 2 edits
+function nameOf(w){
+  for(const n of Object.keys(PEOPLE)) if(PEOPLE[n].accept.includes(w)) return {n, near:false};
+  if(w.length<3 || CEST.includes(w)) return null;
+  const f=fold(w); const d=Object.keys(PEOPLE).map(n=>({n, d:lev(f, fold(PEOPLE[n].name.toLowerCase()))})).sort((x,y)=>x.d-y.d);
+  if(d[0].d<=2 && (d.length<2 || d[1].d>d[0].d) && f[0]===fold(PEOPLE[d[0].n].name.toLowerCase())[0]) return {n:d[0].n, near:true};
+  return null;
+}
+function tokensOf(text){
   const toks = normalise(text).split(" ").filter(w=>w && !FILLERS.includes(w));
-  if(!toks.length) return {ok:false, reason:"nothing heard"};
-  // split tokens like "s'paul" into "s'" + "paul"
-  const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)){ flat.push(m[1], m[2]); } else flat.push(w); });
-  const want = expect.map(e => e==="CEST" ? CEST : PEOPLE[e].accept);
-  if(flat.length===want.length && flat.every((w,i)=>want[i].includes(w))) return {ok:true, reason:""};
-  const names = Object.keys(PEOPLE);
-  const saidName = names.find(n=>flat.some(w=>PEOPLE[n].accept.includes(w)));
+  const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)) flat.push(m[1], m[2]); else flat.push(w); });
+  return flat;
+}
+// remove the app's own recent words (picked up by the microphone), except anything that is or contains the answer
+function stripEcho(toks, echoes){
+  let t=toks.slice();
+  for(const e of echoes){ if(!e.length) continue;
+    for(let i=0;i+e.length<=t.length;){ if(e.every((w,k)=>t[i+k]===w)) t.splice(i,e.length); else i++; } }
+  return t.filter((w,i)=> i===0 || w!==t[i-1]);   // a stutter ("c'est c'est") counts once
+}
+// judge: expected = [CEST, name] or [name]; returns {ok, reason, near}
+function judge(text, expect, echoes=[], alsoOk=[]){
+  const raw=tokensOf(text);
+  if(!raw.length) return {ok:false, reason:"nothing heard"};
+  const t=stripEcho(raw.filter((w,i)=> i===0 || w!==raw[i-1]), echoes);
+  if(!t.length) return {ok:false, reason:"only the app's own words heard", echoOnly:true};
+  const fits = want => { if(!t.length || t.length%want.length) return null; let near=[];
+    for(let i=0;i<t.length;i++){ const e=want[i%want.length], w=t[i];
+      if(e==="CEST"){ if(!CEST.includes(w)) return null; }
+      else { const r=nameOf(w); if(!r || r.n!==e) return null; if(r.near) near.push(w); } }
+    return near; };
+  for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(nr) return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
   const target = expect[expect.length-1];
-  if(saidName && saidName!==target) return {ok:false, reason:"wrong name"};
-  if(expect[0]==="CEST" && flat.length===1 && saidName===target) return {ok:false, reason:"name without c'est"};
+  const said = t.map(nameOf).filter(Boolean).map(r=>r.n);
+  if(said.some(n=>n!==target)) return {ok:false, reason:"wrong name"};
+  if(expect[0]==="CEST" && t.length===1 && said[0]===target) return {ok:false, reason:"name without c'est"};
   return {ok:false, reason:"not the expected words"};
 }
 
 let manualResolver=null;
-function listen(expect){
-  signal("listen");
-  if(S.settings.manual || recogBroken) return listenManual(expect);
-  return new Promise(resolve=>{
-    let R; try{ R=new SR(); }catch(e){ recogBroken=true; resolve(listenManual(expect)); return; }
+// Everything the app says is remembered until the next listen, so its own words can be recognised if the microphone hears them.
+let recentSaid=[];
+let recGen=0, activeR=null;
+function stopRec(){ recGen++; if(activeR){ try{ activeR.onresult=activeR.onend=activeR.onerror=activeR.onstart=null; activeR.abort(); }catch(e){} activeR=null; } }
+async function synthIdle(){ const t=Date.now(); while(synth && (synth.speaking||synth.pending) && Date.now()-t<3000) await sleep(40); }
+function listen(expect, alsoOk=[]){
+  // an echo that is, contains, or is made only of parts of the answer is never removed
+  const partOf = w => (expect.includes("CEST") && CEST.includes(w)) || (()=>{ const r=nameOf(w); return !!(r && expect.includes(r.n)); })();
+  const echoes = recentSaid.map(u=>tokensOf(u)).filter(e=> e.length && !e.some(w=>{ const r=nameOf(w); return r && expect.includes(r.n); }) && !e.every(partOf));
+  recentSaid=[];
+  if(S.settings.manual || recogBroken){ signal("listen"); return listenManual(expect); }
+  return new Promise(async resolve=>{
+    stopRec();
+    await synthIdle(); await sleep(350);          // the phone's own voice must have finished before the microphone opens
+    const gen=++recGen;
+    let R; try{ R=new SR(); }catch(e){ recogBroken=true; signal("listen"); resolve(listenManual(expect)); return; }
+    activeR=R;
     R.lang="fr-FR"; R.continuous=true; R.interimResults=true; R.maxAlternatives=5;
-    const t0=Date.now(); let last=0, heardAny=false, finished=false, results=[], restarted=false;
+    let t0=Date.now(), last=0, heardAny=false, finished=false, results=[], restarted=false, opened=false;
+    const open=()=>{ if(opened) return; opened=true; t0=Date.now(); signal("listen"); trace("mic open"); };
     const cands=()=>{
-      // full-transcript candidates: top path + each alternative of each segment
       const segs=results.map(r=>Array.from(r).map(a=>a.transcript));
       if(!segs.length) return [];
-      const top=segs.map(s=>s[0]).join(" ");
-      const out=[top];
-      segs.forEach((alts,i)=>alts.slice(1).forEach(a=>{ const c=segs.map((s,j)=> j===i? a : s[0]).join(" "); out.push(c); }));
-      return out;
+      const out=[];
+      // some phones (iPhone) repeat everything so far in each new result: the latest result alone is the whole answer
+      segs[segs.length-1].forEach(a=>out.push(a));
+      // others (Android Chrome) split the answer into segments: join them
+      const top=segs.map(x=>x[0]).join(" "); out.push(top);
+      segs.forEach((alts,i)=>alts.slice(1).forEach(a=>out.push(segs.map((x,j)=> j===i? a : x[0]).join(" "))));
+      return [...new Set(out.map(x=>x.trim()))].filter(Boolean);
     };
+    const best=()=>{ const c=cands(); for(const x of c){ const v=judge(x, expect, echoes, alsoOk); if(v.ok) return {c, v}; }
+      return {c, v: c.length? judge(c[0], expect, echoes, alsoOk) : null}; };
     const finish=(status)=>{
-      if(finished) return; finished=true; clearInterval(tick);
-      try{ R.onend=null; R.abort(); }catch(e){}
-      signal(false);
-      const c=cands(); let verdict={ok:false, reason: status==="silence"?"no answer":"nothing heard"};
-      for(const x of c){ const v=judge(x, expect); if(v.ok){ verdict=v; break; } }
-      if(!verdict.ok && c.length) verdict=judge(c[0], expect);
-      resolve({status: c.length? "heard" : status, heard:c, ...verdict});
+      if(finished || gen!==recGen) return; finished=true; clearInterval(tick);
+      stopRec(); signal(false);
+      const {c, v} = best();
+      let verdict = v || {ok:false, reason: status==="silence"?"no answer":"nothing heard"};
+      const st = !c.length ? "silence" : (verdict.echoOnly ? "echo" : "heard");
+      trace("mic closed: "+st);
+      resolve({status: st, heard:c, ...verdict});
     };
-    R.onresult=e=>{ heardAny=true; last=Date.now(); results=Array.from(e.results); };
-    R.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed"||e.error==="network"||e.error==="audio-capture"){ recogBroken=true; setStatus("Speech recognition unavailable ("+e.error+"). Switched to manual mode."); finished=true; clearInterval(tick); signal(false); resolve(listenManual(expect)); } };
-    R.onend=()=>{ if(finished) return; if(!heardAny && !restarted && Date.now()-t0<6000){ restarted=true; try{R.start();}catch(e){finish("silence");} } else finish(heardAny?"heard":"silence"); };
+    R.onstart=()=>{ if(gen===recGen) open(); };
+    R.onresult=e=>{ if(gen!==recGen) return; open(); heardAny=true; last=Date.now(); results=Array.from(e.results);
+      signalEl.classList.add("hear"); clearTimeout(signalEl._h); signalEl._h=setTimeout(()=>signalEl.classList.remove("hear"),180); };
+    R.onerror=e=>{ if(gen!==recGen) return; trace("recogniser error: "+e.error);
+      if(e.error==="not-allowed"||e.error==="service-not-allowed"||e.error==="network"||e.error==="audio-capture"){ recogBroken=true; setStatus("Speech recognition unavailable ("+e.error+"). Switched to manual mode."); finished=true; clearInterval(tick); stopRec(); signal("listen"); resolve(listenManual(expect)); } };
+    R.onend=()=>{ if(finished || gen!==recGen) return; if(!heardAny && !restarted && Date.now()-t0<6000){ restarted=true; try{R.start();}catch(e){finish("silence");} } else finish(heardAny?"heard":"silence"); };
     const tick=setInterval(()=>{
+      if(!opened) return;
       const now=Date.now();
       if(heardAny){
         // slow learners pause between units: wait longer while the answer is still incomplete
-        const matched=cands().some(x=>judge(x, expect).ok);
-        if(now-last > (matched? 600 : 2200)) finish("heard");
+        const matched=best().v?.ok;
+        if(now-last > (matched? 700 : 2200)) finish("heard");
       } else if(now-t0 > 7000) finish("silence");
       if(now-t0 > 12000) finish(heardAny?"heard":"silence");
     },120);
-    try{ R.start(); }catch(e){ finish("silence"); }
+    try{ R.start(); }catch(e){ finish("silence"); return; }
+    setTimeout(()=>{ if(gen===recGen) open(); }, 300);   // if the phone never reports the start
   });
 }
 function listenManual(expect){
@@ -446,6 +507,7 @@ async function setScene(which){
   document.getElementById("classroom").style.opacity = which==="class"?1:0;
   await sleep(950);
 }
+function glow(on){ document.getElementById("mlGlow").style.opacity = on?1:0; }
 async function gestureLead(){        // arms open: "together"
   ear.style.opacity=0; palm.style.opacity=0; thumb(false);
   armL.style.transform="rotate(55deg)"; armR.style.transform="rotate(-55deg)"; await sleep(300);
@@ -465,6 +527,9 @@ async function thumbsUp(){
 // shown with a symbol, not words (rubric 2h, A14).
 const PHR = { ecoute:["Écoute."], atoi:["À toi."], avous:["À vous."], avecmoi:["Avec moi."] };
 let ctx=null;   // {lesson, ex, delayedRec}
+let phase="", curTask="";
+function trace(ev){ (S.trace=S.trace||[]).push({t:new Date().toISOString(), task:curTask, phase, ev}); if(S.trace.length>4000) S.trace.splice(0, S.trace.length-4000); }
+function ph(p){ phase=p; trace("phase: "+p); }
 function logEntry(o){ S.log.push(Object.assign({t:new Date().toISOString()}, o)); if(S.log.length>2000) S.log.shift(); }
 
 async function askAndListen(task, expect){
@@ -474,28 +539,37 @@ async function askAndListen(task, expect){
 }
 // one presentation of a task (initial or retest). Returns {ok}
 async function giveTask(task, {retest=false, firstSeen=null}={}){
+  curTask=task.id;
   await setPortraits(task.paulSide);
   if(task.model && !retest){
     if(task.group){
-      // classroom: the teacher models, the model learner answers; the learner watches
+      // classroom: everything the learner will be asked to do is first done by the model learner
       await setScene("class");
+      ph("classroom model");
       await gestureEar(); await say(PHR.ecoute);
       await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
+      ph("classroom lead");
+      await gestureLead(); await say(PHR.avecmoi); await pointAt(task.target); await say(task.questionUnits);
+      glow(true); await sleep(250); await say(task.answerUnits, "both"); glow(false); rest(); await sleep(350);
+      ph("classroom test");
       await gesturePalm(); await say(PHR.atoi); await pointAt(task.target); await say(task.questionUnits);
-      await say(task.answerUnits, "group"); rest(); await sleep(300);
-      // the group fades: one-to-one. Lead: the teacher says it with the learner; amber border, microphone closed
+      glow(true); await sleep(250); await say(task.answerUnits, "group"); glow(false); rest(); await sleep(400);
+      // the model learner fades: one-to-one. Lead: green border, the teacher says it with the learner, microphone closed
       await setScene("one");
+      ph("lead");
       await gestureLead(); await say(PHR.avecmoi); await pointAt(task.target); await say(task.questionUnits);
       signal("lead"); await sleep(250); await say(task.answerUnits); signal(false); await sleep(300);
     } else {
+      ph("model");
       await gestureEar(); await say(PHR.ecoute);
       await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
     }
     await gesturePalm(); await say(PHR.atoi);
   }
+  ph(retest? "retest" : "test");
   let r = await askAndListen(task, ["CEST", task.target]);
-  if(r.status==="silence"){            // once more, unscored, in case the microphone failed
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, result:"silence (repeated, unscored)", heard:[], delayed:!!ctx.delayedRec});
+  if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), delayed:!!ctx.delayedRec});
     r = await askAndListen(task, ["CEST", task.target]);
   }
   rest();
@@ -503,19 +577,21 @@ async function giveTask(task, {retest=false, firstSeen=null}={}){
   if(isFirst){ firstSeen.add(task.id);
     const f = (S.ftc[ctx.exKey] = S.ftc[ctx.exKey] || {new:{c:0,n:0}, review:{c:0,n:0}});
     f[task.tag].n++; if(r.ok) f[task.tag].c++; }
-  logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, expected:task.answerUnits.join(" "), heard:r.heard.slice(0,3),
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, phase, expected:task.answerUnits.join(" "), heard:r.heard.slice(0,6),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
   if(r.ok) await thumbsUp();
   return r.ok;
 }
 async function correction(task, nth){
+  ph("correction "+nth);
   await gestureEar(); await say(PHR.ecoute);
   await pointAt(task.target); await say(task.answerUnits);
   if(nth>=2){                          // build from the end: narrator says the start, the green border cues the rest
     await say([task.answerUnits[0]+"…"]);
-    const r=await listen([task.target]); rest();
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, result:"build-from-end step "+(r.ok?"ok":"missed"), heard:r.heard.slice(0,2)});
+    ph("build from end");
+    const r=await listen([task.target], [["CEST", task.target]]); rest();
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6)});
     if(!r.ok){ await pointAt(task.target); await say(task.answerUnits); }
   }
   await gesturePalm(); await say(PHR.atoi);
@@ -546,7 +622,7 @@ async function runParts(parts, opts){
         errors++; hadError=true; saveDelayed(part); save();
         let fixed=false;
         while(!fixed){ errorsByTask[task.id]=(errorsByTask[task.id]||0)+1; await correction(task, errorsByTask[task.id]); fixed=await giveTask(task,{retest:true}); if(!fixed) errors++; }
-        await flashIcon("restart"); ti=0;
+        await flashIcon("restart"); ti=0; errors=0;   // this restart is the re-run; the part is firm when it runs with no errors
         if(!part.tasks[0].model){ await gesturePalm(); await say(PHR.atoi); rest(); }
       }
       if(errors===0) break;
@@ -639,8 +715,10 @@ function renderPanel(){
   $("ftc").innerHTML = rows? `<table><tr><th>Exercise</th><th>New (≥70%)</th><th>Review (≥90%)</th></tr>${rows}</table>` : `<span class="note">No data yet.</span>`;
   $("delayedList").textContent = S.delayed.length? S.delayed.map(d=>`${d.key} — passed ${d.repeat}/2`).join("; ") : "None.";
   const recent=S.log.slice(-200).reverse();
-  $("log").innerHTML = recent.length? `<table><tr><th>Task</th><th>Result</th><th>Heard</th></tr>${recent.map(e=>`<tr><td>${e.task||""}${e.retest?" (retest)":""}${e.delayed?" (delayed)":""}</td><td class="${e.result==='correct'?'ok':(String(e.result).startsWith('ERROR')?'bad':'')}">${e.result}${e.reason? " — "+e.reason:""}</td><td>${(e.heard||[]).map(h=>String(h).replace(/</g,"&lt;")).join(" | ")}</td></tr>`).join("")}</table>` : "";
+  $("log").innerHTML = recent.length? `<table><tr><th>Task</th><th>Result</th><th>Heard</th></tr>${recent.map(e=>`<tr><td>${e.task||""}${e.phase?" · "+e.phase:""}${e.retest?" (retest)":""}${e.delayed?" (delayed)":""}</td><td class="${e.result==='correct'?'ok':(String(e.result).startsWith('ERROR')?'bad':'')}">${e.result}${e.reason? " — "+e.reason:""}</td><td>${(e.heard||[]).map(h=>String(h).replace(/</g,"&lt;")).join(" | ")}</td></tr>`).join("")}</table>` : "";
 }
+$("flag").onclick=()=>{ logEntry({task:curTask, phase, result:"TESTER FLAG", heard:[]}); trace("tester flag"); save();
+  $("flag").classList.add("hit"); setTimeout(()=>$("flag").classList.remove("hit"), 600); };
 $("gear").onclick=()=>{ $("panel").hidden=false; renderPanel(); };
 $("closePanel").onclick=()=>{ $("panel").hidden=true; };
 $("optGender").onchange=e=>{ S.learnerGender=e.target.value; save(); };
