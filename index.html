@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Faultless</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f4f1ea; --ink:#22252b; --muted:#6b7079; --frame:#ffffff; --frame-line:#d9d3c7;
+  --go:#1fa855; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
+  --tutor-top:#3d5a73; --tutor-hair:#b5652f; --paul-top:#3f6fb5; --paul-hair:#6b4a2f;
+  --julie-top:#c0453b; --julie-hair:#2a1f1a; --panel:#ffffff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+#signal{position:fixed;inset:0;pointer-events:none;border:6px solid var(--idle);transition:border-color .12s,border-width .12s;z-index:20}
+#signal.on{border-color:var(--go);border-width:14px}
+#signal.lead{border-color:#e3a21a;border-width:14px}
+.gtalk .lb>*{animation:bob .28s infinite alternate}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
+.limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
+.fade{transition:opacity .25s}
+#mouth{transition:ry .08s}
+.talk #mouth{animation:talk .22s infinite alternate}
+@keyframes talk{from{ry:2}to{ry:7}}
+#play{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;background:rgba(244,241,234,.86)}
+#play button{width:128px;height:128px;border-radius:50%;border:0;background:var(--go);box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#play button svg{width:56px;height:56px;margin-left:8px}
+#play[hidden]{display:none}
+#gender{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:28px;z-index:35;background:var(--bg)}
+#gender[hidden]{display:none}
+#gender button{width:132px;height:170px;border-radius:20px;border:2px solid var(--frame-line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#gender button:focus-visible,#gender button:hover{border-color:var(--go)}
+#gear{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(18px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
+#caption{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(34,37,43,.82);color:#fff;padding:6px 14px;border-radius:8px;font-size:17px;z-index:25;max-width:90vw;text-align:center}
+#caption[hidden]{display:none}
+#manual{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:26;display:flex;gap:10px;align-items:center;background:var(--panel);padding:10px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+#manual[hidden]{display:none}
+#manual input{font-size:16px;padding:8px;border:1px solid var(--frame-line);border-radius:8px;width:180px}
+#manual button{font-size:20px;width:46px;height:46px;border-radius:10px;border:1px solid var(--frame-line);background:#fff;cursor:pointer}
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);z-index:50;box-shadow:-8px 0 24px rgba(0,0,0,.15);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;font-size:14px}
+#panel[hidden]{display:none}
+#panel h2{font-size:16px;margin:0 0 4px}
+#panel h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 6px}
+#panel .row{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+#panel button{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--frame-line);background:#fff;cursor:pointer}
+#panel table{border-collapse:collapse;width:100%;font-size:12.5px}
+#panel td,#panel th{border-bottom:1px solid #eee;padding:4px 4px;text-align:left;vertical-align:top}
+#panel .ok{color:#1d7a3e}#panel .bad{color:#b3261e}
+#panel select,#panel input[type=range]{max-width:100%}
+.note{color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div id="stage">
+<svg id="scene" viewBox="0 0 400 700" aria-hidden="true">
+  <!-- classroom floor (group scene only) -->
+  <g id="floor" class="fade" opacity="0">
+    <rect x="0" y="0" width="400" height="700" fill="#ebe5d8"/>
+    <rect x="0" y="300" width="400" height="400" fill="#d9cfbd"/>
+  </g>
+  <g id="room" style="transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out;transform:translate(0px,40px) scale(1)">
+  <!-- portrait frames -->
+  <g id="frames">
+    <g id="frameL" transform="translate(28,24)">
+      <rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>
+      <g class="fade" id="slotL"></g>
+    </g>
+    <g id="frameR" transform="translate(212,24)">
+      <rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>
+      <g class="fade" id="slotR"></g>
+    </g>
+  </g>
+  <!-- tutor, seated -->
+  <g id="tutor">
+    <rect x="112" y="300" width="176" height="300" rx="26" fill="#7b5a43"/>
+    <!-- back hair -->
+    <path d="M150 330 q0-75 50-78 q50 3 50 78 q0 40-8 60 h-84 q-8-20-8-60z" fill="var(--tutor-hair)"/>
+    <!-- torso -->
+    <path d="M118 600 v-120 q0-52 52-60 h60 q52 8 52 60 v120z" fill="var(--tutor-top)"/>
+    <rect x="186" y="398" width="28" height="26" fill="var(--skin-d)"/>
+    <!-- head -->
+    <ellipse cx="200" cy="352" rx="42" ry="50" fill="var(--skin)"/>
+    <path d="M158 345 q2-52 42-54 q40 2 42 54 q-14-26-42-30 q-28 4-42 30z" fill="var(--tutor-hair)"/>
+    <ellipse cx="184" cy="352" rx="4" ry="5" fill="var(--ink)"/>
+    <ellipse cx="216" cy="352" rx="4" ry="5" fill="var(--ink)"/>
+    <path d="M176 340 q8-5 16 0 M208 340 q8-5 16 0" stroke="var(--tutor-hair)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M200 358 q-3 10 0 14" stroke="var(--skin-d)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse id="mouth" cx="200" cy="384" rx="10" ry="2" fill="#8a3b3b"/>
+    <!-- ear-cup hand (Écoute) -->
+    <g id="earHand" class="fade" opacity="0">
+      <path d="M244 330 q22 4 22 28 q0 22-20 26 q-10-24-2-54z" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
+      <path d="M276 330 q12 22 0 44 M288 322 q18 30 0 60" stroke="var(--muted)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M258 384 l14 96" stroke="var(--tutor-top)" stroke-width="22" stroke-linecap="round"/>
+    </g>
+    <!-- open palm (À toi) -->
+    <g id="palm" class="fade" opacity="0">
+      <path d="M200 470 l0 30" stroke="var(--tutor-top)" stroke-width="22" stroke-linecap="round"/>
+      <g transform="translate(200,456)">
+        <ellipse cx="0" cy="0" rx="26" ry="30" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
+        <g stroke="var(--skin-d)" stroke-width="2" fill="var(--skin)">
+          <rect x="-24" y="-58" width="11" height="34" rx="5.5"/>
+          <rect x="-11" y="-66" width="11" height="40" rx="5.5"/>
+          <rect x="2" y="-64" width="11" height="38" rx="5.5"/>
+          <rect x="15" y="-54" width="10" height="30" rx="5"/>
+          <rect x="22" y="-14" width="22" height="11" rx="5.5" transform="rotate(-30 22 -14)"/>
+        </g>
+      </g>
+    </g>
+    <!-- right arm (viewer's left) -->
+    <g id="armL" class="limb" style="transform-origin:150px 440px">
+      <path d="M150 440 L150 580" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round"/>
+      <g id="handL" transform="translate(150,592)">
+        <circle r="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
+        <rect class="finger" x="-4" y="6" width="8" height="26" rx="4" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
+        <rect class="thumb" x="-4.5" y="4" width="9" height="24" rx="4.5" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2" opacity="0" transform="rotate(30)"/>
+      </g>
+    </g>
+    <!-- left arm (viewer's right) -->
+    <g id="armR" class="limb" style="transform-origin:250px 440px">
+      <path d="M250 440 L250 580" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round"/>
+      <g id="handR" transform="translate(250,592)">
+        <circle r="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
+        <rect class="finger" x="-4" y="6" width="8" height="26" rx="4" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
+      </g>
+    </g>
+  </g>
+  </g><!-- /room -->
+  <!-- model learners, seen from behind, facing the teacher (group scene only) -->
+  <g id="classroom" class="fade" opacity="0">
+    <g class="lb" transform="translate(62,560)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#6a8f5a"/><circle r="34" cy="0" fill="#c98f6b"/><path d="M-34 4 q-2-40 34-42 q36 2 34 42 q-6 10-34 12 q-28-2-34-12z" fill="#2f2620"/></g>
+    <g class="lb" transform="translate(160,590)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#8a6bb0"/><circle r="34" cy="0" fill="#f0c8a8"/><path d="M-38 30 q-6-70 38-72 q44 2 38 72 q-10 14-38 14 q-28 0-38-14z" fill="#d8b04a"/></g>
+    <g class="lb" transform="translate(252,575)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#c9823a"/><circle r="34" cy="0" fill="#a8704f"/><path d="M-34 2 q-2-38 34-40 q36 2 34 40 q-6 6-34 8 q-28-2-34-8z" fill="#1e1a17"/></g>
+    <g class="lb" transform="translate(346,600)"><rect x="-46" y="40" width="92" height="110" rx="10" fill="#5b4636"/><path d="M-52 150 v-60 q0-38 40-44 h24 q40 6 40 44 v60z" fill="#3f6f86"/><circle r="34" cy="0" fill="#e2b48e"/><path d="M-34 6 q-2-42 34-44 q36 2 34 44 q-6 4-34 6 q-28-2-34-6z" fill="#7a4a2a"/><path d="M-30 -4 q30-16 60 0" stroke="#a9a9a9" stroke-width="5" fill="none"/></g>
+  </g>
+  <!-- restart and delayed-test symbols (no words) -->
+  <g id="icoRestart" class="fade" opacity="0">
+    <circle cx="200" cy="120" r="54" fill="#fff" stroke="var(--frame-line)" stroke-width="2"/>
+    <path d="M226 106 a30 30 0 1 0 4 26" stroke="var(--tutor-top)" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M214 92 l20 12 l-20 12z" fill="var(--tutor-top)"/>
+  </g>
+  <g id="icoBookmark" class="fade" opacity="0">
+    <circle cx="200" cy="120" r="54" fill="#fff" stroke="var(--frame-line)" stroke-width="2"/>
+    <path d="M180 88 h40 v66 l-20 -16 l-20 16z" fill="#d9822b"/>
+  </g>
+  <!-- end-of-exercise tick -->
+  <g id="tick" class="fade" opacity="0">
+    <circle cx="200" cy="120" r="58" fill="var(--go)"/>
+    <path d="M172 122 l20 20 l38 -42" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
+</div>
+<div id="signal"></div>
+<div id="caption" hidden></div>
+<div id="manual" hidden>
+  <input id="manualText" placeholder="typed answer" autocomplete="off">
+  <button id="manualSend" title="Judge typed answer">↵</button>
+  <button id="manualOk" title="Count as correct">✓</button>
+  <button id="manualBad" title="Count as wrong">✗</button>
+</div>
+<div id="gender" hidden>
+  <button id="gM" aria-label="homme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><rect x="30" y="34" width="36" height="52" rx="8" fill="#2b2f36"/><rect x="18" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="68" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="31" y="84" width="15" height="62" rx="6" fill="#2b2f36"/><rect x="50" y="84" width="15" height="62" rx="6" fill="#2b2f36"/></svg></button>
+  <button id="gF" aria-label="femme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><path d="M38 34 h20 q6 0 8 6 l18 56 h-72 l18 -56 q2 -6 8 -6z" fill="#2b2f36"/><rect x="35" y="94" width="11" height="52" rx="5" fill="#2b2f36"/><rect x="50" y="94" width="11" height="52" rx="5" fill="#2b2f36"/></svg></button>
+</div>
+<div id="play"><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button></div>
+<button id="gear" aria-label="Tester panel"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#6b7079" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.4l1.9 1.5-2 3.4-2.3-.9c-.6.5-1.2.8-1.9 1.1l-.3 2.4h-4l-.3-2.4c-.7-.3-1.3-.6-1.9-1.1l-2.3.9-2-3.4 1.9-1.5a7 7 0 010-2.2L1.6 8.6l2-3.4 2.3.9c.6-.5 1.2-.8 1.9-1.1L8.1 2.6h4l.3 2.4c.7.3 1.3.6 1.9 1.1l2.3-.9 2 3.4-1.9 1.5a7 7 0 010 2.2z"/></svg></button>
+
+<aside id="panel" hidden>
+  <div class="row" style="justify-content:space-between"><h2>Tester panel</h2><button id="closePanel">Close</button></div>
+  <div class="note" id="status"></div>
+  <h3>Settings</h3>
+  <div class="row"><label><input type="checkbox" id="optCaption"> Show French text (testing only)</label></div>
+  <div class="row"><label><input type="checkbox" id="optManual"> Manual mode (no microphone: type or tick answers)</label></div>
+  <div class="row">Learner's gender <select id="optGender"><option value="m">Man</option><option value="f">Woman</option></select></div>
+  <div class="row">Voice <select id="optVoice"></select></div>
+  <div class="row">Pause between units <input type="range" id="optPause" min="150" max="1200" step="50"> <span id="pauseVal"></span> ms</div>
+  <div class="row">Speech rate <input type="range" id="optRate" min="0.6" max="1.2" step="0.05"> <span id="rateVal"></span></div>
+  <h3>Progress</h3>
+  <div id="progress" class="note"></div>
+  <div class="row">
+    <button id="btnRestartEx">Restart exercise</button>
+    <button id="btnDelayed">Run pending delayed tests</button>
+    <button id="btnReset">Reset all progress</button>
+    <button id="btnDownload">Download log</button>
+  </div>
+  <h3>First-time correct</h3>
+  <div id="ftc"></div>
+  <h3>Pending delayed tests</h3>
+  <div id="delayedList" class="note"></div>
+  <h3>Every response (newest first)</h3>
+  <div class="note">Every incorrect response is a programme fault (ruling P11). "Heard" is what the speech recogniser wrote down.</div>
+  <div id="log"></div>
+</aside>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+let READY=false;
+/* ============================================================
+   CONTENT — Lesson 1, Exercise 1 (C'est qui ?)
+   Units are spoken separately with a pause between them; an
+   elision or liaison unit (C'est) is never split.
+   ============================================================ */
+const PEOPLE = {
+  paul:  {name:"Paul",  accept:["paul","pol","paule","pôle","pole"]},
+  julie: {name:"Julie", accept:["julie","juli","julye"]}
+};
+const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","c'","s'","cé","sé"];
+const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
+
+function T(id, paulSide, target, model, group=false, tag="new"){ return {id, paulSide, target, model, group, tag,
+  answerUnits:["C'est", PEOPLE[target].name + "."], questionUnits:["C'est","qui ?"]}; }
+
+const LESSONS = [{
+  id:"L1",
+  exercises:[{
+    id:"L1E1", title:"C'est qui ?", track:"A",
+    parts:[
+      {id:"P1", intro:null, tasks:[
+        // group=true: first appearance of a new item — the model learners answer first, then a lead, then the learner
+        T("L1E1-1","L","paul",true,true),  T("L1E1-2","R","paul",true),
+        T("L1E1-3","R","julie",true,true), T("L1E1-4","L","julie",true)]},
+      {id:"P2", intro:"atoi", tasks:[
+        T("L1E1-5","R","julie",false), T("L1E1-6","L","paul",false),
+        T("L1E1-7","R","paul",false),  T("L1E1-8","R","julie",false),
+        T("L1E1-9","R","paul",false),  T("L1E1-10","L","julie",false),
+        T("L1E1-11","L","julie",false),T("L1E1-12","L","paul",false)]}
+    ]
+  }]
+}];
+
+/* ============================================================
+   STATE — saved after every task; resume = start of the
+   interrupted exercise (never mid-task).
+   ============================================================ */
+const KEY="frDI.v1";
+const defaults = () => ({lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], ftc:{},
+  settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9}});
+let S = defaults();
+function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{}); } }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
+
+/* ============================================================
+   SPEECH OUT — slow, unit by unit, French voice
+   ============================================================ */
+const synth = window.speechSynthesis;
+let voices=[];
+function pickVoices(){
+  if(!synth) return;
+  voices = synth.getVoices().filter(v=>/^fr/i.test(v.lang));
+  voices.sort((a,b)=> score(b)-score(a));
+  function score(v){ let s=0; if(/fr[-_]FR/i.test(v.lang)) s+=4; if(/google/i.test(v.name)) s+=3; if(/(amélie|amelie|thomas|audrey|denise|hortense|julie|marie)/i.test(v.name)) s+=2; if(v.localService===false) s+=1; return s; }
+  renderVoiceSelect();
+}
+if(synth){ pickVoices(); synth.onvoiceschanged = pickVoices; }
+function currentVoice(){ return voices.find(v=>v.name===S.settings.voice) || voices[0] || null; }
+function groupVoice(){ const cv=currentVoice(); return voices.find(v=>v!==cv && /fr[-_]FR/i.test(v.lang)) || cv; }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+let captionTimer=null;
+function caption(text){ const c=document.getElementById("caption"); if(!S.settings.caption){c.hidden=true;return;} c.textContent=text; c.hidden=false; clearTimeout(captionTimer); captionTimer=setTimeout(()=>c.hidden=true, 2600); }
+function speakOne(text, opts={}){
+  return new Promise(res=>{
+    if(!synth){ setTimeout(res, 400); return; }
+    const u=new SpeechSynthesisUtterance(text.replace(/…/g,""));
+    u.lang="fr-FR"; const v=opts.group? groupVoice() : currentVoice(); if(v) u.voice=v; u.rate=S.settings.rate;
+    if(opts.group && v===currentVoice()) u.pitch=1.35;   // only one French voice: raise the pitch for the group
+    let done=false; const fin=()=>{ if(!done){ done=true; res(); } };
+    u.onend=fin; u.onerror=fin;
+    setTimeout(fin, 900 + text.length*140);   // safety net: some browsers drop onend
+    synth.speak(u);
+  });
+}
+async function say(units, who="tutor"){
+  if(typeof units==="string") units=[units];
+  caption((who==="group"?"[groupe] ":"")+units.join(" · "));
+  const tutorTalks = who!=="group", groupTalks = who!=="tutor";
+  if(tutorTalks) document.getElementById("tutor").classList.add("talk");
+  if(groupTalks) document.getElementById("classroom").classList.add("gtalk");
+  for(let i=0;i<units.length;i++){
+    await speakOne(units[i], {group: who==="group"});
+    if(i<units.length-1) await sleep(S.settings.pause);
+  }
+  document.getElementById("tutor").classList.remove("talk");
+  document.getElementById("classroom").classList.remove("gtalk");
+  await sleep(180);
+}
+
+/* ============================================================
+   SPEECH IN — French recognition, signalled by the green border
+   ============================================================ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recogBroken = !SR;
+const signalEl = document.getElementById("signal");
+// "listen": green border, microphone open. "lead": amber border, say it together; microphone closed
+// so the app never hears its own voice. false: idle.
+function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen"); signalEl.classList.toggle("lead", state==="lead"); }
+
+function normalise(t){
+  return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-]/g," ").replace(/\s+/g," ").trim();
+}
+// judge: expected = [CEST, name] or [name]; returns {ok, reason}
+function judge(text, expect){
+  const toks = normalise(text).split(" ").filter(w=>w && !FILLERS.includes(w));
+  if(!toks.length) return {ok:false, reason:"nothing heard"};
+  // split tokens like "s'paul" into "s'" + "paul"
+  const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)){ flat.push(m[1], m[2]); } else flat.push(w); });
+  const want = expect.map(e => e==="CEST" ? CEST : PEOPLE[e].accept);
+  if(flat.length===want.length && flat.every((w,i)=>want[i].includes(w))) return {ok:true, reason:""};
+  const names = Object.keys(PEOPLE);
+  const saidName = names.find(n=>flat.some(w=>PEOPLE[n].accept.includes(w)));
+  const target = expect[expect.length-1];
+  if(saidName && saidName!==target) return {ok:false, reason:"wrong name"};
+  if(expect[0]==="CEST" && flat.length===1 && saidName===target) return {ok:false, reason:"name without c'est"};
+  return {ok:false, reason:"not the expected words"};
+}
+
+let manualResolver=null;
+function listen(expect){
+  signal("listen");
+  if(S.settings.manual || recogBroken) return listenManual(expect);
+  return new Promise(resolve=>{
+    let R; try{ R=new SR(); }catch(e){ recogBroken=true; resolve(listenManual(expect)); return; }
+    R.lang="fr-FR"; R.continuous=true; R.interimResults=true; R.maxAlternatives=5;
+    const t0=Date.now(); let last=0, heardAny=false, finished=false, results=[], restarted=false;
+    const cands=()=>{
+      // full-transcript candidates: top path + each alternative of each segment
+      const segs=results.map(r=>Array.from(r).map(a=>a.transcript));
+      if(!segs.length) return [];
+      const top=segs.map(s=>s[0]).join(" ");
+      const out=[top];
+      segs.forEach((alts,i)=>alts.slice(1).forEach(a=>{ const c=segs.map((s,j)=> j===i? a : s[0]).join(" "); out.push(c); }));
+      return out;
+    };
+    const finish=(status)=>{
+      if(finished) return; finished=true; clearInterval(tick);
+      try{ R.onend=null; R.abort(); }catch(e){}
+      signal(false);
+      const c=cands(); let verdict={ok:false, reason: status==="silence"?"no answer":"nothing heard"};
+      for(const x of c){ const v=judge(x, expect); if(v.ok){ verdict=v; break; } }
+      if(!verdict.ok && c.length) verdict=judge(c[0], expect);
+      resolve({status: c.length? "heard" : status, heard:c, ...verdict});
+    };
+    R.onresult=e=>{ heardAny=true; last=Date.now(); results=Array.from(e.results); };
+    R.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed"||e.error==="network"||e.error==="audio-capture"){ recogBroken=true; setStatus("Speech recognition unavailable ("+e.error+"). Switched to manual mode."); finished=true; clearInterval(tick); signal(false); resolve(listenManual(expect)); } };
+    R.onend=()=>{ if(finished) return; if(!heardAny && !restarted && Date.now()-t0<6000){ restarted=true; try{R.start();}catch(e){finish("silence");} } else finish(heardAny?"heard":"silence"); };
+    const tick=setInterval(()=>{
+      const now=Date.now();
+      if(heardAny){
+        // slow learners pause between units: wait longer while the answer is still incomplete
+        const matched=cands().some(x=>judge(x, expect).ok);
+        if(now-last > (matched? 600 : 2200)) finish("heard");
+      } else if(now-t0 > 7000) finish("silence");
+      if(now-t0 > 12000) finish(heardAny?"heard":"silence");
+    },120);
+    try{ R.start(); }catch(e){ finish("silence"); }
+  });
+}
+function listenManual(expect){
+  const box=document.getElementById("manual"); box.hidden=false;
+  const inp=document.getElementById("manualText"); inp.value=""; setTimeout(()=>inp.focus(),50);
+  return new Promise(resolve=>{
+    manualResolver=(kind, text)=>{
+      manualResolver=null; box.hidden=true; signal(false);
+      if(kind==="ok") resolve({status:"heard", heard:["(marked correct)"], ok:true, reason:""});
+      else if(kind==="bad") resolve({status:"heard", heard:["(marked wrong)"], ok:false, reason:"marked wrong"});
+      else if(kind==="silence") resolve({status:"silence", heard:[], ok:false, reason:"no answer"});
+      else { const v=judge(text, expect); resolve({status:"heard", heard:[text], ...v}); }
+    };
+  });
+}
+document.getElementById("manualOk").onclick=()=>manualResolver&&manualResolver("ok");
+document.getElementById("manualBad").onclick=()=>manualResolver&&manualResolver("bad");
+document.getElementById("manualSend").onclick=()=>{ const t=document.getElementById("manualText").value; if(manualResolver){ manualResolver(t.trim()? "text":"silence", t); } };
+document.getElementById("manualText").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("manualSend").click(); });
+
+/* ============================================================
+   PRESENTER — portraits, pointing, gestures
+   ============================================================ */
+const svgNS="http://www.w3.org/2000/svg";
+function portrait(who){
+  const g=document.createElementNS(svgNS,"g");
+  const top = who==="paul" ? "var(--paul-top)" : "var(--julie-top)";
+  const hair= who==="paul" ? "var(--paul-hair)" : "var(--julie-hair)";
+  g.innerHTML = (who==="julie"
+    ? `<path d="M38 96 q0-62 42-64 q42 2 42 64 q0 46-10 72 h-64 q-10-26-10-72z" fill="${hair}"/>` : ``) +
+    `<path d="M22 190 v-24 q0-30 34-36 h48 q34 6 34 36 v24z" fill="${top}"/>
+     <rect x="70" y="112" width="20" height="18" fill="var(--skin-d)"/>
+     <ellipse cx="80" cy="86" rx="32" ry="38" fill="var(--skin)"/>` +
+    (who==="paul"
+      ? `<path d="M47 80 q0-40 33-42 q33 2 33 42 q-8-20-33-22 q-25 2-33 22z" fill="${hair}"/><path d="M50 92 q2 30 30 34 q28-4 30-34 q-6 16-30 18 q-24-2-30-18z" fill="${hair}" opacity=".9"/>`
+      : `<path d="M47 84 q2-44 33-46 q31 2 33 46 q-14-28-33-30 q-19 2-33 30z" fill="${hair}"/>`) +
+    `<ellipse cx="68" cy="88" rx="3.5" ry="4.5" fill="var(--ink)"/><ellipse cx="92" cy="88" rx="3.5" ry="4.5" fill="var(--ink)"/>
+     <path d="M70 106 q10 7 20 0" stroke="#8a3b3b" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  return g;
+}
+const slotL=document.getElementById("slotL"), slotR=document.getElementById("slotR");
+let paulSide=null;
+async function setPortraits(side){
+  if(side===paulSide) return;
+  const first = paulSide===null;
+  if(!first){ slotL.style.opacity=0; slotR.style.opacity=0; await sleep(260); }
+  slotL.replaceChildren(portrait(side==="L"?"paul":"julie"));
+  slotR.replaceChildren(portrait(side==="L"?"julie":"paul"));
+  paulSide=side;
+  slotL.style.opacity=1; slotR.style.opacity=1; await sleep(first?0:260);
+}
+const armL=document.getElementById("armL"), armR=document.getElementById("armR");
+const ear=document.getElementById("earHand"), palm=document.getElementById("palm");
+const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
+function angleTo(sx,sy,tx,ty){ return Math.atan2(ty-sy, tx-sx)*180/Math.PI - 90; }
+function rest(){ armL.style.transform="rotate(0deg)"; armR.style.transform="rotate(0deg)"; ear.style.opacity=0; palm.style.opacity=0; thumb(false); }
+async function pointAt(who){
+  ear.style.opacity=0; palm.style.opacity=0; thumb(false);
+  const side = (who==="paul") ? paulSide : (paulSide==="L"?"R":"L");
+  if(side==="L"){ armR.style.transform="rotate(0deg)"; armL.style.transform=`rotate(${angleTo(150,440,TARGET.L.x,TARGET.L.y)+360}deg)`; }
+  else { armL.style.transform="rotate(0deg)"; armR.style.transform=`rotate(${angleTo(250,440,TARGET.R.x,TARGET.R.y)}deg)`; }
+  await sleep(380);
+}
+async function flashIcon(which){
+  rest(); const el=document.getElementById(which==="restart"?"icoRestart":"icoBookmark");
+  el.style.opacity=1; await sleep(900); el.style.opacity=0; await sleep(250);
+}
+// two scenes: the classroom (teacher and model learners facing her) and one-to-one (teacher facing the learner)
+let scene="one";
+async function setScene(which){
+  if(which===scene) return; scene=which;
+  const room=document.getElementById("room");
+  room.style.transform = which==="class" ? "translate(110px,30px) scale(.45)" : "translate(0px,40px) scale(1)";
+  document.getElementById("floor").style.opacity = which==="class"?1:0;
+  document.getElementById("classroom").style.opacity = which==="class"?1:0;
+  await sleep(950);
+}
+async function gestureLead(){        // arms open: "together"
+  ear.style.opacity=0; palm.style.opacity=0; thumb(false);
+  armL.style.transform="rotate(55deg)"; armR.style.transform="rotate(-55deg)"; await sleep(300);
+}
+async function gestureEar(){ armL.style.transform="rotate(0deg)"; armR.style.transform="rotate(0deg)"; palm.style.opacity=0; ear.style.opacity=1; await sleep(250); }
+async function gesturePalm(){ armL.style.transform="rotate(0deg)"; armR.style.transform="rotate(0deg)"; ear.style.opacity=0; palm.style.opacity=1; await sleep(250); }
+function thumb(on){ const h=document.getElementById("handL"); h.querySelector(".finger").style.opacity= on?0:1; h.querySelector(".thumb").style.opacity= on?1:0; }
+async function thumbsUp(){
+  ear.style.opacity=0; palm.style.opacity=0; armR.style.transform="rotate(0deg)";
+  thumb(true); armL.style.transform="rotate(150deg)"; await sleep(650); armL.style.transform="rotate(0deg)"; await sleep(250); thumb(false);
+}
+
+/* ============================================================
+   ENGINE — Jon's flowchart, without individual turns
+   ============================================================ */
+// Only taught words are spoken. Restarting a part and opening a delayed test are
+// shown with a symbol, not words (rubric 2h, A14).
+const PHR = { ecoute:["Écoute."], atoi:["À toi."], avous:["À vous."], avecmoi:["Avec moi."] };
+let ctx=null;   // {lesson, ex, delayedRec}
+function logEntry(o){ S.log.push(Object.assign({t:new Date().toISOString()}, o)); if(S.log.length>2000) S.log.shift(); }
+
+async function askAndListen(task, expect){
+  await pointAt(task.target);
+  await say(task.questionUnits);
+  return listen(expect);
+}
+// one presentation of a task (initial or retest). Returns {ok}
+async function giveTask(task, {retest=false, firstSeen=null}={}){
+  await setPortraits(task.paulSide);
+  if(task.model && !retest){
+    if(task.group){
+      // classroom: the teacher models, the model learners answer; the learner watches
+      await setScene("class");
+      await gestureEar(); await say(PHR.ecoute);
+      await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
+      await gesturePalm(); await say(PHR.avous); await pointAt(task.target); await say(task.questionUnits);
+      await say(task.answerUnits, "group"); rest(); await sleep(300);
+      // the group fades: one-to-one. Lead: the teacher says it with the learner; amber border, microphone closed
+      await setScene("one");
+      await gestureLead(); await say(PHR.avecmoi); await pointAt(task.target); await say(task.questionUnits);
+      signal("lead"); await sleep(250); await say(task.answerUnits); signal(false); await sleep(300);
+    } else {
+      await gestureEar(); await say(PHR.ecoute);
+      await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
+    }
+    await gesturePalm(); await say(PHR.atoi);
+  }
+  let r = await askAndListen(task, ["CEST", task.target]);
+  if(r.status==="silence"){            // once more, unscored, in case the microphone failed
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, result:"silence (repeated, unscored)", heard:[], delayed:!!ctx.delayedRec});
+    r = await askAndListen(task, ["CEST", task.target]);
+  }
+  rest();
+  const isFirst = firstSeen && !firstSeen.has(task.id);
+  if(isFirst){ firstSeen.add(task.id);
+    const f = (S.ftc[ctx.exKey] = S.ftc[ctx.exKey] || {new:{c:0,n:0}, review:{c:0,n:0}});
+    f[task.tag].n++; if(r.ok) f[task.tag].c++; }
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, expected:task.answerUnits.join(" "), heard:r.heard.slice(0,3),
+            result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
+  save();
+  if(r.ok) await thumbsUp();
+  return r.ok;
+}
+async function correction(task, nth){
+  await gestureEar(); await say(PHR.ecoute);
+  await pointAt(task.target); await say(task.answerUnits);
+  if(nth>=2){                          // build from the end: narrator says the start, the green border cues the rest
+    await say([task.answerUnits[0]+"…"]);
+    const r=await listen([task.target]); rest();
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, result:"build-from-end step "+(r.ok?"ok":"missed"), heard:r.heard.slice(0,2)});
+    if(!r.ok){ await pointAt(task.target); await say(task.answerUnits); }
+  }
+  await gesturePalm(); await say(PHR.atoi);
+}
+function saveDelayed(part){
+  if(ctx.delayedRec) return;
+  const key=ctx.exKey+"/"+part.id;
+  let d=S.delayed.find(x=>x.key===key);
+  if(!d){ d={key, lesson:ctx.lesson, ex:ctx.ex, part:part.id, repeat:0, fromExercise:ctx.ex, fromLesson:ctx.lesson}; S.delayed.push(d); }
+  d.repeat=0;
+}
+async function runParts(parts, opts){
+  const firstSeen=new Set();
+  const errorsByTask={};               // a second error at the same task (across restarts) brings the build from the end
+  let hadError=false;
+  for(let pi=0; pi<parts.length; pi++){
+    const part=parts[pi]; let runs=0;
+    while(true){                       // firm this part before the next
+      runs++;
+      if(runs>1) await flashIcon("restart");
+      let errors=0;
+      if(part.intro==="atoi" || (runs>1 && !part.tasks[0].model)){ await gesturePalm(); await say(PHR.atoi); rest(); }
+      let ti=0;
+      while(ti<part.tasks.length){
+        const task=part.tasks[ti];
+        const ok=await giveTask(task,{firstSeen});
+        if(ok){ ti++; continue; }
+        errors++; hadError=true; saveDelayed(part); save();
+        let fixed=false;
+        while(!fixed){ errorsByTask[task.id]=(errorsByTask[task.id]||0)+1; await correction(task, errorsByTask[task.id]); fixed=await giveTask(task,{retest:true}); if(!fixed) errors++; }
+        await flashIcon("restart"); ti=0;
+        if(!part.tasks[0].model){ await gesturePalm(); await say(PHR.atoi); rest(); }
+      }
+      if(errors===0) break;
+    }
+  }
+  return hadError;
+}
+async function runExercise(li, ei){
+  const lesson=LESSONS[li], ex=lesson.exercises[ei];
+  ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null};
+  S.lesson=li; S.ex=ei; save();
+  paulSide=null;
+  const hadError = await runParts(ex.parts);
+  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
+}
+async function runDelayed(d){
+  const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson.exercises.find(e=>e.id===d.ex);
+  const part=ex.parts.find(p=>p.id===d.part);
+  ctx={lesson:d.lesson, ex:d.ex, exKey:d.ex+" (delayed)", delayedRec:d};
+  paulSide=null;
+  await flashIcon("bookmark");
+  // a delayed test is passed when the part is completed, errors corrected on the way
+  await runParts([part.tasks[0].model ? part : Object.assign({}, part, {intro:"atoi"})]);
+  d.repeat++; if(d.repeat>=2) S.delayed=S.delayed.filter(x=>x!==d);
+  save();
+}
+
+async function main(){
+  // pending delayed tests from earlier lessons open the lesson
+  const pendingPrev = S.delayed.filter(d=> d.lesson!==LESSONS[S.lesson].id);
+  for(const d of pendingPrev) await runDelayed(d);
+  const lesson=LESSONS[S.lesson];
+  for(let ei=S.ex; ei<lesson.exercises.length; ei++){
+    // delayed test: from exercise 3 on, the part that held an error two exercises back
+    if(ei>=2){ const back=lesson.exercises[ei-2].id; for(const d of S.delayed.filter(x=>x.ex===back)) await runDelayed(d); }
+    if(S.finished[lesson.exercises[ei].id]) continue;
+    await runExercise(S.lesson, ei);
+  }
+  await endScreen();
+}
+async function endScreen(){
+  rest();
+  document.getElementById("tick").style.opacity=1;
+  await thumbsUp();
+  await sleep(1200);
+  document.getElementById("tick").style.opacity=0;
+  showPlay(true);
+}
+
+/* ============================================================
+   START / RESUME
+   ============================================================ */
+let running=false;
+function showPlay(on){ document.getElementById("play").hidden=!on; }
+document.getElementById("playBtn").onclick=async ()=>{
+  if(running) return; running=true; showPlay(false);
+  if(synth){ try{ synth.cancel(); synth.speak(new SpeechSynthesisUtterance("")); }catch(e){} }  // unlock audio on mobile
+  const lesson=LESSONS[S.lesson];
+  if(lesson.exercises.every(e=>S.finished[e.id])){   // prototype has one exercise: replay it
+    lesson.exercises.forEach(e=>delete S.finished[e.id]); S.ex=0; save();
+  }
+  try{ await main(); } finally { running=false; }
+};
+
+/* ============================================================
+   TESTER PANEL (English, for Jon only — never part of teaching)
+   ============================================================ */
+function setStatus(msg){ $("status").dataset.msg=msg; renderPanel(); }
+function renderVoiceSelect(){
+  if(!READY) return;
+  const sel=$("optVoice"); if(!sel) return;
+  sel.innerHTML = voices.length ? voices.map(v=>`<option value="${v.name}">${v.name} (${v.lang})</option>`).join("") : `<option>No French voice found</option>`;
+  const cv=currentVoice(); if(cv) sel.value=cv.name;
+  renderPanel();
+}
+function renderPanel(){
+  if(!READY) return;
+  if(!$("status")) return;
+  const cv=currentVoice();
+  $("status").innerHTML = `Speech recognition: <b>${SR? (recogBroken? "unavailable": "available (fr-FR)") : "not supported in this browser"}</b> · Voice: <b>${cv?cv.name:"none"}</b>` + ($("status").dataset.msg? `<br>${$("status").dataset.msg}`:"");
+  if(S.learnerGender) $("optGender").value=S.learnerGender;
+  $("optCaption").checked=S.settings.caption; $("optManual").checked=S.settings.manual;
+  $("optPause").value=S.settings.pause; $("pauseVal").textContent=S.settings.pause;
+  $("optRate").value=S.settings.rate; $("rateVal").textContent=S.settings.rate;
+  const L=LESSONS[S.lesson];
+  $("progress").innerHTML = `Lesson ${S.lesson+1}, resume point: Exercise ${S.ex+1} (${L.exercises[S.ex].title}) — ${S.finished[L.exercises[S.ex].id]?"finished":"not finished"}.`;
+  const rows=Object.entries(S.ftc).map(([k,f])=>{
+    const cell=(x,crit)=> x.n? `<span class="${x.c/x.n*100>=crit?'ok':'bad'}">${Math.round(x.c/x.n*100)}% (${x.c}/${x.n})</span>` : "—";
+    return `<tr><td>${k}</td><td>${cell(f.new,70)}</td><td>${cell(f.review,90)}</td></tr>`; }).join("");
+  $("ftc").innerHTML = rows? `<table><tr><th>Exercise</th><th>New (≥70%)</th><th>Review (≥90%)</th></tr>${rows}</table>` : `<span class="note">No data yet.</span>`;
+  $("delayedList").textContent = S.delayed.length? S.delayed.map(d=>`${d.key} — passed ${d.repeat}/2`).join("; ") : "None.";
+  const recent=S.log.slice(-200).reverse();
+  $("log").innerHTML = recent.length? `<table><tr><th>Task</th><th>Result</th><th>Heard</th></tr>${recent.map(e=>`<tr><td>${e.task||""}${e.retest?" (retest)":""}${e.delayed?" (delayed)":""}</td><td class="${e.result==='correct'?'ok':(String(e.result).startsWith('ERROR')?'bad':'')}">${e.result}${e.reason? " — "+e.reason:""}</td><td>${(e.heard||[]).map(h=>String(h).replace(/</g,"&lt;")).join(" | ")}</td></tr>`).join("")}</table>` : "";
+}
+$("gear").onclick=()=>{ $("panel").hidden=false; renderPanel(); };
+$("closePanel").onclick=()=>{ $("panel").hidden=true; };
+$("optGender").onchange=e=>{ S.learnerGender=e.target.value; save(); };
+$("optCaption").onchange=e=>{ S.settings.caption=e.target.checked; save(); };
+$("optManual").onchange=e=>{ S.settings.manual=e.target.checked; save(); };
+$("optVoice").onchange=e=>{ S.settings.voice=e.target.value; save(); };
+$("optPause").oninput=e=>{ S.settings.pause=+e.target.value; save(); };
+$("optRate").oninput=e=>{ S.settings.rate=+e.target.value; save(); };
+$("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); const L=LESSONS[S.lesson]; delete S.finished[L.exercises[S.ex].id]; save(); $("panel").hidden=true; };
+$("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d); await endScreen(); } finally{ running=false; } };
+$("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); };
+$("btnDownload").onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="french-di-log.json"; document.body.appendChild(a); a.click(); a.remove(); };
+function alertish(m){ setStatus(m); }
+
+READY=true; load(); renderVoiceSelect(); renderPanel(); rest();
+// asked once, at the very start of the course, with pictures not words; changeable in settings
+if(!S.learnerGender){ $("gender").hidden=false; }
+$("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
+$("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
+setPortraits(LESSONS[S.lesson].exercises[S.ex].parts[0].tasks[0].paulSide);
+window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, thumbsUp, signal, setPortraits, rest, thumb, flashIcon, setScene, gestureLead};
+</script>
+</body>
+</html>
