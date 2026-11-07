@@ -196,6 +196,19 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 
 <script>
 "use strict";
+/* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
+   longer. On every open, ask the server for the current version, bypassing the cache, and reload
+   onto it if this copy is older. */
+const APP_VERSION="2026-11-07.4";
+(function checkVersion(){
+  try{
+    fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
+      if(j && j.version && j.version!==APP_VERSION && !location.search.includes("v="+j.version)){
+        location.replace(location.pathname+"?v="+encodeURIComponent(j.version));
+      }
+    }).catch(()=>{});
+  }catch(e){}
+})();
 const $=id=>document.getElementById(id);
 let READY=false;
 /* ============================================================
@@ -613,7 +626,7 @@ function renderPanel(){
   if(!READY) return;
   if(!$("status")) return;
   const cv=currentVoice();
-  $("status").innerHTML = `Speech recognition: <b>${SR? (recogBroken? "unavailable": "available (fr-FR)") : "not supported in this browser"}</b> · Voice: <b>${cv?cv.name:"none"}</b>` + ($("status").dataset.msg? `<br>${$("status").dataset.msg}`:"");
+  $("status").innerHTML = `Version ${APP_VERSION} · Speech recognition: <b>${SR? (recogBroken? "unavailable": "available (fr-FR)") : "not supported in this browser"}</b> · Voice: <b>${cv?cv.name:"none"}</b>` + ($("status").dataset.msg? `<br>${$("status").dataset.msg}`:"");
   if(S.learnerGender) $("optGender").value=S.learnerGender;
   $("optCaption").checked=S.settings.caption; $("optManual").checked=S.settings.manual;
   $("optPause").value=S.settings.pause; $("pauseVal").textContent=S.settings.pause;
