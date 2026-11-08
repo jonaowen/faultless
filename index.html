@@ -12,7 +12,7 @@
 :root{
   --bg:#f4f1ea; --ink:#22252b; --muted:#6b7079; --frame:#ffffff; --frame-line:#d9d3c7;
   --go:#1fa855; --stop:#d5372e; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
-  --tutor-top:#3d5a73; --tutor-hair:#b5652f; --paul-top:#3f6fb5; --paul-hair:#6b4a2f;
+  --tutor-top:#3d5a73; --tutor-hair:#4a3326; --paul-top:#3f6fb5; --paul-hair:#6b4a2f;
   --julie-top:#c0453b; --julie-hair:#2a1f1a; --panel:#ffffff;
 }
 *{box-sizing:border-box}
@@ -105,14 +105,14 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <g id="tutor">
     <rect x="112" y="300" width="176" height="300" rx="26" fill="#7b5a43"/>
     <!-- back hair -->
-    <path d="M150 330 q0-75 50-78 q50 3 50 78 q0 40-8 60 h-84 q-8-20-8-60z" fill="var(--tutor-hair)"/>
+    <path d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 h-84 q-7-22-5-58z" fill="var(--tutor-hair)"/>
     <!-- torso -->
     <path d="M118 600 v-120 q0-52 52-60 h60 q52 8 52 60 v120z" fill="var(--tutor-top)"/>
     <rect x="186" y="398" width="28" height="26" fill="var(--skin-d)"/>
     <!-- head (nods as a group) -->
     <g id="head" style="transform-box:view-box;transform-origin:200px 400px;transition:transform .16s ease-in-out">
     <ellipse cx="200" cy="352" rx="42" ry="50" fill="var(--skin)"/>
-    <path d="M158 345 q2-52 42-54 q40 2 42 54 q-14-26-42-30 q-28 4-42 30z" fill="var(--tutor-hair)"/>
+    <path d="M157 348 q1-53 43-55 q42 2 43 55 q-10-27-43-31 q-33 4-43 31z" fill="var(--tutor-hair)"/>
     <!-- eyes: whites and pupils, so it is clear whom the teacher is looking at (gaze below) -->
     <g id="eyes">
       <ellipse cx="184" cy="352" rx="6.6" ry="5.6" fill="#fbf8f2"/><ellipse cx="216" cy="352" rx="6.6" ry="5.6" fill="#fbf8f2"/>
@@ -237,7 +237,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.17";
+const APP_VERSION="2026-11-08.19";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -254,11 +254,23 @@ let READY=false;
    An answer is said as one unit (no gap); after an error it is said in its
    units with a pause. An elision or liaison unit (C'est) is never split.
    ============================================================ */
-const PEOPLE = {
-  paul:  {name:"Paul",  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour"]},
-  julie: {name:"Julie", accept:["julie","juli","julye","jolie","joli","july","julia","juliette"]}
+/* Vocabulary. Answers follow DISE (Jon, 8 November 2026): DISE Lesson 1 asks "What is my name?" and the learner
+   says the name; objects are words alone; "What is this? A book" is DISE Lesson 3 and "the whole thing" (This is a
+   book) Lesson 5. So: C'est qui ? → Paul.  C'est quoi ? → Un livre.  Anything other than the intended response is an
+   error, even if it is correct French (Jon: the learner must learn the desired response, or the programme does not work).
+   say: the answer's units (said as one, or in these chunks after an error); art: the article slot it must have;
+   accept: how Chrome's recogniser may spell the word (fallback listener only). */
+const VOCAB = {
+  paul:  {name:"Paul",  kind:"person", say:["Paul."],  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour"]},
+  julie: {name:"Julie", kind:"person", say:["Julie."], accept:["julie","juli","julye","jolie","joli","july","julia","juliette"]},
+  livre: {name:"livre", kind:"object", art:"UN",  say:["Un","livre."],  accept:["livre","livres","libre","lièvre","lire","lèvre","liv"]},
+  pomme: {name:"pomme", kind:"object", art:"UNE", say:["Une","pomme."], accept:["pomme","pommes","paume","pom","pome","pomm"]},
 };
+const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
+// function-word slots in an expected answer, with the spellings Chrome may give them
+const expectOf = id => VOCAB[id].art ? [VOCAB[id].art, id] : [id];
 const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","sai","cet","c'","s'","cé","sé","saint","sain","sein"];
+const SLOT = { CEST, UN:["un","1","hun","hein"], UNE:["une","1","eune","üne"] };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
 /* Script structure (NIFDI part-firming handout):
@@ -269,11 +281,16 @@ const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
    Part-firming repeats tasks, never models: after a correction the part's tasks are repeated; a short
    exercise is gone through again as its test tasks; a delayed test gives a part's test tasks only.
    Task kinds: "lead" (learner says it with the teacher; microphone closed, not scored) and "test" (scored). */
-const Q = ["C'est qui ?"];
-const A = who => ["C'est", PEOPLE[who].name + "."];
-function Model(target, paulSide, o={}){ return Object.assign({type:"model", target, paulSide, questionUnits:Q, answerUnits:A(target)}, o); }
-function Lead(id, target, paulSide){ return {type:"task", kind:"lead", id, target, paulSide, questionUnits:Q, answerUnits:A(target)}; }
-function Test(id, target, paulSide, tag="new"){ return {type:"task", kind:"test", id, target, paulSide, tag, questionUnits:Q, answerUnits:A(target)}; }
+const Q = ["C'est qui ?"], Q2 = ["C'est quoi ?"];
+const A = id => VOCAB[id].say;
+// scene: the two picture frames, e.g. {L:"livre:1", R:"pomme:2"} (item:instance); "L"/"R" = the side Paul is on (Exercise 1)
+const sceneOf = sc => typeof sc==="string" ? {L: sc==="L"?"paul":"julie", R: sc==="L"?"julie":"paul"} : sc;
+function Model(target, sc, o={}, q=Q){ return Object.assign({type:"model", target, scene:sceneOf(sc), questionUnits:q, answerUnits:A(target)}, o); }
+function Lead(id, target, sc, q=Q){ return {type:"task", kind:"lead", id, target, scene:sceneOf(sc), questionUnits:q, answerUnits:A(target)}; }
+function Test(id, target, sc, tag="new", q=Q){ return {type:"task", kind:"test", id, target, scene:sceneOf(sc), tag, questionUnits:q, answerUnits:A(target)}; }
+// several things of the same kind, named one after the other with no question (DISE L1 Ex 2, steps c and d: "Book… book… book")
+function ModelSet(target, sc){ return {type:"model", set:true, target, scene:sceneOf(sc), questionUnits:[], answerUnits:A(target)}; }
+const M2=(t,sc,o)=>Model(t,sc,o,Q2), L2=(id,t,sc)=>Lead(id,t,sc,Q2), T2=(id,t,sc)=>Test(id,t,sc,"new",Q2);
 
 const LESSONS = [{
   id:"L1",
@@ -289,6 +306,28 @@ const LESSONS = [{
         Test("L1E1-T4","julie","L") ]},
       { id:"P2", label:"Mixed test", items:[                    // three questions: each name in its other frame; not strictly alternating
         Test("L1E1-T5","julie","R"), Test("L1E1-T6","paul","R"), Test("L1E1-T7","paul","L") ]}
+    ]
+  },{
+    // DISE Lesson 1, Exercise 2 (book, cup): each word modelled, led and tested; then several of each kind named in turn
+    // (steps c, d); then a mixed test (steps e, f: cup, book, book, cup, cup). Different-looking books and apples, so the
+    // word is the name of the kind, not of one picture; positions change so they never predict the answer.
+    id:"L1E2", title:"C'est quoi ?", track:"A",
+    parts:[
+      { id:"P1", label:"Introduction: un livre, then une pomme", items:[
+        M2("livre",{L:"livre:1",R:"pomme:1"},{classroom:true}),
+        L2("L1E2-T1","livre",{L:"livre:1",R:"pomme:1"}),
+        T2("L1E2-T2","livre",{L:"livre:1",R:"pomme:1"}),
+        M2("pomme",{L:"livre:1",R:"pomme:1"},{classroom:true}),
+        L2("L1E2-T3","pomme",{L:"livre:1",R:"pomme:1"}),
+        T2("L1E2-T4","pomme",{L:"livre:1",R:"pomme:1"}) ]},
+      { id:"P2", label:"Other books and apples, then a mixed test", items:[
+        ModelSet("livre",{L:"livre:2",R:"livre:3"}),
+        ModelSet("pomme",{L:"pomme:2",R:"pomme:3"}),
+        T2("L1E2-T5","pomme",{L:"livre:2",R:"pomme:3"}),
+        T2("L1E2-T6","livre",{L:"pomme:2",R:"livre:3"}),
+        T2("L1E2-T7","livre",{L:"livre:1",R:"pomme:2"}),
+        T2("L1E2-T8","pomme",{L:"pomme:1",R:"livre:2"}),
+        T2("L1E2-T9","pomme",{L:"livre:3",R:"pomme:1"}) ]}
     ]
   }]
 }];
@@ -613,14 +652,14 @@ function judge(text, expect, echoes=[], alsoOk=[]){
   if(!t.length) return {ok:false, reason:"only the app's own words heard", echoOnly:true};
   const fits = want => { if(!t.length || t.length%want.length) return null; let near=[];
     for(let i=0;i<t.length;i++){ const e=want[i%want.length], w=t[i];
-      if(e==="CEST"){ if(!CEST.includes(w)) return null; }
+      if(SLOT[e]){ if(!SLOT[e].includes(w)) return null; }
       else { const r=nameOf(w); if(!r || r.n!==e) return null; if(r.near) near.push(w); } }
     return near; };
   for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(nr) return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
   const target = expect[expect.length-1];
   const said = t.map(nameOf).filter(Boolean).map(r=>r.n);
   if(said.some(n=>n!==target)) return {ok:false, reason:"wrong name"};
-  if(expect[0]==="CEST" && t.length===1 && said[0]===target) return {ok:false, reason:"name without c'est"};
+  if(SLOT[expect[0]] && t.length===1 && said[0]===target) return {ok:false, reason:"word without its "+(expect[0]==="CEST"?"c'est":"article")};
   return {ok:false, reason:"not the expected words"};
 }
 
@@ -632,11 +671,15 @@ function stopRec(){ recGen++; if(activeR){ try{ activeR.onresult=activeR.onend=a
 async function synthIdle(){ const t=Date.now(); while(synth && (synth.speaking||synth.pending) && Date.now()-t<3000) await sleep(40); }
 function listen(expect, alsoOk=[]){
   // an echo that is, contains, or is made only of parts of the answer is never removed
-  const partOf = w => (expect.includes("CEST") && CEST.includes(w)) || (()=>{ const r=nameOf(w); return !!(r && expect.includes(r.n)); })();
+  const partOf = w => expect.concat(...alsoOk).some(e=>SLOT[e] && SLOT[e].includes(w)) || (()=>{ const r=nameOf(w); return !!(r && expect.includes(r.n)); })();
   const echoes = recentSaid.map(u=>tokensOf(u)).filter(e=> e.length && !e.some(w=>{ const r=nameOf(w); return r && expect.includes(r.n); }) && !e.every(partOf));
   recentSaid=[];
   if(S.settings.manual || recogBroken){ signal("listen"); return listenManual(expect); }
-  if(S.settings.engine!=="google" && !localBroken && window.LISTENER && LISTENER.ready && LISTENER.audioReady) return listenLocal(expect, alsoOk);
+  // the in-app listener is used only for answers its model has been validated on (listener.json "validated");
+  // anything else goes to Chrome's recogniser until a model that knows it ships
+  const validated = window.LISTENER && LISTENER.json && LISTENER.json.validated || [];
+  if(S.settings.engine!=="google" && !localBroken && window.LISTENER && LISTENER.ready && LISTENER.audioReady
+     && [expect, ...alsoOk].every(w=>validated.includes(phraseOf(w)))) return listenLocal(expect, alsoOk);
   return new Promise(async resolve=>{
     stopRec();
     await synthIdle(); const cueEnd=lastSpeechEnd;   // the cue (the last thing the teacher says) has finished
@@ -693,8 +736,9 @@ function listen(expect, alsoOk=[]){
 /* Judging rule (chosen on held-out recordings): the best-scoring possible answer is taken only if the model's own
    free transcript says the same words ("text"). The older rule ("margin") took it if it scored close to the transcript. */
 const LISTEN = { rule:"text", T: 0.3 };
-const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿ' ]/g," ").replace(/\beuh\b/g," ").replace(/\s+/g," ").trim();
-function phraseOf(want){ const names=want.filter(w=>w!=="CEST").map(n=>PEOPLE[n].name); return (want[0]==="CEST" ? "C'est "+names.join(" ") : names.join(" "))+"."; }
+const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿ' ]/g," ").replace(/\s+/g," ").trim();   // a hesitation (euh) is not the intended response
+function phraseOf(want){ const w=want.map(x=> x==="CEST"?"c'est" : x==="UN"?"un" : x==="UNE"?"une" : VOCAB[x].name).join(" ");
+  return w.charAt(0).toUpperCase()+w.slice(1)+"."; }
 function candidatePhrases(){
   const c=[]; for(const n of Object.keys(PEOPLE)){ const N=PEOPLE[n].name; c.push(`C'est ${N}.`, `${N}.`, `Euh, c'est ${N}.`); }
   return c.concat(["C'est.","C'est qui ?","Il est Paul.","Elle est Julie.","Il est Julie.","Elle est Paul.","C'est David.","C'est Marie.","Oui.","Non.","Je ne sais pas."]);
@@ -706,11 +750,11 @@ function verdictLocal(rec, expect, alsoOk){
   const acc=[expect, ...alsoOk].map(w=>normSaid(phraseOf(w)));
   if(acc.includes(said)) return {ok:true, reason:"", best:rec.transcript};
   const target=expect[expect.length-1];
-  const names=Object.keys(PEOPLE).map(n=>PEOPLE[n].name.toLowerCase());
+  const names=Object.keys(VOCAB).map(n=>VOCAB[n].name.toLowerCase());
   const words=said.split(" ");
   if(!said) return {ok:false, reason:"unclear", best:""};
-  if(names.some(n=>n!==PEOPLE[target].name.toLowerCase() && words.includes(n))) return {ok:false, reason:"wrong name", best:rec.transcript};
-  if(said===PEOPLE[target].name.toLowerCase() && expect[0]==="CEST") return {ok:false, reason:"name without c'est", best:rec.transcript};
+  if(names.some(n=>n!==VOCAB[target].name.toLowerCase() && words.includes(n))) return {ok:false, reason: VOCAB[target].kind==="person"?"wrong name":"wrong word", best:rec.transcript};
+  if(said===VOCAB[target].name.toLowerCase() && SLOT[expect[0]]) return {ok:false, reason:"word without its article", best:rec.transcript};
   return {ok:false, reason:"not the expected words", best:rec.transcript};
 }
 let clipSeq=0, localBroken=false;
@@ -788,15 +832,64 @@ function portrait(who){
      <text x="80" y="166" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522">${PEOPLE[who].name}</text></g>`;
   return g;
 }
+/* Objects for Exercise 2: three different books and three different apples (DISE: several of a kind, so the word names
+   the kind, not one picture). Drawn in the 160 x 190 frame, with soft gradients and a contact shadow. */
+let picSeq=0;
+function objectPicture(id, inst){
+  const g=document.createElementNS(svgNS,"g"), u="p"+(picSeq++);
+  const shadow=(cx,cy,rx)=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${rx*0.16}" fill="#000" opacity=".12"/>`;
+  if(id==="livre"){
+    const B={1:{c:"#b23a32",d:"#7e2620",l:"#d4554b"},2:{c:"#2f5d8c",d:"#1f3f60",l:"#4a7db0"},3:{c:"#3d7a4f",d:"#285436",l:"#5a9a6c"}}[inst]||{c:"#b23a32",d:"#7e2620",l:"#d4554b"};
+    if(inst===2){        // a book standing up, seen from the front, slightly turned
+      g.innerHTML=`<defs><linearGradient id="${u}a" x1="0" x2="1"><stop offset="0" stop-color="${B.d}"/><stop offset=".25" stop-color="${B.c}"/><stop offset="1" stop-color="${B.l}"/></linearGradient></defs>
+        ${shadow(82,168,46)}
+        <path d="M44 40 L104 32 L116 40 L116 166 L56 172 L44 164 Z" fill="${B.d}"/>
+        <path d="M56 46 L116 40 L116 166 L56 172 Z" fill="url(#${u}a)"/>
+        <path d="M44 40 L56 46 L56 172 L44 164 Z" fill="${B.d}"/>
+        <path d="M66 70 L106 66 M66 80 L100 77" stroke="#f1e3c6" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+        <path d="M66 140 L106 136" stroke="#f1e3c6" stroke-width="2" opacity=".6"/>`;
+    } else if(inst===3){ // an open book lying flat
+      g.innerHTML=`<defs><linearGradient id="${u}p" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fffdf7"/><stop offset="1" stop-color="#e9e1cf"/></linearGradient></defs>
+        ${shadow(80,150,66)}
+        <path d="M14 128 Q46 116 80 128 Q114 116 146 128 L146 140 Q114 128 80 140 Q46 128 14 140 Z" fill="${B.d}"/>
+        <path d="M18 76 Q48 64 80 78 L80 132 Q48 120 18 130 Z" fill="url(#${u}p)" stroke="#cfc4ad" stroke-width="1"/>
+        <path d="M142 76 Q112 64 80 78 L80 132 Q112 120 142 130 Z" fill="url(#${u}p)" stroke="#cfc4ad" stroke-width="1"/>
+        <path d="M80 78 L80 132" stroke="#b9ad94" stroke-width="1.5"/>
+        ${[0,1,2,3,4].map(i=>`<path d="M28 ${88+i*8} Q50 ${80+i*8} 72 ${90+i*8}" stroke="#a9a08c" stroke-width="1.6" fill="none" opacity=".7"/><path d="M88 ${90+i*8} Q110 ${80+i*8} 132 ${88+i*8}" stroke="#a9a08c" stroke-width="1.6" fill="none" opacity=".7"/>`).join("")}`;
+    } else {             // a closed hardback lying flat, three-quarter view
+      g.innerHTML=`<defs><linearGradient id="${u}a" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${B.l}"/><stop offset="1" stop-color="${B.c}"/></linearGradient></defs>
+        ${shadow(80,146,64)}
+        <path d="M20 112 L96 136 L142 104 L142 116 L96 150 L20 126 Z" fill="${B.d}"/>
+        <path d="M24 112 L96 134 L138 106 L138 112 L96 142 L24 120 Z" fill="#f4ecdb"/>
+        <path d="M24 116 L96 138 M24 119 L96 141" stroke="#d8ccb2" stroke-width="1"/>
+        <path d="M20 108 L66 76 L142 100 L96 132 Z" fill="url(#${u}a)"/>
+        <path d="M58 96 L104 86 M66 102 L98 95" stroke="#f1e3c6" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>`;
+    }
+  } else if(id==="pomme"){
+    const A={1:{c:"#c9302c",d:"#8f1d1b",l:"#ef6a55"},2:{c:"#7fb03a",d:"#4f7a1f",l:"#b6d86c"},3:{c:"#e2a23a",d:"#c0462e",l:"#f7d36b"}}[inst]||{c:"#c9302c",d:"#8f1d1b",l:"#ef6a55"};
+    const sc = inst===2 ? 0.92 : inst===3 ? 1.0 : 1.06;
+    g.innerHTML=`<defs><radialGradient id="${u}r" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="${A.l}"/><stop offset=".55" stop-color="${A.c}"/><stop offset="1" stop-color="${A.d}"/></radialGradient></defs>
+      ${shadow(80,156,48*sc)}
+      <g transform="translate(80 108) scale(${sc}) translate(-80 -108)">
+        <path d="M80 66 C62 52 30 58 30 96 C30 132 54 156 72 154 C76 153 78 151 80 151 C82 151 84 153 88 154 C106 156 130 132 130 96 C130 58 98 52 80 66 Z" fill="url(#${u}r)"/>
+        <path d="M80 68 C78 58 79 50 84 42" stroke="#5a3a22" stroke-width="4" fill="none" stroke-linecap="round"/>
+        ${inst!==3?`<path d="M84 50 C92 36 110 36 116 42 C108 52 94 56 84 50 Z" fill="#5f9a3a"/><path d="M86 49 C96 45 106 42 114 42" stroke="#3f6f24" stroke-width="1.2" fill="none"/>`:""}
+        <ellipse cx="58" cy="86" rx="9" ry="14" fill="#fff" opacity=".22" transform="rotate(-20 58 86)"/>
+      </g>`;
+  }
+  return g;
+}
 const slotL=document.getElementById("slotL"), slotR=document.getElementById("slotR");
-let paulSide=null;
-async function setPortraits(side){
-  if(side===paulSide) return;
-  const first = paulSide===null;
+let curScene=null, curSceneKey=null;
+function picture(spec){ const [id,inst]=spec.split(":"); return VOCAB[id].kind==="person" ? portrait(id) : objectPicture(id, +inst||1); }
+async function setPortraits(sc){
+  sc=sceneOf(sc); if(!sc) return; const key=sc.L+"|"+sc.R;
+  if(key===curSceneKey) return;
+  const first = curSceneKey===null;
   if(!first){ slotL.style.opacity=0; slotR.style.opacity=0; await sleep(260); }
-  slotL.replaceChildren(portrait(side==="L"?"paul":"julie"));
-  slotR.replaceChildren(portrait(side==="L"?"julie":"paul"));
-  paulSide=side;
+  slotL.replaceChildren(picture(sc.L));
+  slotR.replaceChildren(picture(sc.R));
+  curScene=sc; curSceneKey=key;
   slotL.style.opacity=1; slotR.style.opacity=1; await sleep(first?0:260);
 }
 const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
@@ -891,7 +984,7 @@ async function setScene(which){
   const demo = which==="class";
   const scr=document.getElementById("screen");
   if(demo){
-    innerColour(false); gaze("learner"); Object.keys(PEOPLE).forEach(n=>learnerClip("C'est "+PEOPLE[n].name+"."));
+    innerColour(false); gaze("learner"); Object.keys(VOCAB).forEach(n=>learnerClip(VOCAB[n].say.join(" ")));
     ["demoBg","phoneBody","screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=1);
     scr.style.transform="translate(100px,40px) scale(.5)";          // the app shrinks into the model learner's phone (phone and stand move with it)
     await sleep(950);
@@ -921,7 +1014,9 @@ async function gestureEar(){ offering=false; await ARMS.go(POSE.myTurn, 300); } 
 // "À toi" (your turn): one arm reaches towards the learner, palm up, and stays there through the question and the answer;
 // the other arm points to the picture (Zig's "your turn"; Jerry's hand towards the learner as the response comes)
 let offering=false;
-const sideOf = target => target ? ((target==="paul") ? paulSide : (paulSide==="L"?"R":"L")) : "R";
+// which frame holds the item ("L"/"R" may also be given directly, e.g. to point at each of two books in turn)
+const sideOf = target => { if(target==="L"||target==="R") return target; if(!curScene || !target) return "R";
+  return curScene.L.split(":")[0]===target ? "L" : "R"; };
 const otherArm = side => side==="L" ? "R" : "L";
 function palmUp(arm){ return {x: arm==="L"?176:224, y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}; }
 async function gesturePalm(target){ offering=true; const arm=otherArm(sideOf(target)); await ARMS.go({[arm]:palmUp(arm)}, 320); }
@@ -931,10 +1026,17 @@ function audioUnlock(){ try{ actx = actx || new (window.AudioContext||window.web
 function tone(freq, t0, dur, vol){ const o=actx.createOscillator(), g=actx.createGain(); o.type="sine"; o.frequency.value=freq;
   g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
   o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+dur+0.02); }
+// a bell-like note: the fundamental with two softer overtones, quick attack, ringing decay
+function bell(freq, t0, dur, vol){
+  [[1,1],[2,0.32],[3.01,0.12]].forEach(([m,a])=>{ const o=actx.createOscillator(), g=actx.createGain(); o.type="sine"; o.frequency.value=freq*m;
+    g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol*a,t0+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur/m**0.5);
+    o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+dur+0.05); });
+}
 async function ding(big=false){
   trace(big? "chime (exercise done)" : "ding");
-  try{ audioUnlock(); if(actx){ const t=actx.currentTime+0.02; tone(1318.5,t,0.35,0.25); tone(1975.5,t+0.09,big?0.7:0.45,0.2); if(big) tone(2637,t+0.2,0.8,0.15); } }catch(e){}
-  await sleep(big? 900 : 450);
+  try{ audioUnlock(); if(actx){ const t=actx.currentTime+0.02;
+    bell(1046.5,t,0.5,0.45); bell(1568,t+0.12,big?0.9:0.6,0.5); if(big) bell(2093,t+0.26,1.0,0.4); } }catch(e){}
+  await sleep(big? 1000 : 620);
 }
 // a nod: the affirmation that goes with the ding (DISE: "nod and have him do it again")
 async function nod(){ const h=document.getElementById("head"); for(let k=0;k<2;k++){ h.style.transform="translateY(7px) rotate(0.01deg)"; await sleep(170); h.style.transform="translateY(0px)"; await sleep(170); } }
@@ -979,18 +1081,22 @@ function thinkTime(t, {retest=false, prevTarget=null, firstOfItem=false}={}){
   if(prevTarget && prevTarget!==t.target) return 800;   // a switch to the other item
   return 500;                             // the same item again
 }
-async function askAndListen(task, expect, think=500){
+async function askAndListen(task, expect, think=500, alsoOk=[]){
   await pointAt(task.target);             // focus
   await sleep(think);                     // think time
   recentSaid=[];                          // only the cue can be picked up by the microphone, so only it counts as an echo
   await say(task.questionUnits);          // cue
-  return listen(expect);                  // signal at 0.5 s, then the learner responds
+  return listen(expect, alsoOk);          // signal at 0.5 s, then the learner responds
 }
 // Model (not a task). First appearance: someone using the app on a phone, with several models; otherwise a plain model.
 async function presentModel(m){
   curTask="model "+m.target;
-  await setPortraits(m.paulSide);
-  if(m.classroom){
+  await setPortraits(m.scene);
+  if(m.set){                                   // "Un livre… un livre." — pointing to each in turn, no question
+    ph("model: several of a kind");
+    await gestureEar(); await say(PHR.amoi);
+    for(const side of ["L","R"]){ await pointAt(side); await sleep(250); await say(answerUnits(m)); await sleep(350); }
+  } else if(m.classroom){
     await setScene("class");
     ph("model learner: model");
     await gestureEar(); await say(PHR.amoi);
@@ -1015,21 +1121,21 @@ async function presentModel(m){
 }
 // Lead task: green border, the teacher says the answer with the learner; microphone closed, not scored
 async function presentLead(t){
-  curTask=t.id; await setPortraits(t.paulSide); ph("lead");
+  curTask=t.id; await setPortraits(t.scene); ph("lead");
   await gestureLead(); await say(PHR.avecmoi); await pointAt(t.target); await say(t.questionUnits);
   await untilSignal(); signal("lead"); await say(answerUnits(t)); signal(false); rest(); await sleep(300);
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
 async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=500, quiet=false}={}){
-  curTask=t.id; await setPortraits(t.paulSide);
+  curTask=t.id; await setPortraits(t.scene);
   if(atoi){ await gesturePalm(t.target); await say(PHR.atoi); }  // announce
   else offering=true;                                             // the "your turn" hand goes out with every test question
   ph(retest? "retest" : "test");
-  let r = await askAndListen(t, ["CEST", t.target], think);
+  let r = await askAndListen(t, expectOf(t.target), think);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
-    r = await askAndListen(t, ["CEST", t.target], think);
+    r = await askAndListen(t, expectOf(t.target), think);
   }
   rest();
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
@@ -1051,10 +1157,10 @@ async function correction(task, nth){
   ph("correction "+nth);
   await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake"), hand on chest
   await pointAt(task.target); await say(answerUnits(task));
-  if(nth>=2){                          // build from the end: narrator says the start, the green border cues the rest
+  if(nth>=2 && task.answerUnits.length>1){   // build from the end: narrator says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
     ph("build from end");
-    const r=await listen([task.target], [["CEST", task.target]]); rest();
+    const r=await listen([task.target]); rest();          // the learner says the rest
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6), ...lx(r)});
     if(!r.ok){ await pointAt(task.target); await say(answerUnits(task)); }
   }
@@ -1142,7 +1248,7 @@ async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
   ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
   S.lesson=li; S.ex=ei; save();
-  paulSide=null;
+  curSceneKey=null;
   const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};
   const firstSeen=new Set(), errorsByTask={};
   let hadError = await runParts(ex.parts, {firstSeen, errorsByTask, anchor});
@@ -1160,7 +1266,7 @@ async function runDelayed(d, anchor){
   const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson && lesson.exercises.find(e=>e.id===d.ex);
   const part=ex && ex.parts.find(p=>p.id===d.part); if(!part){ S.delayed=S.delayed.filter(x=>x!==d); save(); return; }
   ctx={lesson:d.lesson, ex:d.ex, exKey:d.ex+" (delayed)", delayedRec:d, part:part.id};
-  paulSide=null;
+  curSceneKey=null;
   await flashIcon("bookmark");
   trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
   const hadError = await runParts([part], {run:"test", anchor});
@@ -1296,7 +1402,7 @@ READY=true; load(); renderVoiceSelect(); renderPanel(); rest();
 if(!S.learnerGender){ $("gender").hidden=false; }
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
-setPortraits(LESSONS[S.lesson].exercises[S.ex].parts[0].items[0].paulSide);
+setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, flashIcon, setScene, gestureLead};
 </script>
 </body>
