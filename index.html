@@ -229,7 +229,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.12";
+const APP_VERSION="2026-11-08.13";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -461,6 +461,20 @@ function faceZoom(on){ const r=document.getElementById("room");
   const sc = document.getElementById("demoBg").style.opacity==="1" ? 4.2 : 3.2;   // larger on the model learner's phone
   r.style.transform = on ? `translate(${200-200*sc}px,${330-352*sc}px) scale(${sc})` : "translate(0px,40px) scale(1)"; }
 
+/* The model learner's voice: recorded clips in a second French voice, so the learner can be heard saying the
+   answer at the same time as the teacher (two voices at once is not possible with the phone's speech). */
+const LEARNER_CLIP = t => "audio/learner/"+t.toLowerCase().replace(/[’']/g,"").replace(/[^a-zà-ÿ ]/g,"").trim().replace(/\s+/g,"_")+".mp3";
+const clipBufs={};
+async function learnerClip(text){
+  const url=LEARNER_CLIP(text);
+  if(!(url in clipBufs)) clipBufs[url]=(async()=>{ audioUnlock(); const r=await fetch(url); if(!r.ok) throw new Error("no clip "+url); return await actx.decodeAudioData(await r.arrayBuffer()); })().catch(e=>{ trace(String(e.message||e)); return null; });
+  return clipBufs[url];
+}
+async function playLearner(text, delay=0){       // resolves when the clip has finished (false if there is no clip)
+  const buf=await learnerClip(text); if(!buf || !actx) return false;
+  return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; const g=actx.createGain(); g.gain.value=0.9;
+    src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(actx.currentTime+delay/1000); });
+}
 function speakOne(text, opts={}){
   return new Promise(res=>{
     if(!synth){ setTimeout(res, 400); return; }
@@ -471,7 +485,7 @@ function speakOne(text, opts={}){
     u.onend=fin; u.onerror=fin;
     if(!opts.group){
       const plan = MOUTH.plan(text);
-      u.onstart=()=>MOUTH.start(plan, S.settings.rate);
+      u.onstart=()=>{ MOUTH.start(plan, S.settings.rate); if(opts.withLearner) opts.withLearner(); };
       u.onboundary=e=>{ if(e.name==="word" || e.name===undefined) MOUTH.word(plan, e.charIndex); };
     }
     setTimeout(fin, 900 + text.length*140);   // safety net: some browsers drop onend
@@ -486,7 +500,16 @@ async function say(units, who="tutor", pause=S.settings.pause){
   const tutorTalks = who!=="group", groupTalks = who!=="tutor";
   if(tutorTalks) document.getElementById("tutor").classList.add("talk");
   if(groupTalks) document.getElementById("classroom").classList.add("gtalk");
-  for(let i=0;i<units.length;i++){
+  if(who==="group" && units.length===1 && await playLearner(units[0])){ /* the model learner answers in their own voice */ }
+  else if(who==="both" && units.length===1){
+    await learnerClip(units[0]);                         // ready before the teacher starts
+    let learnerDone=Promise.resolve(), started=false;
+    const go=()=>{ if(started) return; started=true; learnerDone=playLearner(units[0], 60); };   // a beat behind the teacher, as a learner following
+    const backup=setTimeout(go, 400);                    // in case the phone does not report when speech starts
+    await speakOne(units[0], {withLearner: go}); clearTimeout(backup);
+    await learnerDone;
+  }
+  else for(let i=0;i<units.length;i++){
     await speakOne(units[i], {group: who==="group"});
     if(i<units.length-1) await sleep(pause);
   }
@@ -823,7 +846,7 @@ async function setScene(which){
   const demo = which==="class";
   const scr=document.getElementById("screen");
   if(demo){
-    innerColour(false); gaze("learner");
+    innerColour(false); gaze("learner"); Object.keys(PEOPLE).forEach(n=>learnerClip("C'est "+PEOPLE[n].name+"."));
     ["demoBg","screenBg","innerBorder","classroom"].forEach(id=>document.getElementById(id).style.opacity=1);
     scr.style.transform="translate(100px,40px) scale(.5)";          // the app, shown on the model learner's phone
     await sleep(950);
