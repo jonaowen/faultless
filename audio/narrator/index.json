@@ -1,0 +1,38 @@
+{
+"watch": {
+"text": "Watch how this learner uses the app.",
+"dur": 2.14
+},
+"red": {
+"text": "When the border is red, the learner just listens, and says nothing.",
+"dur": 3.84
+},
+"avec_a": {
+"text": "When the teacher says,",
+"dur": 1.1
+},
+"avec_b": {
+"text": "the border turns green, and the learner says the answer at the same time as the teacher. Listen to both voices together.",
+"dur": 6.87
+},
+"again": {
+"text": "Again. Together, at the same time.",
+"dur": 2.38
+},
+"vasy_a": {
+"text": "When the teacher says,",
+"dur": 1.1
+},
+"vasy_b": {
+"text": "the border turns green, and the learner says only the answer, on their own.",
+"dur": 4.34
+},
+"only": {
+"text": "The learner never repeats what the teacher says. They only say the answer, and only when the border is green.",
+"dur": 5.9
+},
+"yourturn": {
+"text": "Now it's your turn. Speak clearly and loudly.",
+"dur": 3.06
+}
+}

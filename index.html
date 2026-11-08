@@ -35,6 +35,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 .howto .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
 .howto .ph.red{border-color:var(--stop)}
 #play:not(.afterDemo) .howto.after{display:none}
+.howto.before{display:none}
 #play.afterDemo .howto.before{display:none}
 #howto_unused .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
 #play button{width:128px;height:128px;border-radius:50%;border:0;background:var(--go);box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -296,6 +297,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <button id="btnDelayed">Run pending delayed tests</button>
     <button id="btnReset">Reset all progress</button>
     <button id="btnDownload">Download log</button>
+    <button id="btnIntro">Replay the introduction</button>
   </div>
   <h3>First-time correct</h3>
   <div id="ftc"></div>
@@ -313,7 +315,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.24";
+const APP_VERSION="2026-11-08.25";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -416,7 +418,7 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:7, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:7, introSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
@@ -636,6 +638,15 @@ async function playTeacher(text, onStart){
     src.start(actx.currentTime+0.02);
     setTimeout(()=>{ MOUTH.startTimeline(meta.phones); onStart&&onStart(); }, 20+lat);
   });
+}
+/* The introduction's narrator: English, a different voice from the teacher, never moving the teacher's mouth. */
+const NARR={}; 
+async function narrate(key){
+  audioUnlock(); trace("narrator: "+key);
+  if(!(key in NARR)) NARR[key]=fetch("audio/narrator/"+key+".mp3").then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&actx.decodeAudioData(b)).catch(()=>null);
+  const buf=await NARR[key]; if(!buf||!actx){ await sleep(1500); return; }
+  await new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.onended=res; src.start(actx.currentTime+0.02); });
+  await sleep(250);
 }
 async function speakTeacher(text, opts={}){ if(!(await playTeacher(text, opts.withLearner))) await speakOne(text, opts); }
 /* The model learner's voice: recorded clips in a second French voice, so the learner can be heard saying the
@@ -1242,6 +1253,8 @@ async function presentModel(m){
     ph("model: several of a kind");
     await gestureEar(); await say(PHR.amoi);
     for(const side of ["L","R"]){ await pointAt(side); await sleep(250); await say(answerUnits(m)); await sleep(350); }
+  } else if(m.classroom && m.classLead && !S.introSeen){
+    await presentIntro(m);
   } else if(m.classroom){
     await setScene("class");
     ph("model learner: model");
@@ -1264,6 +1277,33 @@ async function presentModel(m){
     await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3);
   }
   rest();
+}
+/* The introduction (Jon, 8 November 2026, after testing with his family): a narrated demo in English of what the learner
+   does, shown by the on-screen learner. Red border: listen only. "Avec moi": say the answer at the same time as the
+   teacher (shown three times: the most confusing part for testers). "Vas-y": say only the answer, alone. Never repeat
+   what the teacher says. The French words are heard in the teacher's own voice. */
+async function presentIntro(m){
+  ph("introduction"); await setScene("class");
+  await narrate("watch");
+  await narrate("red");
+  await gestureEar(); await say(PHR.amoi); await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3, true); rest(); await sleep(400);
+  for(let k=0;k<3;k++){
+    if(k===0){ await narrate("avec_a"); await gestureLead(); await say(PHR.avecmoi); rest(); await sleep(200); await narrate("avec_b"); }
+    else await narrate("again");
+    ph("introduction: lead "+(k+1));
+    await gestureLead(); await say(PHR.avecmoi); await pointAt(m.target); await say(m.questionUnits);
+    await untilSignal(); glow(true); await say(answerUnits(m), "both"); glow(false); rest(); await sleep(600);
+  }
+  await narrate("vasy_a"); await gesturePalm(m.target); await say(PHR.atoi); rest(); await sleep(200); await narrate("vasy_b");
+  ph("introduction: test");
+  await gesturePalm(m.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(m.target); })()]); await sleep(AFTER_ATOI); await say(m.questionUnits);
+  await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
+  smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(500);
+  await narrate("only");
+  await setScene("one");
+  S.introSeen=true; save();
+  ph("after the introduction: your turn");
+  const waitTap = afterDemoScreen(); narrate("yourturn"); await waitTap;   // "Speak clearly and loudly" on screen and spoken
 }
 // Lead task: green border, the teacher says the answer with the learner; microphone closed, not scored
 async function presentLead(t){
@@ -1550,6 +1590,7 @@ async function saveRun(){
   return Object.keys(clips).length;
 }
 $("btnDownload").onclick=saveRun;
+$("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); S.introSeen=false; S.lesson=0; S.ex=0; delete S.finished[LESSONS[0].exercises[0].id]; save(); location.reload(); };
 $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const n=await saveRun(); b.classList.remove("busy"); b.classList.add("done"); setTimeout(()=>b.classList.remove("done"),1500); };
 function alertish(m){ setStatus(m); }
 
