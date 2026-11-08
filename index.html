@@ -307,7 +307,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.22";
+const APP_VERSION="2026-11-08.23";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -810,7 +810,13 @@ function listen(expect, alsoOk=[]){
     R.onresult=e=>{ if(gen!==recGen) return; heardAny=true; last=Date.now(); results=Array.from(e.results); };
     R.onerror=e=>{ if(gen!==recGen) return; trace("recogniser error: "+e.error);
       if(e.error==="not-allowed"||e.error==="service-not-allowed"||e.error==="network"||e.error==="audio-capture"){ recogBroken=true; setStatus("Speech recognition unavailable ("+e.error+"). Switched to manual mode."); finished=true; clearInterval(tick); stopRec(); signal("listen"); resolve(listenManual(expect)); } };
-    R.onend=()=>{ if(finished || gen!==recGen) return; if(!heardAny && !restarted && Date.now()-t0<6000){ restarted=true; try{R.start();}catch(e){finish("silence");} } else finish(heardAny?"heard":"silence"); };
+    // Chrome on Android ends a listening session after 2-3 s if it has not caught speech yet, and sometimes refuses an
+    // immediate restart: keep restarting (with a short wait if refused) until the 7-second window is over, so a learner
+    // who answers a little late is not marked silent (Jon's run, 8 Nov 20:15: three false silences)
+    const restart=(tries=0)=>{ if(finished || gen!==recGen) return;
+      try{ R.start(); trace("mic restarted"); }
+      catch(e){ if(tries<4 && Date.now()-t0<7000) setTimeout(()=>restart(tries+1), 200); else finish("silence"); } };
+    R.onend=()=>{ if(finished || gen!==recGen) return; if(!heardAny && Date.now()-t0<7000){ restarted=true; restart(); } else finish(heardAny?"heard":"silence"); };
     const tick=setInterval(()=>{
       if(!opened) return;
       const now=Date.now();
