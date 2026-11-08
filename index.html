@@ -101,56 +101,116 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
       <g class="fade" id="slotR"></g>
     </g>
   </g>
-  <!-- tutor, seated -->
+  <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
   <g id="tutor">
-    <rect x="112" y="300" width="176" height="300" rx="26" fill="#7b5a43"/>
-    <!-- back hair -->
-    <path d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 h-84 q-7-22-5-58z" fill="var(--tutor-hair)"/>
-    <!-- torso -->
-    <path d="M118 600 v-120 q0-52 52-60 h60 q52 8 52 60 v120z" fill="var(--tutor-top)"/>
-    <rect x="186" y="398" width="28" height="26" fill="var(--skin-d)"/>
+    <defs>
+      <radialGradient id="tSkin" gradientUnits="userSpaceOnUse" cx="194" cy="340" r="62"><stop offset="0" stop-color="#f3cfae"/><stop offset="0.62" stop-color="#e8b892"/><stop offset="1" stop-color="#cf9873"/></radialGradient>
+      <linearGradient id="tNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c58d68"/><stop offset="0.5" stop-color="#dba582"/><stop offset="1" stop-color="#e3af8b"/></linearGradient>
+      <linearGradient id="tHair" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#5c4132"/><stop offset="0.55" stop-color="#4a3326"/><stop offset="1" stop-color="#3a271c"/></linearGradient>
+      <linearGradient id="tTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6b86"/><stop offset="1" stop-color="#36536b"/></linearGradient>
+      <linearGradient id="tChair" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6e5140"/><stop offset="0.5" stop-color="#7f604c"/><stop offset="1" stop-color="#6e5140"/></linearGradient>
+      <radialGradient id="tBlush" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#e98a7a" stop-opacity="0.32"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>
+      <radialGradient id="tIris" cx="0.45" cy="0.4" r="0.6"><stop offset="0" stop-color="#8a6240"/><stop offset="0.7" stop-color="#5e3f27"/><stop offset="1" stop-color="#3b2717"/></radialGradient>
+      <clipPath id="eyeClipL"><path d="M175.8 352.2 Q183.6 345.2 192.2 351.6 Q184.4 357.6 175.8 352.2 Z"/></clipPath>
+      <clipPath id="eyeClipR"><path d="M224.2 352.2 Q216.4 345.2 207.8 351.6 Q215.6 357.6 224.2 352.2 Z"/></clipPath>
+    </defs>
+    <rect x="112" y="300" width="176" height="300" rx="28" fill="url(#tChair)"/>
+    <rect x="118" y="306" width="164" height="288" rx="24" fill="none" stroke="#5e4535" stroke-width="2" opacity=".5"/>
+    <!-- back hair: a plain shoulder-length cut -->
+    <path d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="url(#tHair)"/>
+    <!-- torso: a soft crew-neck jumper -->
+    <path d="M118 600 v-120 q0-52 52-60 h60 q52 8 52 60 v120z" fill="url(#tTop)"/>
+    <path d="M172 421 q28 16 56 0" stroke="#2f4a60" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M150 470 q8 40 4 120 M250 470 q-8 40 -4 120" stroke="#2c465b" stroke-width="2" fill="none" opacity=".35"/>
+    <!-- neck, shaded under the chin -->
+    <path d="M185 394 h30 v22 q-15 12 -30 0z" fill="url(#tNeck)"/>
     <!-- head (nods as a group) -->
     <g id="head" style="transform-box:view-box;transform-origin:200px 400px;transition:transform .16s ease-in-out">
-    <ellipse cx="200" cy="352" rx="42" ry="50" fill="var(--skin)"/>
-    <path d="M157 348 q1-53 43-55 q42 2 43 55 q-10-27-43-31 q-33 4-43 31z" fill="var(--tutor-hair)"/>
-    <!-- eyes: whites and pupils, so it is clear whom the teacher is looking at (gaze below) -->
+    <ellipse cx="158.5" cy="356" rx="5.5" ry="9.5" fill="#d9a27c"/><ellipse cx="241.5" cy="356" rx="5.5" ry="9.5" fill="#d9a27c"/>
+    <path d="M200 302 C227 302 243 323 243 351 C243 379 228 400 200 403 C172 400 157 379 157 351 C157 323 173 302 200 302 Z" fill="url(#tSkin)"/>
+    <ellipse cx="177" cy="371" rx="12" ry="7" fill="url(#tBlush)"/><ellipse cx="223" cy="371" rx="12" ry="7" fill="url(#tBlush)"/>
+    <!-- hair over the forehead: parted, falling to each side -->
+    <path d="M156 354 q-2-58 44-60 q46 2 44 60 q-4-26-16-38 q-14-6-30-3 q-10 4-22 3 q-6 4-10 12 q-6 10-10 26z" fill="url(#tHair)"/>
+    <path d="M188 297 q-14 8-22 26 M190 302 q-12 10-17 22 M214 299 q12 8 18 26 M222 302 q10 10 13 24" stroke="#6b4b39" stroke-width="1.2" fill="none" opacity=".5" stroke-linecap="round"/>
+    <!-- eyebrows: soft, tapered, gently raised (an open, friendly look) -->
+    <path d="M174.5 341.5 q8.5-6.2 18-2.4 q-8.5-2.2-18 3.6z" fill="#4a3326"/><path d="M225.5 341.5 q-8.5-6.2-18-2.4 q8.5-2.2 18 3.6z" fill="#4a3326"/>
+    <!-- eyes: whites, brown irises with a catch-light (so it is clear whom the teacher looks at), lids and lashes -->
     <g id="eyes">
-      <ellipse cx="184" cy="352" rx="6.6" ry="5.6" fill="#fbf8f2"/><ellipse cx="216" cy="352" rx="6.6" ry="5.6" fill="#fbf8f2"/>
-      <g id="pupils" style="transition:transform .25s ease-in-out"><ellipse cx="184" cy="352" rx="3.6" ry="4.2" fill="var(--ink)"/><ellipse cx="216" cy="352" rx="3.6" ry="4.2" fill="var(--ink)"/></g>
-      <g id="lids" style="transition:transform .25s ease-in-out;transform-box:view-box"><path d="M176 346.5 q8-6.5 16 0 v-4 h-16z M208 346.5 q8-6.5 16 0 v-4 h-16z" fill="var(--skin)"/></g>
+      <path d="M175.8 352.2 Q183.6 345.2 192.2 351.6 Q184.4 357.6 175.8 352.2 Z" fill="#fbf7f1"/>
+      <path d="M224.2 352.2 Q216.4 345.2 207.8 351.6 Q215.6 357.6 224.2 352.2 Z" fill="#fbf7f1"/>
+      <g id="pupils" style="transition:transform .25s ease-in-out">
+        <g clip-path="url(#eyeClipL)"><circle cx="184" cy="351.6" r="3.9" fill="url(#tIris)"/><circle cx="184" cy="351.6" r="1.7" fill="#17110d"/><circle cx="185.3" cy="350.3" r="0.95" fill="#fff"/></g>
+        <g clip-path="url(#eyeClipR)"><circle cx="216" cy="351.6" r="3.9" fill="url(#tIris)"/><circle cx="216" cy="351.6" r="1.7" fill="#17110d"/><circle cx="217.3" cy="350.3" r="0.95" fill="#fff"/></g>
+      </g>
+      <g id="lids" style="transition:transform .25s ease-in-out;transform-box:view-box">
+        <path d="M173 351.2 Q183.6 340.2 194.6 350.8 Q190 341 183.6 340.4 Q177 341 173 351.2 Z" fill="url(#tSkin)"/>
+        <path d="M227 351.2 Q216.4 340.2 205.4 350.8 Q210 341 216.4 340.4 Q223 341 227 351.2 Z" fill="url(#tSkin)"/>
+        <path d="M175.4 352.2 Q183.6 344.9 192.6 351.4" stroke="#2b1d16" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M224.6 352.2 Q216.4 344.9 207.4 351.4" stroke="#2b1d16" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M177 346.5 Q184 342.6 191.5 346.4 M223 346.5 Q216 342.6 208.5 346.4" stroke="#b9805e" stroke-width="0.9" fill="none" opacity=".7"/>
+      </g>
+      <!-- smiling eyes: lower lids slightly lifted -->
+      <path d="M177 355.4 Q184 358.6 191 355.2 M223 355.4 Q216 358.6 209 355.2" stroke="#c9906d" stroke-width="1" fill="none" opacity=".75" stroke-linecap="round"/>
     </g>
-    <path d="M176 340 q8-5 16 0 M208 340 q8-5 16 0" stroke="var(--tutor-hair)" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M200 358 q-3 10 0 14" stroke="var(--skin-d)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <!-- mouth: drawn sound by sound from the IPA of what the teacher says (see MOUTH below) -->
+    <!-- nose: a soft shadow down one side, the tip and the nostrils -->
+    <path d="M196.5 350 Q194 361 193.2 368.5 Q195 371.5 198 371" stroke="#c98f6a" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".45"/>
+    <ellipse cx="196.4" cy="371.2" rx="1.7" ry="1" fill="#9c6448" opacity=".55"/><ellipse cx="203.6" cy="371.2" rx="1.7" ry="1" fill="#9c6448" opacity=".55"/>
+    <ellipse cx="200.4" cy="363" rx="1.8" ry="5" fill="#f8dcc2" opacity=".45"/>
+    <path d="M196 375.5 Q200 377 204 375.5" stroke="#d29b77" stroke-width="1" fill="none" opacity=".35"/>
+    <!-- mouth: drawn sound by sound from each sound of the recording (see MOUTH below); a gentle smile at rest -->
     <g id="mouthG">
-      <clipPath id="mouthClip"><ellipse id="mClip" cx="200" cy="384" rx="9" ry="0.1"/></clipPath>
-      <ellipse id="mLips" cx="200" cy="384" rx="11" ry="2.4" fill="#b8525c"/>
-      <ellipse id="mIn" cx="200" cy="384" rx="9" ry="0.1" fill="#3b1518"/>
+      <clipPath id="mouthClip"><path id="mClip" d=""/></clipPath>
+      <path id="mLips" d="" fill="#c4626a"/>
+      <path id="mIn" d="" fill="#4a1c22"/>
       <g clip-path="url(#mouthClip)">
-        <rect id="mTeethU" x="190" y="380" width="20" height="3" fill="#f6f2ea"/>
+        <rect id="mTeethU" x="190" y="380" width="20" height="3" fill="#f7f3ec"/>
         <rect id="mTeethL" x="190" y="388" width="20" height="2" fill="#ece6dc"/>
         <ellipse id="mTongue" cx="200" cy="390" rx="7" ry="3" fill="#cf6b74"/>
       </g>
-      <rect id="mTeethF" x="193" y="381" width="14" height="3" rx="1" fill="#f6f2ea" opacity="0"/>
+      <path id="mLine" d="" stroke="#8e3d45" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <path id="mHi" d="" stroke="#e39aa0" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>
+      <rect id="mTeethF" x="193" y="381" width="14" height="3" rx="1" fill="#f7f3ec" opacity="0"/>
+      <path id="mDimples" d="" stroke="#c98d6c" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".6"/>
     </g>
     </g>
     <!-- arms: shoulder → elbow → wrist, drawn each frame by the ARMS rig (two-joint reach), with hand shapes at the wrist.
          Gestures recreated from the DISE training videos: "my turn" = hand flat on the chest (Zig, Part 3, 4:57);
          "your turn" = arm reaching towards the learner, open palm up (Zig, Part 3, 4:53), with the teacher facing the learner. -->
     <g id="arms">
-      <g id="armRig_L"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #22323f)" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
-      <g id="armRig_R"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #22323f)" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+      <g id="armRig_L"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #2f475a)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+      <g id="armRig_R"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #2f475a)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
       <g id="hand_L" class="hand"></g>
       <g id="hand_R" class="hand"></g>
     </g>
     <defs>
       <!-- hand shapes, drawn pointing down (+y) from the wrist at 0,0 -->
-      <g id="hs_relaxed"><ellipse cx="0" cy="13" rx="10.5" ry="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><path d="M-4 22 v6 M0 23 v6 M4 22 v6" stroke="var(--skin-d)" stroke-width="1.6" stroke-linecap="round"/></g>
-      <g id="hs_point"><rect x="-3.6" y="14" width="7.2" height="27" rx="3.6" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><ellipse cx="0" cy="11" rx="10" ry="11" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/></g>
-      <g id="hs_flat"><rect x="-11" y="0" width="22" height="34" rx="9" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><path d="M-5.5 18 v14 M0 18 v15 M5.5 18 v14" stroke="var(--skin-d)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="-12" cy="10" rx="4.5" ry="9" transform="rotate(25 -12 10)" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/></g>
-      <!-- palm up, reaching towards the viewer: fingers point at the learner, so the palm is seen with fingertips nearest -->
-      <g id="hs_palmup"><ellipse cx="0" cy="6" rx="21" ry="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><ellipse cx="0" cy="6" rx="12" ry="6.5" fill="var(--skin-l, #f1cfb2)"/><g fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"><ellipse cx="-14" cy="19" rx="5" ry="6"/><ellipse cx="-4.8" cy="21.5" rx="5" ry="6.5"/><ellipse cx="4.8" cy="21.5" rx="5" ry="6.5"/><ellipse cx="14" cy="19" rx="5" ry="6"/><ellipse cx="-23" cy="-2" rx="5.5" ry="10" transform="rotate(-50 -23 -2)"/></g></g>
-      <g id="hs_cup"><path d="M-10 0 q-14 14 -6 30 q8 6 16 -2 q4 -14 -2 -28z" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/></g>
+      <linearGradient id="hSkin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#efc29f"/><stop offset="1" stop-color="#d49f7a"/></linearGradient>
+      <g id="hs_relaxed"><path d="M-9 2 C-12 12 -11 22 -7 28 C-4 31 4 31 7 28 C11 22 12 12 9 2 Z" fill="url(#hSkin)"/><path d="M-5.5 26 v5 M-1.8 27 v5.5 M1.8 27 v5.5 M5.5 26 v5" stroke="#efc29f" stroke-width="3.4" stroke-linecap="round"/><path d="M-5.5 24 v6 M-1.8 25 v6.5 M1.8 25 v6.5 M5.5 24 v6" stroke="#c48e6a" stroke-width=".7" opacity=".5"/><path d="M-9 8 q-5 6 -3 13" stroke="#e2b08b" stroke-width="5" stroke-linecap="round" fill="none"/></g>
+      <g id="hs_point"><!-- index finger extended on the thumb side, other fingers curled, thumb resting along them --><g transform="scale(1.3)">
+        <path d="M-8.5 0 C-10 6 -10.5 11 -9.5 16 C-9 20 -6 23 -1 23.5 L7 23 C10 21 10.5 16 9.6 11 C9.2 6 8.6 3 8 0 Z" fill="url(#hSkin)"/>
+        <path d="M-9 16 C-9.5 20.5 -7 24.5 -2.5 25 C0.5 25.3 2 24 2 22" fill="#e2b08b"/>
+        <path d="M-7.8 19.8 q2.6 1.4 5.2 0.6 M-8.6 15.8 q2.8 1.6 6 0.8" stroke="#c48e6a" stroke-width=".8" fill="none" opacity=".6"/>
+        <path d="M3.2 18 C3 26 3.6 34 4.2 40 C4.5 43.2 8.8 43.2 9 40 C9.4 34 9.6 26 9.4 17.5 Z" fill="#ecbe9b"/>
+        <path d="M4.7 39.6 q2 1.6 3.8 0" stroke="#f7e0cf" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path d="M4.2 30.5 h4.6" stroke="#c99472" stroke-width=".7" opacity=".6"/>
+        <path d="M9.5 6 C12.5 10 12.6 15 10.5 19 C9.2 21.5 6.5 22 5.5 20.5" fill="#e6b490" stroke="#c99472" stroke-width=".6"/>
+      </g></g>
+      <g id="hs_flat"><path d="M-11 0 C-12 12 -11 26 -9 32 C-4 35 4 35 9 32 C11 26 12 12 11 0 Z" fill="url(#hSkin)"/><path d="M-5.5 18 v13 M0 18 v14.5 M5.5 18 v13" stroke="#c48e6a" stroke-width=".9" stroke-linecap="round" opacity=".55"/><ellipse cx="-12.5" cy="10" rx="4.4" ry="9" transform="rotate(25 -12.5 10)" fill="#e6b490"/></g>
+      <g id="hs_palmup"><!-- open hand, palm up, fingers together reaching towards the learner (foreshortened), thumb out to the side -->
+        <path d="M-15 -1 C-18.5 4 -18 11 -14 15 L14 15 C18 11 18.5 4 15 -1 C9 -5 -9 -5 -15 -1 Z" fill="url(#hSkin)"/>
+        <path d="M-9.5 2.5 C-11.5 6.5 -9 10.5 -3 11.5 C3 12.5 9.5 10.5 10.5 6.5 C11.2 3.5 7.5 1 2 0.6 C-3.5 0.3 -7.5 0.8 -9.5 2.5 Z" fill="#f4d5bd" opacity=".9"/>
+        <path d="M-5.5 6 q6 3 12.5 0.2 M-3 3.6 q4 2 9 0.4" stroke="#d3a07e" stroke-width=".8" fill="none" opacity=".6"/>
+        <g fill="#eab994" stroke="#cf9a76" stroke-width=".6">
+          <path d="M-14.6 12.5 C-15.6 17 -14.4 20.5 -11.2 20.8 C-8.4 21 -7.4 17.5 -7.8 13.5 Z"/>
+          <path d="M-8 13.6 C-8.4 19 -6.8 23.2 -3.6 23.4 C-0.6 23.6 0.4 19.5 0 14 Z"/>
+          <path d="M0 14 C-0.2 19.6 1.2 23.6 4.3 23.5 C7.3 23.4 8.2 19 7.8 13.6 Z"/>
+          <path d="M7.8 13.5 C7.4 17.6 8.4 21 11.2 20.8 C14.3 20.5 15.5 17 14.6 12.5 Z"/>
+        </g>
+        <path d="M-12.6 19.6 q1.4 .8 2.8 0 M-5.2 22.2 q1.6 .9 3.2 0 M2.9 22.3 q1.6 .9 3.2 0 M10.2 19.6 q1.4 .8 2.8 0" stroke="#f7e1d1" stroke-width="1" fill="none"/>
+        <path d="M-14.8 3 C-18.5 6 -21.5 9.5 -23.4 13 C-24.6 15.4 -22 17.2 -20.4 15.6 C-18 13 -15.6 10.4 -13.4 8.6 Z" fill="#e6b490" stroke="#cf9a76" stroke-width=".6"/>
+        <path d="M-23 14.2 q1.4 1.2 2.6 0" stroke="#f7e1d1" stroke-width="1" fill="none"/>
+      </g>
+      <g id="hs_cup"><path d="M-10 0 q-14 14 -6 30 q8 6 16 -2 q4 -14 -2 -28z" fill="url(#hSkin)"/></g>
     </defs>
   </g>
   </g><!-- /room -->
@@ -161,10 +221,19 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <!-- the model learner, seen from behind, holding the phone -->
   <g id="classroom" class="fade" opacity="0">
     <g class="lb">
-      <path d="M96 700 v-40 q0-58 66-66 h76 q66 8 66 66 v40z" fill="#6a8f5a"/>
-      <rect x="182" y="556" width="36" height="40" fill="#b57d5c"/>
-      <circle cx="200" cy="528" r="46" fill="#c98f6b"/>
-      <path d="M154 536 q-4-58 46-60 q50 2 46 60 q-6 18-46 20 q-40-2-46-20z" fill="#2f2620"/>
+      <defs>
+        <linearGradient id="lTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a9f69"/><stop offset="1" stop-color="#587d4a"/></linearGradient>
+        <linearGradient id="lNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a86f50"/><stop offset="1" stop-color="#c48a68"/></linearGradient>
+        <radialGradient id="lHair" cx="0.45" cy="0.35" r="0.7"><stop offset="0" stop-color="#4a3a30"/><stop offset="0.7" stop-color="#2f2620"/><stop offset="1" stop-color="#211a15"/></radialGradient>
+      </defs>
+      <path d="M96 700 v-40 q0-58 66-66 h76 q66 8 66 66 v40z" fill="url(#lTop)"/>
+      <path d="M170 596 q30 14 60 0" stroke="#4d6f40" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>
+      <path d="M128 640 q10 30 6 60 M272 640 q-10 30 -6 60 M200 610 v90" stroke="#4d6f40" stroke-width="2" fill="none" opacity=".35"/>
+      <path d="M182 552 h36 v40 q-18 10 -36 0z" fill="url(#lNeck)"/>
+      <ellipse cx="153.5" cy="534" rx="6.5" ry="11" fill="#c48a68"/><ellipse cx="246.5" cy="534" rx="6.5" ry="11" fill="#c48a68"/>
+      <path d="M154 538 q-6-62 46-64 q52 2 46 64 q-4 16-14 22 q-14 6-32 6 q-18 0-32-6 q-10-6-14-22z" fill="url(#lHair)"/>
+      <path d="M176 488 q-10 20-12 48 M192 482 q-6 26-4 60 M210 482 q6 26 4 62 M226 488 q10 20 12 50" stroke="#4d3d33" stroke-width="1.4" fill="none" opacity=".55" stroke-linecap="round"/>
+      <path d="M172 556 q28 10 56 0" stroke="#1d1712" stroke-width="2" fill="none" opacity=".4"/>
     </g>
   </g>
   <!-- restart and delayed-test symbols (no words) -->
@@ -237,7 +306,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.19";
+const APP_VERSION="2026-11-08.20";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -457,21 +526,36 @@ const MOUTH = (()=>{
       const nx=seq.slice(i+1).find(y=>VOWELS.has(y.p)); if(nx){ x.v[1]=x.v[1]*0.3+nx.v[1]*0.7; x.v[2]=Math.max(x.v[2], nx.v[2]*0.8); } }
     let t=0; seq.forEach(x=>{ x.t0=t; t+=x.w; x.t1=t; }); return {seq, total:t, text};
   }
+  // a gentle smile at rest; broader for a moment after a correct answer (smile(true)); rounded lips cannot smile much
+  let smileNow=0.8, smileTarget=0.8;
+  const f2 = n => n.toFixed(2);
   function draw(v){
     const [open,width,protr,closed,teeth,fv,tongue]=v, cx=200, cy=384;
-    const W = 6 + 10*width - 3*protr;                               // half-width of the opening
+    const sm = smileNow*(1-0.8*protr);
+    const W = 6 + 10*width - 3*protr + 2.4*sm;                      // half-width of the opening
     let H = closed>0.5 ? 0.1 : Math.max(0.1, 0.6 + 8*open);         // half-height of the opening
     if(closed<0.5 && protr>0.3) H = Math.max(H, W*0.75*protr);      // rounded lips make a round opening
-    const L = 2.2 + 1.8*protr;                                      // lip thickness: protruded lips look fuller
-    el("mLips").setAttribute("rx", (W+L*0.8).toFixed(2)); el("mLips").setAttribute("ry", (H+L).toFixed(2));
-    el("mLips").setAttribute("fill", protr>0.5? "#a9454f" : "#b8525c");
-    for(const id of ["mIn","mClip"]){ el(id).setAttribute("rx", W.toFixed(2)); el(id).setAttribute("ry", (fv>0.5? 0.8 : H).toFixed(2)); }
+    const L = 2.3 + 1.8*protr;                                      // lip thickness: protruded lips look fuller
+    const lift = 2.6*sm;                                            // the corners of the mouth turn up
+    const xl=cx-W-L*0.75, xr=cx+W+L*0.75, yc=cy-lift+0.4;
+    const up=cy-H-L*1.05, dn=cy+H+L*1.4;
+    el("mLips").setAttribute("d", `M${f2(xl)} ${f2(yc)} Q${f2(cx-W*0.55)} ${f2(up-0.8)} ${f2(cx-1.8)} ${f2(up+0.2)} Q${f2(cx)} ${f2(up+1.1)} ${f2(cx+1.8)} ${f2(up+0.2)} Q${f2(cx+W*0.55)} ${f2(up-0.8)} ${f2(xr)} ${f2(yc)} Q${f2(cx+W*0.6)} ${f2(dn+0.8)} ${f2(cx)} ${f2(dn)} Q${f2(cx-W*0.6)} ${f2(dn+0.8)} ${f2(xl)} ${f2(yc)} Z`);
+    el("mLips").setAttribute("fill", protr>0.5? "#b5535c" : "#c4626a");
+    const hIn = fv>0.5 ? 0.8 : H, yi = cy-lift*0.7;
+    const inner = `M${f2(cx-W)} ${f2(yi)} Q${f2(cx)} ${f2(cy-hIn*1.05-lift*0.25)} ${f2(cx+W)} ${f2(yi)} Q${f2(cx)} ${f2(cy+hIn*1.05+lift*0.6)} ${f2(cx-W)} ${f2(yi)} Z`;
+    el("mIn").setAttribute("d", inner); el("mClip").setAttribute("d", inner);
+    el("mIn").setAttribute("opacity", H>0.7 || fv>0.5 ? 1 : 0);
+    el("mLine").setAttribute("d", `M${f2(xl+1.2)} ${f2(yc+0.2)} Q${f2(cx)} ${f2(cy+lift*0.95+0.3)} ${f2(xr-1.2)} ${f2(yc+0.2)}`);
+    el("mLine").setAttribute("opacity", H>1.2 ? 0 : 1);
+    el("mHi").setAttribute("d", `M${f2(cx-W*0.38)} ${f2(dn-1.3)} Q${f2(cx)} ${f2(dn-0.6)} ${f2(cx+W*0.38)} ${f2(dn-1.3)}`);
+    el("mDimples").setAttribute("d", `M${f2(xl-1.6)} ${f2(yc-3.4)} q-2.2 3.2 0 6.6 M${f2(xr+1.6)} ${f2(yc-3.4)} q2.2 3.2 0 6.6`);
+    el("mDimples").setAttribute("opacity", f2(Math.max(0, sm-0.35)*0.9));
     const th = teeth>0.05 ? Math.min(H*1.2, 2.2+1.4*teeth) : 0;
-    el("mTeethU").setAttribute("x",(cx-W).toFixed(2)); el("mTeethU").setAttribute("width",(2*W).toFixed(2));
-    el("mTeethU").setAttribute("y",(cy-H).toFixed(2)); el("mTeethU").setAttribute("height",th.toFixed(2));
-    el("mTeethL").setAttribute("x",(cx-W).toFixed(2)); el("mTeethL").setAttribute("width",(2*W).toFixed(2));
-    el("mTeethL").setAttribute("y",(cy+H-Math.min(1.6,H*0.4)).toFixed(2)); el("mTeethL").setAttribute("height",((open>0.25 || teeth>0.95)?1.6:0).toFixed(2));
-    el("mTongue").setAttribute("cy",(cy+H-1.5-3.5*tongue*open).toFixed(2)); el("mTongue").setAttribute("rx",(W*0.7).toFixed(2));
+    el("mTeethU").setAttribute("x",f2(cx-W)); el("mTeethU").setAttribute("width",f2(2*W));
+    el("mTeethU").setAttribute("y",f2(cy-H-lift*0.3)); el("mTeethU").setAttribute("height",f2(th));
+    el("mTeethL").setAttribute("x",f2(cx-W)); el("mTeethL").setAttribute("width",f2(2*W));
+    el("mTeethL").setAttribute("y",f2(cy+H-Math.min(1.6,H*0.4))); el("mTeethL").setAttribute("height",((open>0.25 || teeth>0.95)?1.6:0).toFixed(2));
+    el("mTongue").setAttribute("cy",f2(cy+H-1.5-3.5*tongue*open)); el("mTongue").setAttribute("rx",f2(W*0.7));
     el("mTongue").setAttribute("opacity", (open>0.15 ? 0.55+0.45*tongue : 0).toFixed(2));
     el("mTeethF").setAttribute("opacity", fv>0.5? 1:0);
   }
@@ -482,8 +566,9 @@ const MOUTH = (()=>{
       target = x ? x.v : VIS.rest;
     }
     for(let i=0;i<cur.length;i++) cur[i] += (target[i]-cur[i])*0.45;   // smooth: about 40 ms to settle
+    smileNow += (smileTarget-smileNow)*0.12;                          // the smile grows and fades over about 300 ms
     draw(cur);
-    raf = (play || cur.some((c,i)=>Math.abs(c-target[i])>0.01)) ? requestAnimationFrame(loop) : null;
+    raf = (play || Math.abs(smileNow-smileTarget)>0.005 || cur.some((c,i)=>Math.abs(c-target[i])>0.01)) ? requestAnimationFrame(loop) : null;
   }
   const kick=()=>{ if(!raf) raf=requestAnimationFrame(loop); };
   return {
@@ -508,9 +593,14 @@ const MOUTH = (()=>{
     },
     stop(){ play=null; target=VIS.rest; kick(); },
     shape(p){ play=null; target=VIS[p]||VIS.rest; kick(); },    // hold one sound's shape (for checking)
+    smile(level){ smileTarget=level; kick(); },
     IPA, VIS,
   };
 })();
+MOUTH.stop();                                  // draw the resting (smiling) mouth straight away
+// reinforcement: a broad, warm smile for a moment after a correct answer
+let smileTimer=null;
+function smile(on){ MOUTH.smile(on? 1.3 : 0.8); clearTimeout(smileTimer); if(on) smileTimer=setTimeout(()=>MOUTH.smile(0.8), 1800); }
 // the view moves in to the teacher's face for models of new sounds, so the mouth can be seen
 function faceZoom(on){ const r=document.getElementById("room");
   const sc = document.getElementById("demoBg").style.opacity==="1" ? 4.2 : 3.2;   // larger on the model learner's phone
@@ -812,24 +902,51 @@ document.getElementById("manualText").addEventListener("keydown",e=>{ if(e.key==
    PRESENTER — portraits, pointing, gestures
    ============================================================ */
 const svgNS="http://www.w3.org/2000/svg";
+/* Paul and Julie: drawn in the same realistic style as the teacher (soft skin and hair gradients, eyes with irises
+   and catch-lights, natural brows, nose shading, smiling mouths), each with a name tag as in DISE. */
+let portSeq=0;
 function portrait(who){
-  const g=document.createElementNS(svgNS,"g");
-  const top = who==="paul" ? "var(--paul-top)" : "var(--julie-top)";
-  const hair= who==="paul" ? "var(--paul-hair)" : "var(--julie-hair)";
-  g.innerHTML = (who==="julie"
-    ? `<path d="M38 96 q0-62 42-64 q42 2 42 64 q0 46-10 72 h-64 q-10-26-10-72z" fill="${hair}"/>` : ``) +
-    `<path d="M22 190 v-24 q0-30 34-36 h48 q34 6 34 36 v24z" fill="${top}"/>
-     <rect x="70" y="112" width="20" height="18" fill="var(--skin-d)"/>
-     <ellipse cx="80" cy="86" rx="32" ry="38" fill="var(--skin)"/>` +
-    (who==="paul"
-      ? `<path d="M47 80 q0-40 33-42 q33 2 33 42 q-8-20-33-22 q-25 2-33 22z" fill="${hair}"/><path d="M50 92 q2 30 30 34 q28-4 30-34 q-6 16-30 18 q-24-2-30-18z" fill="${hair}" opacity=".9"/>`
-      : `<path d="M47 84 q2-44 33-46 q31 2 33 46 q-14-28-33-30 q-19 2-33 30z" fill="${hair}"/>`) +
-    `<ellipse cx="68" cy="88" rx="3.5" ry="4.5" fill="var(--ink)"/><ellipse cx="92" cy="88" rx="3.5" ry="4.5" fill="var(--ink)"/>
-     <path d="M70 106 q10 7 20 0" stroke="#8a3b3b" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+  const g=document.createElementNS(svgNS,"g"), u="pt"+(portSeq++), P = who==="paul";
+  const skin = P ? ["#efc4a0","#dfa883","#c48a66"] : ["#f3d0b4","#e6b694","#cc9674"];
+  const hair = P ? ["#7a5638","#5a3d27","#3f2a1a"] : ["#3a2a22","#271b15","#160f0b"];
+  const top  = P ? ["#4d7fc4","#3a64a3"] : ["#cf4a44","#a8362f"];
+  const iris = P ? "#4b6f8f" : "#5a3a22";
+  const eye = (cx,cy,flip) => `<g><path d="M${cx-7} ${cy} Q${cx} ${cy-6.4} ${cx+7} ${cy-0.4} Q${cx} ${cy+5} ${cx-7} ${cy} Z" fill="#fbf7f1"/>
+      <clipPath id="${u}e${cx}"><path d="M${cx-7} ${cy} Q${cx} ${cy-6.4} ${cx+7} ${cy-0.4} Q${cx} ${cy+5} ${cx-7} ${cy} Z"/></clipPath>
+      <g clip-path="url(#${u}e${cx})"><circle cx="${cx}" cy="${cy-0.4}" r="3.5" fill="${iris}"/><circle cx="${cx}" cy="${cy-0.4}" r="1.5" fill="#120d0a"/><circle cx="${cx+1.1}" cy="${cy-1.6}" r="0.85" fill="#fff"/></g>
+      <path d="M${cx-7.4} ${cy} Q${cx} ${cy-6.8} ${cx+7.4} ${cy-0.5}" stroke="#2a1c15" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M${cx-5.5} ${cy+3.2} Q${cx} ${cy+5.6} ${cx+5.5} ${cy+3}" stroke="${skin[2]}" stroke-width="0.9" fill="none" opacity=".7"/></g>`;
+  g.innerHTML = `<defs>
+      <radialGradient id="${u}s" gradientUnits="userSpaceOnUse" cx="76" cy="78" r="46"><stop offset="0" stop-color="${skin[0]}"/><stop offset=".65" stop-color="${skin[1]}"/><stop offset="1" stop-color="${skin[2]}"/></radialGradient>
+      <linearGradient id="${u}h" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${hair[0]}"/><stop offset=".55" stop-color="${hair[1]}"/><stop offset="1" stop-color="${hair[2]}"/></linearGradient>
+      <linearGradient id="${u}t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top[0]}"/><stop offset="1" stop-color="${top[1]}"/></linearGradient>
+      <radialGradient id="${u}b" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#e98a7a" stop-opacity=".3"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>
+    </defs>` +
+    (P ? `` : `<path d="M40 98 q-2-64 40-66 q42 2 40 66 q2 50-8 78 q-32 8-64 0 q-10-28-8-78z" fill="url(#${u}h)"/>`) +
+    `<path d="M20 190 v-22 q0-32 36-38 h48 q36 6 36 38 v22z" fill="url(#${u}t)"/>
+     <path d="M62 131 q18 ${P?10:14} 36 0" stroke="${P?"#2f538a":"#8a2a25"}" stroke-width="3.5" fill="none" opacity=".55" stroke-linecap="round"/>
+     <path d="M70 110 h20 v18 q-10 8-20 0z" fill="${skin[2]}"/>
+     <ellipse cx="48.5" cy="90" rx="4.2" ry="7.5" fill="${skin[2]}"/><ellipse cx="111.5" cy="90" rx="4.2" ry="7.5" fill="${skin[2]}"/>
+     <path d="M80 48 C100 48 112 63 112 85 C112 106 101 122 80 125 C59 122 48 106 48 85 C48 63 60 48 80 48 Z" fill="url(#${u}s)"/>
+     <ellipse cx="64" cy="101" rx="9" ry="5" fill="url(#${u}b)"/><ellipse cx="96" cy="101" rx="9" ry="5" fill="url(#${u}b)"/>` +
+    (P
+      ? `<path d="M47 84 q-2-40 33-42 q35 2 33 42 q-4-14-12-20 q-12 4-24 2 q-12-2-18-6 q-8 8-12 24z" fill="url(#${u}h)"/>
+         <path d="M58 54 q8-6 22-6 M64 50 q10-4 22 0 M72 47 q10-2 20 2" stroke="#8c6545" stroke-width="1.1" fill="none" opacity=".6"/>
+         <path d="M49 92 q2 28 31 33 q29-5 31-33 q-3 12-10 17 q-6-6-21-6 q-15 0-21 6 q-7-5-10-17z" fill="url(#${u}h)" opacity=".95"/>
+         <path d="M66 105 q14-5 28 0 q-4 4-14 4 q-10 0-14-4z" fill="url(#${u}h)"/>`
+      : `<path d="M47 90 q-3-46 33-48 q36 2 33 48 q-6-22-18-30 q-12 8-34 6 q-8 6-10 12 q-2 4-4 12z" fill="url(#${u}h)"/>
+         <path d="M78 44 q-14 6-22 24 M86 45 q12 8 18 26" stroke="#4a372d" stroke-width="1.1" fill="none" opacity=".6"/>`) +
+    `<path d="M${P?59:60} 77 q8-${P?4:5.5} 16-1.5 q-8-1.6-16 3z" fill="${P?"#4f3622":"#2a1d17"}"/><path d="M${P?101:100} 77 q-8-${P?4:5.5} -16-1.5 q8-1.6 16 3z" fill="${P?"#4f3622":"#2a1d17"}"/>` +
+    eye(67,87) + eye(93,87) +
+    `<path d="M78 88 Q76.4 97 75.8 101.5 Q77.4 103.6 79.6 103.2" stroke="${skin[2]}" stroke-width="1.2" fill="none" opacity=".55"/>
+     <ellipse cx="77" cy="103.4" rx="1.4" ry=".8" fill="#8f5c42" opacity=".5"/><ellipse cx="83" cy="103.4" rx="1.4" ry=".8" fill="#8f5c42" opacity=".5"/>
+     <path d="M69.5 109.4 Q80 116.5 90.5 109.4 Q80 112.6 69.5 109.4 Z" fill="${P?"#b8645f":"#c75a64"}"/>
+     <path d="M70 109.6 Q80 114.2 90 109.6" stroke="#8a3b3b" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+     <path d="M68 108 q-1.4 1.6 0 3.4 M92 108 q1.4 1.6 0 3.4" stroke="${skin[2]}" stroke-width="0.9" fill="none" opacity=".7"/>` +
     // name tag, as in DISE (Lesson 1: "Pass out name tags"; Zig, Part 3, 0:00: "you can see I have my name tag")
-    `<g class="nametag"><rect x="${80-(who==="paul"?25:28)}" y="146" width="${who==="paul"?50:56}" height="24" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/>
-     <rect x="${80-(who==="paul"?25:28)}" y="146" width="${who==="paul"?50:56}" height="5" rx="2" fill="#c8453b"/>
-     <text x="80" y="166" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522">${PEOPLE[who].name}</text></g>`;
+    `<g class="nametag"><rect x="${80-(P?25:28)}" y="146" width="${P?50:56}" height="24" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/>
+     <rect x="${80-(P?25:28)}" y="146" width="${P?50:56}" height="5" rx="2" fill="#c8453b"/>
+     <text x="80" y="166" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522">${VOCAB[who].name}</text></g>`;
   return g;
 }
 /* Objects for Exercise 2: three different books and three different apples (DISE: several of a kind, so the word names
@@ -875,6 +992,9 @@ function objectPicture(id, inst){
         <path d="M80 68 C78 58 79 50 84 42" stroke="#5a3a22" stroke-width="4" fill="none" stroke-linecap="round"/>
         ${inst!==3?`<path d="M84 50 C92 36 110 36 116 42 C108 52 94 56 84 50 Z" fill="#5f9a3a"/><path d="M86 49 C96 45 106 42 114 42" stroke="#3f6f24" stroke-width="1.2" fill="none"/>`:""}
         <ellipse cx="58" cy="86" rx="9" ry="14" fill="#fff" opacity=".22" transform="rotate(-20 58 86)"/>
+        <path d="M80 66 C74 62 66 61 60 63" stroke="${A.d}" stroke-width="2" fill="none" opacity=".35"/>
+        ${Array.from({length:22},(_,k)=>{ const ang=k*2.39, r=8+((k*37)%34); const x=80+Math.cos(ang)*r*1.05, y=106+Math.sin(ang)*r*0.95; return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.5+((k*13)%5)/10).toFixed(2)}" fill="${inst===2?"#e6f0b8":"#f6d2a0"}" opacity=".45"/>`; }).join("")}
+        <path d="M106 118 C102 136 92 148 84 151" stroke="${A.d}" stroke-width="5" fill="none" opacity=".25" stroke-linecap="round"/>
       </g>`;
   }
   return g;
@@ -954,9 +1074,9 @@ const POSE = {
   // "À moi" (my turn): right hand flat on the chest, fingers across it (Zig, Part 3, 4:57)
   myTurn: {L:{x:186,y:470, shape:"flat", rot:-118, scale:1.05}},
   // "À toi" (your turn): right arm reaching towards the learner, open palm up (Zig, Part 3, 4:53)
-  yourTurn: {L:{x:176,y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}},
+  yourTurn: {L:{x:176,y:528, shape:"palmup", rot:0, scale:1.38, fs:0.32}},
   // "Avec moi" (with me): my hand on my chest and my other hand reaching to you — "you and me, together"
-  together: {L:{x:186,y:470, shape:"flat", rot:-118, scale:1.05}, R:{x:224,y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}},
+  together: {L:{x:186,y:470, shape:"flat", rot:-118, scale:1.05}, R:{x:224,y:528, shape:"palmup", rot:0, scale:1.38, fs:0.32}},
   // "Écoute" (listen): hand cupped behind the ear
   ear: {R:{x:252,y:350, shape:"cup", rot:-10, scale:1}},
 };
@@ -968,10 +1088,13 @@ function pointPose(side){            // reach towards the picture frame on that 
 
 function rest(){ offering=false; ARMS.go(POSE.rest, 280); }
 function thumb(){}
+// pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
+let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; return armsGo(p,ms); };
 async function pointAt(who){
-  const side = sideOf(who), pose = pointPose(side);
+  const side = sideOf(who), pose = pointPose(side), key=side+(offering?"+palm":"");
+  if(key===lastPoint) return;
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
-  await ARMS.go(pose, 340);
+  await armsGo(pose, 340); lastPoint=key;
 }
 async function flashIcon(which){
   rest(); const el=document.getElementById(which==="restart"?"icoRestart":"icoBookmark");
@@ -1018,7 +1141,7 @@ let offering=false;
 const sideOf = target => { if(target==="L"||target==="R") return target; if(!curScene || !target) return "R";
   return curScene.L.split(":")[0]===target ? "L" : "R"; };
 const otherArm = side => side==="L" ? "R" : "L";
-function palmUp(arm){ return {x: arm==="L"?176:224, y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}; }
+function palmUp(arm){ return {x: arm==="L"?176:224, y:528, shape:"palmup", rot:0, scale:1.38, fs:0.32}; }
 async function gesturePalm(target){ offering=true; const arm=otherArm(sideOf(target)); await ARMS.go({[arm]:palmUp(arm)}, 320); }
 // correct answer: a short "ding" (Web Audio, unlocked by the first tap on the play button)
 let actx=null;
@@ -1081,6 +1204,10 @@ function thinkTime(t, {retest=false, prevTarget=null, firstOfItem=false}={}){
   if(prevTarget && prevTarget!==t.target) return 800;   // a switch to the other item
   return 500;                             // the same item again
 }
+// AFTER_ATOI: the gap between "À toi" and the question — no longer than the gaps elsewhere, so it never sounds like
+// the learner's turn (Jon, 8 November 2026). The pointing (focus) happens while "À toi" is being said, and "À toi"
+// itself gives the thinking time.
+const AFTER_ATOI = 150;
 async function askAndListen(task, expect, think=500, alsoOk=[]){
   await pointAt(task.target);             // focus
   await sleep(think);                     // think time
@@ -1107,9 +1234,9 @@ async function presentModel(m){
       await untilSignal(); glow(true); await say(answerUnits(m), "both"); glow(false); rest(); await sleep(350);
     }
     ph("model learner: test");
-    await gesturePalm(m.target); await say(PHR.atoi); await pointAt(m.target); await sleep(500); await say(m.questionUnits);
+    await gesturePalm(m.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(m.target); })()]); await sleep(AFTER_ATOI); await say(m.questionUnits);
     await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-    await nod(); await say(answerUnits(m)); rest(); await sleep(400);          // affirmed, as for the learner
+    smile(true); await nod(); await say(answerUnits(m)); rest(); await sleep(400);          // affirmed, as for the learner
     await setScene("one");
     if(m.classLead){ ph("after the demo: speak clearly and loudly"); await afterDemoScreen(); }   // the learner starts their part
   } else {
@@ -1127,9 +1254,10 @@ async function presentLead(t){
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
-async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=500, quiet=false}={}){
+async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=500, quiet=false, afterAtoi=false}={}){
+  if(afterAtoi) think=AFTER_ATOI;          // "À toi" has just been said (end of a correction)
   curTask=t.id; await setPortraits(t.scene);
-  if(atoi){ await gesturePalm(t.target); await say(PHR.atoi); }  // announce
+  if(atoi){ await gesturePalm(t.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(t.target); })()]); think=AFTER_ATOI; }  // announce, with the focus
   else offering=true;                                             // the "your turn" hand goes out with every test question
   ph(retest? "retest" : "test");
   let r = await askAndListen(t, expectOf(t.target), think);
@@ -1150,7 +1278,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
-  if(r.ok){ await ding(); await nod(); if(!quiet){ ph("affirm"); await pointAt(t.target); await sayAnswer(t); } rest(); }
+  if(r.ok){ smile(true); await ding(); await nod(); if(!quiet){ ph("affirm"); await pointAt(t.target); await sayAnswer(t); } rest(); }
   return r.ok;
 }
 async function correction(task, nth){
@@ -1164,7 +1292,7 @@ async function correction(task, nth){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6), ...lx(r)});
     if(!r.ok){ await pointAt(task.target); await say(answerUnits(task)); }
   }
-  await gesturePalm(task.target); await say(PHR.atoi);             // step 2: repeat the task (presentTest asks the question)
+  await gesturePalm(task.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task.target); })()]);   // step 2: repeat the task (presentTest asks the question)
 }
 // A part's error is recorded for its delayed tests: first at the end of the next exercise, then at the start of the next lesson.
 function scheduleDelayed(part, anchor){
@@ -1231,7 +1359,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         errorsByTask[it.id]=(errorsByTask[it.id]||0)+1; tries++;
         if(tries>=TRIAL_LIMIT) break;
         await correction(it, errorsByTask[it.id]);
-        fixed=await presentTest(it,{retest:true, atoi:false, think:thinkTime(it,{retest:true}), quiet:true});
+        fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true});
         if(fixed) fixed = await immediateRepeats(it);
       }
       if(!fixed){ await trialLimit(it, part, anchor); i++; prevTest=false; continue; }
