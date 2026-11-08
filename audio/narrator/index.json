@@ -12,27 +12,39 @@
 "dur": 1.1
 },
 "avec_b": {
-"text": "the border turns green, and the learner says the answer at the same time as the teacher. Listen to both voices together.",
-"dur": 6.87
+"text": "the border turns green, and the learner says it at the same time as the teacher. Listen to both voices together.",
+"dur": 6.02
 },
 "again": {
 "text": "Again. Together, at the same time.",
 "dur": 2.38
 },
-"vasy_a": {
-"text": "When the teacher says,",
-"dur": 1.1
-},
-"vasy_b": {
-"text": "the border turns green, and the learner says only the answer, on their own.",
-"dur": 4.34
-},
 "only": {
-"text": "The learner never repeats what the teacher says. They only say the answer, and only when the border is green.",
-"dur": 5.9
+"text": "The learner only speaks when the border is green.",
+"dur": 2.42
 },
 "yourturn": {
 "text": "Now it's your turn. Speak clearly and loudly.",
 "dur": 3.06
+},
+"rep_b": {
+"text": "the border turns green, and the learner says it once, on their own.",
+"dur": 3.67
+},
+"point_b": {
+"text": "and then points, the border turns green, and the learner says the name, on their own.",
+"dur": 5.06
+},
+"q_a": {
+"text": "Now the teacher asks a question, and answers it herself.",
+"dur": 3.2
+},
+"q_b": {
+"text": "When she asks it again, the border turns green, and the learner says only the answer.",
+"dur": 4.7
+},
+"q_turn": {
+"text": "Now it's your turn.",
+"dur": 1.03
 }
 }

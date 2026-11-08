@@ -101,6 +101,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
       <rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>
       <g class="fade" id="slotR"></g>
     </g>
+    <g id="frameRow" class="fade" opacity="0"></g>
   </g>
   <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
   <g id="tutor">
@@ -123,6 +124,10 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <path d="M118 600 v-120 q0-52 52-60 h60 q52 8 52 60 v120z" fill="url(#tTop)"/>
     <path d="M172 421 q28 16 56 0" stroke="#2f4a60" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
     <path d="M150 470 q8 40 4 120 M250 470 q-8 40 -4 120" stroke="#2c465b" stroke-width="2" fill="none" opacity=".35"/>
+    <!-- the teacher's name tag, as in DISE (Lesson 1: "Point to your name tag and say your name") -->
+    <g id="claireTag" transform="rotate(-3 214 466)"><rect x="189" y="453" width="50" height="23" rx="3.5" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.3"/>
+      <rect x="189" y="453" width="50" height="4.6" rx="2" fill="#c8453b"/>
+      <text x="214" y="471.5" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5" font-weight="700" fill="#2a2522">Claire</text></g>
     <!-- neck, shaded under the chin -->
     <path d="M185 394 h30 v22 q-15 12 -30 0z" fill="url(#tNeck)"/>
     <!-- head (nods as a group) -->
@@ -211,12 +216,13 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
         <path d="M-14.8 3 C-18.5 6 -21.5 9.5 -23.4 13 C-24.6 15.4 -22 17.2 -20.4 15.6 C-18 13 -15.6 10.4 -13.4 8.6 Z" fill="#e6b490" stroke="#cf9a76" stroke-width=".6"/>
         <path d="M-23 14.2 q1.4 1.2 2.6 0" stroke="#f7e1d1" stroke-width="1" fill="none"/>
       </g>
-      <g id="hs_cup"><!-- hand cupped behind the ear: fingers together and curved forward, thumb below -->
-        <path d="M-9 0 C-12 8 -12 18 -9 26 C-7 31 -2 33 2 31 C6 29 9 24 10 18 C11 11 10 5 8 0 Z" fill="url(#hSkin)"/>
-        <path d="M2 31 C-3 36 -10 37 -14 34 C-16 32 -15 29 -12 28.5 C-8 28 -4 27 -1 25 Z" fill="#e8b792" stroke="#cf9a76" stroke-width=".6"/>
-        <path d="M8 6 C12 10 13 17 11 23" stroke="#e9b893" stroke-width="5" fill="none" stroke-linecap="round"/>
-        <path d="M-6.5 10 q3.5 6 1 13 M-2 9 q4 7 1.5 15 M2.5 9 q3.5 7 1.8 15" stroke="#c99472" stroke-width=".8" fill="none" opacity=".6"/>
-        <path d="M-12.5 33 q1.3 1.2 2.6 .4" stroke="#f7e1d1" stroke-width="1" fill="none"/>
+      <g id="hs_cup"><!-- hand cupped behind the ear (Écoute), drawn fingers-up: a "C" seen from the front, the palm's outer edge
+           behind the ear, the fingers curling over the top of the ear towards the face, the thumb tucked under it -->
+        <path d="M-6 2 C-15.5 -10 -16.5 -28 -9.5 -39.5 C-3.5 -48 9 -49.5 15.8 -42.4 C18.6 -39.2 17.4 -34.4 13.2 -33.8 C9.4 -36.8 4.4 -35.8 2 -31.4 C-0.8 -25 0 -12.5 4.2 -4.2 Z" fill="url(#hSkin)"/>
+        <path d="M-9.5 -39.5 C-3.5 -48 9 -49.5 15.8 -42.4 C18.6 -39.2 17.4 -34.4 13.2 -33.8 C11.6 -35.4 9.8 -36.4 7.8 -36.8 C11 -38.6 12.4 -40.6 12.6 -41.8 C6.4 -45.6 -2.6 -44 -9.5 -39.5 Z" fill="#d79e7a" opacity=".7"/>
+        <path d="M-12.6 -31 C-8.8 -40.5 -0.5 -45 8.4 -44.6 M-14 -24.5 C-10.4 -34.6 -2.6 -40.4 5.4 -40.8 M-14.6 -18 C-11.4 -28 -5 -34.6 2.6 -36" stroke="#c48e6a" stroke-width=".85" fill="none" stroke-linecap="round" opacity=".6"/>
+        <path d="M2.5 -4.6 C7.8 -6.2 13.8 -9.4 16.4 -13.6 C17.4 -15.8 15.2 -18 13 -16.3 C10 -13.4 6 -11.2 1.4 -10.2 Z" fill="#e8b792" stroke="#cf9a76" stroke-width=".6"/>
+        <path d="M-14.2 -20 C-14 -11 -10.6 -3.8 -6 1.8" stroke="#b9805e" stroke-width="1.3" fill="none" opacity=".45"/>
       </g>
     </defs>
   </g>
@@ -343,10 +349,25 @@ const VOCAB = {
   julie: {name:"Julie", kind:"person", say:["Julie."], accept:["julie","juli","julye","jolie","joli","july","julia","juliette","je l'ai","je lai","jeudi","je lis","je ris"]},
   livre: {name:"livre", kind:"object", art:"UN",  say:["Un","livre."],  accept:["livre","livres","libre","lièvre","lire","lèvre","liv"]},
   pomme: {name:"pomme", kind:"object", art:"UNE", say:["Une","pomme."], accept:["pomme","pommes","paume","pom","pome","pomm"]},
+  stylo: {name:"stylo", kind:"object", art:"UN",  say:["Un","stylo."], accept:["stylo","stylos","stilo","stylot"]},
+  chaussure: {name:"chaussure", kind:"object", art:"UNE", say:["Une","chaussure."], accept:["chaussure","chaussures","chaussur","chossure"]},
+  // the teacher (Lesson 1, DISE "My name is"): she points to herself
+  claire: {name:"Claire", kind:"person", say:["Claire."], accept:["claire","clair","clairs","claires","clerc","clère"]},
+  // "je m'appelle": judged as one unit (Chrome's spellings are joined into this token first); the learner's own name after it is ignored
+  jemappelle: {name:"je m'appelle", kind:"phrase", say:["Je m'appelle…"], rep:["Répète : je m'appelle."], accept:["jemappelle"]},
+  jmclaire: {name:"je m'appelle Claire", kind:"phrase", say:["Je m'appelle Claire."], accept:[]},
+  // counting (DISE Lesson 1, Exercise 4): the numbers, and the counts said as one response
+  n1: {name:"un", kind:"number", say:["Un."], accept:["un","1","hun","hein"]},
+  n2: {name:"deux", kind:"number", say:["Deux."], accept:["deux","2","deu","d'eux"]},
+  n3: {name:"trois", kind:"number", say:["Trois."], accept:["trois","3","troie","troyes"]},
+  n4: {name:"quatre", kind:"number", say:["Quatre."], accept:["quatre","4","quatres","katre"]},
+  count3: {name:"un deux trois", kind:"seq", seq:["n1","n2","n3"], say:["Un, deux, trois."], accept:[]},
+  count4: {name:"un deux trois quatre", kind:"seq", seq:["n1","n2","n3","n4"], say:["Un, deux, trois, quatre."], accept:[]},
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
 // function-word slots in an expected answer, with the spellings Chrome may give them
-const expectOf = id => VOCAB[id].art ? [VOCAB[id].art, id] : [id];
+const expectOf = id => VOCAB[id].seq ? VOCAB[id].seq.slice() : VOCAB[id].art ? [VOCAB[id].art, id] : [id];
+const NAMED = Object.keys(VOCAB).filter(n=>["person","object","number"].includes(VOCAB[n].kind));   // words the near-match rule may guess
 const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","sai","cet","c'","s'","cé","sé","saint","sain","sein"];
 const SLOT = { CEST, UN:["un","1","hun","hein"], UNE:["une","1","eune","üne"] };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
@@ -363,49 +384,117 @@ const Q = ["C'est qui ?"], Q2 = ["C'est quoi ?"];
 const A = id => VOCAB[id].say;
 // scene: the two picture frames, e.g. {L:"livre:1", R:"pomme:2"} (item:instance); "L"/"R" = the side Paul is on (Exercise 1)
 const sceneOf = sc => typeof sc==="string" ? {L: sc==="L"?"paul":"julie", R: sc==="L"?"julie":"paul"} : sc;
-function Model(target, sc, o={}, q=Q){ return Object.assign({type:"model", target, scene:sceneOf(sc), questionUnits:q, answerUnits:A(target)}, o); }
-function Lead(id, target, sc, q=Q){ return {type:"task", kind:"lead", id, target, scene:sceneOf(sc), questionUnits:q, answerUnits:A(target)}; }
-function Test(id, target, sc, tag="new", q=Q){ return {type:"task", kind:"test", id, target, scene:sceneOf(sc), tag, questionUnits:q, answerUnits:A(target)}; }
-// several things of the same kind, named one after the other with no question (DISE L1 Ex 2, steps c and d: "Book… book… book")
+/* DISE formats (Teacher's Guide, Lesson 1; P20), in natural French (P21). How the learner is asked (task.cue):
+   "repeat"   Répète : Paul.  — the learner says the new item after the teacher (DISE "Your turn: book").
+   "point"    the teacher points and says nothing; the pointing is the cue (DISE touch-and-name, "Vas-y" once at the start).
+   "question" C'est qui ? / C'est quoi ?  — once the items are known (DISE "What is my name?").
+   A lead ("Avec moi") has no question: the teacher points and they say it together. */
+const repeatCue = id => { if(VOCAB[id].rep) return VOCAB[id].rep.slice(); const a=A(id).join(" ");
+  return ["Répète : "+(VOCAB[id].kind!=="person" ? a[0].toLowerCase()+a.slice(1) : a)]; };
+// Model (not a task): Écoute, point, the item several times (first appearance: close-up on the mouth; once: a single
+// model). With q: the question, then its answer, once (the teacher answering her own question). at: what she points to
+// ("self" = her hand on her chest, "you" = her open palm to the learner, "none", or a frame). intro / qIntro: the narrated
+// introductions (first use only).
+function Model(target, sc, o={}){ return Object.assign({type:"model", target, scene:sceneOf(sc), questionUnits:[], answerUnits:A(target)}, o); }
+function ModelQ(target, sc, q, o={}){ return Object.assign(Model(target, sc, o), {questionUnits:q}); }
+function Lead(id, target, sc, o={}){ return Object.assign({type:"task", kind:"lead", id, target, scene:sceneOf(sc), questionUnits:[], answerUnits:A(target)}, o); }
+function Rep(id, target, sc, o={}){ return Object.assign({type:"task", kind:"test", cue:"repeat", id, target, scene:sceneOf(sc), tag:"new", questionUnits:repeatCue(target), answerUnits:A(target)}, o); }
+function Point(id, target, sc, o={}){ return Object.assign({type:"task", kind:"test", cue:"point", id, target, scene:sceneOf(sc), tag:"new", questionUnits:[], answerUnits:A(target)}, o); }
+function Ask(id, target, sc, q, o={}){ return Object.assign({type:"task", kind:"test", cue:"question", id, target, scene:sceneOf(sc), tag:"new", questionUnits:q, answerUnits:A(target)}, o); }
+// several things of the same kind: each touched and named, then the first again (DISE L1 Ex 2, steps c and d)
 function ModelSet(target, sc){ return {type:"model", set:true, target, scene:sceneOf(sc), questionUnits:[], answerUnits:A(target)}; }
-const M2=(t,sc,o)=>Model(t,sc,o,Q2), L2=(id,t,sc)=>Lead(id,t,sc,Q2), T2=(id,t,sc)=>Test(id,t,sc,"new",Q2);
+// a series: the teacher points to each frame of a row in turn and says units[i] there (naming a set; counting)
+function Series(sc, units, o={}){ return Object.assign({type:"model", series:true, target:"series", scene:sceneOf(sc), units, questionUnits:[], answerUnits:[].concat(...units)}, o); }
+function SeriesLead(id, sc, units){ return {type:"task", kind:"lead", series:true, id, target:"series", scene:sceneOf(sc), units, questionUnits:[], answerUnits:[].concat(...units)}; }
+// the learner says it about themselves, cued by "Vas-y" with the teacher's open palm held out to them. Only
+// "je m'appelle" is judged: the learner's own name is ignored (Jon, 8 November 2026), and the teacher never echoes it.
+function You(id, sc){ return {type:"task", kind:"test", cue:"you", id, target:"jemappelle", at:"you", expect:["jemappelle","REST"], noEcho:true, scene:sceneOf(sc), tag:"new", questionUnits:[], answerUnits:A("jemappelle")}; }
+
+/* Lesson 1 follows DISE Lesson 1 exercise by exercise (see "DISE Lessons 1–10: what Faultless follows, and why"):
+   1 My name is → Je m'appelle (with Claire, Paul and Julie named first); 2 book, cup → un livre, une pomme;
+   3 clap, nod → dropped (actions the app cannot see); 4 counting 1–4 and How many?; 5 What is my name? →
+   Je m'appelle comment ?; 6 boy, shoe → un stylo, une chaussure; 7 dropped; 8 a series; 9 review.
+   Object questions (C'est quoi ? / C'est qui ?) start in Lesson 3, where DISE first asks What is this?. */
+const PJ="L";                                                     // Paul on the left, Julie on the right (DISE's classmates)
+const LP={L:"livre:1",R:"pomme:1"}, SC={L:"stylo:1",R:"chaussure:1"};
+const BOOKS3={row:["livre:1","livre:2","livre:3"]}, PENS3={row:["stylo:1","stylo:2","stylo:3"]};
+const NUM3={row:["n1","n2","n3"]}, NUM4={row:["n1","n2","n3","n4"]}, APPLES4={row:["pomme:1","pomme:1","pomme:1","pomme:1"]};
+const SERIES={row:["chaussure:1","livre:1","pomme:1","stylo:1"]}, SERIES_U=[["Une chaussure."],["Un livre."],["Une pomme."],["Un stylo."]];
+const COUNT_U=[["Un."],["Deux."],["Trois."],["Quatre."]];
+const HOW=["Il y en a combien ?"], MYNAME=["Je m'appelle comment ?"];
+const NAME_LEAD = id => Lead(id,"jemappelle",PJ,{at:"you", hold:1600});   // "Je m'appelle…" together; the learner goes on with their name
+const numPart = (n, k, sc) => ({ id:"P"+k, label:VOCAB[n].name+": model, lead, repeat", items:[ Model(n,sc), Lead(`L1E3-T${k*2-1}`,n,sc), Rep(`L1E3-T${k*2}`,n,sc) ]});
 
 const LESSONS = [{
   id:"L1",
   exercises:[{
-    id:"L1E1", title:"C'est qui ?", track:"A",
+    id:"L1E1", title:"Je m'appelle", track:"A",
     parts:[
-      { id:"P1", label:"Introduction: Paul, then Julie", items:[
-        Model("paul","L",{classroom:true, classLead:true}),   // first appearance; first "Avec moi" ever is shown in the classroom
-        Lead("L1E1-T1","paul","L"),
-        Test("L1E1-T2","paul","L"),
-        Model("julie","L",{classroom:true}),                   // first appearance
-        Lead("L1E1-T3","julie","L"),
-        Test("L1E1-T4","julie","L") ]},
-      { id:"P2", label:"Mixed test", items:[                    // three questions: each name in its other frame; not strictly alternating
-        Test("L1E1-T5","julie","R"), Test("L1E1-T6","paul","R"), Test("L1E1-T7","paul","L") ]}
+      { id:"P1", label:"Claire: model, lead, repeat", items:[
+        Model("claire",PJ,{intro:true}), Lead("L1E1-T1","claire",PJ), Rep("L1E1-T2","claire",PJ) ]},
+      { id:"P2", label:"Paul", items:[ Model("paul",PJ), Lead("L1E1-T3","paul",PJ), Rep("L1E1-T4","paul",PJ) ]},
+      { id:"P3", label:"Julie", items:[ Model("julie",PJ), Lead("L1E1-T5","julie",PJ), Rep("L1E1-T6","julie",PJ) ]},
+      { id:"P4", label:"Je m'appelle", items:[
+        Model("jmclaire",PJ),
+        Model("jemappelle",PJ,{at:"self"}), Lead("L1E1-T7","jemappelle",PJ,{at:"self"}), Rep("L1E1-T8","jemappelle",PJ,{at:"self"}),
+        Model("jmclaire",PJ,{once:true}), NAME_LEAD("L1E1-T9") ]}
     ]
   },{
-    // DISE Lesson 1, Exercise 2 (book, cup): each word modelled, led and tested; then several of each kind named in turn
-    // (steps c, d); then a mixed test (steps e, f: cup, book, book, cup, cup). Different-looking books and apples, so the
-    // word is the name of the kind, not of one picture; positions change so they never predict the answer.
-    id:"L1E2", title:"C'est quoi ?", track:"A",
+    id:"L1E2", title:"Un livre, une pomme", track:"A",
     parts:[
-      { id:"P1", label:"Introduction: un livre, then une pomme", items:[
-        M2("livre",{L:"livre:1",R:"pomme:1"},{classroom:true}),
-        L2("L1E2-T1","livre",{L:"livre:1",R:"pomme:1"}),
-        T2("L1E2-T2","livre",{L:"livre:1",R:"pomme:1"}),
-        M2("pomme",{L:"livre:1",R:"pomme:1"},{classroom:true}),
-        L2("L1E2-T3","pomme",{L:"livre:1",R:"pomme:1"}),
-        T2("L1E2-T4","pomme",{L:"livre:1",R:"pomme:1"}) ]},
-      { id:"P2", label:"Other books and apples, then a mixed test", items:[
-        ModelSet("livre",{L:"livre:2",R:"livre:3"}),
-        ModelSet("pomme",{L:"pomme:2",R:"pomme:3"}),
-        T2("L1E2-T5","pomme",{L:"livre:2",R:"pomme:3"}),
-        T2("L1E2-T6","livre",{L:"pomme:2",R:"livre:3"}),
-        T2("L1E2-T7","livre",{L:"livre:1",R:"pomme:2"}),
-        T2("L1E2-T8","pomme",{L:"pomme:1",R:"livre:2"}),
-        T2("L1E2-T9","pomme",{L:"livre:3",R:"pomme:1"}) ]}
+      { id:"P1", label:"un livre", items:[ Model("livre",LP), Lead("L1E2-T1","livre",LP), Rep("L1E2-T2","livre",LP) ]},
+      { id:"P2", label:"une pomme", items:[ Model("pomme",LP), Lead("L1E2-T3","pomme",LP), Rep("L1E2-T4","pomme",LP) ]},
+      { id:"P3", label:"Three books, two apples", items:[
+        ModelSet("livre",BOOKS3), Lead("L1E2-T5","livre",BOOKS3,{at:"s0"}), Lead("L1E2-T6","livre",BOOKS3,{at:"s1"}), Lead("L1E2-T7","livre",BOOKS3,{at:"s2"}),
+        ModelSet("pomme",{L:"pomme:2",R:"pomme:3"}), Lead("L1E2-T8","pomme",{L:"pomme:2",R:"pomme:3"},{at:"L"}), Lead("L1E2-T9","pomme",{L:"pomme:2",R:"pomme:3"},{at:"R"}) ]},
+      { id:"P4", label:"The teacher points: pomme, livre, livre, pomme, pomme", items:[
+        Lead("L1E2-T10","livre",LP), Lead("L1E2-T11","pomme",LP),
+        Point("L1E2-T12","pomme",LP), Point("L1E2-T13","livre",{L:"pomme:2",R:"livre:2"}), Point("L1E2-T14","livre",{L:"livre:3",R:"pomme:3"}),
+        Point("L1E2-T15","pomme",{L:"pomme:3",R:"livre:1"}), Point("L1E2-T16","pomme",{L:"livre:2",R:"pomme:1"}) ]}
+    ]
+  },{
+    id:"L1E3", title:"Un, deux, trois, quatre", track:"D",
+    parts:[
+      numPart("n1",1,NUM3), numPart("n2",2,NUM3), numPart("n3",3,NUM3),
+      { id:"P4", label:"Un, deux, trois", items:[ Series(NUM3,COUNT_U.slice(0,3)), Series(NUM3,COUNT_U.slice(0,3)),
+        SeriesLead("L1E3-T7",NUM3,COUNT_U.slice(0,3)), Ask("L1E3-T8","count3",NUM3,["Compte."],{at:"none"}) ]},
+      { id:"P5", label:"quatre", items:[ Model("n4",NUM4), Lead("L1E3-T9","n4",NUM4), Rep("L1E3-T10","n4",NUM4) ]},
+      { id:"P6", label:"Un, deux, trois, quatre", items:[ Series(NUM4,COUNT_U), SeriesLead("L1E3-T11",NUM4,COUNT_U), Ask("L1E3-T12","count4",NUM4,["Compte."],{at:"none"}) ]},
+      { id:"P7", label:"Four apples: count them; how many?", items:[
+        Series(APPLES4,COUNT_U), Ask("L1E3-T13","count4",APPLES4,["Compte."],{at:"none"}),
+        ModelQ("n4",APPLES4,HOW,{at:"none"}), Ask("L1E3-T14","n4",APPLES4,HOW,{at:"none"}) ]}
+    ]
+  },{
+    id:"L1E4", title:"Je m'appelle comment ?", track:"A",
+    parts:[
+      { id:"P1", label:"Je m'appelle (with the learner)", items:[ Model("jmclaire",PJ,{once:true}), NAME_LEAD("L1E4-T1") ]},
+      { id:"P2", label:"Je m'appelle comment ? Claire.", items:[
+        ModelQ("claire",PJ,MYNAME,{qIntro:true}), Ask("L1E4-T2","claire",PJ,MYNAME), NAME_LEAD("L1E4-T3"), Ask("L1E4-T4","claire",PJ,MYNAME) ]}
+    ]
+  },{
+    id:"L1E5", title:"Un stylo, une chaussure", track:"A",
+    parts:[
+      { id:"P1", label:"un stylo", items:[ Model("stylo",SC), Lead("L1E5-T1","stylo",SC), Rep("L1E5-T2","stylo",SC) ]},
+      { id:"P2", label:"Three pens, named alone", items:[ ModelSet("stylo",PENS3),
+        Point("L1E5-T3","stylo",PENS3,{at:"s0"}), Point("L1E5-T4","stylo",PENS3,{at:"s1"}), Point("L1E5-T5","stylo",PENS3,{at:"s2"}) ]},
+      { id:"P3", label:"une chaussure", items:[ Model("chaussure",SC), Lead("L1E5-T6","chaussure",SC), Rep("L1E5-T7","chaussure",SC) ]},
+      { id:"P4", label:"Two shoes", items:[ ModelSet("chaussure",{L:"chaussure:1",R:"chaussure:2"}),
+        Lead("L1E5-T8","chaussure",{L:"chaussure:1",R:"chaussure:2"},{at:"L"}), Lead("L1E5-T9","chaussure",{L:"chaussure:1",R:"chaussure:2"},{at:"R"}) ]},
+      { id:"P5", label:"The teacher points: chaussure, stylo, stylo, chaussure, chaussure", items:[
+        Lead("L1E5-T10","stylo",SC), Lead("L1E5-T11","chaussure",SC),
+        Point("L1E5-T12","chaussure",SC), Point("L1E5-T13","stylo",{L:"chaussure:2",R:"stylo:2"}), Point("L1E5-T14","stylo",{L:"stylo:3",R:"chaussure:1"}),
+        Point("L1E5-T15","chaussure",{L:"chaussure:2",R:"stylo:1"}), Point("L1E5-T16","chaussure",{L:"stylo:2",R:"chaussure:1"}) ]}
+    ]
+  },{
+    id:"L1E6", title:"Une chaussure, un livre, une pomme, un stylo", track:"A",
+    parts:[ { id:"P1", label:"The series: model, lead", items:[ Series(SERIES,SERIES_U), SeriesLead("L1E6-T1",SERIES,SERIES_U) ]} ]
+  },{
+    id:"L1E7", title:"Révision", track:"R",
+    parts:[
+      { id:"P1", label:"Je m'appelle comment ?", items:[ Ask("L1E7-T1","claire",PJ,MYNAME) ]},
+      { id:"P2", label:"Répète : je m'appelle", items:[ Rep("L1E7-T2","jemappelle",PJ,{at:"self"}) ]},
+      { id:"P3", label:"Je m'appelle… (the learner alone)", items:[ Model("jmclaire",PJ,{once:true}), You("L1E7-T3",PJ) ]},
+      { id:"P4", label:"The series", items:[ Series(SERIES,SERIES_U), SeriesLead("L1E7-T4",SERIES,SERIES_U) ]}
     ]
   }]
 }];
@@ -418,12 +507,13 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:7, introSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:9, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
-  if(!s.stateVer || s.stateVer<7){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:7});
+  // version 8 (DISE formats: model, lead, Répète; pointing; then the question): progress and the introduction start again
+  if(!s.stateVer || s.stateVer<9){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, stateVer:9});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
   } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
@@ -734,7 +824,7 @@ const fold = w => w.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/^g(?=[ie])/
 function nameOf(w){
   for(const n of Object.keys(PEOPLE)) if(PEOPLE[n].accept.includes(w)) return {n, near:false};
   if(w.length<3 || CEST.includes(w)) return null;
-  const f=fold(w); const d=Object.keys(PEOPLE).map(n=>({n, d:lev(f, fold(PEOPLE[n].name.toLowerCase()))})).sort((x,y)=>x.d-y.d);
+  const f=fold(w); const d=NAMED.map(n=>({n, d:lev(f, fold(PEOPLE[n].name.toLowerCase()))})).sort((x,y)=>x.d-y.d);
   // one edit away, or two for words of four letters or more (so a short everyday word such as "pas" is never taken for a name)
   const okDist = d[0].d<=1 || (d[0].d===2 && f.length>=4);
   if(okDist && (d.length<2 || d[1].d>d[0].d) && f[0]===fold(PEOPLE[d[0].n].name.toLowerCase())[0]) return {n:d[0].n, near:true};
@@ -743,7 +833,9 @@ function nameOf(w){
 // Chrome's multi-word spellings of a one-word answer (e.g. "je l'ai" for Julie) are turned back into the word first
 const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
-  let n = normalise(text); for(const [re,to] of MULTI) n = n.replace(re, to);
+  let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
+  n = n.replace(/(^| )([1-9]{2,4})(?= |$)/g, (m,a,d)=>a+d.split("").join(" "));                    // "1234" = un, deux, trois, quatre
+  for(const [re,to] of MULTI) n = n.replace(re, to);
   const toks = n.split(" ").filter(w=>w && !FILLERS.includes(w));
   const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)) flat.push(m[1], m[2]); else flat.push(w); });
   return flat;
@@ -761,13 +853,15 @@ function judge(text, expect, echoes=[], alsoOk=[]){
   if(!raw.length) return {ok:false, reason:"nothing heard"};
   const t=stripEcho(raw.filter((w,i)=> i===0 || w!==raw[i-1]), echoes);
   if(!t.length) return {ok:false, reason:"only the app's own words heard", echoOnly:true};
-  const fits = want => { if(!t.length || t.length%want.length) return null; let near=[];
-    for(let i=0;i<t.length;i++){ const e=want[i%want.length], w=t[i];
+  const fits = want => { let tt=t;
+    if(want[want.length-1]==="REST"){ want=want.slice(0,-1); if(tt.length<want.length) return null; tt=tt.slice(0,want.length); }   // whatever follows is not judged
+    if(!tt.length || tt.length%want.length) return null; let near=[];
+    for(let i=0;i<tt.length;i++){ const e=want[i%want.length], w=tt[i];
       if(SLOT[e]){ if(!SLOT[e].includes(w)) return null; }
       else { const r=nameOf(w); if(!r || r.n!==e) return null; if(r.near) near.push(w); } }
     return near; };
   for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(nr) return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
-  const target = expect[expect.length-1];
+  const target = expect.filter(x=>x!=="REST").slice(-1)[0];
   const said = t.map(nameOf).filter(Boolean).map(r=>r.n);
   if(said.some(n=>n!==target)) return {ok:false, reason:"wrong name"};
   if(SLOT[expect[0]] && t.length===1 && said[0]===target) return {ok:false, reason:"word without its "+(expect[0]==="CEST"?"c'est":"article")};
@@ -854,7 +948,7 @@ function listen(expect, alsoOk=[]){
    free transcript says the same words ("text"). The older rule ("margin") took it if it scored close to the transcript. */
 const LISTEN = { rule:"text", T: 0.3 };
 const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿ' ]/g," ").replace(/\s+/g," ").trim();   // a hesitation (euh) is not the intended response
-function phraseOf(want){ const w=want.map(x=> x==="CEST"?"c'est" : x==="UN"?"un" : x==="UNE"?"une" : VOCAB[x].name).join(" ");
+function phraseOf(want){ const w=want.filter(x=>x!=="REST").map(x=> x==="CEST"?"c'est" : x==="UN"?"un" : x==="UNE"?"une" : VOCAB[x] ? VOCAB[x].name : x).join(" ");
   return w.charAt(0).toUpperCase()+w.slice(1)+"."; }
 function candidatePhrases(){
   const c=[]; for(const n of Object.keys(PEOPLE)){ const N=PEOPLE[n].name; c.push(`C'est ${N}.`, `${N}.`, `Euh, c'est ${N}.`); }
@@ -1023,23 +1117,84 @@ function objectPicture(id, inst){
         ${Array.from({length:22},(_,k)=>{ const ang=k*2.39, r=8+((k*37)%34); const x=80+Math.cos(ang)*r*1.05, y=106+Math.sin(ang)*r*0.95; return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.5+((k*13)%5)/10).toFixed(2)}" fill="${inst===2?"#e6f0b8":"#f6d2a0"}" opacity=".45"/>`; }).join("")}
         <path d="M106 118 C102 136 92 148 84 151" stroke="${A.d}" stroke-width="5" fill="none" opacity=".25" stroke-linecap="round"/>
       </g>`;
+  } else if(id==="stylo"){
+    // three different pens: a capped blue ballpoint, a black click pen, a red felt-tip
+    const P={1:{c:"#2f5fb3",d:"#1d3d78",l:"#6f98dc",rot:-28,len:118,w:13},2:{c:"#2b2b30",d:"#141417",l:"#5b5b63",rot:-52,len:124,w:12},3:{c:"#d23b33",d:"#8f221d",l:"#f07a6e",rot:-14,len:108,w:18}}[inst]||{c:"#2f5fb3",d:"#1d3d78",l:"#6f98dc",rot:-28,len:118,w:13};
+    const x0=80-P.len/2, y0=106-P.w/2, tip = inst===3 ? 14 : 12;
+    g.innerHTML=`<defs><linearGradient id="${u}b" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${P.l}"/><stop offset=".45" stop-color="${P.c}"/><stop offset="1" stop-color="${P.d}"/></linearGradient>
+        <linearGradient id="${u}m" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f4f4f2"/><stop offset=".5" stop-color="#b9b9b6"/><stop offset="1" stop-color="#7d7d7a"/></linearGradient></defs>
+      ${shadow(82,150,54)}
+      <g transform="rotate(${P.rot} 80 106)">
+        <path d="M${x0} ${y0} L${x0-tip} ${106-1.2} L${x0-tip-3} 106 L${x0-tip} ${106+1.2} L${x0} ${y0+P.w} Z" fill="url(#${u}m)"/>
+        <rect x="${x0}" y="${y0}" width="${P.len}" height="${P.w}" rx="${P.w/2.6}" fill="url(#${u}b)"/>
+        ${inst===2 ? `<rect x="${x0+4}" y="${y0-0.5}" width="26" height="${P.w+1}" rx="4" fill="#1b1b1e"/>${[0,1,2,3,4,5].map(k=>`<path d="M${x0+7+k*4} ${y0+1} v${P.w-2}" stroke="#3a3a40" stroke-width="1.2"/>`).join("")}
+                       <rect x="${x0+P.len-4}" y="${106-3}" width="10" height="6" rx="2" fill="url(#${u}m)"/><path d="M${x0+P.len-34} ${y0-2} h28 v3 h-28z" fill="url(#${u}m)"/>`
+                    : `<rect x="${x0+P.len*0.62}" y="${y0-1}" width="${P.len*0.38+2}" height="${P.w+2}" rx="${P.w/2.4}" fill="url(#${u}b)" stroke="${P.d}" stroke-width=".8"/>
+                       <path d="M${x0+P.len*0.66} ${y0-3} h${P.len*0.3} q4 0 4 3 h-${P.len*0.3+2}z" fill="${inst===3?P.d:"url(#"+u+"m)"}"/>`}
+        <rect x="${x0+6}" y="${y0+2}" width="${P.len-14}" height="${P.w*0.22}" rx="2" fill="#fff" opacity=".28"/>
+      </g>`;
+  } else if(id==="chaussure"){
+    if(inst===2){        // a red high-heeled shoe, side view
+      g.innerHTML=`<defs><linearGradient id="${u}r" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e2473d"/><stop offset="1" stop-color="#951f1a"/></linearGradient></defs>
+        ${shadow(84,154,60)}
+        <path d="M36 92 L46 150 L54 150 L52 108 Z" fill="#6e1612"/>
+        <path d="M30 86 Q36 78 48 84 Q72 100 96 112 Q120 120 134 126 Q146 132 140 144 Q136 150 120 150 L76 150 Q66 140 54 112 Q46 96 34 96 Q26 94 30 86 Z" fill="url(#${u}r)"/>
+        <path d="M52 100 Q78 118 112 128 Q124 131 128 136" stroke="#fff" stroke-width="2.2" fill="none" opacity=".25"/>
+        <path d="M58 112 Q66 130 76 150" stroke="#6e1612" stroke-width="2" fill="none" opacity=".6"/>
+        <path d="M76 150 L140 150 Q146 148 142 144" stroke="#3b0c0a" stroke-width="3" fill="none"/>`;
+    } else {             // a trainer, side view: white sole, blue upper, laces
+      g.innerHTML=`<defs><linearGradient id="${u}u" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4f86c9"/><stop offset="1" stop-color="#2c5891"/></linearGradient>
+          <linearGradient id="${u}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9d6cf"/></linearGradient></defs>
+        ${shadow(82,152,66)}
+        <path d="M18 136 Q16 150 30 152 L136 152 Q148 150 146 138 Z" fill="url(#${u}s)" stroke="#bdb8ae" stroke-width="1"/>
+        <path d="M22 138 Q20 108 34 92 Q44 84 56 88 Q66 100 84 104 Q110 106 128 116 Q146 124 146 138 Z" fill="url(#${u}u)"/>
+        <path d="M34 92 Q40 86 50 88 Q48 104 40 118" fill="#21477a"/>
+        <path d="M60 96 L96 112 M64 92 L72 104 M74 98 L82 108 M84 101 L92 112" stroke="#f4f1ea" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M100 120 Q122 122 140 132" stroke="#fff" stroke-width="5" fill="none" opacity=".9" stroke-linecap="round"/>
+        <path d="M22 138 L146 138" stroke="#9aa3ad" stroke-width="1.2" opacity=".6"/>
+        <path d="M30 128 Q60 132 92 126" stroke="#fff" stroke-width="1.6" fill="none" opacity=".3"/>`;
+    }
   }
   return g;
 }
 const slotL=document.getElementById("slotL"), slotR=document.getElementById("slotR");
 let curScene=null, curSceneKey=null;
-function picture(spec){ const [id,inst]=spec.split(":"); return VOCAB[id].kind==="person" ? portrait(id) : objectPicture(id, +inst||1); }
+function picture(spec){ const [id,inst]=spec.split(":"); const k=VOCAB[id].kind;
+  return k==="person" ? portrait(id) : k==="number" ? numberCard(id) : objectPicture(id, +inst||1); }
+// a numeral card (DISE Lesson 1, Exercise 4 shows the numerals 1–4); numerals, unlike French words, do not mislead pronunciation
+function numberCard(id){
+  const g=document.createElementNS(svgNS,"g"), d=id.slice(1);
+  g.innerHTML=`<rect x="22" y="26" width="116" height="142" rx="12" fill="#000" opacity=".08" transform="translate(3 4)"/>
+    <rect x="22" y="26" width="116" height="142" rx="12" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/>
+    <text x="80" y="140" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="116" font-weight="700" fill="#2b3a55">${d}</text>`;
+  return g;
+}
+/* A scene is two frames {L, R}, or a row of three or four smaller frames {row:[…]} (several of a kind, a series,
+   numbers, things to count). Each row frame has its own pointing target s0, s1, …; the teacher points to the
+   left half with her right hand and to the right half with her left. */
+const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
+const frameRow=document.getElementById("frameRow"), fL=document.getElementById("frameL"), fR=document.getElementById("frameR");
+function buildRow(items){
+  const n=items.length, gap=10, w=(344-gap*(n-1))/n, h=w*190/160, y=24+(190-h)/2, k=w/160;
+  frameRow.replaceChildren();
+  items.forEach((spec,i)=>{ const x=28+i*(w+gap);
+    const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+    g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
+    const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
+    frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62};
+  });
+}
 async function setPortraits(sc){
-  sc=sceneOf(sc); if(!sc) return; const key=sc.L+"|"+sc.R;
+  sc=sceneOf(sc); if(!sc) return; const key=sc.row ? "row:"+sc.row.join(",") : sc.L+"|"+sc.R;
   if(key===curSceneKey) return;
   const first = curSceneKey===null;
-  if(!first){ slotL.style.opacity=0; slotR.style.opacity=0; await sleep(260); }
-  slotL.replaceChildren(picture(sc.L));
-  slotR.replaceChildren(picture(sc.R));
+  if(!first){ slotL.style.opacity=0; slotR.style.opacity=0; frameRow.style.opacity=0; await sleep(260); }
+  if(sc.row){ buildRow(sc.row); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
+  else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
+    slotL.style.opacity=1; slotR.style.opacity=1; }
   curScene=sc; curSceneKey=key;
-  slotL.style.opacity=1; slotR.style.opacity=1; await sleep(first?0:260);
+  await sleep(first?0:260);
 }
-const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
 /* ============================================================
    ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
    the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
@@ -1105,10 +1260,15 @@ const POSE = {
   // "Avec moi" (with me): my hand on my chest and my other hand reaching to you — "you and me, together"
   together: {L:{x:186,y:470, shape:"flat", rot:-118, scale:1.05}, R:{x:224,y:528, shape:"palmup", rot:0, scale:1.38, fs:0.32}},
   // "Écoute" (listen): hand cupped behind the ear
-  ear: {R:{x:256,y:338, shape:"cup", rot:-12, scale:1.15}},
+  ear: {R:{x:259,y:380, shape:"cup", rot:4, scale:1.08}},
 };
+// which arm points: the teacher's right hand (viewer's left, "L") for the left frame or the left half of a row
+function armFor(side){ if(side==="L"||side==="R") return side; if(side==="self") return "L"; if(side==="you") return "R";
+  const i=+side.slice(1), n=curScene && curScene.row ? curScene.row.length : 2; return i < n/2 ? "L" : "R"; }
 function pointPose(side){            // reach towards the picture frame on that side, index finger extended
-  const s = side==="L" ? "L" : "R", S=ARMS.SH[s], T=TARGET[side];
+  if(side==="self") return {L:{x:168,y:468, shape:"point", rot:-90, scale:1}};   // pointing to herself: her finger on her name tag
+  if(side==="you") return {R:palmUp("R")};                             // to the learner: the open palm held out to them
+  const s = armFor(side), S=ARMS.SH[s], T=TARGET[side];
   const dx=T.x-S.x, dy=T.y-S.y, d=Math.hypot(dx,dy), reach=126;
   return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
 }
@@ -1118,7 +1278,8 @@ function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
 let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; return armsGo(p,ms); };
 async function pointAt(who){
-  const side = sideOf(who), pose = pointPose(side), key=side+(offering?"+palm":"");
+  const side = sideOf(who); if(side==="none") return;
+  const pose = pointPose(side), key=side+(offering?"+palm":"");
   if(key===lastPoint) return;
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
   await armsGo(pose, 340); lastPoint=key;
@@ -1165,9 +1326,14 @@ async function gestureEar(){ offering=false; await ARMS.go(POSE.ear, 300); }   /
 // the other arm points to the picture (Zig's "your turn"; Jerry's hand towards the learner as the response comes)
 let offering=false;
 // which frame holds the item ("L"/"R" may also be given directly, e.g. to point at each of two books in turn)
-const sideOf = target => { if(target==="L"||target==="R") return target; if(!curScene || !target) return "R";
-  return curScene.L.split(":")[0]===target ? "L" : "R"; };
-const otherArm = side => side==="L" ? "R" : "L";
+// what to point at: a task or model (its "at" slot, or its target), a slot ("L", "R", "s0"…, "self", "you"), or an item id
+const sideOf = t => { if(t && typeof t==="object") t = t.at || t.target;
+  if(t==="L"||t==="R"||t==="self"||t==="you"||t==="none"||/^s\d$/.test(t||"")) return t;
+  if(t==="claire"||t==="jmclaire") return "self";
+  if(!curScene || !t) return "R";
+  if(curScene.row){ const i=curScene.row.findIndex(x=>x.split(":")[0]===t); return "s"+Math.max(0,i); }
+  return curScene.L.split(":")[0]===t ? "L" : "R"; };
+const otherArm = side => armFor(side)==="L" ? "R" : "L";
 function palmUp(arm){ return {x: arm==="L"?176:224, y:528, shape:"palmup", rot:0, scale:1.38, fs:0.32}; }
 async function gesturePalm(target){ offering=true; const arm=otherArm(sideOf(target)); await ARMS.go({[arm]:palmUp(arm)}, 320); }
 // correct answer: a short "ding" (Web Audio, unlocked by the first tap on the play button)
@@ -1225,78 +1391,93 @@ async function multipleModels(t, n=3, close=false){
   if(close){ faceZoom(false); await sleep(750); }
 }
 
-/* The signal (NIFDI handout p.1): announce ("À toi", once when the learner's turn starts), focus (point),
-   think time (varies with how hard the task is), cue (the question: the last thing the teacher says),
-   signal (the green border, 0.5 s after the cue). */
+/* The signal (NIFDI handout p.1): announce ("Vas-y", once when the learner's turn starts), focus (point), think time
+   (varies with how hard the task is), cue (the last thing the teacher does: the question, "Répète : Paul.", or — in
+   touch-and-name — the pointing itself), signal (the green border, exactly 0.5 s after the cue). */
 function thinkTime(t, {retest=false, prevTarget=null, firstOfItem=false}={}){
   if(retest) return 400;                  // the answer has just been given
   if(firstOfItem) return 1000;            // the first time the learner says a new item
   if(prevTarget && prevTarget!==t.target) return 800;   // a switch to the other item
   return 500;                             // the same item again
 }
-// AFTER_ATOI: the gap between "À toi" and the question — no longer than the gaps elsewhere, so it never sounds like
-// the learner's turn (Jon, 8 November 2026). The pointing (focus) happens while "À toi" is being said, and "À toi"
-// itself gives the thinking time.
+// AFTER_ATOI: the gap after "Vas-y" — no longer than the gaps elsewhere, so it never sounds like the learner's turn
+// (Jon, 8 November 2026). "Vas-y" itself gives the thinking time.
 const AFTER_ATOI = 150;
 async function askAndListen(task, expect, think=500, alsoOk=[]){
-  await pointAt(task.target);             // focus
-  await sleep(think);                     // think time
   recentSaid=[];                          // only the cue can be picked up by the microphone, so only it counts as an echo
+  if(task.cue==="point"){                 // touch-and-name: the pointing is the cue, nothing is said
+    if(lastPoint){ const o=offering; rest(); offering=o; await sleep(320); }   // the hand comes back first, so the pointing is seen
+    await sleep(think);                   // think time
+    await pointAt(task);           // cue
+    lastSpeechEnd = Date.now();           // the signal is timed from the moment the pointing lands
+    return listen(expect, alsoOk);
+  }
+  if(task.cue==="you"){                   // about the learner: the open palm to them, then "Vas-y" is the cue
+    offering=true; await pointAt("you"); await sleep(think); await say(PHR.atoi);
+    return listen(expect, alsoOk);
+  }
+  await pointAt(task);             // focus
+  await sleep(think);                     // think time
   await say(task.questionUnits);          // cue
   return listen(expect, alsoOk);          // signal at 0.5 s, then the learner responds
 }
-// Model (not a task). First appearance: someone using the app on a phone, with several models; otherwise a plain model.
+// "Vas-y" with the open palm and the pointing (questions); for touch-and-name, "Vas-y" alone, since the pointing is the cue
+async function announce(t){
+  if(t.cue==="point"){ offering=false; await say(PHR.atoi); return; }
+  await gesturePalm(t); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(t); })()]);
+}
+// Model (not a task)
 async function presentModel(m){
   curTask="model "+m.target;
   await setPortraits(m.scene);
   if(m.set){                                   // "Un livre… un livre." — pointing to each in turn, no question
     ph("model: several of a kind");
     await gestureEar(); await say(PHR.amoi);
-    for(const side of ["L","R"]){ await pointAt(side); await sleep(250); await say(answerUnits(m)); await sleep(350); }
-  } else if(m.classroom && m.classLead && !S.introSeen){
-    await presentIntro(m);
-  } else if(m.classroom){
-    await setScene("class");
-    ph("model learner: model");
+    const slots = m.scene.row ? m.scene.row.map((_,i)=>"s"+i) : ["L","R"];
+    for(const side of slots){ await pointAt(side); await sleep(250); await say(answerUnits(m)); await sleep(350); }
+    await pointAt(slots[0]); await sleep(250); await say(answerUnits(m));      // the first one again (DISE: "Touch first book and say: Book")
+  } else if(m.series){                         // a series: each frame in turn (naming a set; counting)
+    ph("model: series");
     await gestureEar(); await say(PHR.amoi);
-    await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3, true);
-    if(m.classLead){
-      ph("model learner: lead");
-      await gestureLead(); await say(PHR.avecmoi); await pointAt(m.target); await say(m.questionUnits);
-      await untilSignal(); glow(true); await say(answerUnits(m), "both"); glow(false); rest(); await sleep(350);
-    }
-    ph("model learner: test");
-    await gesturePalm(m.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(m.target); })()]); await sleep(AFTER_ATOI); await say(m.questionUnits);
-    await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-    smile(true); await nod(); await say(answerUnits(m)); rest(); await sleep(400);          // affirmed, as for the learner
-    await setScene("one");
-    if(m.classLead){ ph("after the demo: speak clearly and loudly"); await afterDemoScreen(); }   // the learner starts their part
-  } else {
+    for(let i=0;i<m.units.length;i++){ await pointAt("s"+i); await say(m.units[i]); await sleep(120); }
+  } else if(m.intro && !S.introSeen){
+    await presentIntro(m);
+  } else if(m.qIntro && !S.qIntroSeen){
+    await presentQIntro(m);
+  } else if(m.questionUnits.length){           // the teacher asks her own question and answers it
+    ph("model: question and answer");
+    await gestureEar(); await say(PHR.amoi);
+    await pointAt(m); await say(m.questionUnits); await sleep(300); await sayAnswer(m);
+  } else {                                     // a new item: several models, close-up on the mouth (Zig: "say the word many times")
     ph("model");
     await gestureEar(); await say(PHR.amoi);
-    await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3);
+    await pointAt(m); await sleep(250); await multipleModels(m, m.once?1:3, !m.once);
   }
   rest();
 }
 /* The introduction (Jon, 8 November 2026, after testing with his family): a narrated demo in English of what the learner
-   does, shown by the on-screen learner. Red border: listen only. "Avec moi": say the answer at the same time as the
-   teacher (shown three times: the most confusing part for testers). "Vas-y": say only the answer, alone. Never repeat
-   what the teacher says. The French words are heard in the teacher's own voice. */
+   does, shown by the on-screen learner, in the formats of the exercise that follows. Red border: listen only. "Avec moi":
+   say it at the same time as the teacher (shown three times: the most confusing part for testers). "Répète": say it once,
+   alone. "Vas-y" and the teacher points: say the name. Last: the learner only speaks when the border is green. */
 async function presentIntro(m){
   ph("introduction"); await setScene("class");
   await narrate("watch");
   await narrate("red");
-  await gestureEar(); await say(PHR.amoi); await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3, true); rest(); await sleep(400);
+  await gestureEar(); await say(PHR.amoi); await pointAt(m); await sleep(250); await multipleModels(m, 3, true); rest(); await sleep(400);
   for(let k=0;k<3;k++){
     if(k===0){ await narrate("avec_a"); await gestureLead(); await say(PHR.avecmoi); rest(); await sleep(200); await narrate("avec_b"); }
     else await narrate("again");
     ph("introduction: lead "+(k+1));
-    await gestureLead(); await say(PHR.avecmoi); await pointAt(m.target); await say(m.questionUnits);
-    await untilSignal(); glow(true); await say(answerUnits(m), "both"); glow(false); rest(); await sleep(600);
+    await leadSteps(m, "both"); rest(); await sleep(600);
   }
-  await narrate("vasy_a"); await gesturePalm(m.target); await say(PHR.atoi); rest(); await sleep(200); await narrate("vasy_b");
-  ph("introduction: test");
-  await gesturePalm(m.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(m.target); })()]); await sleep(AFTER_ATOI); await say(m.questionUnits);
+  await narrate("avec_a"); await gesturePalm(m); await say(m.questionUnits.length? m.questionUnits : repeatCue(m.target)); rest(); await sleep(200); await narrate("rep_b");
+  ph("introduction: repeat");
+  await gesturePalm(m); await pointAt(m); await sleep(300); await say(repeatCue(m.target));
+  await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
+  smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(500);
+  await narrate("avec_a"); await say(PHR.atoi); await sleep(200); await narrate("point_b");
+  ph("introduction: point");
+  await say(PHR.atoi); await sleep(500); await pointAt(m); lastSpeechEnd=Date.now();
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
   smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(500);
   await narrate("only");
@@ -1305,24 +1486,52 @@ async function presentIntro(m){
   ph("after the introduction: your turn");
   const waitTap = afterDemoScreen(); narrate("yourturn"); await waitTap;   // "Speak clearly and loudly" on screen and spoken
 }
-// Lead task: green border, the teacher says the answer with the learner; microphone closed, not scored
+// The first question ever (C'est qui ?): the teacher asks it and answers it herself; asked again, the on-screen learner
+// says only the answer. Shown once, the first time a question appears.
+async function presentQIntro(m){
+  ph("question introduction"); await setScene("class");
+  await narrate("q_a");
+  await gestureEar(); await say(PHR.amoi); await pointAt(m); await say(m.questionUnits); await sleep(300); await sayAnswer(m); rest(); await sleep(400);
+  await narrate("q_b");
+  await announce({cue:"question", target:m.target, at:m.at}); await sleep(AFTER_ATOI); await say(m.questionUnits);
+  await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
+  smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(400);
+  await setScene("one");
+  S.qIntroSeen=true; save();
+  await narrate("q_turn");
+}
+// a lead: "Avec moi" while the teacher points (the cue), green 0.5 s later, then they say it together
+async function leadSteps(t, who){
+  const first = t.series ? "s0" : t;
+  await gestureLead(); await Promise.all([say(PHR.avecmoi), (async()=>{ await sleep(200); await pointAt(first); })()]);
+  await untilSignal();
+  const on = v => who==="both" ? glow(v) : signal(v ? "lead" : false);
+  on(true);
+  if(t.series){ for(let i=0;i<t.units.length;i++){ await pointAt("s"+i); await say(t.units[i], who==="both"?"both":"tutor"); } }   // each frame in turn, together
+  else await say(answerUnits(t), who==="both"?"both":"tutor");
+  if(t.hold) await sleep(t.hold);          // the learner goes on (their own name, after "Je m'appelle…"): the border stays green
+  on(false);
+}
+// Lead task: green border, the teacher says it with the learner; microphone closed, not scored
 async function presentLead(t){
   curTask=t.id; await setPortraits(t.scene); ph("lead");
-  await gestureLead(); await say(PHR.avecmoi); await pointAt(t.target); await say(t.questionUnits);
-  await untilSignal(); signal("lead"); await say(answerUnits(t)); signal(false); rest(); await sleep(300);
+  await leadSteps(t, "tutor"); rest(); await sleep(300);
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
 async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=500, quiet=false, afterAtoi=false}={}){
-  if(afterAtoi) think=AFTER_ATOI;          // "À toi" has just been said (end of a correction)
+  if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
   curTask=t.id; await setPortraits(t.scene);
-  if(atoi){ await gesturePalm(t.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(t.target); })()]); think=AFTER_ATOI; }  // announce, with the focus
-  else offering=true;                                             // the "your turn" hand goes out with every test question
+  if(t.cue==="repeat"){ await gesturePalm(t); }            // "Répète" is itself the turn word: no "Vas-y"
+  else if(t.cue==="you"){ }                                       // "Vas-y" is the cue itself (askAndListen)
+  else if(atoi){ await announce(t); think = t.cue==="point" ? Math.max(think, 300) : AFTER_ATOI; }
+  else offering = t.cue!=="point" || offering;                    // the "your turn" hand goes out with every question
   ph(retest? "retest" : "test");
-  let r = await askAndListen(t, expectOf(t.target), think);
+  const expect = t.expect || expectOf(t.target);
+  let r = await askAndListen(t, expect, think);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
-    r = await askAndListen(t, expectOf(t.target), think);
+    r = await askAndListen(t, expect, think);
   }
   rest();
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
@@ -1334,24 +1543,28 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
   if(r.ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1;
   if(!r.ok){ ctx.firm[t.target]=0; ctx.slow[t.target]=true; }      // a mistake: the pause comes in (Zig)
   if(isFirm(t.target)) delete ctx.slow[t.target];                  // the learner has it again: the pause goes
-  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
-  if(r.ok){ smile(true); await ding(); await nod(); if(!quiet){ ph("affirm"); await pointAt(t.target); await sayAnswer(t); } rest(); }
+  if(r.ok){ smile(true); await ding(); await nod(); if(!quiet && !t.noEcho){ ph("affirm"); await pointAt(t); await sayAnswer(t); } rest(); }
   return r.ok;
 }
 async function correction(task, nth){
   ph("correction "+nth);
-  await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake"), hand on chest
-  await pointAt(task.target); await say(answerUnits(task));
-  if(nth>=2 && task.answerUnits.length>1){   // build from the end: narrator says the start, the green border cues the rest
+  await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake")
+  if(task.cue==="you"){ await pointAt("self"); await say(A("jmclaire")); return; }   // her own model; then "Vas-y" again
+  await pointAt(task); await say(answerUnits(task));
+  if(nth>=2 && task.answerUnits.length>1){   // build from the end: the teacher says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
     ph("build from end");
     const r=await listen([task.target]); rest();          // the learner says the rest
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6), ...lx(r)});
-    if(!r.ok){ await pointAt(task.target); await say(answerUnits(task)); }
+    if(!r.ok){ await pointAt(task); await say(answerUnits(task)); }
   }
-  await gesturePalm(task.target); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task.target); })()]);   // step 2: repeat the task (presentTest asks the question)
+  // step 2: repeat the task (presentTest gives the cue). "Répète" needs no "Vas-y"; for touch-and-name the hand comes back first.
+  if(task.cue==="repeat") return;
+  if(task.cue==="point"){ rest(); await sleep(200); await say(PHR.atoi); return; }
+  await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task); })()]);
 }
 // A part's error is recorded for its delayed tests: first at the end of the next exercise, then at the start of the next lesson.
 function scheduleDelayed(part, anchor){
@@ -1373,7 +1586,7 @@ function itemsFor(part, run, shown){
 const TRIAL_LIMIT = 7;     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
-  await gestureEar(); await say(PHR.amoi); await pointAt(it.target); await multipleModels(it, 2); rest();
+  await gestureEar(); await say(PHR.amoi); await pointAt(it); await multipleModels(it, 2); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled, moved on; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null});
 }
@@ -1406,12 +1619,12 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         // a brand-new item that failed at its first test: start over with several models, a lead and the test (Zig, Part 4, 17:04)
         let tries=1, fixed=false;
         while(!fixed && tries<TRIAL_LIMIT){
-          ph("start over: several models"); await gestureEar(); await say(PHR.amoi); await pointAt(it.target); await multipleModels(it, 3, true); rest();
+          ph("start over: several models"); await gestureEar(); await say(PHR.amoi); await pointAt(it); await multipleModels(it, 3, true); rest();
           await presentLead(it);
           fixed=await presentTest(it,{retest:true, think:thinkTime(it,{retest:true})}); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
-        if(await immediateRepeats(it)){ ph("final confirmation"); await pointAt(it.target); await say(answerUnits(it)); await say(PHR.bravo); rest(); }
+        if(await immediateRepeats(it)){ ph("final confirmation"); await pointAt(it); await say(answerUnits(it)); await say(PHR.bravo); rest(); }
         i++; prevTest=false; continue;
       }
 
@@ -1426,7 +1639,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       }
       if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
-      ph("final confirmation"); await pointAt(it.target); await say(answerUnits(it)); await say(PHR.bravo); rest();
+      ph("final confirmation"); await pointAt(it); await say(answerUnits(it)); await say(PHR.bravo); rest();
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors
       await flashIcon("restart");
       items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; prevTest=false; prevTarget=null; prevItem=null;
@@ -1590,7 +1803,7 @@ async function saveRun(){
   return Object.keys(clips).length;
 }
 $("btnDownload").onclick=saveRun;
-$("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); S.introSeen=false; S.lesson=0; S.ex=0; delete S.finished[LESSONS[0].exercises[0].id]; save(); location.reload(); };
+$("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); S.introSeen=false; S.qIntroSeen=false; S.lesson=0; S.ex=0; delete S.finished[LESSONS[0].exercises[0].id]; save(); location.reload(); };
 $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const n=await saveRun(); b.classList.remove("busy"); b.classList.add("done"); setTimeout(()=>b.classList.remove("done"),1500); };
 function alertish(m){ setStatus(m); }
 
