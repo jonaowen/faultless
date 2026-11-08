@@ -284,6 +284,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <div class="row">Speech rate <input type="range" id="optRate" min="0.6" max="1.2" step="0.05"> <span id="rateVal"></span></div>
   <h3>Progress</h3>
   <div id="progress" class="note"></div>
+  <div class="row">Go to <select id="optJump"></select> <button id="btnJump">Go</button></div>
   <div class="row">
     <button id="btnRestartEx">Restart exercise</button>
     <button id="btnDelayed">Run pending delayed tests</button>
@@ -306,7 +307,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.21";
+const APP_VERSION="2026-11-08.22";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -330,7 +331,7 @@ let READY=false;
    say: the answer's units (said as one, or in these chunks after an error); art: the article slot it must have;
    accept: how Chrome's recogniser may spell the word (fallback listener only). */
 const VOCAB = {
-  paul:  {name:"Paul",  kind:"person", say:["Paul."],  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour"]},
+  paul:  {name:"Paul",  kind:"person", say:["Paul."],  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour","parle","paroles","raoul"]},   // parle, paroles, raoul: Chrome hearing Jon's correct "Paul" (8 Nov runs, confirmed by Jon)
   julie: {name:"Julie", kind:"person", say:["Julie."], accept:["julie","juli","julye","jolie","joli","july","julia","juliette","je l'ai","je lai","jeudi","je lis","je ris"]},
   livre: {name:"livre", kind:"object", art:"UN",  say:["Un","livre."],  accept:["livre","livres","libre","lièvre","lire","lèvre","liv"]},
   pomme: {name:"pomme", kind:"object", art:"UNE", say:["Une","pomme."], accept:["pomme","pommes","paume","pom","pome","pomm"]},
@@ -1481,6 +1482,7 @@ function renderVoiceSelect(){
   renderPanel();
 }
 function renderPanel(){
+  try{ $("optJump").value=S.lesson+":"+S.ex; }catch(e){}
   if(!READY) return;
   if(!$("status")) return;
   const cv=currentVoice();
@@ -1512,6 +1514,11 @@ $("optKeepAudio").onchange=e=>{ S.settings.keepAudio=e.target.checked; save(); }
 $("optVoice").onchange=e=>{ S.settings.voice=e.target.value; save(); };
 $("optPause").oninput=e=>{ S.settings.pause=+e.target.value; save(); };
 $("optRate").oninput=e=>{ S.settings.rate=+e.target.value; save(); };
+// developer: jump to any lesson and exercise (the page reloads there, ready to start)
+(function(){ const sel=$("optJump"); LESSONS.forEach((L,li)=>L.exercises.forEach((E,ei)=>{ const o=document.createElement("option"); o.value=li+":"+ei; o.textContent=`Lesson ${li+1}, Exercise ${ei+1} (${E.title})`; sel.appendChild(o); })); })();
+$("btnJump").onclick=()=>{ const [li,ei]=$("optJump").value.split(":").map(Number);
+  S.lesson=li; S.ex=ei; LESSONS[li].exercises.forEach((E,k)=>{ if(k>=ei) delete S.finished[E.id]; });
+  logEntry({result:`JUMP to Lesson ${li+1}, Exercise ${ei+1} (tester)`, heard:[]}); save(); location.reload(); };
 $("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); const L=LESSONS[S.lesson]; delete S.finished[L.exercises[S.ex].id]; save(); $("panel").hidden=true; };
 $("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d, {afterEx:null, lessonStart:null}); await endScreen(); } finally{ running=false; } };
 $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); };
