@@ -306,7 +306,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.20";
+const APP_VERSION="2026-11-08.21";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -331,7 +331,7 @@ let READY=false;
    accept: how Chrome's recogniser may spell the word (fallback listener only). */
 const VOCAB = {
   paul:  {name:"Paul",  kind:"person", say:["Paul."],  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour"]},
-  julie: {name:"Julie", kind:"person", say:["Julie."], accept:["julie","juli","julye","jolie","joli","july","julia","juliette"]},
+  julie: {name:"Julie", kind:"person", say:["Julie."], accept:["julie","juli","julye","jolie","joli","july","julia","juliette","je l'ai","je lai","jeudi","je lis","je ris"]},
   livre: {name:"livre", kind:"object", art:"UN",  say:["Un","livre."],  accept:["livre","livres","libre","lièvre","lire","lèvre","liv"]},
   pomme: {name:"pomme", kind:"object", art:"UNE", say:["Une","pomme."], accept:["pomme","pommes","paume","pom","pome","pomm"]},
 };
@@ -722,8 +722,11 @@ function nameOf(w){
   if(okDist && (d.length<2 || d[1].d>d[0].d) && f[0]===fold(PEOPLE[d[0].n].name.toLowerCase())[0]) return {n:d[0].n, near:true};
   return null;
 }
+// Chrome's multi-word spellings of a one-word answer (e.g. "je l'ai" for Julie) are turned back into the word first
+const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
-  const toks = normalise(text).split(" ").filter(w=>w && !FILLERS.includes(w));
+  let n = normalise(text); for(const [re,to] of MULTI) n = n.replace(re, to);
+  const toks = n.split(" ").filter(w=>w && !FILLERS.includes(w));
   const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)) flat.push(m[1], m[2]); else flat.push(w); });
   return flat;
 }
@@ -1325,8 +1328,11 @@ async function immediateRepeats(it){
 }
 async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={}, anchor}={}){
   let hadError=false; const shown=new Set();
+  // a task that reached the seven-trial limit is not asked again in this exercise: it comes back at the next lesson (DISE)
+  const limited = (errorsByTask.__limited = errorsByTask.__limited || new Set());
+  const ask = list => list.filter(x=>!limited.has(x.id));
   for(const part of parts){
-    let items=itemsFor(part, run, shown);
+    let items=ask(itemsFor(part, run, shown));
     if(!items.length) continue;
     ctx.part=part.id; trace("part "+part.id+" ("+run+"): "+part.label);
     let i=0, prevTest=false, prevTarget=null, prevItem=null;
@@ -1348,7 +1354,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
           await presentLead(it);
           fixed=await presentTest(it,{retest:true, think:thinkTime(it,{retest:true})}); tries++;
         }
-        if(!fixed){ await trialLimit(it, part, anchor); i++; prevTest=false; continue; }
+        if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
         if(await immediateRepeats(it)){ ph("final confirmation"); await pointAt(it.target); await say(answerUnits(it)); await say(PHR.bravo); rest(); }
         i++; prevTest=false; continue;
       }
@@ -1362,12 +1368,12 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true});
         if(fixed) fixed = await immediateRepeats(it);
       }
-      if(!fixed){ await trialLimit(it, part, anchor); i++; prevTest=false; continue; }
+      if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
       ph("final confirmation"); await pointAt(it.target); await say(answerUnits(it)); await say(PHR.bravo); rest();
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors
       await flashIcon("restart");
-      items = itemsFor(part, run==="first" ? "repeat" : run, shown); i=0; prevTest=false; prevTarget=null; prevItem=null;
+      items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; prevTest=false; prevTarget=null; prevItem=null;
     }
   }
   return hadError;
