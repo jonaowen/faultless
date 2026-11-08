@@ -61,12 +61,16 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <body>
 <div id="stage">
 <svg id="scene" viewBox="0 0 400 700" aria-hidden="true">
-  <!-- classroom floor (group scene only) -->
-  <g id="floor" class="fade" opacity="0">
-    <rect x="0" y="0" width="400" height="700" fill="#ebe5d8"/>
-    <rect x="0" y="300" width="400" height="400" fill="#d9cfbd"/>
+  <!-- demo scene: a person, seen from behind, using the app on a phone (first appearance of a new item) -->
+  <g id="demoBg" class="fade" opacity="0">
+    <rect x="0" y="0" width="400" height="700" fill="#e3ddd0"/>
+    <rect x="0" y="452" width="400" height="248" fill="#cbbfa8"/>
+    <rect x="86" y="26" width="228" height="378" rx="30" fill="#1d1f24"/>
   </g>
-  <g id="room" style="transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out;transform:translate(0px,40px) scale(1)">
+  <!-- the app's screen: full size one-to-one; shrunk into the phone in the demo scene -->
+  <g id="screen" style="transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out;transform:translate(0px,0px) scale(1)">
+  <rect id="screenBg" class="fade" opacity="0" x="0" y="0" width="400" height="700" fill="var(--bg)"/>
+  <g id="room" style="transform:translate(0px,40px)">
   <!-- portrait frames -->
   <g id="frames">
     <g id="frameL" transform="translate(28,24)">
@@ -133,10 +137,19 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     </g>
   </g>
   </g><!-- /room -->
-  <!-- the model learner, seen from behind, facing the teacher (classroom scene only) -->
+  <!-- the phone's own border, as the learner's border: brown = no response, green = respond -->
+  <rect id="innerBorder" class="fade" opacity="0" x="7" y="7" width="386" height="686" fill="none" stroke="#7a5434" stroke-width="14" style="transition:opacity .25s, stroke .12s"/>
+  </g><!-- /screen -->
+  <!-- the model learner, seen from behind, holding the phone -->
   <g id="classroom" class="fade" opacity="0">
-    <rect id="mlGlow" class="fade" opacity="0" x="122" y="531" width="156" height="200" rx="30" fill="none" stroke="var(--go)" stroke-width="12"/>
-    <g class="lb" transform="translate(200,585)"><rect x="-58" y="48" width="116" height="120" rx="12" fill="#5b4636"/><path d="M-66 170 v-70 q0-46 50-54 h32 q50 8 50 54 v70z" fill="#6a8f5a"/><circle r="42" cy="0" fill="#c98f6b"/><path d="M-42 6 q-2-50 42-52 q44 2 42 52 q-8 12-42 14 q-34-2-42-14z" fill="#2f2620"/></g>
+    <g class="lb">
+      <rect x="186" y="404" width="28" height="44" fill="#3a3d44"/>
+      <rect x="150" y="444" width="100" height="10" rx="5" fill="#3a3d44"/>
+      <path d="M96 700 v-40 q0-58 66-66 h76 q66 8 66 66 v40z" fill="#6a8f5a"/>
+      <rect x="182" y="556" width="36" height="40" fill="#b57d5c"/>
+      <circle cx="200" cy="528" r="46" fill="#c98f6b"/>
+      <path d="M154 536 q-4-58 46-60 q50 2 46 60 q-6 18-46 20 q-40-2-46-20z" fill="#2f2620"/>
+    </g>
   </g>
   <!-- restart and delayed-test symbols (no words) -->
   <g id="icoRestart" class="fade" opacity="0">
@@ -203,7 +216,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.2";
+const APP_VERSION="2026-11-08.3";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -269,13 +282,13 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:4, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:5, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9}});
 let S = defaults();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
-  if(!s.stateVer || s.stateVer<4){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:4});
-    S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (Exercise 1 redesigned)", heard:[]}); }
+  if(!s.stateVer || s.stateVer<5){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:5});
+    S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
   } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
 
@@ -350,7 +363,9 @@ function nameOf(w){
   for(const n of Object.keys(PEOPLE)) if(PEOPLE[n].accept.includes(w)) return {n, near:false};
   if(w.length<3 || CEST.includes(w)) return null;
   const f=fold(w); const d=Object.keys(PEOPLE).map(n=>({n, d:lev(f, fold(PEOPLE[n].name.toLowerCase()))})).sort((x,y)=>x.d-y.d);
-  if(d[0].d<=2 && (d.length<2 || d[1].d>d[0].d) && f[0]===fold(PEOPLE[d[0].n].name.toLowerCase())[0]) return {n:d[0].n, near:true};
+  // one edit away, or two for words of four letters or more (so a short everyday word such as "pas" is never taken for a name)
+  const okDist = d[0].d<=1 || (d[0].d===2 && f.length>=4);
+  if(okDist && (d.length<2 || d[1].d>d[0].d) && f[0]===fold(PEOPLE[d[0].n].name.toLowerCase())[0]) return {n:d[0].n, near:true};
   return null;
 }
 function tokensOf(text){
@@ -515,13 +530,24 @@ async function flashIcon(which){
 let scene="one";
 async function setScene(which){
   if(which===scene) return; scene=which;
-  const room=document.getElementById("room");
-  room.style.transform = which==="class" ? "translate(110px,30px) scale(.45)" : "translate(0px,40px) scale(1)";
-  document.getElementById("floor").style.opacity = which==="class"?1:0;
-  document.getElementById("classroom").style.opacity = which==="class"?1:0;
-  await sleep(950);
+  const demo = which==="class";
+  const scr=document.getElementById("screen");
+  if(demo){
+    innerColour(false);
+    ["demoBg","screenBg","innerBorder","classroom"].forEach(id=>document.getElementById(id).style.opacity=1);
+    scr.style.transform="translate(100px,40px) scale(.5)";          // the app, shown on the model learner's phone
+    await sleep(950);
+  } else {
+    document.getElementById("classroom").style.opacity=0;          // the model learner goes...
+    await sleep(350);
+    scr.style.transform="translate(0px,0px) scale(1)";              // ...and the phone's screen fills the view
+    document.getElementById("demoBg").style.opacity=0;
+    await sleep(950);
+    ["screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=0);
+  }
 }
-function glow(on){ document.getElementById("mlGlow").style.opacity = on?1:0; }
+function innerColour(go){ document.getElementById("innerBorder").style.stroke = go ? "var(--go)" : "#7a5434"; }
+function glow(on){ innerColour(on); }          // the model learner's turn: the border on their phone turns green
 async function gestureLead(){        // arms open: "together"
   ear.style.opacity=0; palm.style.opacity=0; thumb(false);
   armL.style.transform="rotate(55deg)"; armR.style.transform="rotate(-55deg)"; await sleep(300);
