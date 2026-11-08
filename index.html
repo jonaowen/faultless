@@ -212,7 +212,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.10";
+const APP_VERSION="2026-11-08.11";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -226,8 +226,8 @@ const $=id=>document.getElementById(id);
 let READY=false;
 /* ============================================================
    CONTENT — Lesson 1, Exercise 1 (C'est qui ?)
-   Units are spoken separately with a pause between them; an
-   elision or liaison unit (C'est) is never split.
+   An answer is said as one unit (no gap); after an error it is said in its
+   units with a pause. An elision or liaison unit (C'est) is never split.
    ============================================================ */
 const PEOPLE = {
   paul:  {name:"Paul",  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour"]},
@@ -641,7 +641,11 @@ function portrait(who){
       ? `<path d="M47 80 q0-40 33-42 q33 2 33 42 q-8-20-33-22 q-25 2-33 22z" fill="${hair}"/><path d="M50 92 q2 30 30 34 q28-4 30-34 q-6 16-30 18 q-24-2-30-18z" fill="${hair}" opacity=".9"/>`
       : `<path d="M47 84 q2-44 33-46 q31 2 33 46 q-14-28-33-30 q-19 2-33 30z" fill="${hair}"/>`) +
     `<ellipse cx="68" cy="88" rx="3.5" ry="4.5" fill="var(--ink)"/><ellipse cx="92" cy="88" rx="3.5" ry="4.5" fill="var(--ink)"/>
-     <path d="M70 106 q10 7 20 0" stroke="#8a3b3b" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+     <path d="M70 106 q10 7 20 0" stroke="#8a3b3b" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+    // name tag, as in DISE (Lesson 1: "Pass out name tags"; Zig, Part 3, 0:00: "you can see I have my name tag")
+    `<g class="nametag"><rect x="${80-(who==="paul"?25:28)}" y="146" width="${who==="paul"?50:56}" height="24" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/>
+     <rect x="${80-(who==="paul"?25:28)}" y="146" width="${who==="paul"?50:56}" height="5" rx="2" fill="#c8453b"/>
+     <text x="80" y="166" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522">${PEOPLE[who].name}</text></g>`;
   return g;
 }
 const slotL=document.getElementById("slotL"), slotR=document.getElementById("slotR");
@@ -797,17 +801,21 @@ function trace(ev){ (S.trace=S.trace||[]).push({t:new Date().toISOString(), task
 function ph(p){ phase=p; trace("phase: "+p); }
 function logEntry(o){ S.log.push(Object.assign({t:new Date().toISOString()}, o)); if(S.log.length>2000) S.log.shift(); }
 
-/* Delivery (Zig, DISE videos): the familiar part and the new part are separate chunks with a pause between them
-   ("This is | a cup") until the learner has the item; then the statement is said naturally, as one unit.
-   After an error the pause comes back. Questions are always said naturally. */
+/* Delivery (Zig, DISE training Part 2, 18:59): "There is no pause from one sound to another between the words...
+   It's one big word. So if you tap, then it becomes clear what the parts are." The dots in the scripts
+   ("My . . . name . . . is") mark one tap per word, not a silence. So the statement is said as one unit, with no gap.
+   Zig puts a pause in the middle only "because they made a mistake" (Part 2, 19:40; Part 5, 42:17: "let the kids teach
+   you... they'll show you whether you should keep the pause there"): after an error on an item, the statement is said
+   in chunks with a pause until the learner has the item again (two correct in a row). Questions are always one unit. */
 function isFirm(target){ return (ctx.firm && ctx.firm[target]||0) >= 2; }
-function answerUnits(t){ return isFirm(t.target) ? [t.answerUnits.join(" ")] : t.answerUnits; }
+function isSlowed(target){ return !!(ctx.slow && ctx.slow[target]); }
+function answerUnits(t){ return isSlowed(t.target) ? t.answerUnits : [t.answerUnits.join(" ")]; }
 async function sayAnswer(t, who="tutor"){ await say(answerUnits(t), who); }
 // several models (Zig: "say the word many times before you have them say it")
 async function multipleModels(t, n=3, close=false){
   for(let k=0;k<n;k++){
     if(close && k===1){ rest(); faceZoom(true); await sleep(750); }      // after the first model: close-up on the mouth
-    await say(t.answerUnits); if(k<n-1) await sleep(450);
+    await say(answerUnits(t)); if(k<n-1) await sleep(450);
   }
   if(close){ faceZoom(false); await sleep(750); }
 }
@@ -840,12 +848,12 @@ async function presentModel(m){
     if(m.classLead){
       ph("model learner: lead");
       await gestureLead(); await say(PHR.avecmoi); await pointAt(m.target); await say(m.questionUnits);
-      await untilSignal(); glow(true); await say(m.answerUnits, "both"); glow(false); rest(); await sleep(350);
+      await untilSignal(); glow(true); await say(answerUnits(m), "both"); glow(false); rest(); await sleep(350);
     }
     ph("model learner: test");
     await gesturePalm(m.target); await say(PHR.atoi); await pointAt(m.target); await sleep(500); await say(m.questionUnits);
-    await untilSignal(); glow(true); await sleep(200); await say(m.answerUnits, "group"); glow(false);
-    await nod(); await say(m.answerUnits); rest(); await sleep(400);          // affirmed, as for the learner
+    await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
+    await nod(); await say(answerUnits(m)); rest(); await sleep(400);          // affirmed, as for the learner
     await setScene("one");
   } else {
     ph("model");
@@ -858,7 +866,7 @@ async function presentModel(m){
 async function presentLead(t){
   curTask=t.id; await setPortraits(t.paulSide); ph("lead");
   await gestureLead(); await say(PHR.avecmoi); await pointAt(t.target); await say(t.questionUnits);
-  await untilSignal(); signal("lead"); await say(t.answerUnits); signal(false); rest(); await sleep(300);
+  await untilSignal(); signal("lead"); await say(answerUnits(t)); signal(false); rest(); await sleep(300);
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
@@ -878,8 +886,10 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
     const f = (S.ftc[ctx.exKey] = S.ftc[ctx.exKey] || {new:{c:0,n:0}, review:{c:0,n:0}});
     f[t.tag].n++; if(r.ok) f[t.tag].c++; }
   ctx.firm = ctx.firm || {};
+  ctx.slow = ctx.slow || {};
   if(r.ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1;
-  if(!r.ok) ctx.firm[t.target]=0;
+  if(!r.ok){ ctx.firm[t.target]=0; ctx.slow[t.target]=true; }      // a mistake: the pause comes in (Zig)
+  if(isFirm(t.target)) delete ctx.slow[t.target];                  // the learner has it again: the pause goes
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
@@ -889,13 +899,13 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
 async function correction(task, nth){
   ph("correction "+nth);
   await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake"), hand on chest
-  await pointAt(task.target); await say(task.answerUnits);
+  await pointAt(task.target); await say(answerUnits(task));
   if(nth>=2){                          // build from the end: narrator says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
     ph("build from end");
     const r=await listen([task.target], [["CEST", task.target]]); rest();
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6)});
-    if(!r.ok){ await pointAt(task.target); await say(task.answerUnits); }
+    if(!r.ok){ await pointAt(task.target); await say(answerUnits(task)); }
   }
   await gesturePalm(task.target); await say(PHR.atoi);             // step 2: repeat the task (presentTest asks the question)
 }
@@ -954,7 +964,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
           fixed=await presentTest(it,{retest:true, think:thinkTime(it,{retest:true})}); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); i++; prevTest=false; continue; }
-        if(await immediateRepeats(it)){ ph("final confirmation"); await pointAt(it.target); await say(it.answerUnits); await say(PHR.bravo); rest(); }
+        if(await immediateRepeats(it)){ ph("final confirmation"); await pointAt(it.target); await say(answerUnits(it)); await say(PHR.bravo); rest(); }
         i++; prevTest=false; continue;
       }
 
@@ -969,7 +979,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       }
       if(!fixed){ await trialLimit(it, part, anchor); i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
-      ph("final confirmation"); await pointAt(it.target); await say(it.answerUnits); await say(PHR.bravo); rest();
+      ph("final confirmation"); await pointAt(it.target); await say(answerUnits(it)); await say(PHR.bravo); rest();
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors
       await flashIcon("restart");
       items = itemsFor(part, run==="first" ? "repeat" : run, shown); i=0; prevTest=false; prevTarget=null; prevItem=null;
