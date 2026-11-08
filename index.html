@@ -203,7 +203,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.1";
+const APP_VERSION="2026-11-08.2";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -227,38 +227,54 @@ const PEOPLE = {
 const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","sai","cet","c'","s'","cé","sé"];
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
-function T(id, paulSide, target, model, group=false, tag="new"){ return {id, paulSide, target, model, group, tag,
-  answerUnits:["C'est", PEOPLE[target].name + "."], questionUnits:["C'est","qui ?"]}; }
+/* Script structure (NIFDI part-firming handout):
+   - Task: teacher wording that requires one learner response (or a system of closely related responses).
+   - Part: a logically linked series of tasks. The more difficult the tasks, the smaller the part.
+   - Exercise: a group of parts using the same teacher wording.
+   - Model: teacher wording with no learner response (the introductory "spiel"). A model is not a task.
+   Part-firming repeats tasks, never models: after a correction the part's tasks are repeated; a short
+   exercise is gone through again as its test tasks; a delayed test gives a part's test tasks only.
+   Task kinds: "lead" (learner says it with the teacher; microphone closed, not scored) and "test" (scored). */
+const Q = ["C'est","qui ?"];
+const A = who => ["C'est", PEOPLE[who].name + "."];
+function Model(target, paulSide, o={}){ return Object.assign({type:"model", target, paulSide, questionUnits:Q, answerUnits:A(target)}, o); }
+function Lead(id, target, paulSide){ return {type:"task", kind:"lead", id, target, paulSide, questionUnits:Q, answerUnits:A(target)}; }
+function Test(id, target, paulSide, tag="new"){ return {type:"task", kind:"test", id, target, paulSide, tag, questionUnits:Q, answerUnits:A(target)}; }
 
 const LESSONS = [{
   id:"L1",
   exercises:[{
     id:"L1E1", title:"C'est qui ?", track:"A",
     parts:[
-      {id:"P1", intro:null, tasks:[
-        // group=true: first appearance of a new item — classroom (model learner), then a lead, then the learner
-        Object.assign(T("L1E1-1","L","paul",true,true), {classLead:true}),   // first "Avec moi" ever: shown in the classroom first
-        T("L1E1-2","L","julie",true,true)]},
-      {id:"P2", intro:"atoi", tasks:[
-        // each name in both frames; order not predictable
-        T("L1E1-3","R","paul",false),  T("L1E1-4","R","julie",false),
-        T("L1E1-5","L","julie",false), T("L1E1-6","L","paul",false),
-        T("L1E1-7","R","julie",false)]}
+      { id:"P1", label:"Introduction: Paul, then Julie", items:[
+        Model("paul","L",{classroom:true, classLead:true}),   // first appearance; first "Avec moi" ever is shown in the classroom
+        Lead("L1E1-T1","paul","L"),
+        Test("L1E1-T2","paul","L"),
+        Model("julie","L",{classroom:true}),                   // first appearance
+        Lead("L1E1-T3","julie","L"),
+        Test("L1E1-T4","julie","L") ]},
+      { id:"P2", label:"Mixed test", items:[                    // each name in both frames; order not predictable
+        Test("L1E1-T5","paul","R"),  Test("L1E1-T6","julie","R"),
+        Test("L1E1-T7","julie","L"), Test("L1E1-T8","paul","L"),
+        Test("L1E1-T9","julie","R") ]}
     ]
   }]
 }];
+const ORDER = LESSONS.flatMap(l=>l.exercises.map(e=>({lesson:l.id, ex:e.id})));   // every exercise, in course order
+const nextExId = exId => { const i=ORDER.findIndex(o=>o.ex===exId); return i>=0 && i+1<ORDER.length ? ORDER[i+1].ex : null; };
+const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i>=0 && i+1<LESSONS.length ? LESSONS[i+1].id : null; };
 
 /* ============================================================
    STATE — saved after every task; resume = start of the
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:3, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:4, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9}});
 let S = defaults();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
-  if(!s.stateVer || s.stateVer<3){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:3});
+  if(!s.stateVer || s.stateVer<4){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:4});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (Exercise 1 redesigned)", heard:[]}); }
   } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
@@ -546,49 +562,54 @@ async function askAndListen(task, expect){
   await say(task.questionUnits);
   return listen(expect);
 }
-// one presentation of a task (initial or retest). Returns {ok}
-async function giveTask(task, {retest=false, firstSeen=null, mode="first"}={}){
-  curTask=task.id;
-  await setPortraits(task.paulSide);
-  if(task.model && !retest && mode!=="test"){
-    if(task.group && mode==="first"){
-      // classroom: everything the learner will be asked to do is first done by the model learner
-      await setScene("class");
-      ph("classroom model");
-      await gestureEar(); await say(PHR.ecoute);
-      await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
-      if(task.classLead){
-        ph("classroom lead");
-        await gestureLead(); await say(PHR.avecmoi); await pointAt(task.target); await say(task.questionUnits);
-        glow(true); await sleep(250); await say(task.answerUnits, "both"); glow(false); rest(); await sleep(350);
-      }
-      ph("classroom test");
-      await gesturePalm(); await say(PHR.atoi); await pointAt(task.target); await say(task.questionUnits);
-      glow(true); await sleep(250); await say(task.answerUnits, "group"); glow(false); rest(); await sleep(400);
-      // the model learner fades: one-to-one. Lead: green border, the teacher says it with the learner, microphone closed
-      await setScene("one");
-      ph("lead");
-      await gestureLead(); await say(PHR.avecmoi); await pointAt(task.target); await say(task.questionUnits);
-      signal("lead"); await sleep(250); await say(task.answerUnits); signal(false); await sleep(300);
-    } else {
-      ph("model");
-      await gestureEar(); await say(PHR.ecoute);
-      await pointAt(task.target); await say(task.questionUnits); await sleep(250); await say(task.answerUnits);
+// Model (not a task): on an item's first appearance, the classroom with the model learner; otherwise a plain model
+async function presentModel(m){
+  curTask="model "+m.target;
+  await setPortraits(m.paulSide);
+  if(m.classroom){
+    await setScene("class");
+    ph("classroom model");
+    await gestureEar(); await say(PHR.ecoute);
+    await pointAt(m.target); await say(m.questionUnits); await sleep(250); await say(m.answerUnits);
+    if(m.classLead){
+      ph("classroom lead");
+      await gestureLead(); await say(PHR.avecmoi); await pointAt(m.target); await say(m.questionUnits);
+      glow(true); await sleep(250); await say(m.answerUnits, "both"); glow(false); rest(); await sleep(350);
     }
-    await gesturePalm(); await say(PHR.atoi);
-  }
-  ph(retest? "retest" : "test");
-  let r = await askAndListen(task, ["CEST", task.target]);
-  if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), delayed:!!ctx.delayedRec});
-    r = await askAndListen(task, ["CEST", task.target]);
+    ph("classroom test");
+    await gesturePalm(); await say(PHR.atoi); await pointAt(m.target); await say(m.questionUnits);
+    glow(true); await sleep(250); await say(m.answerUnits, "group"); glow(false); rest(); await sleep(400);
+    await setScene("one");
+  } else {
+    ph("model");
+    await gestureEar(); await say(PHR.ecoute);
+    await pointAt(m.target); await say(m.questionUnits); await sleep(250); await say(m.answerUnits);
   }
   rest();
-  const isFirst = firstSeen && !firstSeen.has(task.id);
-  if(isFirst){ firstSeen.add(task.id);
+}
+// Lead task: green border, the teacher says the answer with the learner; microphone closed, not scored
+async function presentLead(t){
+  curTask=t.id; await setPortraits(t.paulSide); ph("lead");
+  await gestureLead(); await say(PHR.avecmoi); await pointAt(t.target); await say(t.questionUnits);
+  signal("lead"); await sleep(250); await say(t.answerUnits); signal(false); rest(); await sleep(300);
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
+}
+// Test task. "À toi" comes first unless the previous item was also a test task (or a correction, which ends with it)
+async function presentTest(t, {retest=false, firstSeen=null, atoi=true}={}){
+  curTask=t.id; await setPortraits(t.paulSide);
+  if(atoi){ await gesturePalm(); await say(PHR.atoi); }
+  ph(retest? "retest" : "test");
+  let r = await askAndListen(t, ["CEST", t.target]);
+  if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), delayed:!!ctx.delayedRec});
+    r = await askAndListen(t, ["CEST", t.target]);
+  }
+  rest();
+  const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
+  if(isFirst){ firstSeen.add(t.id);
     const f = (S.ftc[ctx.exKey] = S.ftc[ctx.exKey] || {new:{c:0,n:0}, review:{c:0,n:0}});
-    f[task.tag].n++; if(r.ok) f[task.tag].c++; }
-  logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, phase, expected:task.answerUnits.join(" "), heard:r.heard.slice(0,6),
+    f[t.tag].n++; if(r.ok) f[t.tag].c++; }
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
   if(r.ok) await ding();
@@ -596,93 +617,100 @@ async function giveTask(task, {retest=false, firstSeen=null, mode="first"}={}){
 }
 async function correction(task, nth){
   ph("correction "+nth);
-  await gestureEar(); await say(PHR.ecoute);
+  await gestureEar(); await say(PHR.ecoute);                       // step 1: give the answer
   await pointAt(task.target); await say(task.answerUnits);
   if(nth>=2){                          // build from the end: narrator says the start, the green border cues the rest
     await say([task.answerUnits[0]+"…"]);
     ph("build from end");
     const r=await listen([task.target], [["CEST", task.target]]); rest();
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6)});
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6)});
     if(!r.ok){ await pointAt(task.target); await say(task.answerUnits); }
   }
-  await gesturePalm(); await say(PHR.atoi);
+  await gesturePalm(); await say(PHR.atoi);                        // step 2: repeat the task (presentTest asks the question)
 }
-function saveDelayed(part){
-  if(ctx.delayedRec) return;
-  const key=ctx.exKey+"/"+part.id;
+// A part's error is recorded for its delayed tests: first at the end of the next exercise, then at the start of the next lesson.
+function scheduleDelayed(part, anchor){
+  const key=ctx.exKey.replace(" (delayed)","")+"/"+part.id;
   let d=S.delayed.find(x=>x.key===key);
-  if(!d){ d={key, lesson:ctx.lesson, ex:ctx.ex, part:part.id, repeat:0, fromExercise:ctx.ex, fromLesson:ctx.lesson}; S.delayed.push(d); }
-  d.repeat=0;
+  if(!d){ d={key, lesson:ctx.lesson, ex:ctx.ex, part:part.id, passed:0}; S.delayed.push(d); }
+  d.passed=0;                                   // a failed delayed test starts the count again
+  d.dueAfterEx = anchor.afterEx;                // run when this exercise has finished
+  d.dueLessonStart = anchor.lessonStart;        // and when this lesson starts
+  save();
 }
-async function runParts(parts, {mode="first", firstSeen=new Set(), errorsByTask={}}={}){
-  // errorsByTask: a second error at the same task (across restarts) brings the build from the end
-  let hadError=false;
-  for(let pi=0; pi<parts.length; pi++){
-    const part=parts[pi]; let runs=0;
-    while(true){                       // firm this part before the next
-      runs++;
-      let m = runs>1 && mode==="first" ? "rerun" : mode;
-      if(runs>1) await flashIcon("restart");
-      let errors=0;
-      // "À toi" opens the part when its first task will not be modelled (a model always ends with "À toi")
-      const opensWithAtoi = () => m==="test" || !part.tasks[0].model;
-      if(opensWithAtoi()){ await gesturePalm(); await say(PHR.atoi); rest(); }
-      let ti=0;
-      while(ti<part.tasks.length){
-        const task=part.tasks[ti];
-        const ok=await giveTask(task,{firstSeen, mode:m});
-        if(ok){ ti++; continue; }
-        errors++; hadError=true; saveDelayed(part); save();
-        let fixed=false;
-        while(!fixed){ errorsByTask[task.id]=(errorsByTask[task.id]||0)+1; await correction(task, errorsByTask[task.id]); fixed=await giveTask(task,{retest:true}); if(!fixed) errors++; }
-        // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
-        ph("final confirmation"); await pointAt(task.target); await say(task.answerUnits); rest();
-        // NIFDI part-firming step 3: go back and repeat the part; it is firm when it runs with no errors
-        await flashIcon("restart"); ti=0; errors=0; if(m==="first") m="rerun";
-        if(opensWithAtoi()){ await gesturePalm(); await say(PHR.atoi); rest(); }
-      }
-      if(errors===0) break;
+// which items a run of a part presents
+function itemsFor(part, run, shown){
+  if(run==="first")  return part.items;                                            // models, leads and tests
+  // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
+  if(run==="repeat") return part.items.filter(it=>it.type==="task" || !shown.has(it));
+  return part.items.filter(it=>it.type==="task" && it.kind==="test");               // "test": step 5 and delayed tests
+}
+async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={}, anchor}={}){
+  let hadError=false; const shown=new Set();
+  for(const part of parts){
+    let items=itemsFor(part, run, shown);
+    if(!items.length) continue;
+    ctx.part=part.id; trace("part "+part.id+" ("+run+"): "+part.label);
+    let i=0, prevTest=false;
+    while(i<items.length){
+      const it=items[i];
+      if(it.type==="model"){ await presentModel(it); shown.add(it); prevTest=false; i++; continue; }
+      if(it.kind==="lead"){ await presentLead(it); prevTest=false; i++; continue; }
+      const ok=await presentTest(it,{firstSeen, atoi:!prevTest}); prevTest=true;
+      if(ok){ i++; continue; }
+      hadError=true; scheduleDelayed(part, anchor);
+      let fixed=false;
+      while(!fixed){ errorsByTask[it.id]=(errorsByTask[it.id]||0)+1; await correction(it, errorsByTask[it.id]); fixed=await presentTest(it,{retest:true, atoi:false}); }
+      // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
+      ph("final confirmation"); await pointAt(it.target); await say(it.answerUnits); rest();
+      // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors
+      await flashIcon("restart");
+      items = itemsFor(part, run==="first" ? "repeat" : run, shown); i=0; prevTest=false;
     }
   }
   return hadError;
 }
 async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
-  ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null};
+  ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
   S.lesson=li; S.ex=ei; save();
   paulSide=null;
+  const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};
   const firstSeen=new Set(), errorsByTask={};
-  let hadError = await runParts(ex.parts, {firstSeen, errorsByTask});
+  let hadError = await runParts(ex.parts, {firstSeen, errorsByTask, anchor});
   if(hadError){
-    // NIFDI part-firming step 5: a short exercise with an error is gone through again from the beginning, as a test
+    // NIFDI step 5: a short exercise with an error is gone through again from the beginning, as its test tasks (no models)
     ph("exercise again (step 5)"); trace("step 5: exercise again from the beginning");
     await flashIcon("restart");
-    await runParts(ex.parts, {mode:"test", firstSeen, errorsByTask});
+    await runParts(ex.parts, {run:"test", firstSeen, errorsByTask, anchor});
   }
   S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
 }
-async function runDelayed(d){
-  const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson.exercises.find(e=>e.id===d.ex);
-  const part=ex.parts.find(p=>p.id===d.part);
-  ctx={lesson:d.lesson, ex:d.ex, exKey:d.ex+" (delayed)", delayedRec:d};
+// a delayed test: the part's test tasks, opened with the bookmark symbol. Passed when it runs with no error;
+// an error resets the count and schedules it again (end of the next exercise, start of the next lesson).
+async function runDelayed(d, anchor){
+  const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson && lesson.exercises.find(e=>e.id===d.ex);
+  const part=ex && ex.parts.find(p=>p.id===d.part); if(!part){ S.delayed=S.delayed.filter(x=>x!==d); save(); return; }
+  ctx={lesson:d.lesson, ex:d.ex, exKey:d.ex+" (delayed)", delayedRec:d, part:part.id};
   paulSide=null;
   await flashIcon("bookmark");
-  // a delayed test is passed when the part is completed, errors corrected on the way
-  await runParts([part], {mode:"test"});      // a delayed test is a test: no model
-  d.repeat++; if(d.repeat>=2) S.delayed=S.delayed.filter(x=>x!==d);
+  trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
+  const hadError = await runParts([part], {run:"test", anchor});
+  if(!hadError){ d.passed=(d.passed||0)+1; if(d.passed>=2) S.delayed=S.delayed.filter(x=>x!==d); }
   save();
 }
 
 async function main(){
-  // pending delayed tests from earlier lessons open the lesson
-  const pendingPrev = S.delayed.filter(d=> d.lesson!==LESSONS[S.lesson].id);
-  for(const d of pendingPrev) await runDelayed(d);
   const lesson=LESSONS[S.lesson];
+  // start of a lesson: delayed tests due at the start of this lesson
+  if(S.ex===0 && !S.finished[lesson.exercises[0].id]){
+    for(const d of S.delayed.filter(x=>x.dueLessonStart===lesson.id)){ d.dueLessonStart=null; await runDelayed(d, {afterEx: lesson.exercises[0].id, lessonStart: nextLessonId(lesson.id)}); }
+  }
   for(let ei=S.ex; ei<lesson.exercises.length; ei++){
-    // delayed test: from exercise 3 on, the part that held an error two exercises back
-    if(ei>=2){ const back=lesson.exercises[ei-2].id; for(const d of S.delayed.filter(x=>x.ex===back)) await runDelayed(d); }
-    if(S.finished[lesson.exercises[ei].id]) continue;
-    await runExercise(S.lesson, ei);
+    const exId=lesson.exercises[ei].id;
+    if(!S.finished[exId]) await runExercise(S.lesson, ei);
+    // end of an exercise: delayed tests due after it (also catches any left over if the app was closed here)
+    for(const d of S.delayed.filter(x=>x.dueAfterEx===exId)){ d.dueAfterEx=null; await runDelayed(d, {afterEx: nextExId(exId), lessonStart: nextLessonId(lesson.id)}); }
   }
   await endScreen();
 }
@@ -737,7 +765,7 @@ function renderPanel(){
     const cell=(x,crit)=> x.n? `<span class="${x.c/x.n*100>=crit?'ok':'bad'}">${Math.round(x.c/x.n*100)}% (${x.c}/${x.n})</span>` : "—";
     return `<tr><td>${k}</td><td>${cell(f.new,70)}</td><td>${cell(f.review,90)}</td></tr>`; }).join("");
   $("ftc").innerHTML = rows? `<table><tr><th>Exercise</th><th>New (≥70%)</th><th>Review (≥90%)</th></tr>${rows}</table>` : `<span class="note">No data yet.</span>`;
-  $("delayedList").textContent = S.delayed.length? S.delayed.map(d=>`${d.key} — passed ${d.repeat}/2`).join("; ") : "None.";
+  $("delayedList").textContent = S.delayed.length? S.delayed.map(d=>`${d.key} — passed ${d.passed||0}/2; due after ${d.dueAfterEx||"—"}, at start of ${d.dueLessonStart||"—"}`).join("; ") : "None.";
   const recent=S.log.slice(-200).reverse();
   $("log").innerHTML = recent.length? `<table><tr><th>Task</th><th>Result</th><th>Heard</th></tr>${recent.map(e=>`<tr><td>${e.task||""}${e.phase?" · "+e.phase:""}${e.retest?" (retest)":""}${e.delayed?" (delayed)":""}</td><td class="${e.result==='correct'?'ok':(String(e.result).startsWith('ERROR')?'bad':'')}">${e.result}${e.reason? " — "+e.reason:""}</td><td>${(e.heard||[]).map(h=>String(h).replace(/</g,"&lt;")).join(" | ")}</td></tr>`).join("")}</table>` : "";
 }
@@ -752,7 +780,7 @@ $("optVoice").onchange=e=>{ S.settings.voice=e.target.value; save(); };
 $("optPause").oninput=e=>{ S.settings.pause=+e.target.value; save(); };
 $("optRate").oninput=e=>{ S.settings.rate=+e.target.value; save(); };
 $("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); const L=LESSONS[S.lesson]; delete S.finished[L.exercises[S.ex].id]; save(); $("panel").hidden=true; };
-$("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d); await endScreen(); } finally{ running=false; } };
+$("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d, {afterEx:null, lessonStart:null}); await endScreen(); } finally{ running=false; } };
 $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); };
 $("btnDownload").onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="french-di-log.json"; document.body.appendChild(a); a.click(); a.remove(); };
 function alertish(m){ setStatus(m); }
@@ -762,7 +790,7 @@ READY=true; load(); renderVoiceSelect(); renderPanel(); rest();
 if(!S.learnerGender){ $("gender").hidden=false; }
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
-setPortraits(LESSONS[S.lesson].exercises[S.ex].parts[0].tasks[0].paulSide);
+setPortraits(LESSONS[S.lesson].exercises[S.ex].parts[0].items[0].paulSide);
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, thumbsUp, signal, setPortraits, rest, thumb, flashIcon, setScene, gestureLead};
 </script>
 </body>
