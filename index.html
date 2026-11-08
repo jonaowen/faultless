@@ -212,7 +212,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.8";
+const APP_VERSION="2026-11-08.10";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -262,10 +262,8 @@ const LESSONS = [{
         Model("julie","L",{classroom:true}),                   // first appearance
         Lead("L1E1-T3","julie","L"),
         Test("L1E1-T4","julie","L") ]},
-      { id:"P2", label:"Mixed test", items:[                    // each name in both frames; order not predictable
-        Test("L1E1-T5","paul","R"),  Test("L1E1-T6","julie","R"),
-        Test("L1E1-T7","julie","L"), Test("L1E1-T8","paul","L"),
-        Test("L1E1-T9","julie","R") ]}
+      { id:"P2", label:"Mixed test", items:[                    // three questions: each name in its other frame; not strictly alternating
+        Test("L1E1-T5","julie","R"), Test("L1E1-T6","paul","R"), Test("L1E1-T7","paul","L") ]}
     ]
   }]
 }];
