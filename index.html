@@ -229,7 +229,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.5";
+const APP_VERSION="2026-11-08.6";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -494,8 +494,13 @@ async function say(units, who="tutor", pause=S.settings.pause){
   }
   document.getElementById("tutor").classList.remove("talk");
   document.getElementById("classroom").classList.remove("gtalk");
+  lastSpeechEnd = Date.now();                  // the moment the teacher stopped speaking (for the 0.5 s signal)
   await sleep(180);
 }
+let lastSpeechEnd = 0;
+// The signal comes exactly 0.5 s after the cue (the last thing the teacher says). This never changes.
+const SIGNAL_DELAY = 500;
+async function untilSignal(){ const w = SIGNAL_DELAY - (Date.now()-lastSpeechEnd); if(w>0) await sleep(w); }
 
 /* ============================================================
    SPEECH IN — French recognition, signalled by the green border
@@ -571,14 +576,14 @@ function listen(expect, alsoOk=[]){
   if(S.settings.manual || recogBroken){ signal("listen"); return listenManual(expect); }
   return new Promise(async resolve=>{
     stopRec();
-    await synthIdle(); const cueEnd=Date.now();   // the cue (the last thing the teacher says) has finished
-    await sleep(250);                               // the microphone opens a little before the signal, so a quick answer is not cut off
+    await synthIdle(); const cueEnd=lastSpeechEnd;   // the cue (the last thing the teacher says) has finished
+    { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }   // the microphone opens a little before the signal, so a quick answer is not cut off
     const gen=++recGen;
     let R; try{ R=new SR(); }catch(e){ recogBroken=true; signal("listen"); resolve(listenManual(expect)); return; }
     activeR=R;
     R.lang="fr-FR"; R.continuous=true; R.interimResults=true; R.maxAlternatives=5;
     let t0=Date.now(), last=0, heardAny=false, finished=false, results=[], restarted=false, opened=false;
-    const open=()=>{ if(opened) return; opened=true; t0=Date.now(); signal("listen"); trace("signal: green border 0.5 s after the cue"); };
+    const open=()=>{ if(opened) return; opened=true; t0=Date.now(); signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); };
     const cands=()=>{
       const segs=results.map(r=>Array.from(r).map(a=>a.transcript));
       if(!segs.length) return [];
@@ -617,7 +622,7 @@ function listen(expect, alsoOk=[]){
       if(now-t0 > 12000) finish(heardAny?"heard":"silence");
     },120);
     try{ R.start(); }catch(e){ finish("silence"); return; }
-    setTimeout(()=>{ if(gen===recGen) open(); }, Math.max(0, 500-(Date.now()-cueEnd)));   // the signal: 0.5 s after the cue
+    setTimeout(()=>{ if(gen===recGen) open(); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));   // the signal: 0.5 s after the cue
   });
 }
 function listenManual(expect){
@@ -787,11 +792,11 @@ async function presentModel(m){
     if(m.classLead){
       ph("model learner: lead");
       await gestureLead(); await say(PHR.avecmoi); await pointAt(m.target); await say(m.questionUnits);
-      glow(true); await sleep(250); await say(m.answerUnits, "both"); glow(false); rest(); await sleep(350);
+      await untilSignal(); glow(true); await say(m.answerUnits, "both"); glow(false); rest(); await sleep(350);
     }
     ph("model learner: test");
     await gesturePalm(); await say(PHR.atoi); await pointAt(m.target); await sleep(500); await say(m.questionUnits);
-    await sleep(500); glow(true); await sleep(200); await say(m.answerUnits, "group"); glow(false);
+    await untilSignal(); glow(true); await sleep(200); await say(m.answerUnits, "group"); glow(false);
     await nod(); await say(m.answerUnits); rest(); await sleep(400);          // affirmed, as for the learner
     await setScene("one");
   } else {
@@ -805,7 +810,7 @@ async function presentModel(m){
 async function presentLead(t){
   curTask=t.id; await setPortraits(t.paulSide); ph("lead");
   await gestureLead(); await say(PHR.avecmoi); await pointAt(t.target); await say(t.questionUnits);
-  await sleep(500); signal("lead"); await say(t.answerUnits); signal(false); rest(); await sleep(300);
+  await untilSignal(); signal("lead"); await say(t.answerUnits); signal(false); rest(); await sleep(300);
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
