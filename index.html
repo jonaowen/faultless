@@ -11,13 +11,13 @@
 <style>
 :root{
   --bg:#f4f1ea; --ink:#22252b; --muted:#6b7079; --frame:#ffffff; --frame-line:#d9d3c7;
-  --go:#1fa855; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
+  --go:#1fa855; --stop:#d5372e; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
   --tutor-top:#3d5a73; --tutor-hair:#b5652f; --paul-top:#3f6fb5; --paul-hair:#6b4a2f;
   --julie-top:#c0453b; --julie-hair:#2a1f1a; --panel:#ffffff;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-#signal{position:fixed;inset:0;pointer-events:none;border:14px solid #7a5434;transition:border-color .12s;z-index:20}
+#signal{position:fixed;inset:0;pointer-events:none;border:14px solid var(--stop);transition:border-color .12s;z-index:20}
 #signal.on{border-color:var(--go)}
 #flag{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(66px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
 #flag.hit{background:#f3d36b;opacity:1}
@@ -28,11 +28,20 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 .limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
 .fade{transition:opacity .25s}
 #play{position:fixed;inset:0;display:flex;flex-direction:column;gap:28px;align-items:center;justify-content:center;z-index:30;background:rgba(244,241,234,.92);padding:0 24px}
-#howto{display:flex;align-items:center;gap:14px;max-width:320px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
-#howto .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
+#howto_unused{display:flex;align-items:center;gap:14px;max-width:320px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
+#howtoBox{display:flex;flex-direction:column;gap:16px}
+.howto{display:flex;align-items:center;gap:14px;max-width:320px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
+.howto .vo{flex:none;width:34px;height:34px}
+.howto .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
+.howto .ph.red{border-color:var(--stop)}
+#play:not(.afterDemo) .howto.after{display:none}
+#play.afterDemo .howto.before{display:none}
+#howto_unused .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
 #play button{width:128px;height:128px;border-radius:50%;border:0;background:var(--go);box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #play button svg{width:56px;height:56px;margin-left:8px}
 #play[hidden]{display:none}
+#playBtn.loading{background:conic-gradient(var(--go) calc(var(--p,0)*360deg), #c9c4b8 0);opacity:.85;cursor:progress}
+#playBtn.loading svg{opacity:.5}
 #gender{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:28px;z-index:35;background:var(--bg)}
 #gender[hidden]{display:none}
 #gender button{width:132px;height:170px;border-radius:20px;border:2px solid var(--frame-line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -95,8 +104,12 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <g id="head" style="transform-box:view-box;transform-origin:200px 400px;transition:transform .16s ease-in-out">
     <ellipse cx="200" cy="352" rx="42" ry="50" fill="var(--skin)"/>
     <path d="M158 345 q2-52 42-54 q40 2 42 54 q-14-26-42-30 q-28 4-42 30z" fill="var(--tutor-hair)"/>
-    <ellipse cx="184" cy="352" rx="4" ry="5" fill="var(--ink)"/>
-    <ellipse cx="216" cy="352" rx="4" ry="5" fill="var(--ink)"/>
+    <!-- eyes: whites and pupils, so it is clear whom the teacher is looking at (gaze below) -->
+    <g id="eyes">
+      <ellipse cx="184" cy="352" rx="6.6" ry="5.6" fill="#fbf8f2"/><ellipse cx="216" cy="352" rx="6.6" ry="5.6" fill="#fbf8f2"/>
+      <g id="pupils" style="transition:transform .25s ease-in-out"><ellipse cx="184" cy="352" rx="3.6" ry="4.2" fill="var(--ink)"/><ellipse cx="216" cy="352" rx="3.6" ry="4.2" fill="var(--ink)"/></g>
+      <g id="lids" style="transition:transform .25s ease-in-out;transform-box:view-box"><path d="M176 346.5 q8-6.5 16 0 v-4 h-16z M208 346.5 q8-6.5 16 0 v-4 h-16z" fill="var(--skin)"/></g>
+    </g>
     <path d="M176 340 q8-5 16 0 M208 340 q8-5 16 0" stroke="var(--tutor-hair)" stroke-width="3" fill="none" stroke-linecap="round"/>
     <path d="M200 358 q-3 10 0 14" stroke="var(--skin-d)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
     <!-- mouth: drawn sound by sound from the IPA of what the teacher says (see MOUTH below) -->
@@ -176,7 +189,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <button id="gM" aria-label="homme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><rect x="30" y="34" width="36" height="52" rx="8" fill="#2b2f36"/><rect x="18" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="68" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="31" y="84" width="15" height="62" rx="6" fill="#2b2f36"/><rect x="50" y="84" width="15" height="62" rx="6" fill="#2b2f36"/></svg></button>
   <button id="gF" aria-label="femme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><path d="M38 34 h20 q6 0 8 6 l18 56 h-72 l18 -56 q2 -6 8 -6z" fill="#2b2f36"/><rect x="35" y="94" width="11" height="52" rx="5" fill="#2b2f36"/><rect x="50" y="94" width="11" height="52" rx="5" fill="#2b2f36"/></svg></button>
 </div>
-<div id="play"><div id="howto" lang="en"><span class="ph" aria-hidden="true"></span><span>Speak only when the border of the screen is green.</span></div><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button></div>
+<div id="play"><div id="howtoBox" lang="en"><div class="howto before"><span class="ph" aria-hidden="true"></span><span>Watch how the learner only responds when the border of their device turns green.</span></div><div class="howto before"><span class="ph red" aria-hidden="true"></span><span>When the border is red, they don't respond.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 12h6l8-7v24l-8-7H4z" fill="#2b2f36"/><path d="M22 11c2.5 3 2.5 9 0 12M26 7c5 5 5 15 0 20" stroke="#2b2f36" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span>Speak clearly and loudly.</span></div></div><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button></div>
 <button id="flag" aria-label="Tester flag"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 22V3h11l-1.5 4L16 11H7v11z" fill="#6b7079"/></svg></button>
 <button id="gear" aria-label="Tester panel"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#6b7079" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.4l1.9 1.5-2 3.4-2.3-.9c-.6.5-1.2.8-1.9 1.1l-.3 2.4h-4l-.3-2.4c-.7-.3-1.3-.6-1.9-1.1l-2.3.9-2-3.4 1.9-1.5a7 7 0 010-2.2L1.6 8.6l2-3.4 2.3.9c.6-.5 1.2-.8 1.9-1.1L8.1 2.6h4l.3 2.4c.7.3 1.3.6 1.9 1.1l2.3-.9 2 3.4-1.9 1.5a7 7 0 010 2.2z"/></svg></button>
 
@@ -186,6 +199,8 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <h3>Settings</h3>
   <div class="row"><label><input type="checkbox" id="optCaption"> Show French text (testing only)</label></div>
   <div class="row"><label><input type="checkbox" id="optManual"> Manual mode (no microphone: type or tick answers)</label></div>
+  <div class="row">Listening <select id="optEngine"><option value="app">In-app listener (on the phone)</option><option value="google">Chrome's online recogniser (old)</option></select></div>
+  <div class="row"><label><input type="checkbox" id="optKeepAudio"> Keep the audio of each answer in the log (stays on this phone until you download the log)</label></div>
   <div class="row">Learner's gender <select id="optGender"><option value="m">Man</option><option value="f">Woman</option></select></div>
   <div class="row">Voice <select id="optVoice"></select></div>
   <div class="row">Pause between units <input type="range" id="optPause" min="150" max="1200" step="50"> <span id="pauseVal"></span> ms</div>
@@ -207,12 +222,14 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <div id="log"></div>
 </aside>
 
+<script src="listener/ort/ort.wasm.min.js"></script>
+<script src="listener/listener.js"></script>
 <script>
 "use strict";
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.11";
+const APP_VERSION="2026-11-08.12";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -277,7 +294,7 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    ============================================================ */
 const KEY="frDI.v1";
 const defaults = () => ({stateVer:7, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
-  settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9}});
+  settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
@@ -495,7 +512,7 @@ const signalEl = document.getElementById("signal");
 function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen" || state==="lead"); }
 
 function normalise(t){
-  return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-…]/g," ").replace(/\s+/g," ").trim();
+  return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-…\u2010-\u2015\u2212\u00a0]/g," ").replace(/\s+/g," ").trim();
 }
 function lev(a,b){ const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
   let prev=Array.from({length:n+1},(_,j)=>j);
@@ -555,6 +572,7 @@ function listen(expect, alsoOk=[]){
   const echoes = recentSaid.map(u=>tokensOf(u)).filter(e=> e.length && !e.some(w=>{ const r=nameOf(w); return r && expect.includes(r.n); }) && !e.every(partOf));
   recentSaid=[];
   if(S.settings.manual || recogBroken){ signal("listen"); return listenManual(expect); }
+  if(S.settings.engine!=="google" && !localBroken && window.LISTENER && LISTENER.ready && LISTENER.audioReady) return listenLocal(expect, alsoOk);
   return new Promise(async resolve=>{
     stopRec();
     await synthIdle(); const cueEnd=lastSpeechEnd;   // the cue (the last thing the teacher says) has finished
@@ -605,6 +623,60 @@ function listen(expect, alsoOk=[]){
     try{ R.start(); }catch(e){ finish("silence"); return; }
     setTimeout(()=>{ if(gen===recGen) open(); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));   // the signal: 0.5 s after the cue
   });
+}
+/* In-app listening (listener/listener.js): the phone's microphone is on from 0.25 s after the cue until the answer
+   ends; the app's own model scores the answer against the possible answers for this exercise. */
+const LISTEN = { T: 1.2 };          // how far below the free transcript an answer may score and still be taken (tuned on test recordings)
+function phraseOf(want){ const names=want.filter(w=>w!=="CEST").map(n=>PEOPLE[n].name); return (want[0]==="CEST" ? "C'est "+names.join(" ") : names.join(" "))+"."; }
+function candidatePhrases(){
+  const c=[]; for(const n of Object.keys(PEOPLE)){ const N=PEOPLE[n].name; c.push(`C'est ${N}.`, `${N}.`, `Euh, c'est ${N}.`); }
+  return c.concat(["C'est.","C'est qui ?","Il est Paul.","Elle est Julie.","Il est Julie.","Elle est Paul.","C'est David.","C'est Marie.","Oui.","Non.","Je ne sais pas."]);
+}
+function verdictLocal(rec, expect, alsoOk){
+  const acc=new Set(); for(const w of [expect, ...alsoOk]){ acc.add(phraseOf(w)); if(w[0]==="CEST") acc.add("Euh, c'est "+PEOPLE[w[w.length-1]].name+"."); }
+  const sc=rec.scores, best=Object.keys(sc).sort((a,b)=>sc[b]-sc[a])[0];
+  const margin = sc[best]-rec.freeLp;
+  const target=expect[expect.length-1], tname=PEOPLE[target].name;
+  if(acc.has(best) && margin > -LISTEN.T) return {ok:true, reason:"", best, margin};
+  const other = Object.keys(PEOPLE).filter(n=>n!==target).some(n=>best.includes(PEOPLE[n].name)) || /David|Marie/.test(best);
+  if(acc.has(best)) return {ok:false, reason:"unclear", best, margin};
+  if(other) return {ok:false, reason:"wrong name", best, margin};
+  if(best===tname+"." && expect[0]==="CEST") return {ok:false, reason:"name without c'est", best, margin};
+  return {ok:false, reason:"not the expected words", best, margin};
+}
+let clipSeq=0, localBroken=false;
+const lx = r => (r.clip||r.best) ? {clip:r.clip||undefined, best:r.best, margin:r.margin} : {};
+async function keepClip(audio){
+  if(!S.settings.keepAudio) return null;
+  const id="c"+Date.now().toString(36)+(clipSeq++);
+  try{ await clipStore("put", id, LISTENER.wav(audio)); return id; }catch(e){ return null; }
+}
+function clipStore(op, key, val){
+  return new Promise((res,rej)=>{ const r=indexedDB.open("faultless-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
+    r.onerror=()=>rej(r.error); r.onsuccess=()=>{ const db=r.result, tx=db.transaction("clips", op==="get"||op==="all"?"readonly":"readwrite"), st=tx.objectStore("clips");
+      let q; if(op==="put") q=st.put(val,key); else if(op==="get") q=st.get(key); else if(op==="all"){ const out={}; const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; return; } else q=st.clear();
+      q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }; });
+}
+async function listenLocal(expect, alsoOk){
+  stopRec();
+  await synthIdle(); const cueEnd=lastSpeechEnd;
+  const phrases=candidatePhrases();
+  try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
+  { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }      // the microphone opens a little before the signal
+  trace("mic open");
+  const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
+  // an answer that stops after "C'est" may be a slow learner: keep listening a little longer
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:800, extraSilenceMs:2200,
+    onSpeechEnd: async audio => { try{ const r=await LISTENER.recognise(audio, ["C'est.", ...phrases.filter(p=>p!=="C'est.")], false); const b=Object.keys(r.scores).sort((x,y)=>r.scores[y]-r.scores[x])[0]; return b==="C'est." || b==="Euh..."; }catch(e){ return false; } } });
+  clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status);
+  if(cap.status==="silence") { const clip=await keepClip(cap.all); return {status:"silence", heard:[], ok:false, reason:"no answer", clip}; }
+  const t0=Date.now(); let rec;
+  try{ rec=await LISTENER.recognise(cap.audio, phrases, true); }
+  catch(e){ trace("listener error: "+e.message+" — switching to Chrome's recogniser"); localBroken=true; return {status:"silence", heard:[], ok:false, reason:"listener error"}; }
+  const v=verdictLocal(rec, expect, alsoOk);
+  const clip=await keepClip(cap.audio);
+  trace(`listener: "${rec.transcript}" best=${v.best} margin=${v.margin.toFixed(2)} (${Date.now()-t0} ms: ${JSON.stringify(rec.ms)})`);
+  return {status:"heard", heard:[rec.transcript||"(unclear)"], ok:v.ok, reason:v.reason, best:v.best, margin:+v.margin.toFixed(2), clip};
 }
 function listenManual(expect){
   const box=document.getElementById("manual"); box.hidden=false;
@@ -751,11 +823,12 @@ async function setScene(which){
   const demo = which==="class";
   const scr=document.getElementById("screen");
   if(demo){
-    innerColour(false);
+    innerColour(false); gaze("learner");
     ["demoBg","screenBg","innerBorder","classroom"].forEach(id=>document.getElementById(id).style.opacity=1);
     scr.style.transform="translate(100px,40px) scale(.5)";          // the app, shown on the model learner's phone
     await sleep(950);
   } else {
+    gaze("out");
     document.getElementById("classroom").style.opacity=0;          // the model learner goes...
     await sleep(350);
     scr.style.transform="translate(0px,0px) scale(1)";              // ...and the phone's screen fills the view
@@ -764,8 +837,15 @@ async function setScene(which){
     ["screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=0);
   }
 }
-function innerColour(go){ document.getElementById("innerBorder").style.stroke = go ? "var(--go)" : "#7a5434"; }
-function glow(on){ innerColour(on); }          // the model learner's turn: the border on their phone turns green
+function innerColour(go){ document.getElementById("innerBorder").style.stroke = go ? "var(--go)" : "var(--stop)"; }
+function glow(on){ innerColour(on); }
+/* Gaze: the teacher looks out of the screen only when addressing the real learner. In the demo the teacher
+   looks down at the model learner holding the phone, the whole time. */
+function gaze(where){
+  const down = where==="learner";
+  document.getElementById("pupils").style.transform = down ? "translate(0px,2.3px)" : "translate(0px,0px)";
+  document.getElementById("lids").style.transform = down ? "translate(0px,2.4px)" : "translate(0px,0px)";
+}          // the model learner's turn: the border on their phone turns green
 async function gestureLead(){ await ARMS.go(POSE.together, 320); }      // "Avec moi": hand on my chest, hand reaching to you
 async function gestureEar(){ offering=false; await ARMS.go(POSE.myTurn, 300); }   // "À moi" (my turn): hand flat on the chest
 // "À toi" (your turn): one arm reaches towards the learner, palm up, and stays there through the question and the answer;
@@ -855,6 +935,7 @@ async function presentModel(m){
     await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
     await nod(); await say(answerUnits(m)); rest(); await sleep(400);          // affirmed, as for the learner
     await setScene("one");
+    if(m.classLead){ ph("after the demo: speak clearly and loudly"); await afterDemoScreen(); }   // the learner starts their part
   } else {
     ph("model");
     await gestureEar(); await say(PHR.amoi);
@@ -877,7 +958,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
   ph(retest? "retest" : "test");
   let r = await askAndListen(t, ["CEST", t.target], think);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), delayed:!!ctx.delayedRec});
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
     r = await askAndListen(t, ["CEST", t.target], think);
   }
   rest();
@@ -890,7 +971,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
   if(r.ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1;
   if(!r.ok){ ctx.firm[t.target]=0; ctx.slow[t.target]=true; }      // a mistake: the pause comes in (Zig)
   if(isFirm(t.target)) delete ctx.slow[t.target];                  // the learner has it again: the pause goes
-  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6),
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
   if(r.ok){ await ding(); await nod(); if(!quiet){ ph("affirm"); await pointAt(t.target); await sayAnswer(t); } rest(); }
@@ -904,7 +985,7 @@ async function correction(task, nth){
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
     ph("build from end");
     const r=await listen([task.target], [["CEST", task.target]]); rest();
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6)});
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6), ...lx(r)});
     if(!r.ok){ await pointAt(task.target); await say(answerUnits(task)); }
   }
   await gesturePalm(task.target); await say(PHR.atoi);             // step 2: repeat the task (presentTest asks the question)
@@ -1044,9 +1125,31 @@ async function endScreen(){
    START / RESUME
    ============================================================ */
 let running=false;
-function showPlay(on){ document.getElementById("play").hidden=!on; }
+function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); el.hidden=!on; }
+let playWaiter=null;
+function afterDemoScreen(){ rest(); showPlay(true, true); return new Promise(r=>{ playWaiter=r; }); }
+/* The listener model is downloaded when the page opens (once; then it is kept on the phone).
+   The play button fills as it downloads and can be pressed when it is ready. */
+let listenerLoad=null;
+function startListenerLoad(){
+  if(!window.LISTENER || !window.ort){ trace("in-app listener not available"); return; }
+  const btn=document.getElementById("playBtn");
+  btn.classList.add("loading");
+  listenerLoad = LISTENER.load((got,total)=>{ if(total) btn.style.setProperty("--p", Math.min(1, got/total).toFixed(3)); })
+    .then(r=>{ btn.classList.remove("loading"); trace("in-app listener ready ("+r.ms+" ms)"); })
+    .catch(e=>{ btn.classList.remove("loading"); trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); });
+}
+startListenerLoad();
+// ask the browser to keep saved answers (audio) even when the phone is short of space
+try{ navigator.storage && navigator.storage.persist && navigator.storage.persist().then(ok=>trace("storage kept: "+ok)); }catch(e){}
 document.getElementById("playBtn").onclick=async ()=>{
-  if(running) return; running=true; showPlay(false);
+  if(running){ if(playWaiter){ const w=playWaiter; playWaiter=null; showPlay(false); audioUnlock(); w(); } return; }
+  if(document.getElementById("playBtn").classList.contains("loading")) return;
+  running=true;
+  if(window.LISTENER && LISTENER.ready && S.settings.engine!=="google" && !S.settings.manual){
+    try{ await LISTENER.openMic(); }catch(e){ trace("microphone permission: "+e.message); }
+  }
+  showPlay(false);
   if(synth){ try{ synth.cancel(); synth.speak(new SpeechSynthesisUtterance("")); }catch(e){} }  // unlock audio on mobile
   audioUnlock();
   const lesson=LESSONS[S.lesson];
@@ -1074,6 +1177,7 @@ function renderPanel(){
   $("status").innerHTML = `Version ${APP_VERSION} · Speech recognition: <b>${SR? (recogBroken? "unavailable": "available (fr-FR)") : "not supported in this browser"}</b> · Voice: <b>${cv?cv.name:"none"}</b>` + ($("status").dataset.msg? `<br>${$("status").dataset.msg}`:"");
   if(S.learnerGender) $("optGender").value=S.learnerGender;
   $("optCaption").checked=S.settings.caption; $("optManual").checked=S.settings.manual;
+  $("optEngine").value=S.settings.engine||"app"; $("optKeepAudio").checked=S.settings.keepAudio!==false;
   $("optPause").value=S.settings.pause; $("pauseVal").textContent=S.settings.pause;
   $("optRate").value=S.settings.rate; $("rateVal").textContent=S.settings.rate;
   const L=LESSONS[S.lesson];
@@ -1093,13 +1197,17 @@ $("closePanel").onclick=()=>{ $("panel").hidden=true; };
 $("optGender").onchange=e=>{ S.learnerGender=e.target.value; save(); };
 $("optCaption").onchange=e=>{ S.settings.caption=e.target.checked; save(); };
 $("optManual").onchange=e=>{ S.settings.manual=e.target.checked; save(); };
+$("optEngine").onchange=e=>{ S.settings.engine=e.target.value; save(); };
+$("optKeepAudio").onchange=e=>{ S.settings.keepAudio=e.target.checked; save(); };
 $("optVoice").onchange=e=>{ S.settings.voice=e.target.value; save(); };
 $("optPause").oninput=e=>{ S.settings.pause=+e.target.value; save(); };
 $("optRate").oninput=e=>{ S.settings.rate=+e.target.value; save(); };
 $("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); const L=LESSONS[S.lesson]; delete S.finished[L.exercises[S.ex].id]; save(); $("panel").hidden=true; };
 $("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d, {afterEx:null, lessonStart:null}); await endScreen(); } finally{ running=false; } };
 $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); };
-$("btnDownload").onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="french-di-log.json"; document.body.appendChild(a); a.click(); a.remove(); };
+$("btnDownload").onclick=async ()=>{
+  let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
+  const blob=new Blob([JSON.stringify(Object.assign({}, S, {app:APP_VERSION, listener: window.LISTENER&&LISTENER.json ? {source:LISTENER.json.source, quant:LISTENER.json.quant} : null, clips}),null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="french-di-log.json"; document.body.appendChild(a); a.click(); a.remove(); };
 function alertish(m){ setStatus(m); }
 
 READY=true; load(); renderVoiceSelect(); renderPanel(); rest();
