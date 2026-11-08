@@ -9,7 +9,7 @@
   const BASE = (document.currentScript && document.currentScript.src || location.href).replace(/[^/]*$/, "");
   const MODEL = BASE + "model/";
   const SR = 16000;
-  const MODEL_VERSION = "tiny-ft1";       // change whenever the model files change, so phones fetch the new ones
+  const MODEL_VERSION = "tiny-r2-200";       // change whenever the model files change, so phones fetch the new ones
   let J=null, enc=null, dec=null, ready=null, melTabs=null;
 
   // ---------- model files: downloaded once, then kept in the browser's cache ----------
