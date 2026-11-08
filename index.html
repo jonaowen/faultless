@@ -234,7 +234,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.14";
+const APP_VERSION="2026-11-08.15";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -678,7 +678,7 @@ function verdictLocal(rec, expect, alsoOk){
   return {ok:false, reason:"not the expected words", best:rec.transcript};
 }
 let clipSeq=0, localBroken=false;
-const lx = r => r.clip ? {clip:r.clip, lp:r.lp, engine:"app/"+(window.LISTENER?LISTENER.version:"")} : {};
+const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:"app/"+(window.LISTENER?LISTENER.version:"")} : {};
 async function keepClip(audio){
   if(!S.settings.keepAudio) return null;
   const id="c"+Date.now().toString(36)+(clipSeq++);
@@ -701,14 +701,14 @@ async function listenLocal(expect, alsoOk){
   const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:800, extraSilenceMs:2200,
     onSpeechEnd: async audio => { try{ const r=await LISTENER.recognise(audio, [], true); const t=normSaid(r.transcript); return t==="c'est" || t==="" ; }catch(e){ return false; } } });
   clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status);
-  if(cap.status==="silence") { const clip=await keepClip(cap.all); return {status:"silence", heard:[], ok:false, reason:"no answer", clip}; }
+  if(cap.status==="silence") { const clip=await keepClip(cap.all); return {status:"silence", heard:[], ok:false, reason:"no answer", clip, expectPhrase:phraseOf(expect)}; }
   const t0=Date.now(); let rec;
   try{ rec=await LISTENER.recognise(cap.audio, [], true); }
   catch(e){ trace("listener error: "+e.message+" — switching to Chrome's recogniser"); localBroken=true; return {status:"silence", heard:[], ok:false, reason:"listener error"}; }
   const v=verdictLocal(rec, expect, alsoOk);
   const clip=await keepClip(cap.audio);
   trace(`listener: "${rec.transcript}" → ${v.ok?"correct":v.reason} (${Date.now()-t0} ms: ${JSON.stringify(rec.ms)})`);
-  return {status:"heard", heard:[rec.transcript||"(unclear)"], ok:v.ok, reason:v.reason, clip, lp:+rec.freeLp.toFixed(2)};
+  return {status:"heard", heard:[rec.transcript||"(unclear)"], ok:v.ok, reason:v.reason, clip, lp:+rec.freeLp.toFixed(2), expectPhrase:phraseOf(expect)};
 }
 function listenManual(expect){
   const box=document.getElementById("manual"); box.hidden=false;
