@@ -110,43 +110,24 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
       <rect id="mTeethF" x="193" y="381" width="14" height="3" rx="1" fill="#f6f2ea" opacity="0"/>
     </g>
     </g>
-    <!-- ear-cup hand (Écoute) -->
-    <g id="earHand" class="fade" opacity="0">
-      <path d="M244 330 q22 4 22 28 q0 22-20 26 q-10-24-2-54z" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
-      <path d="M276 330 q12 22 0 44 M288 322 q18 30 0 60" stroke="var(--muted)" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <path d="M258 384 l14 96" stroke="var(--tutor-top)" stroke-width="22" stroke-linecap="round"/>
+    <!-- arms: shoulder → elbow → wrist, drawn each frame by the ARMS rig (two-joint reach), with hand shapes at the wrist.
+         Gestures recreated from the DISE training videos: "my turn" = hand flat on the chest (Zig, Part 3, 4:57);
+         "your turn" = arm reaching towards the learner, open palm up (Zig, Part 3, 4:53), with the teacher facing the learner. -->
+    <g id="arms">
+      <g id="armRig_L"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #22323f)" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+      <g id="armRig_R"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #22323f)" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+      <g id="hand_L" class="hand"></g>
+      <g id="hand_R" class="hand"></g>
     </g>
-    <!-- open palm (À toi) -->
-    <g id="palm" class="fade" opacity="0">
-      <path d="M200 470 l0 30" stroke="var(--tutor-top)" stroke-width="22" stroke-linecap="round"/>
-      <g transform="translate(200,456)">
-        <ellipse cx="0" cy="0" rx="26" ry="30" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
-        <g stroke="var(--skin-d)" stroke-width="2" fill="var(--skin)">
-          <rect x="-24" y="-58" width="11" height="34" rx="5.5"/>
-          <rect x="-11" y="-66" width="11" height="40" rx="5.5"/>
-          <rect x="2" y="-64" width="11" height="38" rx="5.5"/>
-          <rect x="15" y="-54" width="10" height="30" rx="5"/>
-          <rect x="22" y="-14" width="22" height="11" rx="5.5" transform="rotate(-30 22 -14)"/>
-        </g>
-      </g>
-    </g>
-    <!-- right arm (viewer's left) -->
-    <g id="armL" class="limb" style="transform-origin:150px 440px">
-      <path d="M150 440 L150 580" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round"/>
-      <g id="handL" transform="translate(150,592)">
-        <circle r="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
-        <rect class="finger" x="-4" y="6" width="8" height="26" rx="4" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
-        <rect class="thumb" x="-4.5" y="4" width="9" height="24" rx="4.5" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2" opacity="0" transform="rotate(30)"/>
-      </g>
-    </g>
-    <!-- left arm (viewer's right) -->
-    <g id="armR" class="limb" style="transform-origin:250px 440px">
-      <path d="M250 440 L250 580" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round"/>
-      <g id="handR" transform="translate(250,592)">
-        <circle r="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
-        <rect class="finger" x="-4" y="6" width="8" height="26" rx="4" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/>
-      </g>
-    </g>
+    <defs>
+      <!-- hand shapes, drawn pointing down (+y) from the wrist at 0,0 -->
+      <g id="hs_relaxed"><ellipse cx="0" cy="13" rx="10.5" ry="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><path d="M-4 22 v6 M0 23 v6 M4 22 v6" stroke="var(--skin-d)" stroke-width="1.6" stroke-linecap="round"/></g>
+      <g id="hs_point"><rect x="-3.6" y="14" width="7.2" height="27" rx="3.6" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><ellipse cx="0" cy="11" rx="10" ry="11" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/></g>
+      <g id="hs_flat"><rect x="-11" y="0" width="22" height="34" rx="9" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><path d="M-5.5 18 v14 M0 18 v15 M5.5 18 v14" stroke="var(--skin-d)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="-12" cy="10" rx="4.5" ry="9" transform="rotate(25 -12 10)" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/></g>
+      <!-- palm up, reaching towards the viewer: fingers point at the learner, so the palm is seen with fingertips nearest -->
+      <g id="hs_palmup"><ellipse cx="0" cy="6" rx="21" ry="13" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/><ellipse cx="0" cy="6" rx="12" ry="6.5" fill="var(--skin-l, #f1cfb2)"/><g fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"><ellipse cx="-14" cy="19" rx="5" ry="6"/><ellipse cx="-4.8" cy="21.5" rx="5" ry="6.5"/><ellipse cx="4.8" cy="21.5" rx="5" ry="6.5"/><ellipse cx="14" cy="19" rx="5" ry="6"/><ellipse cx="-23" cy="-2" rx="5.5" ry="10" transform="rotate(-50 -23 -2)"/></g></g>
+      <g id="hs_cup"><path d="M-10 0 q-14 14 -6 30 q8 6 16 -2 q4 -14 -2 -28z" fill="var(--skin)" stroke="var(--skin-d)" stroke-width="2"/></g>
+    </defs>
   </g>
   </g><!-- /room -->
   </g>
@@ -229,7 +210,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.6";
+const APP_VERSION="2026-11-08.7";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -295,12 +276,12 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:6, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:7, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9}});
 let S = defaults();
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
-  if(!s.stateVer || s.stateVer<6){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:6});
+  if(!s.stateVer || s.stateVer<7){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, stateVer:7});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
   } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
@@ -331,7 +312,7 @@ function caption(text){ const c=document.getElementById("caption"); if(!S.settin
    consonants take the lip rounding of the vowel that follows (anticipatory rounding).
    ============================================================ */
 const IPA = {
-  "écoute":"ekut", "c'est qui":"sɛ ki", "c'est":"sɛ", "paul":"pɔl", "julie":"ʒyli",
+  "écoute":"ekut", "à moi":"a mwa", "c'est qui":"sɛ ki", "c'est":"sɛ", "paul":"pɔl", "julie":"ʒyli",
   "c'est paul":"sɛ pɔl", "c'est julie":"sɛ ʒyli", "avec moi":"avɛk mwa", "à toi":"a twa", "très bien":"tʁɛ bjɛ̃",
 };
 /* Mouth shapes are derived from each sound's IPA description (Jon, 8 November 2026): for vowels, height
@@ -674,17 +655,86 @@ async function setPortraits(side){
   paulSide=side;
   slotL.style.opacity=1; slotR.style.opacity=1; await sleep(first?0:260);
 }
-const armL=document.getElementById("armL"), armR=document.getElementById("armR");
-const ear=document.getElementById("earHand"), palm=document.getElementById("palm");
 const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
-function angleTo(sx,sy,tx,ty){ return Math.atan2(ty-sy, tx-sx)*180/Math.PI - 90; }
-function rest(){ armL.style.transform="rotate(0deg)"; armR.style.transform="rotate(0deg)"; ear.style.opacity=0; palm.style.opacity=0; thumb(false); }
+/* ============================================================
+   ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
+   the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
+   ============================================================ */
+const ARMS = (()=>{
+  const SH = {L:{x:146,y:448}, R:{x:254,y:448}}, UP=72, FORE0=66;
+  const svgns="http://www.w3.org/2000/svg";
+  const hands = {L:document.getElementById("hand_L"), R:document.getElementById("hand_R")};
+  const sleeves = {L:document.querySelector("#armRig_L .sleeve"), R:document.querySelector("#armRig_R .sleeve")};
+  const edges = {L:document.querySelector("#armRig_L .sleeveEdge"), R:document.querySelector("#armRig_R .sleeveEdge")};
+  for(const s of ["L","R"]){ const u=document.createElementNS(svgns,"use"); u.setAttribute("href","#hs_relaxed"); hands[s].appendChild(u); }
+  const REST = {L:{x:150,y:582,shape:"relaxed",rot:"auto",scale:1,fs:1}, R:{x:250,y:582,shape:"relaxed",rot:"auto",scale:1,fs:1}};
+  let cur = JSON.parse(JSON.stringify(REST)), from=null, to=null, t0=0, dur=300, raf=null, done=null;
+  function solve(s, T){
+    // fs < 1: the forearm points towards the viewer, so it looks shorter (foreshortening)
+    const FORE = FORE0*(T.fs==null?1:T.fs);
+    const S=SH[s]; let dx=T.x-S.x, dy=T.y-S.y; let d=Math.hypot(dx,dy);
+    const dmax=UP+FORE-1, dmin=Math.abs(UP-FORE)+4; const dd=Math.min(dmax, Math.max(dmin,d));
+    const ux=dx/(d||1), uy=dy/(d||1); const W={x:S.x+ux*dd, y:S.y+uy*dd};
+    const phi=Math.atan2(uy,ux), a=Math.acos(Math.min(1,Math.max(-1,(UP*UP+dd*dd-FORE*FORE)/(2*UP*dd))));
+    const e1={x:S.x+UP*Math.cos(phi+a), y:S.y+UP*Math.sin(phi+a)}, e2={x:S.x+UP*Math.cos(phi-a), y:S.y+UP*Math.sin(phi-a)};
+    const out = s==="L" ? (e1.x<e2.x?e1:e2) : (e1.x>e2.x?e1:e2);          // the elbow bends away from the body
+    return {E:out, W};
+  }
+  function draw(){
+    for(const s of ["L","R"]){
+      const p=cur[s], {E,W}=solve(s,p);
+      const dpath=`M${SH[s].x} ${SH[s].y} L${E.x.toFixed(1)} ${E.y.toFixed(1)} L${W.x.toFixed(1)} ${W.y.toFixed(1)}`;
+      sleeves[s].setAttribute("d",dpath); edges[s].setAttribute("d",dpath);
+      const fore=Math.atan2(W.y-E.y, W.x-E.x)*180/Math.PI - 90;            // forearm direction; hand shapes point down (+y)
+      const rot = p.rot==="auto" ? fore : p.rot;
+      hands[s].setAttribute("transform",`translate(${W.x.toFixed(1)},${W.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${(s==="R"?-p.scale:p.scale).toFixed(3)},${p.scale.toFixed(3)})`);   // the left hand mirrors the right
+      hands[s].firstChild.setAttribute("href","#hs_"+p.shape);
+    }
+  }
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  function frame(now){
+    const k=Math.min(1,(now-t0)/dur), e=ease(k);
+    for(const s of ["L","R"]){ const a=from[s], b=to[s];
+      const fa=a.fs==null?1:a.fs, fb=b.fs==null?1:b.fs;
+      cur[s]={x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e, scale:a.scale+(b.scale-a.scale)*e, fs:fa+(fb-fa)*e,
+              rot: (a.rot==="auto"||b.rot==="auto") ? (k<0.5?a.rot:b.rot) : a.rot+(b.rot-a.rot)*e,
+              shape: k<0.5 ? a.shape : b.shape}; }
+    draw();
+    if(k<1) raf=requestAnimationFrame(frame); else { raf=null; cur=JSON.parse(JSON.stringify(to)); draw(); const d=done; done=null; d&&d(); }
+  }
+  function go(pose, ms=300){
+    const target={L:Object.assign({},REST.L,pose.L||{}), R:Object.assign({},REST.R,pose.R||{})};
+    from=JSON.parse(JSON.stringify(cur)); to=target; t0=performance.now(); dur=ms;
+    if(raf) cancelAnimationFrame(raf);
+    return new Promise(res=>{ done=res; raf=requestAnimationFrame(frame); });
+  }
+  draw();
+  return { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } };
+})();
+// Poses (the teacher's right hand is on the viewer's left)
+const POSE = {
+  rest: {},
+  // "À moi" (my turn): right hand flat on the chest, fingers across it (Zig, Part 3, 4:57)
+  myTurn: {L:{x:186,y:470, shape:"flat", rot:-118, scale:1.05}},
+  // "À toi" (your turn): right arm reaching towards the learner, open palm up (Zig, Part 3, 4:53)
+  yourTurn: {L:{x:176,y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}},
+  // "Avec moi" (with me): my hand on my chest and my other hand reaching to you — "you and me, together"
+  together: {L:{x:186,y:470, shape:"flat", rot:-118, scale:1.05}, R:{x:224,y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}},
+  // "Écoute" (listen): hand cupped behind the ear
+  ear: {R:{x:252,y:350, shape:"cup", rot:-10, scale:1}},
+};
+function pointPose(side){            // reach towards the picture frame on that side, index finger extended
+  const s = side==="L" ? "L" : "R", S=ARMS.SH[s], T=TARGET[side];
+  const dx=T.x-S.x, dy=T.y-S.y, d=Math.hypot(dx,dy), reach=126;
+  return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
+}
+
+function rest(){ offering=false; ARMS.go(POSE.rest, 280); }
+function thumb(){}
 async function pointAt(who){
-  ear.style.opacity=0; palm.style.opacity=0; thumb(false);
-  const side = (who==="paul") ? paulSide : (paulSide==="L"?"R":"L");
-  if(side==="L"){ armR.style.transform="rotate(0deg)"; armL.style.transform=`rotate(${angleTo(150,440,TARGET.L.x,TARGET.L.y)+360}deg)`; }
-  else { armL.style.transform="rotate(0deg)"; armR.style.transform=`rotate(${angleTo(250,440,TARGET.R.x,TARGET.R.y)}deg)`; }
-  await sleep(380);
+  const side = sideOf(who), pose = pointPose(side);
+  if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
+  await ARMS.go(pose, 340);
 }
 async function flashIcon(which){
   rest(); const el=document.getElementById(which==="restart"?"icoRestart":"icoBookmark");
@@ -712,13 +762,15 @@ async function setScene(which){
 }
 function innerColour(go){ document.getElementById("innerBorder").style.stroke = go ? "var(--go)" : "#7a5434"; }
 function glow(on){ innerColour(on); }          // the model learner's turn: the border on their phone turns green
-async function gestureLead(){        // arms open: "together"
-  ear.style.opacity=0; palm.style.opacity=0; thumb(false);
-  armL.style.transform="rotate(55deg)"; armR.style.transform="rotate(-55deg)"; await sleep(300);
-}
-async function gestureEar(){ armL.style.transform="rotate(0deg)"; armR.style.transform="rotate(0deg)"; palm.style.opacity=0; ear.style.opacity=1; await sleep(250); }
-async function gesturePalm(){ armL.style.transform="rotate(0deg)"; armR.style.transform="rotate(0deg)"; ear.style.opacity=0; palm.style.opacity=1; await sleep(250); }
-function thumb(on){ const h=document.getElementById("handL"); h.querySelector(".finger").style.opacity= on?0:1; h.querySelector(".thumb").style.opacity= on?1:0; }
+async function gestureLead(){ await ARMS.go(POSE.together, 320); }      // "Avec moi": hand on my chest, hand reaching to you
+async function gestureEar(){ offering=false; await ARMS.go(POSE.myTurn, 300); }   // "À moi" (my turn): hand flat on the chest
+// "À toi" (your turn): one arm reaches towards the learner, palm up, and stays there through the question and the answer;
+// the other arm points to the picture (Zig's "your turn"; Jerry's hand towards the learner as the response comes)
+let offering=false;
+const sideOf = target => target ? ((target==="paul") ? paulSide : (paulSide==="L"?"R":"L")) : "R";
+const otherArm = side => side==="L" ? "R" : "L";
+function palmUp(arm){ return {x: arm==="L"?176:224, y:528, shape:"palmup", rot:0, scale:1.65, fs:0.32}; }
+async function gesturePalm(target){ offering=true; const arm=otherArm(sideOf(target)); await ARMS.go({[arm]:palmUp(arm)}, 320); }
 // correct answer: a short "ding" (Web Audio, unlocked by the first tap on the play button)
 let actx=null;
 function audioUnlock(){ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==="suspended") actx.resume(); }catch(e){} }
@@ -732,17 +784,13 @@ async function ding(big=false){
 }
 // a nod: the affirmation that goes with the ding (DISE: "nod and have him do it again")
 async function nod(){ const h=document.getElementById("head"); for(let k=0;k<2;k++){ h.style.transform="translateY(7px) rotate(0.01deg)"; await sleep(170); h.style.transform="translateY(0px)"; await sleep(170); } }
-async function thumbsUp(){
-  ear.style.opacity=0; palm.style.opacity=0; armR.style.transform="rotate(0deg)";
-  thumb(true); armL.style.transform="rotate(150deg)"; await sleep(650); armL.style.transform="rotate(0deg)"; await sleep(250); thumb(false);
-}
 
 /* ============================================================
    ENGINE — Jon's flowchart, without individual turns
    ============================================================ */
 // Only taught words are spoken. Restarting a part and opening a delayed test are
 // shown with a symbol, not words (rubric 2h, A14).
-const PHR = { ecoute:["Écoute."], atoi:["À toi."], avecmoi:["Avec moi."], bravo:["Très bien !"] };
+const PHR = { amoi:["À moi."], atoi:["À toi."], avecmoi:["Avec moi."], bravo:["Très bien !"] };
 let ctx=null;   // {lesson, ex, delayedRec}
 let phase="", curTask="";
 function trace(ev){ (S.trace=S.trace||[]).push({t:new Date().toISOString(), task:curTask, phase, ev}); if(S.trace.length>4000) S.trace.splice(0, S.trace.length-4000); }
@@ -787,7 +835,7 @@ async function presentModel(m){
   if(m.classroom){
     await setScene("class");
     ph("model learner: model");
-    await gestureEar(); await say(PHR.ecoute);
+    await gestureEar(); await say(PHR.amoi);
     await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3, true);
     if(m.classLead){
       ph("model learner: lead");
@@ -795,13 +843,13 @@ async function presentModel(m){
       await untilSignal(); glow(true); await say(m.answerUnits, "both"); glow(false); rest(); await sleep(350);
     }
     ph("model learner: test");
-    await gesturePalm(); await say(PHR.atoi); await pointAt(m.target); await sleep(500); await say(m.questionUnits);
+    await gesturePalm(m.target); await say(PHR.atoi); await pointAt(m.target); await sleep(500); await say(m.questionUnits);
     await untilSignal(); glow(true); await sleep(200); await say(m.answerUnits, "group"); glow(false);
     await nod(); await say(m.answerUnits); rest(); await sleep(400);          // affirmed, as for the learner
     await setScene("one");
   } else {
     ph("model");
-    await gestureEar(); await say(PHR.ecoute);
+    await gestureEar(); await say(PHR.amoi);
     await pointAt(m.target); await say(m.questionUnits); await sleep(300); await multipleModels(m, 3);
   }
   rest();
@@ -816,7 +864,8 @@ async function presentLead(t){
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
 async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=500, quiet=false}={}){
   curTask=t.id; await setPortraits(t.paulSide);
-  if(atoi){ await gesturePalm(); await say(PHR.atoi); }          // announce
+  if(atoi){ await gesturePalm(t.target); await say(PHR.atoi); }  // announce
+  else offering=true;                                             // the "your turn" hand goes out with every test question
   ph(retest? "retest" : "test");
   let r = await askAndListen(t, ["CEST", t.target], think);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
@@ -839,7 +888,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
 }
 async function correction(task, nth){
   ph("correction "+nth);
-  await gestureEar(); await say(PHR.ecoute);                       // step 1: give the answer
+  await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake"), hand on chest
   await pointAt(task.target); await say(task.answerUnits);
   if(nth>=2){                          // build from the end: narrator says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
@@ -848,7 +897,7 @@ async function correction(task, nth){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6)});
     if(!r.ok){ await pointAt(task.target); await say(task.answerUnits); }
   }
-  await gesturePalm(); await say(PHR.atoi);                        // step 2: repeat the task (presentTest asks the question)
+  await gesturePalm(task.target); await say(PHR.atoi);             // step 2: repeat the task (presentTest asks the question)
 }
 // A part's error is recorded for its delayed tests: first at the end of the next exercise, then at the start of the next lesson.
 function scheduleDelayed(part, anchor){
@@ -870,7 +919,7 @@ function itemsFor(part, run, shown){
 const TRIAL_LIMIT = 7;     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
-  await gestureEar(); await say(PHR.ecoute); await pointAt(it.target); await multipleModels(it, 2); rest();
+  await gestureEar(); await say(PHR.amoi); await pointAt(it.target); await multipleModels(it, 2); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled, moved on; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null});
 }
@@ -900,7 +949,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         // a brand-new item that failed at its first test: start over with several models, a lead and the test (Zig, Part 4, 17:04)
         let tries=1, fixed=false;
         while(!fixed && tries<TRIAL_LIMIT){
-          ph("start over: several models"); await gestureEar(); await say(PHR.ecoute); await pointAt(it.target); await multipleModels(it, 3, true); rest();
+          ph("start over: several models"); await gestureEar(); await say(PHR.amoi); await pointAt(it.target); await multipleModels(it, 3, true); rest();
           await presentLead(it);
           fixed=await presentTest(it,{retest:true, think:thinkTime(it,{retest:true})}); tries++;
         }
@@ -1049,7 +1098,7 @@ if(!S.learnerGender){ $("gender").hidden=false; }
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[S.ex].parts[0].items[0].paulSide);
-window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, thumbsUp, signal, setPortraits, rest, thumb, flashIcon, setScene, gestureLead};
+window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, flashIcon, setScene, gestureLead};
 </script>
 </body>
 </html>
