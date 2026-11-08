@@ -234,7 +234,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.15";
+const APP_VERSION="2026-11-08.16";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -451,6 +451,14 @@ const MOUTH = (()=>{
       play={plan:pl, t0:performance.now(), unit: 95/(rate||1)};   // about 95 ms per vowel at normal rate
       kick();
     },
+    startTimeline(phones){                          // [[ipa, t0 ms, t1 ms], ...] measured on the recording
+      const seq=[]; phones.forEach(([p,t0,t1])=>{ const v=VIS[p]||VIS[p[0]]; if(v) seq.push({p, v:v.slice(), t0, t1}); });
+      for(let i=0;i<seq.length;i++){ const x=seq[i]; if(VOWELS.has(x.p) || "pbmfv".includes(x.p)) continue;      // anticipatory rounding
+        const nx=seq.slice(i+1).find(y=>VOWELS.has(y.p)); if(nx){ x.v[1]=x.v[1]*0.3+nx.v[1]*0.7; x.v[2]=Math.max(x.v[2], nx.v[2]*0.8); } }
+      for(let i=0;i<seq.length-1;i++) seq[i].t1=Math.max(seq[i].t1, seq[i+1].t0);                                 // hold each shape until the next sound
+      const total = seq.length? seq[seq.length-1].t1 : 0;
+      play={plan:{seq, total}, t0:performance.now(), unit:1}; kick();
+    },
     word(pl, charIndex){                                // resynchronise at each word boundary, where the phone reports it
       if(!play || pl.missing || charIndex==null) return;
       const w = pl.text.slice(0, charIndex).trim().split(/\s+/).filter(Boolean).length;
@@ -466,6 +474,31 @@ function faceZoom(on){ const r=document.getElementById("room");
   const sc = document.getElementById("demoBg").style.opacity==="1" ? 4.2 : 3.2;   // larger on the model learner's phone
   r.style.transform = on ? `translate(${200-200*sc}px,${330-352*sc}px) scale(${sc})` : "translate(0px,40px) scale(1)"; }
 
+/* The teacher's voice: recorded clips in one fixed French voice (Jon, 8 November 2026), so every phone hears the same
+   teacher with natural intonation (questions rise, statements fall). Each clip comes with the time of every sound,
+   so the mouth follows the real audio. Lines without a clip fall back to the phone's own voice. */
+const clipKey = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"").replace(/[^a-z ]/g," ").trim().split(/\s+/).join("_");
+const TEACHER = { index:null, raw:{}, buf:{} };
+fetch("audio/teacher/index.json").then(r=>r.ok?r.json():null).then(ix=>{ TEACHER.index=ix;
+  if(ix) for(const k of Object.keys(ix)) TEACHER.raw[k]=fetch("audio/teacher/"+k+".mp3").then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);
+}).catch(()=>{});
+async function teacherBuf(k){
+  if(!(k in TEACHER.buf)) TEACHER.buf[k]=(async()=>{ audioUnlock(); const raw=await TEACHER.raw[k]; if(!raw||!actx) return null; return await actx.decodeAudioData(raw.slice(0)); })().catch(()=>null);
+  return TEACHER.buf[k];
+}
+async function playTeacher(text, onStart){
+  const k=clipKey(text), meta=TEACHER.index && TEACHER.index[k];
+  if(!meta || !TEACHER.raw[k]) return false;
+  const buf=await teacherBuf(k); if(!buf) return false;
+  return new Promise(res=>{
+    const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination);
+    const lat=((actx.outputLatency||actx.baseLatency||0)*1000);
+    src.onended=()=>{ MOUTH.stop(); res(true); };
+    src.start(actx.currentTime+0.02);
+    setTimeout(()=>{ MOUTH.startTimeline(meta.phones); onStart&&onStart(); }, 20+lat);
+  });
+}
+async function speakTeacher(text, opts={}){ if(!(await playTeacher(text, opts.withLearner))) await speakOne(text, opts); }
 /* The model learner's voice: recorded clips in a second French voice, so the learner can be heard saying the
    answer at the same time as the teacher (two voices at once is not possible with the phone's speech). */
 const LEARNER_CLIP = t => "audio/learner/"+t.toLowerCase().replace(/[’']/g,"").replace(/[^a-zà-ÿ ]/g,"").trim().replace(/\s+/g,"_")+".mp3";
@@ -511,11 +544,11 @@ async function say(units, who="tutor", pause=S.settings.pause){
     let learnerDone=Promise.resolve(), started=false;
     const go=()=>{ if(started) return; started=true; learnerDone=playLearner(units[0], 60); };   // a beat behind the teacher, as a learner following
     const backup=setTimeout(go, 400);                    // in case the phone does not report when speech starts
-    await speakOne(units[0], {withLearner: go}); clearTimeout(backup);
+    await speakTeacher(units[0], {withLearner: go}); clearTimeout(backup);
     await learnerDone;
   }
   else for(let i=0;i<units.length;i++){
-    await speakOne(units[i], {group: who==="group"});
+    if(who==="group") await speakOne(units[i], {group:true}); else await speakTeacher(units[i]);
     if(i<units.length-1) await sleep(pause);
   }
   document.getElementById("tutor").classList.remove("talk");
