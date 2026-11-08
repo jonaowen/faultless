@@ -229,7 +229,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.4";
+const APP_VERSION="2026-11-08.5";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -334,28 +334,68 @@ const IPA = {
   "écoute":"ekut", "c'est qui":"sɛ ki", "c'est":"sɛ", "paul":"pɔl", "julie":"ʒyli",
   "c'est paul":"sɛ pɔl", "c'est julie":"sɛ ʒyli", "avec moi":"avɛk mwa", "à toi":"a twa", "très bien":"tʁɛ bjɛ̃",
 };
-// Values: research table mouth/french_visemes.md (Bonneau et al. 2009 lip measurements of French speakers; Zerling 1991;
-// Fougeron & Smith 1993), checked against Demenÿ & Marey's 1891 front-view chronophotographs of a French speaker
-// saying "Je vous aime" (Rijksmuseum RP-F-F25606-A, CC0): /ʒ/ flared rounded ring with teeth inside, /u/ narrow pout,
-// /z/ teeth edge to edge with spread lips, /ɛ/ upper teeth showing, /m/ sealed.
-//         open  width protr closed teeth fv  tongue
-const VIS = {
-  rest:[.04,.50,0,1,0,0,0],
-  p:[0,.5,0,1,0,0,0], b:[0,.5,0,1,0,0,0], m:[0,.5,0,1,0,0,0],                       // C1 lips sealed
-  f:[.08,.55,0,0,.8,1,0], v:[.08,.55,0,0,.8,1,0],                                   // C2 lower lip under upper teeth
-  s:[.10,.75,0,0,1,0,0], z:[.10,.75,0,0,1,0,0],                                     // C3 teeth edge to edge
-  "ʃ":[.22,.30,.85,0,.7,0,0], "ʒ":[.22,.30,.85,0,.7,0,0],                           // C4 flared rounded ring
-  t:[.18,.55,0,0,.5,0,.15], d:[.18,.55,0,0,.5,0,.15], n:[.18,.55,0,0,.5,0,.15], "ɲ":[.18,.55,0,0,.5,0,.15],  // C5
-  l:[.24,.55,0,0,.5,0,.4],                                                          // C6 tongue tip
-  k:[.28,.50,0,0,.3,0,0], g:[.28,.50,0,0,.3,0,0], "ŋ":[.28,.50,0,0,.3,0,0], "ʁ":[.28,.50,0,0,.3,0,0],    // C7
-  i:[.20,1.0,.05,0,.8,0,0], j:[.20,1.0,.05,0,.8,0,0],                               // V1
-  e:[.35,.90,.05,0,.75,0,0],                                                        // V2
-  "ɛ":[.55,.85,.05,0,.85,0,0], "ɛ̃":[.55,.85,.05,0,.85,0,0],                         // V3
-  a:[.85,.70,0,0,.5,0,0], "ɑ":[.85,.70,0,0,.5,0,0],                                 // V4
-  "ɔ":[.55,.40,.50,0,.3,0,0], "œ":[.55,.40,.50,0,.3,0,0], "ə":[.55,.40,.50,0,.3,0,0], "ɑ̃":[.55,.40,.50,0,.3,0,0],  // V5
-  o:[.35,.08,.88,0,.1,0,0], "ø":[.35,.08,.88,0,.1,0,0], "ɔ̃":[.35,.08,.88,0,.1,0,0], "œ̃":[.55,.40,.50,0,.3,0,0], // V6
-  u:[.20,.05,1.0,0,0,0,0], y:[.20,.05,1.0,0,0,0,0], w:[.20,.05,1.0,0,0,0,0], "ɥ":[.20,.05,1.0,0,0,0,0],   // V7 (u and y look alike from the front)
+/* Mouth shapes are derived from each sound's IPA description (Jon, 8 November 2026): for vowels, height
+   (close … open), backness and rounding; for consonants, place (bilabial, labiodental, dental/alveolar,
+   postalveolar, palatal, velar, uvular) and manner (plosive, nasal, fricative, lateral, approximant).
+   Voicing and nasality are not visible from the front. The same rules work for any language given its IPA
+   inventory; a language profile adds what the IPA labels leave out (French: postalveolar fricatives are
+   said with rounded, protruded lips; /ɑ̃/ is more rounded than /a/; front rounded vowels are as rounded as /u/).
+   Checked against lip measurements of French speakers (Bonneau et al. 2009; Zerling 1991; Fougeron & Smith 1993)
+   and Demenÿ & Marey's 1891 front-view photographs of a French speaker (Rijksmuseum RP-F-F25606-A, CC0):
+   /ʒ/ flared rounded ring with teeth inside, /u/ narrow pout, /z/ teeth edge to edge, /ɛ/ upper teeth showing, /m/ sealed. */
+const HEIGHT = {close:0, "near-close":0.12, "close-mid":0.25, mid:0.4, "open-mid":0.55, "near-open":0.8, open:1};
+const IPA_FEATURES = {
+  // vowels: [height, backness (front/central/back), rounded]
+  i:["V","close","front",0], y:["V","close","front",1], u:["V","close","back",1],
+  e:["V","close-mid","front",0], "ø":["V","close-mid","front",1], o:["V","close-mid","back",1],
+  "ɛ":["V","open-mid","front",0], "œ":["V","open-mid","front",1], "ɔ":["V","open-mid","back",1],
+  "ə":["V","mid","central",1], a:["V","open","front",0], "ɑ":["V","open","back",0],
+  "ɛ̃":["V","open-mid","front",0], "œ̃":["V","open-mid","front",1], "ɑ̃":["V","open","back",0], "ɔ̃":["V","close-mid","back",1],
+  // consonants: [place, manner]
+  p:["C","bilabial","plosive"], b:["C","bilabial","plosive"], m:["C","bilabial","nasal"],
+  f:["C","labiodental","fricative"], v:["C","labiodental","fricative"],
+  t:["C","alveolar","plosive"], d:["C","alveolar","plosive"], n:["C","alveolar","nasal"],
+  s:["C","alveolar","fricative"], z:["C","alveolar","fricative"], l:["C","alveolar","lateral"],
+  "ʃ":["C","postalveolar","fricative"], "ʒ":["C","postalveolar","fricative"],
+  "ɲ":["C","palatal","nasal"], j:["C","palatal","approximant"], "ɥ":["C","labial-palatal","approximant"], w:["C","labial-velar","approximant"],
+  k:["C","velar","plosive"], g:["C","velar","plosive"], "ŋ":["C","velar","nasal"], "ʁ":["C","uvular","fricative"],
 };
+// French profile: how French realises some phonemes (Parisian /ɑ̃/ is close to a rounded open-mid back vowel)
+const PROFILE_FR = { roundedPostalveolars:true, realise:{"ɑ̃":["V","open-mid","back",1]} };
+//            [open, width, protr, closed, teeth, fv, tongue]
+function vowelShape(h, back, round, prof){
+  const H = HEIGHT[h];
+  const open = 0.2 + 0.65*H;                                  // jaw follows vowel height
+  let width, protr, teeth;
+  if(round){ width = 0.05 + 0.55*Math.pow(H,1.3); protr = 1 - 0.9*H; teeth = 0.3*H; }
+  else { width = back==="back" ? 0.6 : 1 - 0.3*H; protr = 0.05; teeth = H>0.6 ? 0.5 : 0.75 + 0.1*H; }
+  return [open, width, protr, 0, teeth, 0, 0];
+}
+function consonantShape(place, manner, prof){
+  switch(place){
+    case "bilabial": return [0, .5, 0, 1, 0, 0, 0];                                         // lips together
+    case "labiodental": return [.08, .55, 0, 0, .8, 1, 0];                                   // lower lip to upper teeth
+    case "alveolar": case "dental":
+      if(manner==="fricative") return [.10, .75, 0, 0, 1, 0, 0];                               // teeth nearly together, air through the gap
+      if(manner==="lateral") return [.24, .55, 0, 0, .5, 0, .4];                              // tongue tip up, sides open
+      return [.18, .55, 0, 0, .5, 0, .15];                                                     // plosive, nasal: tongue tip behind the teeth
+    case "postalveolar": return prof.roundedPostalveolars ? [.22, .30, .85, 0, .7, 0, 0] : [.15, .6, .2, 0, .8, 0, 0];
+    case "palatal": return manner==="approximant" ? vowelShape("close","front",0,prof) : [.18, .55, 0, 0, .5, 0, .15];
+    case "labial-palatal": return vowelShape("close","front",1,prof);                         // like /y/
+    case "labial-velar": return vowelShape("close","back",1,prof);                            // like /u/
+    default: return [.28, .50, 0, 0, .3, 0, 0];                                               // velar, uvular: nothing visible; lips follow the vowel
+  }
+}
+function buildVisemes(features, prof){
+  const out = {rest:[.04,.50,0,1,0,0,0]};
+  for(const [ph,f] of Object.entries(features)){
+    const g = (prof.realise && prof.realise[ph]) || f;
+    const v = g[0]==="V" ? vowelShape(g[1], g[2], g[3], prof) : consonantShape(g[1], g[2], prof);
+    out[ph]=v;
+  }
+  return out;
+}
+const VIS = buildVisemes(IPA_FEATURES, PROFILE_FR);
 const VOWELS = new Set(["i","y","u","e","ø","o","ɛ","œ","ɔ","a","ɑ","ə","ɛ̃","ɑ̃","ɔ̃","œ̃"]);
 const MOUTH = (()=>{
   const el = id => document.getElementById(id);
