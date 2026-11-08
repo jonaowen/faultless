@@ -77,10 +77,15 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <g id="demoBg" class="fade" opacity="0">
     <rect x="0" y="0" width="400" height="700" fill="#e3ddd0"/>
     <rect x="0" y="452" width="400" height="248" fill="#cbbfa8"/>
-    <rect x="86" y="26" width="228" height="378" rx="30" fill="#1d1f24"/>
   </g>
   <!-- the app's screen: full size one-to-one; shrunk into the phone in the demo scene -->
   <g id="screen" style="transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out;transform:translate(0px,0px) scale(1)">
+  <!-- the model learner's phone and its stand, drawn in the screen's own coordinates so they move and scale with it -->
+  <g id="phoneBody" class="fade" opacity="0">
+    <rect x="172" y="728" width="56" height="88" fill="#3a3d44"/>
+    <rect x="100" y="808" width="200" height="20" rx="10" fill="#3a3d44"/>
+    <rect x="-28" y="-28" width="456" height="756" rx="60" fill="#1d1f24"/>
+  </g>
   <rect id="screenBg" class="fade" opacity="0" x="0" y="0" width="400" height="700" fill="var(--bg)"/>
   <clipPath id="screenClip"><rect x="0" y="0" width="400" height="700"/></clipPath>
   <g clip-path="url(#screenClip)">
@@ -156,8 +161,6 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <!-- the model learner, seen from behind, holding the phone -->
   <g id="classroom" class="fade" opacity="0">
     <g class="lb">
-      <rect x="186" y="404" width="28" height="44" fill="#3a3d44"/>
-      <rect x="150" y="444" width="100" height="10" rx="5" fill="#3a3d44"/>
       <path d="M96 700 v-40 q0-58 66-66 h76 q66 8 66 66 v40z" fill="#6a8f5a"/>
       <rect x="182" y="556" width="36" height="40" fill="#b57d5c"/>
       <circle cx="200" cy="528" r="46" fill="#c98f6b"/>
@@ -234,7 +237,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-08.16";
+const APP_VERSION="2026-11-08.17";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -889,9 +892,11 @@ async function setScene(which){
   const scr=document.getElementById("screen");
   if(demo){
     innerColour(false); gaze("learner"); Object.keys(PEOPLE).forEach(n=>learnerClip("C'est "+PEOPLE[n].name+"."));
-    ["demoBg","screenBg","innerBorder","classroom"].forEach(id=>document.getElementById(id).style.opacity=1);
-    scr.style.transform="translate(100px,40px) scale(.5)";          // the app, shown on the model learner's phone
+    ["demoBg","phoneBody","screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=1);
+    scr.style.transform="translate(100px,40px) scale(.5)";          // the app shrinks into the model learner's phone (phone and stand move with it)
     await sleep(950);
+    document.getElementById("classroom").style.opacity=1;          // then the model learner appears in front of it
+    await sleep(350);
   } else {
     gaze("out");
     document.getElementById("classroom").style.opacity=0;          // the model learner goes...
@@ -899,7 +904,7 @@ async function setScene(which){
     scr.style.transform="translate(0px,0px) scale(1)";              // ...and the phone's screen fills the view
     document.getElementById("demoBg").style.opacity=0;
     await sleep(950);
-    ["screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=0);
+    ["phoneBody","screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=0);
   }
 }
 function innerColour(go){ document.getElementById("innerBorder").style.stroke = go ? "var(--go)" : "var(--stop)"; }
