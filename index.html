@@ -331,7 +331,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.5";
+const APP_VERSION="2026-11-09.6";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -834,7 +834,8 @@ async function say(units, who="tutor", pause=S.settings.pause){
 }
 let lastSpeechEnd = 0;
 // The signal comes exactly 0.5 s after the cue (the last thing the teacher says). This never changes.
-const SIGNAL_DELAY = 500;
+// Jon 9 Nov 10:15: the green border, and the listening, start the instant the teacher stops speaking (was 0.5 s): pace
+const SIGNAL_DELAY = 0;
 async function untilSignal(){ const w = SIGNAL_DELAY - (Date.now()-lastSpeechEnd); if(w>0) await sleep(w); }
 
 /* ============================================================
@@ -1070,12 +1071,11 @@ function voskClean(text, expect){
 }
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
+  const rec=new VOSK.model.KaldiRecognizer(16000, VOSK.grammar);    // made in the worker while the cue finishes
   await synthIdle(); const cueEnd=lastSpeechEnd;
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
-  { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }      // the microphone opens a little before the signal
   trace("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
-  const rec=new VOSK.model.KaldiRecognizer(16000, VOSK.grammar);
   const finals=[]; let partial="", onFinal=null;
   rec.on("result", m=>{ const t=m.result && m.result.text; if(t) finals.push(t); partial=""; if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; });
@@ -1570,7 +1570,11 @@ function thinkTime(t, {retest=false, prevTarget=null, firstOfItem=false}={}){
 // AFTER_ATOI: the gap after "Vas-y" — no longer than the gaps elsewhere, so it never sounds like the learner's turn
 // (Jon, 8 November 2026). "Vas-y" itself gives the thinking time.
 const AFTER_ATOI = 150;
+// the microphone is switched on as the test begins (never in leads), so that listening can start the instant the cue
+// ends; nothing is recorded or heard until then
+function warmMic(){ if(!S.settings.manual && S.settings.engine!=="google" && VOSK.model && window.LISTENER && LISTENER.audioReady) LISTENER.micOn().catch(()=>{}); }
 async function askAndListen(task, expect, think=500, alsoOk=[]){
+  warmMic();
   recentSaid=[];                          // only the cue can be picked up by the microphone, so only it counts as an echo
   if(task.cue==="point"){                 // touch-and-name: the pointing is the cue, nothing is said
     if(lastPoint){ const o=offering; rest(); offering=o; await sleep(320); }   // the hand comes back first, so the pointing is seen
@@ -1661,12 +1665,12 @@ async function presentIntro(m){
   ph("introduction: repeat");
   await gesturePalm(m); await pointAt(m); await sleep(300); await say(repeatCue(m.target));
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-  smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(500);
+  smile(true); rest(); await ding(); await sleep(500);
   await narrate("avec_a"); await say(PHR.atoi); await sleep(200); await narrate("point_b");
   ph("introduction: point");
   await say(PHR.atoi); await sleep(500); await pointAt(m); lastSpeechEnd=Date.now();
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-  smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(500);
+  smile(true); rest(); await ding(); await sleep(500);
   await narrate("only");
   await setScene("one");
   S.introSeen=true; save();
@@ -1682,7 +1686,7 @@ async function presentQIntro(m){
   await narrate("q_b");
   await announce({cue:"question", target:m.target, at:m.at}); await sleep(AFTER_ATOI); await say(m.questionUnits);
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-  smile(true); await ding(); await nod(); await say(answerUnits(m)); rest(); await sleep(400);
+  smile(true); rest(); await ding(); await sleep(400);
   await setScene("one");
   S.qIntroSeen=true; save();
   await narrate("q_turn");
@@ -1746,7 +1750,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
             result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
   save();
-  if(r.ok){ smile(true); await ding(); await nod(); if(!quiet && !t.noEcho){ ph("affirm"); await pointAt(t); await sayAnswer(t); } rest(); }
+  if(r.ok){ smile(true); rest(); await ding(); }        // Jon 9 Nov: right = the teacher just smiles (no nod, no pointing, no echo)
   return r.ok;
 }
 async function correction(task, nth){
@@ -1824,7 +1828,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
           fixed=await presentTest(it,{retest:true, think:thinkTime(it,{retest:true})}); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
-        if(await immediateRepeats(it)){ ph("final confirmation"); await pointAt(it); await say(answerUnits(it)); await say(PHR.bravo); rest(); }
+        if(await immediateRepeats(it)){ ph("final confirmation"); smile(true); rest(); }      // Jon 9 Nov: right = a smile
         i++; prevTest=false; continue;
       }
 
@@ -1839,7 +1843,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       }
       if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
-      ph("final confirmation"); await pointAt(it); await say(answerUnits(it)); await say(PHR.bravo); rest();
+      ph("final confirmation"); smile(true); rest();
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors
       await flashIcon("restart");
       items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; prevTest=false; prevTarget=null; prevItem=null;

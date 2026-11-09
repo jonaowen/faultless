@@ -174,8 +174,10 @@
           const f=buf.subarray(0,fr); buf=buf.slice(fr); t+=20;
           let e=0; for(let i=0;i<fr;i++) e+=f[i]*f[i]; e=Math.sqrt(e/fr); energies.push(e);
           // background level: low percentile of the recent past, never below a small absolute value
-          if(energies.length%5===0){ const r=energies.slice(-100).slice().sort((a,b)=>a-b); floor=Math.max(0.0015, r[Math.floor(r.length*0.15)]); }
-          if(floor===null) floor=Math.max(0.0015,e);
+          // the learner may start speaking at once (listening starts the instant the cue ends), so the floor starts at a
+          // fixed quiet level and may only rise slowly: speech at the very start is not taken for the background
+          if(floor===null) floor=0.003;
+          if(energies.length%5===0){ const r=energies.slice(-100).slice().sort((a,b)=>a-b); const q=Math.max(0.0015, r[Math.floor(r.length*0.15)]); floor = q<floor ? q : Math.min(q, floor*1.03); }
           const voiced = e > Math.max(floor*3.2, 0.006);
           if(voiced){ if(speechStart<0) speechStart=t; lastVoice=t; }
           if(speechStart<0 && t>noSpeech) return finish("silence");
