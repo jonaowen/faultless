@@ -168,6 +168,7 @@
       const finish = (status)=>{ if(done) return; done=true; armed=false; onChunk=null; micOff();
         const audio=join(chunks); const s=Math.max(0, (speechStart<0?0:speechStart)-300)*16; resolve({status, audio: audio.subarray(s), all:audio, speechStartMs:speechStart, floor}); };
       onChunk = c => {
+        if(opts.onAudio) try{ opts.onAudio(c); }catch(e){}       // streaming recognisers (Vosk) get the audio as it comes
         const nb=new Float32Array(buf.length+c.length); nb.set(buf); nb.set(c,buf.length); buf=nb;
         while(buf.length>=fr){
           const f=buf.subarray(0,fr); buf=buf.slice(fr); t+=20;

@@ -325,12 +325,13 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="listener/ort/ort.wasm.min.js"></script>
 <script src="listener/listener.js"></script>
 <script src="course/lesson1.js"></script>
+<script src="listener/vosk/vosk.js"></script>
 <script>
 "use strict";
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.4";
+const APP_VERSION="2026-11-09.5";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -915,6 +916,7 @@ function listen(expect, alsoOk=[]){
   const echoes = recentSaid.map(u=>tokensOf(u)).filter(e=> e.length && !e.some(w=>{ const r=nameOf(w); return r && expect.includes(r.n); }) && !e.every(partOf));
   recentSaid=[];
   if(S.settings.manual || recogBroken){ signal("listen"); return listenManual(expect); }
+  if(S.settings.engine!=="google" && VOSK.model && window.LISTENER && LISTENER.audioReady) return listenVosk(expect, alsoOk);
   // the in-app listener is used only for answers its model has been validated on (listener.json "validated");
   // anything else goes to Chrome's recogniser until a model that knows it ships
   const validated = window.LISTENER && LISTENER.json && LISTENER.json.validated || [];
@@ -1009,7 +1011,7 @@ function verdictLocal(rec, expect, alsoOk){
   return {ok:false, reason:"not the expected words", best:rec.transcript};
 }
 let clipSeq=0, localBroken=false;
-const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||("app/"+(window.LISTENER?LISTENER.version:"")), recPeak:r.recPeak} : (r.recNote? {recNote:r.recNote} : {});
+const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||("app/"+(window.LISTENER?LISTENER.version:"")), recPeak:r.recPeak, raw:r.raw} : (r.recNote? {recNote:r.recNote} : {});
 async function keepClip(audio){
   if(!S.settings.keepAudio) return null;
   const id="c"+Date.now().toString(36)+(clipSeq++);
@@ -1057,6 +1059,50 @@ async function listenLocal(expect, alsoOk){
   const clip=await keepClip(cap.audio);
   trace(`listener: "${rec.transcript}" → ${v.ok?"correct":v.reason} (${Date.now()-t0} ms: ${JSON.stringify(rec.ms)})`);
   return {status:"heard", heard:[rec.transcript||"(unclear)"], ok:v.ok, reason:v.reason, clip, lp:+rec.freeLp.toFixed(2), expectPhrase:phraseOf(expect)};
+}
+// Vosk's output, judged like any transcript; "[unk]" (something outside the course's phrases) at the very start or end is
+// a cough or a filler, anywhere else it is a wrong word
+function voskClean(text, expect){
+  let w=(text||"").split(/\s+/).filter(Boolean);
+  while(w.length && w[0]==="[unk]") w.shift();
+  while(w.length && w[w.length-1]==="[unk]") w.pop();
+  return w.join(" ");
+}
+async function listenVosk(expect, alsoOk=[]){
+  stopRec();
+  await synthIdle(); const cueEnd=lastSpeechEnd;
+  try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
+  { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }      // the microphone opens a little before the signal
+  trace("mic open");
+  const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
+  const rec=new VOSK.model.KaldiRecognizer(16000, VOSK.grammar);
+  const finals=[]; let partial="", onFinal=null;
+  rec.on("result", m=>{ const t=m.result && m.result.text; if(t) finals.push(t); partial=""; if(onFinal) onFinal(); });
+  rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; });
+  const textNow=()=>voskClean(finals.concat(partial?[partial]:[]).join(" "), expect);
+  let buf=[], n=0;
+  const feed=c=>{ buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
+  const want=phraseOf(expect).toLowerCase().replace(/[.!?]/g,"").trim();
+  // an answer that stops part-way ("un…", "je m'appelle…" before the name) may be a slow learner: keep listening a little
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:700, extraSilenceMs:2000, onAudio:feed,
+    onSpeechEnd: async ()=>{ await sleep(150); const t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
+      const rawNow=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim();
+      return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
+  clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status);
+  if(n){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } rec.acceptWaveformFloat(a,16000); }
+  await new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,1500); });
+  try{ rec.remove(); }catch(e){}
+  const raw=finals.join(" ").replace(/\s+/g," ").trim(), text=voskClean(raw, expect);
+  const clip=await keepClip(cap.all);
+  const base={clip, engine:"vosk", expectPhrase:phraseOf(expect), raw};
+  if(!text){
+    trace(`vosk: "${raw}" (${cap.status})`);
+    if(raw) return Object.assign(base,{status:"heard", heard:[raw], ok:false, reason:"not the expected words"});
+    return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
+  }
+  const v=judge(text, expect, [], alsoOk);
+  trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`);
+  return Object.assign(base,{status:"heard", heard:[text], ...v});
 }
 function listenManual(expect){
   const box=document.getElementById("manual"); box.hidden=false;
@@ -1873,6 +1919,29 @@ function startListenerLoad(){
     .catch(e=>{ btn.classList.remove("loading"); trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); });
 }
 startListenerLoad();
+/* The main listener (9 Nov): Vosk (Kaldi, French small model) running in the page, restricted to the phrases the course
+   uses plus "[unk]" (anything else). On Jon's 17 recorded answers of 9 Nov (un, deux, trois) and his 9 Paul/Julie
+   recordings it was right every time; Chrome's recogniser heard none of the 17. The app holds the microphone itself,
+   so every answer is recorded. Chrome's recogniser is the fallback if Vosk cannot load. */
+const VOSK = {model:null, grammar:null, failed:false};
+function courseGrammar(){
+  const norm=t=>t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿ' -]/g," ").replace(/\s+/g," ").trim();
+  const P=new Set();
+  for(const L of LESSONS) for(const E of L.exercises) for(const Pt of E.parts) for(const it of Pt.items) for(const u of (it.answerUnits||[])) P.add(norm(u));
+  for(const k of Object.keys(VOCAB)) for(const u of VOCAB[k].say) P.add(norm(u));
+  for(const p of [...P]){ const w=p.split(" "); w.forEach(x=>P.add(x));
+    if(w[0]==="un"||w[0]==="une"){ const n=w.slice(1).join(" "); P.add("un "+n); P.add("une "+n); P.add(n); } }
+  ["c'est","euh","oui","non"].forEach(x=>P.add(x)); P.delete("");
+  return JSON.stringify([...P].sort().concat(["[unk]"]));
+}
+async function startVosk(){
+  if(!window.Vosk){ trace("Vosk not available"); VOSK.failed=true; return; }
+  const t0=Date.now();
+  try{ VOSK.model = await Vosk.createModel(new URL("listener/vosk/model-fr.tar.gz", location.href).href, -1);
+    VOSK.grammar = courseGrammar(); trace("Vosk listener ready ("+(Date.now()-t0)+" ms; "+JSON.parse(VOSK.grammar).length+" phrases)"); }
+  catch(e){ VOSK.failed=true; trace("Vosk failed to load: "+(e&&e.message||e)+" — using Chrome's recogniser"); }
+}
+startVosk();
 // ask the browser to keep saved answers (audio) even when the phone is short of space
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist().then(ok=>trace("storage kept: "+ok)); }catch(e){}
 document.getElementById("playBtn").onclick=async ()=>{
