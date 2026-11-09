@@ -143,7 +143,9 @@
   }
   async function micOn(){
     if(stream) return;
-    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true, channelCount:1}});
+    // no echo cancellation: on Android it puts the phone into "call" audio mode while the microphone is on, which delays the
+    // teacher's voice behind her lips (Jon 9 Nov 10:27). Nothing is captured while she speaks, so there is no echo to cancel.
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:true, channelCount:1}});
     if(ctx.state==="suspended") await ctx.resume();
     srcNode = ctx.createMediaStreamSource(stream); srcNode.connect(node);      // not connected to the speakers
   }

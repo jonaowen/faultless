@@ -331,7 +331,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.6";
+const APP_VERSION="2026-11-09.7";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1443,9 +1443,15 @@ function rest(){ offering=false; goldOff(); ARMS.go(POSE.rest, 280); }
 function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
 let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
+// Jon 9 Nov 10:27: no pointing at the pictures; the gold border alone shows what the teacher means. Her hand still goes
+// to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
+const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||/^s\d$/.test(s);
 async function pointAt(who){
   const side = sideOf(who); if(side==="none") return;
-  goldOn(side);
+  if(ON_SCREEN(side)){ goldOn(side);
+    if(offering && lastPoint!=="palm"){ await armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
+    return; }
+  goldOff();
   const pose = pointPose(side), key=side+(offering?"+palm":"");
   if(key===lastPoint) return;
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
@@ -1577,7 +1583,7 @@ async function askAndListen(task, expect, think=500, alsoOk=[]){
   warmMic();
   recentSaid=[];                          // only the cue can be picked up by the microphone, so only it counts as an echo
   if(task.cue==="point"){                 // touch-and-name: the pointing is the cue, nothing is said
-    if(lastPoint){ const o=offering; rest(); offering=o; await sleep(320); }   // the hand comes back first, so the pointing is seen
+    goldOff(); await sleep(250);          // the border goes off first, so its coming on is seen as the cue
     await sleep(think);                   // think time
     await pointAt(task);           // cue
     lastSpeechEnd = Date.now();           // the signal is timed from the moment the pointing lands
