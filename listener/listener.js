@@ -199,5 +199,5 @@
     for(let i=0;i<n;i++) v.setInt16(44+i*2, Math.max(-1,Math.min(1,audio[i]))*32767, true);
     return new Uint8Array(b);
   }
-  window.LISTENER = {version:MODEL_VERSION, load, openMic, micOn, micOff, capture, recognise, logMel, wav, get json(){ return J; }, get ready(){ return !!enc; }, get audioReady(){ return !!ctx; }};
+  window.LISTENER = {version:MODEL_VERSION, load, openMic, micOn, micOff, capture, recognise, logMel, wav, get json(){ return J; }, get ready(){ return !!enc; }, get audioReady(){ return !!(ctx && node); }};
 })();

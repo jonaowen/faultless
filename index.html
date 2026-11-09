@@ -330,7 +330,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.2";
+const APP_VERSION="2026-11-09.3";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -542,6 +542,8 @@ const KEY="frDI.v1";
 const defaults = () => ({stateVer:10, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
+// one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
+const SESSION = {start:new Date().toISOString(), clips:[]};
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
   // version 8 (DISE formats: model, lead, Répète; pointing; then the question): progress and the introduction start again
@@ -923,6 +925,9 @@ function listen(expect, alsoOk=[]){
     await synthIdle(); const cueEnd=lastSpeechEnd;   // the cue (the last thing the teacher says) has finished
     { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }   // the microphone opens a little before the signal, so a quick answer is not cut off
     const gen=++recGen;
+    let rec=startParallelRecording();
+    const resolveR = async v => { const extra = rec ? await rec.stop() : {}; if(extra.clip) trace("recording kept: "+extra.clip+" (peak "+extra.recPeak+")"); else if(extra.recNote) trace(extra.recNote);
+      resolve(Object.assign({}, v, extra, {expectPhrase:phraseOf(expect)})); };
     let R; try{ R=new SR(); }catch(e){ recogBroken=true; signal("listen"); resolve(listenManual(expect)); return; }
     activeR=R;
     R.lang="fr-FR"; R.continuous=true; R.interimResults=true; R.maxAlternatives=5;
@@ -948,11 +953,13 @@ function listen(expect, alsoOk=[]){
       let verdict = v || {ok:false, reason: status==="silence"?"no answer":"nothing heard"};
       const st = !c.length ? "silence" : (verdict.echoOnly ? "echo" : "heard");
       trace("mic closed: "+st);
-      resolve({status: st, heard:c, ...verdict});
+      resolveR({status: st, heard:c, ...verdict});
     };
     R.onstart=()=>{ if(gen===recGen) trace("mic open"); };
     R.onresult=e=>{ if(gen!==recGen) return; heardAny=true; last=Date.now(); results=Array.from(e.results); };
     R.onerror=e=>{ if(gen!==recGen) return; trace("recogniser error: "+e.error);
+      if(e.error==="audio-capture" && rec && !parRecOff){      // the recording took the microphone: release it, keep listening with Chrome
+        parRecOff=true; const r0=rec; rec=null; r0.stop(); trace("Chrome's recogniser could not use the microphone while the app recorded: parallel recording off for this session"); return; }
       if(e.error==="not-allowed"||e.error==="service-not-allowed"||e.error==="network"||e.error==="audio-capture"){ recogBroken=true; setStatus("Speech recognition unavailable ("+e.error+"). Switched to manual mode."); finished=true; clearInterval(tick); stopRec(); signal("listen"); resolve(listenManual(expect)); } };
     // Chrome on Android ends a listening session after 2-3 s if it has not caught speech yet, and sometimes refuses an
     // immediate restart: keep restarting (with a short wait if refused) until the 7-second window is over, so a learner
@@ -1002,11 +1009,25 @@ function verdictLocal(rec, expect, alsoOk){
   return {ok:false, reason:"not the expected words", best:rec.transcript};
 }
 let clipSeq=0, localBroken=false;
-const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:"app/"+(window.LISTENER?LISTENER.version:"")} : {};
+const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||("app/"+(window.LISTENER?LISTENER.version:"")), recPeak:r.recPeak} : (r.recNote? {recNote:r.recNote} : {});
 async function keepClip(audio){
   if(!S.settings.keepAudio) return null;
   const id="c"+Date.now().toString(36)+(clipSeq++);
-  try{ await clipStore("put", id, LISTENER.wav(audio)); return id; }catch(e){ return null; }
+  try{ await clipStore("put", id, LISTENER.wav(audio)); SESSION.clips.push(id); return id; }catch(e){ return null; }
+}
+/* Every answer is recorded, whichever recogniser judges it (Jon 9 Nov: "the real audio of what happened is the ground truth").
+   While Chrome's recogniser listens, the app records the same microphone in parallel. Some phones may not allow two
+   recorders at once: the log notes the recording's loudness, and if Chrome's recogniser fails because of the recording,
+   parallel recording is switched off for the rest of the session and the log says so. */
+let parRecOff=false;
+function startParallelRecording(){
+  if(parRecOff || !S.settings.keepAudio || !window.LISTENER || !LISTENER.audioReady) return null;
+  const ac=new AbortController(); let p;
+  try{ p=LISTENER.micOn().then(()=>LISTENER.capture({noSpeechMs:15000, endSilenceMs:60000, maxMs:6000, signal:ac.signal})).catch(e=>({err:e.message})); }
+  catch(e){ return null; }
+  return {stop: async ()=>{ ac.abort(); const cap=await p; LISTENER.micOff(); if(!cap || cap.err || !cap.all) return {recNote:"recording failed"+(cap&&cap.err?": "+cap.err:"")};
+    let pk=0; for(let i=0;i<cap.all.length;i++){ const v=Math.abs(cap.all[i]); if(v>pk) pk=v; }
+    const clip=await keepClip(cap.all); return {clip, recPeak:+pk.toFixed(3), engine:"chrome", speech:cap.speechStartMs>=0}; }};
 }
 function clipStore(op, key, val){
   return new Promise((res,rej)=>{ const r=indexedDB.open("faultless-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
@@ -1656,6 +1677,14 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=50
     r = await askAndListen(t, expect, think);
   }
   rest();
+  /* The learner spoke (the recording has speech) but the recogniser returned nothing, twice: a listening fault, not the
+     learner's error (Jon 9 Nov: "un" said exactly as the teacher said it, rejected every time). Not scored, not corrected:
+     the teacher says the answer and the lesson goes on; the recording is kept so the listener can be trained on it. */
+  if(r.status==="silence" && r.speech){
+    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
+              result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
+    save(); await pointAt(t); await sayAnswer(t); rest(); return true;
+  }
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id);
     const f = (S.ftc[ctx.exKey] = S.ftc[ctx.exKey] || {new:{c:0,n:0}, review:{c:0,n:0}});
@@ -1847,7 +1876,8 @@ document.getElementById("playBtn").onclick=async ()=>{
   if(running){ if(playWaiter){ const w=playWaiter; playWaiter=null; showPlay(false); audioUnlock(); w(); } return; }
   if(document.getElementById("playBtn").classList.contains("loading")) return;
   running=true;
-  if(window.LISTENER && LISTENER.ready && S.settings.engine!=="google" && !S.settings.manual){
+  // the audio system is needed for the in-app listener and for recording every answer (whichever recogniser judges it)
+  if(window.LISTENER && !S.settings.manual && ((LISTENER.ready && S.settings.engine!=="google") || S.settings.keepAudio)){
     try{ await LISTENER.openMic(); }catch(e){ trace("microphone permission: "+e.message); }
   }
   showPlay(false);
@@ -1915,9 +1945,14 @@ $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=default
 /* Save (developer only): one file with the whole log and every recorded answer (audio linked to its log line by clip id).
    Answers are stored on the phone as they happen, so closing the app loses nothing; this writes them out. */
 async function saveRun(){
-  let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
+  const inSession = new Set(SESSION.clips);
+  let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ if(!inSession.has(k)) continue; let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
   const meta={app:APP_VERSION, savedAt:new Date().toISOString(), listener: window.LISTENER&&LISTENER.json ? {model:LISTENER.version, source:LISTENER.json.source, quant:LISTENER.json.quant} : null, engine:S.settings.engine, ua:navigator.userAgent};
-  const blob=new Blob([JSON.stringify(Object.assign({}, S, meta, {clips}),null,1)],{type:"application/json"});
+  const since=e=>e.t>=SESSION.start;
+  const touched=[...new Set(S.log.filter(since).map(e=>e.ex).filter(Boolean))];
+  const run=Object.assign({}, S, meta, {session:{start:SESSION.start, end:new Date().toISOString(), exercises:touched, recordings:Object.keys(clips).length},
+    log:S.log.filter(since), trace:S.trace.filter(since), clips});
+  const blob=new Blob([JSON.stringify(run,null,1)],{type:"application/json"});
   const d=new Date(), pad=n=>String(n).padStart(2,"0");
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`faultless-run-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
   document.body.appendChild(a); a.click(); a.remove();
