@@ -334,7 +334,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.10";
+const APP_VERSION="2026-11-09.11";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1116,9 +1116,10 @@ async function listenVosk(expect, alsoOk=[]){
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
   trace("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
-  const finals=[]; let partial="", onFinal=null;
-  rec.on("result", m=>{ const t=m.result && m.result.text; if(t) finals.push(t); partial=""; if(onFinal) onFinal(); });
-  rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; });
+  const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now();
+  const noteRaw=()=>{ const r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(r!==rawSeen){ rawSeen=r; rawSince=Date.now(); } };
+  rec.on("result", m=>{ const t=m.result && m.result.text; if(t) finals.push(t); partial=""; noteRaw(); if(onFinal) onFinal(); });
+  rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
   const textNow=()=>voskClean(finals.concat(partial?[partial]:[]).join(" "), expect);
   let buf=[], n=0;
   const feed=c=>{ buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
@@ -1126,11 +1127,17 @@ async function listenVosk(expect, alsoOk=[]){
   // an answer that stops part-way ("un…", "je m'appelle…" before the name) may be a slow learner: keep listening a little
   // the answer has ended after 0.45 s of quiet (was 0.7 s; Jon 9 Nov 14:21: responses per minute is what counts). An answer
   // that is still incomplete ("un…") gets the extra wait below, so a slow learner is not cut off.
-  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, onAudio:feed,
+  /* Jon 9 Nov 15:07: the answer ends as soon as what Vosk has heard is the whole right answer and has not changed for
+     0.45 s, whatever the loudness says (a noisy room no longer holds the microphone open for seconds). Not for an answer
+     that goes on with the learner's own name (REST). */
+  let stopNow=null, early=false;
+  const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow();
+    if(t && Date.now()-rawSince>=450 && judge(t, expect, [], alsoOk).ok){ early=true; stopNow(); } }, 50);
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, onAudio:feed, onStart:s=>{ stopNow=s; },
     onSpeechEnd: async ()=>{ await sleep(150); const t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
       const rawNow=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim();
       return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
-  clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status);
+  clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" (the whole answer heard, unchanged for 0.45 s)":""));
   if(n){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } rec.acceptWaveformFloat(a,16000); }
   await new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,1500); });
   try{ rec.remove(); }catch(e){}
