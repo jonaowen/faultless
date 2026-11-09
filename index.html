@@ -334,7 +334,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.13";
+const APP_VERSION="2026-11-09.14";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -845,9 +845,21 @@ function speakOne(text, opts={}){
     synth.speak(u);
   });
 }
+/* A counting sequence ("Un, deux, trois, quatre.", also after "Répète :") is said one number at a time, 0.5 s apart
+   (Jon 9 Nov 16:04: connected speech at the normal rate, but nobody says a string of numbers that fast, and the learner
+   follows a sequence more easily at that pace). Each number is its own clip. */
+const COUNT_GAP = 500;
+const COUNT_RE = /^(?:(répète)\s*:\s*)?((?:un|deux|trois|quatre)(?:\s*,\s*(?:un|deux|trois|quatre))+)\s*[.…]?$/i;
+function countParts(u){ const m=COUNT_RE.exec(u.trim()); if(!m) return null;
+  const nums=m[2].split(/\s*,\s*/).map(n=>n.charAt(0).toUpperCase()+n.slice(1).toLowerCase()+".");
+  return {repete:!!m[1], nums}; }
+async function sayCount(c){
+  if(c.repete){ await speakTeacher("Répète :"); await sleep(300); }
+  for(let i=0;i<c.nums.length;i++){ await speakTeacher(c.nums[i]); if(i<c.nums.length-1) await sleep(COUNT_GAP); } }
 async function say(units, who="tutor", pause=S.settings.pause, tail=0){
   if(typeof units==="string") units=[units];
   if(!units.length) return;                    // nothing to say (e.g. the "Écoute" direction, dropped 9 Nov 14:21)
+  if(who!=="group" && units.some(u=>countParts(u))) who="tutor";   // no learner clip says the numbers apart: the teacher alone
   stopRec();                                   // the microphone is never open while the app speaks
   recentSaid.push(units.join(" ")); trace("say["+who+"]: "+units.join(" · "));
   caption((who==="group"?"[élève] ":"")+units.join(" · "));
@@ -864,7 +876,8 @@ async function say(units, who="tutor", pause=S.settings.pause, tail=0){
     await learnerDone;
   }
   else for(let i=0;i<units.length;i++){
-    if(who==="group") await speakOne(units[i], {group:true}); else await speakTeacher(units[i]);
+    const cp = who!=="group" && countParts(units[i]);
+    if(who==="group") await speakOne(units[i], {group:true}); else if(cp) await sayCount(cp); else await speakTeacher(units[i]);
     if(i<units.length-1) await sleep(pause);
   }
   document.getElementById("tutor").classList.remove("talk");
@@ -2010,7 +2023,11 @@ function courseGrammar(expect){
      tell a vowel said alone from its neighbours (even the teacher's own "u" comes out as "i" against "ou", "i", "é"), so a
      sound piece is accepted when something is said; the log says it was not judged on the sound (VOCAB kind "frag"). */
   if(extra.length) return JSON.stringify([...new Set(extra)]);
-  return JSON.stringify([...new Set(VOSK.base.concat(extra))].concat(["[unk]"]));
+  /* "je m'appelle" is in the grammar only when the answer has it: otherwise its "je" takes the start of "Julie" (Jon's
+     9 Nov 16:04 run: a correct "Julie" heard as "je") */
+  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire"].includes(e));
+  const base = self ? VOSK.base : VOSK.base.filter(p=>!/m'appelle/.test(p));
+  return JSON.stringify([...new Set(base.concat(extra))].concat(["[unk]"]));
 }
 async function startVosk(){
   if(!window.Vosk){ trace("Vosk not available"); VOSK.failed=true; return; }
