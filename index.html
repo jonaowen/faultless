@@ -334,7 +334,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.8";
+const APP_VERSION="2026-11-09.9";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -966,7 +966,7 @@ function listen(expect, alsoOk=[]){
   return new Promise(async resolve=>{
     stopRec();
     await synthIdle(); const cueEnd=lastSpeechEnd;   // the cue (the last thing the teacher says) has finished
-    { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }   // the microphone opens a little before the signal, so a quick answer is not cut off
+    // no wait: the green border and the listening start the instant the cue ends (Jon 9 Nov 10:15; SIGNAL LATE in the .8 run)
     const gen=++recGen;
     let rec=startParallelRecording();
     const resolveR = async v => { const extra = rec ? await rec.stop() : {}; if(extra.clip) trace("recording kept: "+extra.clip+" (peak "+extra.recPeak+")"); else if(extra.recNote) trace(extra.recNote);
@@ -1085,7 +1085,6 @@ async function listenLocal(expect, alsoOk){
   stopRec();
   await synthIdle(); const cueEnd=lastSpeechEnd;
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
-  { const w=250-(Date.now()-cueEnd); if(w>0) await sleep(w); }      // the microphone opens a little before the signal
   trace("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
   // an answer that stops after "C'est" may be a slow learner: keep listening a little longer
@@ -2020,9 +2019,12 @@ document.getElementById("playBtn").onclick=async ()=>{
   showPlay(false);
   if(synth){ try{ synth.cancel(); synth.speak(new SpeechSynthesisUtterance("")); }catch(e){} }  // unlock audio on mobile
   audioUnlock();
-  const lesson=LESSONS[S.lesson];
-  if(lesson.exercises.every(e=>S.finished[e.id])){   // prototype has one exercise: replay it
-    lesson.exercises.forEach(e=>delete S.finished[e.id]); S.ex=0; save();
+  let lesson=LESSONS[S.lesson];
+  if(lesson.exercises.every(e=>S.finished[e.id])){
+    if(S.lesson+1<LESSONS.length){ S.lesson++; S.ex=0; lesson=LESSONS[S.lesson];   // a finished lesson: on to the next one
+      lesson.exercises.forEach(e=>delete S.finished[e.id]); logEntry({result:`NEXT LESSON: Lesson ${S.lesson+1}`, heard:[]}); }
+    else { lesson.exercises.forEach(e=>delete S.finished[e.id]); S.ex=0; }        // the last lesson there is: replay it
+    save();
   }
   try{ await main(); } finally { running=false; }
 };
