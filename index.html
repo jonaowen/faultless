@@ -325,6 +325,9 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="listener/ort/ort.wasm.min.js"></script>
 <script src="listener/listener.js"></script>
 <script src="course/lesson1.js"></script>
+<script src="course/lesson2.js"></script>
+<script src="course/lesson3.js"></script>
+<script src="course/lesson4.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script>
 "use strict";
@@ -373,6 +376,14 @@ const VOCAB = {
   n3: {name:"trois", kind:"number", say:["Trois."], accept:["trois","3","troie","troyes"]},
   n4: {name:"quatre", kind:"number", say:["Quatre."], accept:["quatre","4","quatres","katre"]},
   count3: {name:"un deux trois", kind:"seq", seq:["n1","n2","n3"], say:["Un, deux, trois."], accept:[]},
+  // Lessons 2-4: the greeting, and the sound pieces of the pronunciation exercises ("Répète : ju." … "Julie."). gram = the
+  // words the in-app listener is given for a piece (it knows whole words only: "ju" sounds as "jus", "atre" as "âtre")
+  salut: {name:"salut", kind:"word", say:["Salut !"], accept:["salut","salue","salu","salud"]},
+  fr_sure: {name:"sure", kind:"frag", say:["Sure."], gram:["sur","sûr"], accept:["sure","sur","sûr","sûre","sœur"]},
+  fr_u: {name:"u", kind:"frag", say:["U."], gram:["u","hue","eu"], accept:["u","hue","eu","hu","eue"]},
+  fr_ju: {name:"ju", kind:"frag", say:["Ju."], gram:["jus","ju"], accept:["ju","jus","jue","jûs"]},
+  fr_atre: {name:"atre", kind:"frag", say:["Atre."], gram:["âtre"], accept:["atre","âtre","âtres","attre"]},
+  fr_lut: {name:"lut", kind:"frag", say:["Lut."], gram:["lut","lutte","luth"], accept:["lut","lutte","luth","lute","luttes"]},
   count4: {name:"un deux trois quatre", kind:"seq", seq:["n1","n2","n3","n4"], say:["Un, deux, trois, quatre."], accept:[]},
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
@@ -453,7 +464,8 @@ function genItem(it){
 }
 function genLesson(c){ return {id:c.id, gen:true, exercises:c.exercises.map(e=>({id:e.id, title:e.title, track:e.track,
   parts:e.parts.map(p=>({id:p.id, label:p.label, items:p.items.map(genItem)}))}))}; }
-const GEN_L1 = window.COURSE && window.COURSE.L1 ? genLesson(window.COURSE.L1) : null;
+const GEN = window.COURSE ? Object.keys(window.COURSE).sort((a,b)=>+a.slice(1)-+b.slice(1)).map(k=>genLesson(window.COURSE[k])) : [];
+const GEN_L1 = GEN[0] || null;
 // the narrated introduction (first use only) comes before the first item of the course
 if(GEN_L1) GEN_L1.exercises[0].parts[0].items.unshift(Model("livre",{L:"livre:1",R:"pomme:1"},{intro:true, introOnly:true}));
 
@@ -530,7 +542,7 @@ const LESSONS_HANDBUILT = [{
     ]
   }]
 }];
-const LESSONS = GEN_L1 ? [GEN_L1] : LESSONS_HANDBUILT;
+const LESSONS = GEN.length ? GEN : LESSONS_HANDBUILT;
 const ORDER = LESSONS.flatMap(l=>l.exercises.map(e=>({lesson:l.id, ex:e.id})));   // every exercise, in course order
 const nextExId = exId => { const i=ORDER.findIndex(o=>o.ex===exId); return i>=0 && i+1<ORDER.length ? ORDER[i+1].ex : null; };
 const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i>=0 && i+1<LESSONS.length ? LESSONS[i+1].id : null; };
@@ -779,7 +791,7 @@ async function playTeacher(text, onStart){
     AV.gap=0;
     // the broad smile after a right answer must be gone before she speaks: since 9 Nov the next line follows at once, and a
     // smile still on stretches every mouth shape ("Écoute" not matching her lips)
-    if(MOUTH.smiling>0.85) trace("AV FAULT (fixed as it happened) — about to speak while still smiling ("+MOUTH.smiling.toFixed(2)+"): smile cleared");
+    if(MOUTH.smiling>0.85) trace("av: smile cleared before speaking ("+MOUTH.smiling.toFixed(2)+")");
     clearTimeout(smileTimer); MOUTH.smile(0.8, true);
     src.onended=()=>{
       const h=heardNow(), behind=Math.round((actx.currentTime-h.t)*1000), left=Math.max(0, buf.duration*1000 - clock());
@@ -833,7 +845,7 @@ function speakOne(text, opts={}){
     synth.speak(u);
   });
 }
-async function say(units, who="tutor", pause=S.settings.pause){
+async function say(units, who="tutor", pause=S.settings.pause, tail=180){
   if(typeof units==="string") units=[units];
   stopRec();                                   // the microphone is never open while the app speaks
   recentSaid.push(units.join(" ")); trace("say["+who+"]: "+units.join(" · "));
@@ -856,8 +868,8 @@ async function say(units, who="tutor", pause=S.settings.pause){
   }
   document.getElementById("tutor").classList.remove("talk");
   document.getElementById("classroom").classList.remove("gtalk");
-  lastSpeechEnd = Date.now();                  // the moment the teacher stopped speaking (for the 0.5 s signal)
-  await sleep(180);
+  lastSpeechEnd = Date.now();                  // the moment the teacher stopped speaking (the signal comes at once)
+  if(tail) await sleep(tail);                  // no pause when the learner's turn follows (a cue)
 }
 let lastSpeechEnd = 0;
 // The signal comes exactly 0.5 s after the cue (the last thing the teacher says). This never changes.
@@ -939,6 +951,7 @@ let recGen=0, activeR=null;
 function stopRec(){ recGen++; if(activeR){ try{ activeR.onresult=activeR.onend=activeR.onerror=activeR.onstart=null; activeR.abort(); }catch(e){} activeR=null; } }
 async function synthIdle(){ const t=Date.now(); while(synth && (synth.speaking||synth.pending) && Date.now()-t<3000) await sleep(40); }
 function listen(expect, alsoOk=[]){
+  window.__expect = expect;                 // for the automatic test harness (an oracle learner answers what is expected)
   // an echo that is, contains, or is made only of parts of the answer is never removed
   const partOf = w => expect.concat(...alsoOk).some(e=>SLOT[e] && SLOT[e].includes(w)) || (()=>{ const r=nameOf(w); return !!(r && expect.includes(r.n)); })();
   const echoes = recentSaid.map(u=>tokensOf(u)).filter(e=> e.length && !e.some(w=>{ const r=nameOf(w); return r && expect.includes(r.n); }) && !e.every(partOf));
@@ -1098,7 +1111,7 @@ function voskClean(text, expect){
 }
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
-  const rec=new VOSK.model.KaldiRecognizer(16000, VOSK.grammar);    // made in the worker while the cue finishes
+  const rec=new VOSK.model.KaldiRecognizer(16000, courseGrammar(expect));    // made in the worker while the cue finishes
   await synthIdle(); const cueEnd=lastSpeechEnd;
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
   trace("mic open");
@@ -1250,7 +1263,8 @@ function objectPicture(id, inst, opt={}){
       </g>`;
   } else if(id==="stylo"){
     // three different pens: a capped blue ballpoint, a black click pen, a red felt-tip
-    const P={1:{c:"#2f5fb3",d:"#1d3d78",l:"#6f98dc",rot:-28,len:118,w:13},2:{c:"#2b2b30",d:"#141417",l:"#5b5b63",rot:-52,len:124,w:12},3:{c:"#d23b33",d:"#8f221d",l:"#f07a6e",rot:-14,len:108,w:18}}[inst]||{c:"#2f5fb3",d:"#1d3d78",l:"#6f98dc",rot:-28,len:118,w:13};
+    const P0={1:{c:"#2f5fb3",d:"#1d3d78",l:"#6f98dc",rot:-28,len:118,w:13},2:{c:"#2b2b30",d:"#141417",l:"#5b5b63",rot:-52,len:124,w:12},3:{c:"#d23b33",d:"#8f221d",l:"#f07a6e",rot:-14,len:108,w:18}}[inst]||{c:"#2f5fb3",d:"#1d3d78",l:"#6f98dc",rot:-28,len:118,w:13};
+    const P=Object.assign({}, P0, opt.pen||{});
     const x0=80-P.len/2, y0=106-P.w/2, tip = inst===3 ? 14 : 12;
     g.innerHTML=`<defs><linearGradient id="${u}b" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${P.l}"/><stop offset=".45" stop-color="${P.c}"/><stop offset="1" stop-color="${P.d}"/></linearGradient>
         <linearGradient id="${u}m" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f4f4f2"/><stop offset=".5" stop-color="#b9b9b6"/><stop offset="1" stop-color="#7d7d7a"/></linearGradient></defs>
@@ -1293,7 +1307,7 @@ const slotL=document.getElementById("slotL"), slotR=document.getElementById("slo
 let curScene=null, curSceneKey=null;
 /* Pictures for the field-tested course: what the script's scene says the learner sees ("a red, closed book";
    "two apples"; "three fingers"), drawn in the same style. */
-const PAL = { red:{c:"#b8352f",d:"#7e2620",l:"#e0574c"}, blue:{c:"#2f5d8c",d:"#1f3f60",l:"#4a7db0"}, green:{c:"#3f8a4c",d:"#285436",l:"#76b45c"},
+const PAL = { black:{c:"#2b2b30",d:"#141417",l:"#5b5b63"}, silver:{c:"#a9adb3",d:"#6c7076",l:"#e3e6ea"}, red:{c:"#b8352f",d:"#7e2620",l:"#e0574c"}, blue:{c:"#2f5d8c",d:"#1f3f60",l:"#4a7db0"}, green:{c:"#3f8a4c",d:"#285436",l:"#76b45c"},
   yellow:{c:"#e2b23a",d:"#b8862a",l:"#f7d96b"}, white:{c:"#ece7dc",d:"#bdb4a2",l:"#fffdf6"}, brown:{c:"#8a5a36",d:"#5c3a22",l:"#b07a4e"} };
 const PAL_APPLE = { red:{c:"#c9302c",d:"#8f1d1b",l:"#ef6a55"}, green:{c:"#7fb03a",d:"#4f7a1f",l:"#b6d86c"}, yellow:{c:"#e8c23e",d:"#b88a1e",l:"#f8e37a"} };
 function onePicture(e){
@@ -1308,7 +1322,10 @@ function onePicture(e){
   if(e.is==="shoe"){ const g=objectPicture("chaussure", 1, {pal: {l:(PAL[col]||PAL.blue).l, d:(PAL[col]||PAL.blue).d}});
     if(L.includes("child's")) g.setAttribute("transform","translate(80 140) scale(.78) translate(-80 -140)");
     return g; }
-  if(e.is==="pen") return objectPicture("stylo", 1);
+  if(e.is==="pen"){ const inst = col==="black"?2 : col==="red"?3 : 1, pal = (col && !["black","red","blue"].includes(col)) ? (PAL[col]||(col==="silver"?{c:"#a9adb3",d:"#6c7076",l:"#e3e6ea"}:null)) : null;
+    const pen = Object.assign({}, pal||{}, L.includes("short")?{len:84}:{}, L.includes("long")?{len:134}:{}, L.includes("thick")?{w:19}:{});
+    if(col==="silver") Object.assign(pen,{c:"#a9adb3",d:"#6c7076",l:"#e3e6ea"});
+    return objectPicture("stylo", inst, {pen}); }
   return document.createElementNS(svgNS,"g");
 }
 function fingerCard(n){       // a hand held up, n fingers raised (DISE L1 Ex 4: "Hold up 1 finger")
@@ -1376,7 +1393,7 @@ function setSideBadges(side){
 }
 function badgeLit(who, on){ const r=document.querySelector("#badge_"+who+" .ring"); if(r) r.setAttribute("opacity", on?1:0); }
 async function setPortraits(sc){
-  sc=sceneOf(sc); if(!sc) return; const key=sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R;
+  sc=sceneOf(sc); if(!sc) return; const key=(sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.claireTag===false?"|notag":"");
   if(key===curSceneKey) return;
   const first = curSceneKey===null;
   goldOff(); lastPoint=null;
@@ -1385,6 +1402,7 @@ async function setPortraits(sc){
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
+  { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
   curScene=sc; curSceneKey=key;
   await sleep(first?0:260);
 }
@@ -1617,12 +1635,12 @@ async function askAndListen(task, expect, think=500, alsoOk=[]){
     return listen(expect, alsoOk);
   }
   if(task.cue==="you"){                   // about the learner: the open palm to them, then "Vas-y" (or "Et toi ?") is the cue
-    offering=true; await pointAt("you"); await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi);
+    offering=true; await pointAt("you"); await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
     return listen(expect, alsoOk);
   }
   await pointAt(task);             // focus
   await sleep(think);                     // think time
-  await say(task.questionUnits);          // cue
+  await say(task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
   return listen(expect, alsoOk);          // signal at 0.5 s, then the learner responds
 }
 // "Vas-y" with the open palm and the pointing (questions); for touch-and-name, "Vas-y" alone, since the pointing is the cue
@@ -1729,7 +1747,7 @@ async function leadSteps(t, who){
   const first = t.series ? "s0" : t;
   if(t.gen){ const pre=t.teacherUnits.filter(u=>!/^avec moi/i.test(u));
     if(pre.length){ await pointAt(first); await sleep(150); await say(pre); await sleep(150); } }
-  await gestureLead(); await Promise.all([say(PHR.avecmoi), (async()=>{ await sleep(200); await pointAt(first); })()]);
+  await gestureLead(); await Promise.all([say(PHR.avecmoi, "tutor", undefined, 0), (async()=>{ await sleep(200); await pointAt(first); })()]);
   await untilSignal();
   const on = v => who==="both" ? glow(v) : signal(v ? "lead" : false);
   on(true);
@@ -1961,15 +1979,25 @@ startListenerLoad();
    recordings it was right every time; Chrome's recogniser heard none of the 17. The app holds the microphone itself,
    so every answer is recorded. Chrome's recogniser is the fallback if Vosk cannot load. */
 const VOSK = {model:null, grammar:null, failed:false};
-function courseGrammar(){
+/* What the listener may hear: every answer the course asks for (and each of its words, and the other article with each
+   noun), plus "[unk]" for anything else. The sound pieces of the pronunciation exercises ("sure", "ju"…) are added only
+   when one is the answer: sounds that close to words would otherwise take real answers ("Claire" heard as "sûr"). */
+function courseGrammar(expect){
   const norm=t=>t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿ' -]/g," ").replace(/\s+/g," ").trim();
-  const P=new Set();
-  for(const L of LESSONS) for(const E of L.exercises) for(const Pt of E.parts) for(const it of Pt.items) for(const u of (it.answerUnits||[])) P.add(norm(u));
-  for(const k of Object.keys(VOCAB)) for(const u of VOCAB[k].say) P.add(norm(u));
-  for(const p of [...P]){ const w=p.split(" "); w.forEach(x=>P.add(x));
-    if(w[0]==="un"||w[0]==="une"){ const n=w.slice(1).join(" "); P.add("un "+n); P.add("une "+n); P.add(n); } }
-  ["c'est","euh","oui","non"].forEach(x=>P.add(x)); P.delete("");
-  return JSON.stringify([...P].sort().concat(["[unk]"]));
+  if(!VOSK.base){
+    const frag=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="frag").map(k=>norm(VOCAB[k].say[0])));
+    const P=new Set();
+    for(const L of LESSONS) for(const E of L.exercises) for(const Pt of E.parts) for(const it of Pt.items){
+      if(it.kind!=="test") continue; const u=norm((it.answerUnits||[]).join(" ")); if(!u || frag.has(u)) continue; P.add(u); }
+    for(const k of Object.keys(VOCAB)) if(!["frag","phrase"].includes(VOCAB[k].kind)) for(const u of VOCAB[k].say) P.add(norm(u));
+    const nouns=Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="object").map(k=>VOCAB[k].name.toLowerCase());
+    for(const p of [...P]){ const w=p.split(" "); if(w.length<=2) w.forEach(x=>P.add(x)); }
+    for(const n of nouns){ P.add(n); P.add("un "+n); P.add("une "+n); }      // the other article with every noun
+    ["c'est"].forEach(x=>P.add(x)); P.delete(""); P.delete("je"); P.delete("m'appelle"); P.add("je m'appelle"); P.add("m'appelle");
+    VOSK.base=[...P].sort();
+  }
+  const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
+  return JSON.stringify([...new Set(VOSK.base.concat(extra))].concat(["[unk]"]));
 }
 async function startVosk(){
   if(!window.Vosk){ trace("Vosk not available"); VOSK.failed=true; return; }
