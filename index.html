@@ -828,6 +828,19 @@ async function learnerClip(text){
   if(!(url in clipBufs)) clipBufs[url]=(async()=>{ audioUnlock(); const r=await fetch(url); if(!r.ok) throw new Error("no clip "+url); return await actx.decodeAudioData(await r.arrayBuffer()); })().catch(e=>{ trace(String(e.message||e)); return null; });
   return clipBufs[url];
 }
+/* Fetch ahead the model learners' clips the course uses (what Pierre and Sylvie say in a model, and their own-name
+   answers), so each starts on time. Only clips that exist are asked for: asking for one per word of the vocabulary gave
+   fifteen "no clip" lines in every run's trace, which hid any clip that was really missing. */
+let learnerPreloaded=false;
+function preloadLearner(){
+  if(learnerPreloaded) return; learnerPreloaded=true;
+  const say = (voice, units) => voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
+  const want = new Set(["paul","julie"].map(w=>say(w, ["Je m'appelle "+VOCAB[w].name+"."])));
+  GEN.forEach(L=>L.exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
+    if(it.type==="model" && it.voice && it.voice!=="teacher") want.add(say(it.voice, it.answerUnits));
+    if(it.introOnly) want.add(answerUnits(it).join(" ")); }))));        // the introduction: the model learner says it with the teacher
+  want.forEach(t=>learnerClip(t));
+}
 async function playLearner(text, delay=0){       // resolves when the clip has finished (false if there is no clip)
   const buf=await learnerClip(text); if(!buf || !actx) return false;
   return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; const g=actx.createGain(); g.gain.value=0.9;
@@ -1135,23 +1148,53 @@ async function listenVosk(expect, alsoOk=[]){
   trace("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
   /* The end of the teacher's own question can reach the microphone from the speaker (echo cancellation is off: it puts
-     Android in call mode). Helen 9 Nov 16:42: it closed the turn before she began, 11 times; in a test, the end of
-     "C'est quoi ?" was recognised as "trois". Measured (Vosk word times): an echo of the cue's last word starts within
-     150 ms of the mic opening and is over by 460 ms; of Jon's 304 right answers, the only first words that start that
-     early and end that soon are echoes too (his "julie" and "quatre" at 0 ms after "Répète : Julie/quatre."), and his
-     fastest real first words start at 180-240 ms and end after 330 ms. So: a word that starts before 200 ms and ends by
-     460 ms is the speaker's echo, not the learner's; and sound in the first 450 ms cannot start an answer on its own (an
-     answer that began earlier is still going then). */
-  const ECHO_MS = 450, isEcho = w => w.start*1000 < 200 && w.end*1000 <= 460;
+     Android in call mode). Helen 9 Nov 16:42: it closed the turn before she began, 11 times. On the recordings that
+     sound is short (under 100 ms), far quieter than the learner (a tenth to an eighth of her voice) and gives no words.
+     So: sound in the first 450 ms cannot start an answer on its own, and sound with no words in it is not an answer
+     (listening goes on).
+     A first word that starts within 200 ms of the microphone opening is nearly always the LEARNER, answering fast: six
+     of the seven such words in 487 recorded test answers were (Helen's "un livre" from 180 ms and "je m'appelle" from
+     120 ms; "un" and "quatre" from 0 ms straight after "Répète : un / quatre", at the learner's own loudness; "deux" and
+     "trois" from 180 ms). All six ended 330 ms or more after the microphone opened. They are never thrown away.
+     The seventh was the speaker: Helen 16:41:41, "un" from 31 to 150 ms after "Il y en a combien ?" (the last sound of
+     "combien", loudest the instant the microphone opened and 12 dB down within 0.1 s; she had not begun). No learner's
+     word is over that soon, so a first word that ENDS within 250 ms of the microphone opening is the end of the
+     teacher's own cue and is not counted: listening goes on as if it had not been heard. The recogniser gives word times
+     only with a finished result, so before any decision on words that all came from the first 0.45 s it is asked for
+     one. One more allowance: an early short word followed by exactly the right answer ("trois un livre") is also taken
+     as the speaker's, because no learner says that. Every early first word is written to the trace with its loudness. */
+  const ECHO_MS = 450, TAIL_END_MS = 250;
   rec.setWords(true);
-  const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now(); const micAt=Date.now();
-  const noteRaw=()=>{ const r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(r!==rawSeen){ rawSeen=r; rawSince=Date.now(); } };
-  rec.on("result", m=>{ const r=m.result||{}; let t=r.text;
-    if(Array.isArray(r.result) && r.result.some(isEcho)){
-      trace("echo dropped: "+r.result.filter(isEcho).map(w=>w.word+"@"+Math.round(w.start*1000)).join(" ")); t=r.result.filter(w=>!isEcho(w)).map(w=>w.word).join(" "); }
+  const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now(), lastWordEnd=0, sound=null, firstEarly=null, firstEarlyRaw="", spk=null, sawWord=false, nFinal=0, askedTimes=0; const micAt=Date.now();
+  // everything the recogniser has so far, without the speaker's own last sound (spk) if that gave a first word
+  const rawAll=()=>{ let r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(spk && (r===spk || r.startsWith(spk+" "))) r=r.slice(spk.length).trim(); return r; };
+  const askTimes=()=>new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,500); }).then(()=>{ onFinal=null; });
+  const noteRaw=()=>{ const r=rawAll(); if(r!==rawSeen){ rawSeen=r; rawSince=Date.now(); } };
+  /* A longer end of the cue (a speaker that runs later than the browser reports): words that were over within 0.46 s of
+     the microphone opening, are not the start of the answer and have nothing after them. Test with the last 0.3 s and
+     0.42 s of "C'est quoi ?" played into the open microphone: heard as "trois" from 30 to 300 ms, or "deux trois" up to
+     420 ms, and the turn closed as an error at 1.5 s for 89 of 197 recorded answers, before the learner had begun.
+     Not counted: listening goes on. (A learner who really gives a wrong word that fast, which none of the 487 recorded
+     answers does, is not marked: the turn stays open for them to answer.) */
+  const longTail=()=>{ if(!firstEarly || firstEarly.split(" ")[0]===want.split(" ")[0] || voskClean(rawAll())!==firstEarly) return false;
+    trace("\""+firstEarly+"\" alone, over within 0.46 s of the microphone opening and not the answer: taken as the end of the teacher's own cue from the speaker, not counted; still listening");
+    spk=firstEarlyRaw; firstEarly=null; noteRaw(); return true; };
+  rec.on("result", m=>{ const r=m.result||{}, t=r.text, ws=Array.isArray(r.result)?r.result:[]; nFinal++;
+    if(ws.length){
+      if(!sawWord){ sawWord=true; const w=ws[0], s0=Math.round(w.start*1000), e0=Math.round(w.end*1000);
+        if(s0<200 || e0<=460){ const pk=sound?sound.peak(s0,e0):0, lv=sound?sound.level(20,80):0;
+          if(e0<=TAIL_END_MS) spk=w.word;
+          // the words (after that one, if any) that were also over within 0.46 s of the microphone opening
+          let k=spk?1:0; const er=[]; while(k<ws.length && Math.round(ws[k].end*1000)<=460) er.push(ws[k++].word);
+          firstEarlyRaw=ws.slice(0,k).map(x=>x.word).join(" "); firstEarly=voskClean(er.join(" "))||null;
+          if(!firstEarly && firstEarlyRaw) spk=firstEarlyRaw;      // only sounds with no word in them ("[unk]") in that time: not counted either
+          trace("early first word: "+w.word+"@"+s0+"-"+e0+" ms"+(ws[1]?", then "+ws[1].word+"@"+Math.round(ws[1].start*1000):", alone")+"; sound at 20-80 ms is "+(pk?(lv/pk).toFixed(2):"?")+" of the word's loudest"
+            +(spk?": \""+spk+"\" was over within "+(spk===w.word?TAIL_END_MS/1000:0.46)+" s of the microphone opening, so it is the end of the teacher's own cue from the speaker, not counted":"")
+            +(firstEarly?"; \""+firstEarly+"\" was over within 0.46 s":"")); } }
+      lastWordEnd=Math.round(ws[ws.length-1].end*1000); }
     if(t) finals.push(t); partial=""; noteRaw(); if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
-  const textNow=()=>voskClean(finals.concat(partial?[partial]:[]).join(" "), expect);
+  const textNow=()=>voskClean(rawAll(), expect);
   let buf=[], n=0;
   const feed=c=>{ buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
   const want=phraseOf(expect).toLowerCase().replace(/[.!?]/g,"").trim();
@@ -1160,22 +1203,49 @@ async function listenVosk(expect, alsoOk=[]){
   // that is still incomplete ("un…") gets the extra wait below, so a slow learner is not cut off.
   /* Jon 9 Nov 15:07: the answer ends as soon as what Vosk has heard is the whole right answer and has not changed for
      0.45 s, whatever the loudness says (a noisy room no longer holds the microphone open for seconds). Not for an answer
-     that goes on with the learner's own name (REST). */
-  let stopNow=null, early=false;
-  const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow();
-    if(t && Date.now()-rawSince>=450 && Date.now()-micAt>=700 && judge(t, expect, [], alsoOk).ok){ early=true; stopNow(); } }, 50);
-  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, ignoreMs:ECHO_MS, onAudio:feed, onStart:s=>{ stopNow=s; },
-    onSpeechEnd: async ()=>{ await sleep(150); const t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
-      const rawNow=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim();
+     that goes on with the learner's own name (REST).
+     Words said entirely within the first 450 ms (a fast one-word answer) never count as the start of speech for the
+     loudness measure: a right one ends the turn by the rule above; a wrong one ends it here once it has stood unchanged
+     for 0.6 s with no other sound (an unfinished one, "un…", gets the same extra wait as below). Either way the word
+     times are asked for first: if the word was the end of the teacher's own cue (see above), nothing has been said yet
+     and the turn stays open. */
+  let stopNow=null, early=false, earlyWhy="";
+  const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow(); if(!t) return;
+    const still=Date.now()-rawSince, open=Date.now()-micAt, st=sound && sound.state();
+    if(st && st.speechStart<0 && !nFinal && !(askedTimes && Date.now()-askedTimes>300)){ if(still>=450 && open>=700 && !askedTimes){ askedTimes=Date.now(); rec.retrieveFinalResult(); } return; }
+    if(still>=450 && open>=700 && judge(t, expect, [], alsoOk).ok){ early=true; earlyWhy="the whole answer heard, unchanged for 0.45 s"; return stopNow(); }
+    if(st && st.speechStart<0 && open>=1100 && still>=(want.startsWith(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, ignoreMs:ECHO_MS, onAudio:feed, onStart:(s,snd)=>{ stopNow=s; sound=snd; },
+    onSpeechEnd: async (audio, voice)=>{ await sleep(150); let t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
+      let rawNow=rawAll();
+      // an unexpected first word and no word times yet: was it the end of the teacher's own cue? (see above)
+      if(rawNow && !nFinal && rawNow.split(" ")[0]!==want.split(" ")[0]){ await askTimes(); t=textNow(); rawNow=rawAll();
+        if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false; }
       // nothing recognised in that sound: not an answer (Helen 9 Nov 16:42: the end of Claire's own question, heard from the
       // speaker, closed the turn after 0.7 s and the question was asked again before she could begin, 11 times)
+      if(rawNow && longTail()){ t=textNow(); rawNow=rawAll(); }
       if(!rawNow){ trace("sound with no words at "+(Date.now()-cueEnd)+" ms: still listening"); return "reset"; }
+      if(expect.includes("REST") && t && rawNow===want){
+        /* Only "je m'appelle" recognised. Has the learner said their name? A name the recogniser has no word for can give
+           nothing at all, not even "[unk]" (Helen 9 Nov 16:42, two of her own-name answers; Jon 15:05:27): the turn then
+           stayed open 2 to 6 s after a complete answer, with no smile and no ding, so she said it all again, and soon
+           said "Claire" instead, which closed at once. So: ask the recogniser where "m'appelle" ended (a final result has
+           the word times) and measure the sound after it. Measured on the recordings: 500 to 570 ms of sound after
+           "m'appelle" when a name was said, none when the learner stopped there. */
+        await askTimes();
+        const after = voice && lastWordEnd ? voice.voicedMsAfter(lastWordEnd+40) : 0;
+        if(after>=160){ trace("own name: "+after+" ms of sound after \"m'appelle\" (which ended at "+lastWordEnd+" ms) with no word for it: the name was said"); return false; }
+        trace("own name: \"je m'appelle\" and then "+after+" ms of sound: waiting for the name"); return true;
+      }
       return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
-  clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" (the whole answer heard, unchanged for 0.45 s)":""));
+  clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" ("+earlyWhy+")":""));
   if(n){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } rec.acceptWaveformFloat(a,16000); }
   await new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,1500); });
   try{ rec.remove(); }catch(e){}
-  const raw=finals.join(" ").replace(/\s+/g," ").trim(), text=voskClean(raw, expect);
+  partial=""; let raw=rawAll(), text=voskClean(raw, expect);
+  if(firstEarly && text.startsWith(firstEarly+" ") && !judge(text, expect, [], alsoOk).ok){
+    const rest=text.slice(firstEarly.length+1);
+    if(judge(rest, expect, [], alsoOk).ok){ trace("\""+firstEarly+"\" in the first 0.46 s and then exactly the right answer: taken as the speaker's own sound, not the learner's"); text=rest; } }
   const clip=await keepClip(cap.all);
   const base={clip, engine:"vosk", expectPhrase:phraseOf(expect), raw};
   if(!text){
@@ -1557,7 +1627,7 @@ async function setScene(which){
   const demo = which==="class";
   const scr=document.getElementById("screen");
   if(demo){
-    innerColour(false); gaze("learner"); Object.keys(VOCAB).forEach(n=>learnerClip(VOCAB[n].say.join(" ")));
+    innerColour(false); gaze("learner"); preloadLearner();
     ["demoBg","phoneBody","screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=1);
     scr.style.transform="translate(100px,40px) scale(.5)";          // the app shrinks into the model learner's phone (phone and stand move with it)
     await sleep(950);
