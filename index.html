@@ -1130,9 +1130,22 @@ async function listenVosk(expect, alsoOk=[]){
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
   trace("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
-  const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now();
+  /* The end of the teacher's own question can reach the microphone from the speaker (echo cancellation is off: it puts
+     Android in call mode). Helen 9 Nov 16:42: it closed the turn before she began, 11 times; in a test, the end of
+     "C'est quoi ?" was recognised as "trois". Measured (Vosk word times): an echo of the cue's last word starts within
+     150 ms of the mic opening and is over by 460 ms; of Jon's 304 right answers, the only first words that start that
+     early and end that soon are echoes too (his "julie" and "quatre" at 0 ms after "Répète : Julie/quatre."), and his
+     fastest real first words start at 180-240 ms and end after 330 ms. So: a word that starts before 200 ms and ends by
+     460 ms is the speaker's echo, not the learner's; and sound in the first 450 ms cannot start an answer on its own (an
+     answer that began earlier is still going then). */
+  const ECHO_MS = 450, isEcho = w => w.start*1000 < 200 && w.end*1000 <= 460;
+  rec.setWords(true);
+  const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now(); const micAt=Date.now();
   const noteRaw=()=>{ const r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(r!==rawSeen){ rawSeen=r; rawSince=Date.now(); } };
-  rec.on("result", m=>{ const t=m.result && m.result.text; if(t) finals.push(t); partial=""; noteRaw(); if(onFinal) onFinal(); });
+  rec.on("result", m=>{ const r=m.result||{}; let t=r.text;
+    if(Array.isArray(r.result) && r.result.some(isEcho)){
+      trace("echo dropped: "+r.result.filter(isEcho).map(w=>w.word+"@"+Math.round(w.start*1000)).join(" ")); t=r.result.filter(w=>!isEcho(w)).map(w=>w.word).join(" "); }
+    if(t) finals.push(t); partial=""; noteRaw(); if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
   const textNow=()=>voskClean(finals.concat(partial?[partial]:[]).join(" "), expect);
   let buf=[], n=0;
@@ -1146,10 +1159,13 @@ async function listenVosk(expect, alsoOk=[]){
      that goes on with the learner's own name (REST). */
   let stopNow=null, early=false;
   const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow();
-    if(t && Date.now()-rawSince>=450 && judge(t, expect, [], alsoOk).ok){ early=true; stopNow(); } }, 50);
-  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, onAudio:feed, onStart:s=>{ stopNow=s; },
+    if(t && Date.now()-rawSince>=450 && Date.now()-micAt>=700 && judge(t, expect, [], alsoOk).ok){ early=true; stopNow(); } }, 50);
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, ignoreMs:ECHO_MS, onAudio:feed, onStart:s=>{ stopNow=s; },
     onSpeechEnd: async ()=>{ await sleep(150); const t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
       const rawNow=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim();
+      // nothing recognised in that sound: not an answer (Helen 9 Nov 16:42: the end of Claire's own question, heard from the
+      // speaker, closed the turn after 0.7 s and the question was asked again before she could begin, 11 times)
+      if(!rawNow){ trace("sound with no words at "+(Date.now()-cueEnd)+" ms: still listening"); return "reset"; }
       return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
   clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" (the whole answer heard, unchanged for 0.45 s)":""));
   if(n){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } rec.acceptWaveformFloat(a,16000); }
@@ -1853,12 +1869,17 @@ function scheduleDelayed(part, anchor){
   d.dueLessonStart = anchor.lessonStart;        // and when this lesson starts
   save();
 }
+// a model learner (Paul, Julie) answering about themselves right before the learner is asked the same about themselves
+const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
   if(run==="first")  return part.items;                                            // models, leads and tests
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
-  if(run==="repeat") return part.items.filter(it=>it.type==="task" || !shown.has(it));
-  return part.items.filter(it=>it.type==="task" && it.kind==="test");               // "test": step 5 and delayed tests
+  if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || isNameModel(it, a[i+1]));
+  // "test" (step 5 and delayed tests): the part's tests, and the model learner's own answer that comes right before an
+  // "Et toi ?" (Paul or Julie saying their own name is what shows the learner to say theirs: rule 1k; Helen 9 Nov 16:42 had
+  // none in the step-5 rerun and said "Je m'appelle Claire" from then on)
+  return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || isNameModel(it, a[i+1]));
 }
 const TRIAL_LIMIT = 7;     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
 async function trialLimit(it, part, anchor){

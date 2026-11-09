@@ -159,7 +159,9 @@
      opts.noSpeechMs: give up after this long with no speech (silence);
      opts.endSilenceMs: speech then this much quiet = the answer has ended;
      opts.maxMs: hard limit (the model hears at most 6 s).
-     opts.onSpeechEnd(audio) may return true to keep listening (e.g. the answer so far is incomplete);
+     opts.onSpeechEnd(audio) may return true to keep listening (e.g. the answer so far is incomplete), or "reset" when
+     nothing was recognised in that sound (it was not an answer: e.g. the end of the teacher's own voice from the
+     speaker, Helen's run 9 Nov 16:42): listening goes on as if no one had spoken, until noSpeechMs from the start;
      opts.onStart(stop): stop() ends the capture at once (the recogniser already has the whole answer).
      Loudness is measured above 300 Hz (Jon's 9 Nov 15:07 run: a low rumble near the phone, 80% of it below 150 Hz, was
      taken for a voice that never stopped, so the answer only ended after 3-6 s), and speech starts only after 100 ms of
@@ -190,13 +192,16 @@
           if(energies.length%5===0){ const r=energies.slice(-100).slice().sort((a,b)=>a-b); const q=Math.max(0.0015, r[Math.floor(r.length*0.15)]); floor = q<floor ? q : Math.min(q, floor*1.03); }
           const voiced = e > Math.max(floor*3.2, 0.006);
           voicedRun.push(voiced); if(voicedRun.length>8) voicedRun.shift();
-          if(voiced && (speechStart>=0 || voicedRun.filter(Boolean).length>=5)){ if(speechStart<0) speechStart=t-80; lastVoice=t; }
+          // sound in the first ignoreMs (the end of the teacher's own voice from the speaker) cannot start an answer on its
+          // own: an answer that began that early is still going after it, and is taken from there (the audio is all kept)
+          if(voiced && (speechStart>=0 || (voicedRun.filter(Boolean).length>=5 && t>(opts.ignoreMs||0)))){ if(speechStart<0) speechStart=t-80; lastVoice=t; }
           if(speechStart<0 && t>noSpeech) return finish("silence");
           if(speechStart>=0 && t-speechStart>maxMs) return finish("heard");
           if(speechStart>=0 && t-lastVoice>endSil && !checking){
             if(opts.onSpeechEnd){
               checking=true; const at=lastVoice;
               Promise.resolve(opts.onSpeechEnd(join(chunks))).then(keep=>{ checking=false;
+                if(keep==="reset"){ if(lastVoice===at){ speechStart=-1; lastVoice=-1; voicedRun.length=0; } return; }
                 if(!keep && lastVoice===at) finish("heard");
                 else if(keep){ const wait=opts.extraSilenceMs||2200; setTimeout(()=>{ if(!done && lastVoice===at) finish("heard"); }, wait); } });
             } else return finish("heard");
