@@ -159,14 +159,22 @@
      opts.noSpeechMs: give up after this long with no speech (silence);
      opts.endSilenceMs: speech then this much quiet = the answer has ended;
      opts.maxMs: hard limit (the model hears at most 6 s).
-     opts.onSpeechEnd(audio) may return true to keep listening (e.g. the answer so far is incomplete). */
+     opts.onSpeechEnd(audio) may return true to keep listening (e.g. the answer so far is incomplete);
+     opts.onStart(stop): stop() ends the capture at once (the recogniser already has the whole answer).
+     Loudness is measured above 300 Hz (Jon's 9 Nov 15:07 run: a low rumble near the phone, 80% of it below 150 Hz, was
+     taken for a voice that never stopped, so the answer only ended after 3-6 s), and speech starts only after 100 ms of
+     sound in 160 ms (a click as the microphone opens is not the start of an answer). Replayed on that run's 123 answers:
+     ends more than 1.2 s after the last word went from 14 to 3, with none cut short. */
   function capture(opts={}){
     const noSpeech=opts.noSpeechMs||7000, endSil=opts.endSilenceMs||800, maxMs=Math.min(opts.maxMs||6000, J? J.frames*10 : 6000);
     return new Promise(resolve=>{
       chunks=[]; armed=true;
       const fr=320;                   // 20 ms frames
       let buf=new Float32Array(0), t=0, floor=null, speechStart=-1, lastVoice=-1, checking=false, done=false;
-      const energies=[];
+      const energies=[], voicedRun=[];
+      // high-pass at 300 Hz (2nd-order Butterworth) for the loudness measure only; the audio kept and heard is untouched
+      const w=2*Math.PI*300/SR, cw=Math.cos(w), al=Math.sin(w)/Math.SQRT2, b0=(1+cw)/2/(1+al), b1=-(1+cw)/(1+al), a1=-2*cw/(1+al), a2=(1-al)/(1+al);
+      let x1=0, x2=0, y1=0, y2=0;
       const finish = (status)=>{ if(done) return; done=true; armed=false; onChunk=null; micOff();
         const audio=join(chunks); const s=Math.max(0, (speechStart<0?0:speechStart)-300)*16; resolve({status, audio: audio.subarray(s), all:audio, speechStartMs:speechStart, floor}); };
       onChunk = c => {
@@ -174,14 +182,15 @@
         const nb=new Float32Array(buf.length+c.length); nb.set(buf); nb.set(c,buf.length); buf=nb;
         while(buf.length>=fr){
           const f=buf.subarray(0,fr); buf=buf.slice(fr); t+=20;
-          let e=0; for(let i=0;i<fr;i++) e+=f[i]*f[i]; e=Math.sqrt(e/fr); energies.push(e);
+          let e=0; for(let i=0;i<fr;i++){ const y=b0*f[i]+b1*x1+b0*x2-a1*y1-a2*y2; x2=x1; x1=f[i]; y2=y1; y1=y; e+=y*y; } e=Math.sqrt(e/fr); energies.push(e);
           // background level: low percentile of the recent past, never below a small absolute value
           // the learner may start speaking at once (listening starts the instant the cue ends), so the floor starts at a
           // fixed quiet level and may only rise slowly: speech at the very start is not taken for the background
           if(floor===null) floor=0.003;
           if(energies.length%5===0){ const r=energies.slice(-100).slice().sort((a,b)=>a-b); const q=Math.max(0.0015, r[Math.floor(r.length*0.15)]); floor = q<floor ? q : Math.min(q, floor*1.03); }
           const voiced = e > Math.max(floor*3.2, 0.006);
-          if(voiced){ if(speechStart<0) speechStart=t; lastVoice=t; }
+          voicedRun.push(voiced); if(voicedRun.length>8) voicedRun.shift();
+          if(voiced && (speechStart>=0 || voicedRun.filter(Boolean).length>=5)){ if(speechStart<0) speechStart=t-80; lastVoice=t; }
           if(speechStart<0 && t>noSpeech) return finish("silence");
           if(speechStart>=0 && t-speechStart>maxMs) return finish("heard");
           if(speechStart>=0 && t-lastVoice>endSil && !checking){
@@ -195,6 +204,7 @@
         }
       };
       opts.signal && opts.signal.addEventListener("abort", ()=>finish("aborted"));
+      opts.onStart && opts.onStart(()=>finish("heard"));
     });
   }
   function wav(audio){        // 16-bit WAV for the log
