@@ -330,7 +330,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.3";
+const APP_VERSION="2026-11-09.4";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1019,7 +1019,10 @@ async function keepClip(audio){
    While Chrome's recogniser listens, the app records the same microphone in parallel. Some phones may not allow two
    recorders at once: the log notes the recording's loudness, and if Chrome's recogniser fails because of the recording,
    parallel recording is switched off for the rest of the session and the log says so. */
-let parRecOff=false;
+// Jon's phone, 9 Nov 09:42: with the app recording, Chrome's recogniser got no sound at all (17 answers, all said
+// correctly on the recordings, none heard by Chrome; no error raised). Android gives the microphone to one recorder.
+// So no parallel recording while Chrome listens; answers are recorded only where the app's own listener judges them.
+let parRecOff=true;
 function startParallelRecording(){
   if(parRecOff || !S.settings.keepAudio || !window.LISTENER || !LISTENER.audioReady) return null;
   const ac=new AbortController(); let p;
