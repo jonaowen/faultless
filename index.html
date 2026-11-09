@@ -334,7 +334,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.11";
+const APP_VERSION="2026-11-09.12";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -2004,6 +2004,10 @@ function courseGrammar(expect){
     VOSK.base=[...P].sort();
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
+  /* A sound piece ("Répète : ju.") is heard against itself and "anything else" only (Jon's 9 Nov 15:15 run: with the
+     course's phrases also in, Vosk took 4 of his 12 "ju" for "je" (from "je m'appelle") and 3 of his 6 "u" for nothing;
+     with the piece alone, all 18 were heard right). */
+  if(extra.length) return JSON.stringify([...new Set(extra)].concat(["[unk]"]));
   return JSON.stringify([...new Set(VOSK.base.concat(extra))].concat(["[unk]"]));
 }
 async function startVosk(){
