@@ -103,6 +103,8 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     </g>
     <g id="frameRow" class="fade" opacity="0"></g>
     <g id="sideBadges"></g>
+    <!-- gold border round whatever the teacher is pointing at (Jon 9 Nov: with four pictures the finger alone is not clear) -->
+    <rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
   </g>
   <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
   <g id="tutor">
@@ -328,7 +330,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.1";
+const APP_VERSION="2026-11-09.2";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1254,11 +1256,16 @@ function buildRow(items){
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
     const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
-    frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62};
+    frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62}; BOUNDS["s"+i]={x,y,w,h,r:10};
   });
 }
 /* Paul and Julie as model learners (the field-tested course: "Claire says 'Vas-y.' to Paul and points; he names it"):
    small portraits beside the teacher, Paul on the left, Julie on the right. The one who answers lights up. */
+const BOUNDS={L:{x:28,y:24,w:160,h:190,r:14}, R:{x:212,y:24,w:160,h:190,r:14}};
+function goldOn(side){ const g=document.getElementById("goldRing"), b=BOUNDS[side];
+  if(!b || (curScene && curScene.row && (side==="L"||side==="R"))){ g.setAttribute("opacity",0); return; }
+  const m=4; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m); g.setAttribute("opacity",1); }
+function goldOff(){ const g=document.getElementById("goldRing"); if(g) g.setAttribute("opacity",0); }
 const BADGE={paul:{x:22,y:262}, julie:{x:318,y:262}}, BW=60;
 function setSideBadges(side){
   const el=document.getElementById("sideBadges"); el.replaceChildren();
@@ -1267,7 +1274,7 @@ function setSideBadges(side){
     g.innerHTML=`<rect class="ring" x="-4" y="-4" width="${BW+8}" height="${h+8}" rx="12" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0"/>
       <rect width="${BW}" height="${h.toFixed(1)}" rx="9" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
     const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${BW/160})`); inner.appendChild(portrait(who)); g.appendChild(inner);
-    el.appendChild(g); TARGET[who==="paul"?"pL":"pR"]={x:b.x+BW/2, y:b.y+h*0.5};
+    el.appendChild(g); TARGET[who==="paul"?"pL":"pR"]={x:b.x+BW/2, y:b.y+h*0.5}; BOUNDS[who==="paul"?"pL":"pR"]={x:b.x,y:b.y,w:BW,h,r:9};
   }
 }
 function badgeLit(who, on){ const r=document.querySelector("#badge_"+who+" .ring"); if(r) r.setAttribute("opacity", on?1:0); }
@@ -1275,6 +1282,7 @@ async function setPortraits(sc){
   sc=sceneOf(sc); if(!sc) return; const key=sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R;
   if(key===curSceneKey) return;
   const first = curSceneKey===null;
+  goldOff(); lastPoint=null;
   if(!first){ slotL.style.opacity=0; slotR.style.opacity=0; frameRow.style.opacity=0; await sleep(260); }
   if(sc.row){ buildRow(sc.row); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
@@ -1361,12 +1369,13 @@ function pointPose(side){            // reach towards the picture frame on that 
   return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
 }
 
-function rest(){ offering=false; ARMS.go(POSE.rest, 280); }
+function rest(){ offering=false; goldOff(); ARMS.go(POSE.rest, 280); }
 function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
-let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; return armsGo(p,ms); };
+let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
 async function pointAt(who){
   const side = sideOf(who); if(side==="none") return;
+  goldOn(side);
   const pose = pointPose(side), key=side+(offering?"+palm":"");
   if(key===lastPoint) return;
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
