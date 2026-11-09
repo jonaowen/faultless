@@ -334,7 +334,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.9";
+const APP_VERSION="2026-11-09.10";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -845,8 +845,9 @@ function speakOne(text, opts={}){
     synth.speak(u);
   });
 }
-async function say(units, who="tutor", pause=S.settings.pause, tail=180){
+async function say(units, who="tutor", pause=S.settings.pause, tail=0){
   if(typeof units==="string") units=[units];
+  if(!units.length) return;                    // nothing to say (e.g. the "Écoute" direction, dropped 9 Nov 14:21)
   stopRec();                                   // the microphone is never open while the app speaks
   recentSaid.push(units.join(" ")); trace("say["+who+"]: "+units.join(" · "));
   caption((who==="group"?"[élève] ":"")+units.join(" · "));
@@ -1123,7 +1124,9 @@ async function listenVosk(expect, alsoOk=[]){
   const feed=c=>{ buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
   const want=phraseOf(expect).toLowerCase().replace(/[.!?]/g,"").trim();
   // an answer that stops part-way ("un…", "je m'appelle…" before the name) may be a slow learner: keep listening a little
-  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:700, extraSilenceMs:2000, onAudio:feed,
+  // the answer has ended after 0.45 s of quiet (was 0.7 s; Jon 9 Nov 14:21: responses per minute is what counts). An answer
+  // that is still incomplete ("un…") gets the extra wait below, so a slow learner is not cut off.
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, onAudio:feed,
     onSpeechEnd: async ()=>{ await sleep(150); const t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
       const rawNow=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim();
       return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
@@ -1396,14 +1399,14 @@ async function setPortraits(sc){
   if(key===curSceneKey) return;
   const first = curSceneKey===null;
   goldOff(); lastPoint=null;
-  if(!first){ slotL.style.opacity=0; slotR.style.opacity=0; frameRow.style.opacity=0; await sleep(260); }
+  // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
   if(sc.row){ buildRow(sc.row); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
   { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
   curScene=sc; curSceneKey=key;
-  await sleep(first?0:260);
+
 }
 /* ============================================================
    ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
@@ -1493,13 +1496,13 @@ const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||/^s\d$/.test(s);
 async function pointAt(who){
   const side = sideOf(who); if(side==="none") return;
   if(ON_SCREEN(side)){ goldOn(side);
-    if(offering && lastPoint!=="palm"){ await armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
+    if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
     return; }
   goldOff();
   const pose = pointPose(side), key=side+(offering?"+palm":"");
   if(key===lastPoint) return;
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
-  await armsGo(pose, 340); lastPoint=key;
+  armsGo(pose, 340); lastPoint=key;            // the hand moves while she speaks: nothing waits for it
 }
 async function flashIcon(which){
   rest(); const el=document.getElementById(which==="restart"?"icoRestart":"icoBookmark");
@@ -1537,8 +1540,8 @@ function gaze(where){
   document.getElementById("pupils").style.transform = down ? "translate(0px,2.3px)" : "translate(0px,0px)";
   document.getElementById("lids").style.transform = down ? "translate(0px,2.4px)" : "translate(0px,0px)";
 }          // the model learner's turn: the border on their phone turns green
-async function gestureLead(){ await ARMS.go(POSE.together, 320); }      // "Avec moi": hand on my chest, hand reaching to you
-async function gestureEar(){ offering=false; await ARMS.go(POSE.ear, 300); }   // "Écoute" (listen): hand cupped behind the ear
+async function gestureLead(){ ARMS.go(POSE.together, 320); }      // the arm moves while she speaks: nothing waits for it (Jon 9 Nov 14:21: every millisecond between responses counts)      // "Avec moi": hand on my chest, hand reaching to you
+async function gestureEar(){ offering=false; ARMS.go(POSE.ear, 300); }   // "Écoute" (listen): hand cupped behind the ear
 // "À toi" (your turn): one arm reaches towards the learner, palm up, and stays there through the question and the answer;
 // the other arm points to the picture (Zig's "your turn"; Jerry's hand towards the learner as the response comes)
 let offering=false;
@@ -1552,7 +1555,7 @@ const sideOf = t => { if(t && typeof t==="object") t = t.at || t.target;
   return curScene.L.split(":")[0]===t ? "L" : "R"; };
 const otherArm = side => armFor(side)==="L" ? "R" : "L";
 function palmUp(arm){ return {x: arm==="L"?176:224, y:528, shape:"palmup", rot:0, scale:1.38, fs:0.32}; }
-async function gesturePalm(target){ offering=true; const arm=otherArm(sideOf(target)); await ARMS.go({[arm]:palmUp(arm)}, 320); }
+async function gesturePalm(target){ offering=true; const arm=otherArm(sideOf(target)); ARMS.go({[arm]:palmUp(arm)}, 320); }
 // correct answer: a short "ding" (Web Audio, unlocked by the first tap on the play button)
 let actx=null;
 function audioUnlock(){ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==="suspended") actx.resume(); }catch(e){} }
@@ -1569,7 +1572,7 @@ async function ding(big=false){
   trace(big? "chime (exercise done)" : "ding");
   try{ audioUnlock(); if(actx){ const t=actx.currentTime+0.02;
     bell(1046.5,t,0.5,0.45); bell(1568,t+0.12,big?0.9:0.6,0.5); if(big) bell(2093,t+0.26,1.0,0.4); } }catch(e){}
-  await sleep(big? 1000 : 620);
+  await sleep(big? 1000 : 200);      // Jon 9 Nov 14:21: the next item comes as soon as possible after a right answer
 }
 // a nod: the affirmation that goes with the ding (DISE: "nod and have him do it again")
 async function nod(){ const h=document.getElementById("head"); for(let k=0;k<2;k++){ h.style.transform="translateY(7px) rotate(0.01deg)"; await sleep(170); h.style.transform="translateY(0px)"; await sleep(170); } }
@@ -1582,7 +1585,7 @@ async function nod(){ const h=document.getElementById("head"); for(let k=0;k<2;k
 /* What the teacher says to mark turns: natural French, not a word-for-word DISE translation (Jon, 8 Nov 2026: "My turn and
    your turn might be accurate to DISE, but it's not natural in French"). Écoute (listen) before the teacher models it;
    Vas-y (go on) when the learner answers; Avec moi when they say it together. */
-const PHR = { amoi:["Écoute."], atoi:["Vas-y."], avecmoi:["Avec moi."], bravo:["Très bien !"] };
+const PHR = { amoi:[], atoi:["Vas-y."], avecmoi:["Avec moi."], bravo:["Très bien !"] };
 let ctx=null;   // {lesson, ex, delayedRec}
 let phase="", curTask="";
 function trace(ev){ (S.trace=S.trace||[]).push({t:new Date().toISOString(), task:curTask, phase, ev}); if(S.trace.length>4000) S.trace.splice(0, S.trace.length-4000); }
@@ -1611,19 +1614,16 @@ async function multipleModels(t, n=3, close=false){
 /* The signal (NIFDI handout p.1): announce ("Vas-y", once when the learner's turn starts), focus (point), think time
    (varies with how hard the task is), cue (the last thing the teacher does: the question, "Répète : Paul.", or — in
    touch-and-name — the pointing itself), signal (the green border, exactly 0.5 s after the cue). */
-function thinkTime(t, {retest=false, prevTarget=null, firstOfItem=false}={}){
-  if(retest) return 400;                  // the answer has just been given
-  if(firstOfItem) return 1000;            // the first time the learner says a new item
-  if(prevTarget && prevTarget!==t.target) return 800;   // a switch to the other item
-  return 500;                             // the same item again
-}
+// Jon 9 Nov 14:21: no gap before a test's cue: the answer window is open-ended, so the learner thinks after the cue
+function thinkTime(){ return 0; }
 // AFTER_ATOI: the gap after "Vas-y" — no longer than the gaps elsewhere, so it never sounds like the learner's turn
 // (Jon, 8 November 2026). "Vas-y" itself gives the thinking time.
-const AFTER_ATOI = 150;
+const AFTER_ATOI = 0;
+const LEAD_GAP = 500;
 // the microphone is switched on as the test begins (never in leads), so that listening can start the instant the cue
 // ends; nothing is recorded or heard until then
 function warmMic(){ if(!S.settings.manual && S.settings.engine!=="google" && VOSK.model && window.LISTENER && LISTENER.audioReady) LISTENER.micOn().catch(()=>{}); }
-async function askAndListen(task, expect, think=500, alsoOk=[]){
+async function askAndListen(task, expect, think=0, alsoOk=[]){
   warmMic();
   recentSaid=[];                          // only the cue can be picked up by the microphone, so only it counts as an echo
   if(task.cue==="point"){                 // touch-and-name: the pointing is the cue, nothing is said
@@ -1634,11 +1634,11 @@ async function askAndListen(task, expect, think=500, alsoOk=[]){
     return listen(expect, alsoOk);
   }
   if(task.cue==="you"){                   // about the learner: the open palm to them, then "Vas-y" (or "Et toi ?") is the cue
-    offering=true; await pointAt("you"); await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
+    offering=true; pointAt("you"); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
     return listen(expect, alsoOk);
   }
-  await pointAt(task);             // focus
-  await sleep(think);                     // think time
+  pointAt(task);                          // focus: the gold border comes on as she speaks
+  if(think) await sleep(think);
   await say(task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
   return listen(expect, alsoOk);          // signal at 0.5 s, then the learner responds
 }
@@ -1654,16 +1654,16 @@ async function sayAs(voice, units){
   const who = voice==="paul" ? "paul" : "julie"; badgeLit(who, true); caption("["+(who==="paul"?"Paul":"Julie")+"] "+units.join(" "));
   const text = voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
   if(!(await playLearner(text))) await speakOne(units.join(" "), {group:true});
-  badgeLit(who, false); lastSpeechEnd=Date.now(); await sleep(180);
+  badgeLit(who, false); lastSpeechEnd=Date.now();
 }
 async function presentGenModel(m){
   ph("model");
+  // the script's "Écoute." is not said (Jon 9 Nov 14:21: adults who chose the app know to listen; it costs time)
   const listenFirst = m.teacherUnits.length && /^écoute/i.test(m.teacherUnits[0]);
-  if(m.voice==="teacher") await gestureEar();               // the listening hand: this is not the learner's turn
-  if(listenFirst) await say([m.teacherUnits[0]]);
+  if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
   if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
-  if(rest_.length){ await sleep(200); await say(rest_); await sleep(m.voice==="teacher"?300:500); } else await sleep(250);
+  if(rest_.length){ await say(rest_); await sleep(m.voice==="teacher"?300:500); }
   await sayAs(m.voice, m.answerUnits);
 }
 async function presentModel(m){
@@ -1746,8 +1746,9 @@ async function leadSteps(t, who){
   const first = t.series ? "s0" : t;
   if(t.gen){ const pre=t.teacherUnits.filter(u=>!/^avec moi/i.test(u));
     if(pre.length){ await pointAt(first); await sleep(150); await say(pre); await sleep(150); } }
-  await gestureLead(); await Promise.all([say(PHR.avecmoi, "tutor", undefined, 0), (async()=>{ await sleep(200); await pointAt(first); })()]);
-  await untilSignal();
+  gestureLead(); pointAt(first); await say(PHR.avecmoi);
+  // Jon 9 Nov 14:21: saying it together needs 0.5 s after "Avec moi" to get ready (timed unison, unlike a test's open window)
+  await sleep(LEAD_GAP);
   const on = v => who==="both" ? glow(v) : signal(v ? "lead" : false);
   on(true);
   if(t.series){ for(let i=0;i<t.units.length;i++){ await pointAt("s"+i); await say(t.units[i], who==="both"?"both":"tutor"); } }   // each frame in turn, together
@@ -1758,11 +1759,11 @@ async function leadSteps(t, who){
 // Lead task: green border, the teacher says it with the learner; microphone closed, not scored
 async function presentLead(t){
   curTask=t.id; await setPortraits(t.scene); ph("lead");
-  await leadSteps(t, "tutor"); rest(); await sleep(300);
+  await leadSteps(t, "tutor"); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
-async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=500, quiet=false, afterAtoi=false}={}){
+async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0, quiet=false, afterAtoi=false}={}){
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
   curTask=t.id; await setPortraits(t.scene);
   if(t.gen){ if(t.cue==="repeat") await gesturePalm(t);       // the field-tested script says when "Vas-y" is said
@@ -1846,7 +1847,7 @@ async function trialLimit(it, part, anchor){
 }
 // After the first correct answer following errors: two more straight away, with a nod (Zig, Part 3, 24:21)
 async function immediateRepeats(it){
-  for(let k=0;k<2;k++){ ph("immediate repeat "+(k+1)); if(!(await presentTest(it,{retest:true, atoi:false, think:300, quiet:true}))) return false; }
+  for(let k=0;k<2;k++){ ph("immediate repeat "+(k+1)); if(!(await presentTest(it,{retest:true, atoi:false, think:0, quiet:true}))) return false; }
   return true;
 }
 async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={}, anchor}={}){
