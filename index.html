@@ -331,7 +331,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.7";
+const APP_VERSION="2026-11-09.8";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -693,9 +693,13 @@ const MOUTH = (()=>{
     el("mTongue").setAttribute("opacity", (open>0.15 ? 0.55+0.45*tongue : 0).toFixed(2));
     el("mTeethF").setAttribute("opacity", fv>0.5? 1:0);
   }
+  let lastFrame=0;
   function loop(){
+    const nowF=performance.now(); if(play && play.clock && lastFrame) AV.gap=Math.max(AV.gap, nowF-lastFrame); lastFrame=nowF;
     if(play){
-      const e=(performance.now()-play.t0)/play.unit;                // elapsed, in weight units
+      // a recorded clip: the mouth follows the audio clock (what is coming out of the speaker now), so a late timer, a busy
+      // phone or a slow speaker cannot put the lips out of step with the voice (Jon 9 Nov: "Écoute" out of sync)
+      const e = play.clock ? play.clock() : (performance.now()-play.t0)/play.unit;      // elapsed, in weight units
       const x = play.plan.seq.find(y=>e>=y.t0 && e<y.t1) || (e>=play.plan.total ? play.plan.seq[play.plan.seq.length-1] : null);
       target = x ? x.v : VIS.rest;
     }
@@ -712,13 +716,13 @@ const MOUTH = (()=>{
       play={plan:pl, t0:performance.now(), unit: 95/(rate||1)};   // about 95 ms per vowel at normal rate
       kick();
     },
-    startTimeline(phones){                          // [[ipa, t0 ms, t1 ms], ...] measured on the recording
+    startTimeline(phones, clock){                   // [[ipa, t0 ms, t1 ms], ...] measured on the recording; clock() = ms heard so far
       const seq=[]; phones.forEach(([p,t0,t1])=>{ const v=VIS[p]||VIS[p[0]]; if(v) seq.push({p, v:v.slice(), t0, t1}); });
       for(let i=0;i<seq.length;i++){ const x=seq[i]; if(VOWELS.has(x.p) || "pbmfv".includes(x.p)) continue;      // anticipatory rounding
         const nx=seq.slice(i+1).find(y=>VOWELS.has(y.p)); if(nx){ x.v[1]=x.v[1]*0.3+nx.v[1]*0.7; x.v[2]=Math.max(x.v[2], nx.v[2]*0.8); } }
       for(let i=0;i<seq.length-1;i++) seq[i].t1=Math.max(seq[i].t1, seq[i+1].t0);                                 // hold each shape until the next sound
       const total = seq.length? seq[seq.length-1].t1 : 0;
-      play={plan:{seq, total}, t0:performance.now(), unit:1}; kick();
+      play={plan:{seq, total}, t0:performance.now(), unit:1, clock}; lastFrame=0; kick();
     },
     word(pl, charIndex){                                // resynchronise at each word boundary, where the phone reports it
       if(!play || pl.missing || charIndex==null) return;
@@ -727,7 +731,8 @@ const MOUTH = (()=>{
     },
     stop(){ play=null; target=VIS.rest; kick(); },
     shape(p){ play=null; target=VIS[p]||VIS.rest; kick(); },    // hold one sound's shape (for checking)
-    smile(level){ smileTarget=level; kick(); },
+    smile(level, snap){ smileTarget=level; if(snap) smileNow=level; kick(); },
+    get smiling(){ return smileNow; },
     IPA, VIS,
   };
 })();
@@ -753,16 +758,38 @@ async function teacherBuf(k){
   if(!(k in TEACHER.buf)) TEACHER.buf[k]=(async()=>{ audioUnlock(); const raw=await TEACHER.raw[k]; if(!raw||!actx) return null; return await actx.decodeAudioData(raw.slice(0)); })().catch(()=>null);
   return TEACHER.buf[k];
 }
+/* Lip-sync self-check (Jon 9 Nov: "how can you figure this out yourself?"). For every clip the app measures how far
+   the speaker runs behind the audio clock, how late the start timer fired, and the longest gap between animation frames,
+   and writes it to the trace ("av: ..."). Anything that could put the lips visibly out of step is written as an
+   "AV FAULT" line, so a run file shows it without anyone having to report it. */
+const AV={gap:0};
+function heardNow(){        // the audio-context time of the sound coming out of the speaker right now
+  try{ const ts=actx.getOutputTimestamp && actx.getOutputTimestamp();
+    if(ts && ts.contextTime>0 && ts.performanceTime>0) return {t: ts.contextTime + (performance.now()-ts.performanceTime)/1000, how:"output timestamp"}; }catch(e){}
+  return {t: actx.currentTime - (actx.outputLatency||actx.baseLatency||0), how:"reported latency"};
+}
 async function playTeacher(text, onStart){
   const k=clipKey(text), meta=TEACHER.index && TEACHER.index[k];
   if(!meta || !TEACHER.raw[k]) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
   return new Promise(res=>{
     const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination);
-    const lat=((actx.outputLatency||actx.baseLatency||0)*1000);
-    src.onended=()=>{ MOUTH.stop(); res(true); };
-    src.start(actx.currentTime+0.02);
-    setTimeout(()=>{ MOUTH.startTimeline(meta.phones); onStart&&onStart(); }, 20+lat);
+    const startAt=actx.currentTime+0.03, lat=((actx.outputLatency||actx.baseLatency||0)*1000), tCall=performance.now();
+    const clock=()=> (heardNow().t - startAt)*1000;
+    AV.gap=0;
+    // the broad smile after a right answer must be gone before she speaks: since 9 Nov the next line follows at once, and a
+    // smile still on stretches every mouth shape ("Écoute" not matching her lips)
+    if(MOUTH.smiling>0.85) trace("AV FAULT (fixed as it happened) — about to speak while still smiling ("+MOUTH.smiling.toFixed(2)+"): smile cleared");
+    clearTimeout(smileTimer); MOUTH.smile(0.8, true);
+    src.onended=()=>{
+      const h=heardNow(), behind=Math.round((actx.currentTime-h.t)*1000), left=Math.max(0, buf.duration*1000 - clock());
+      const msg=`av ${k}: speaker ${behind} ms behind the audio clock (${h.how}; browser reports ${Math.round(lat)} ms), longest frame gap ${Math.round(AV.gap)} ms`;
+      trace((AV.gap>120 || behind>400 ? "AV FAULT — " : "")+msg);
+      setTimeout(()=>{ MOUTH.stop(); res(true); }, left);       // the end of the clip is still on its way to the speaker
+    };
+    src.start(startAt);
+    MOUTH.startTimeline(meta.phones, clock);
+    setTimeout(()=>{ onStart&&onStart(); }, 30+lat);
   });
 }
 /* The introduction's narrator: English, a different voice from the teacher, never moving the teacher's mouth. */
@@ -2032,7 +2059,14 @@ async function saveRun(){
   const meta={app:APP_VERSION, savedAt:new Date().toISOString(), listener: window.LISTENER&&LISTENER.json ? {model:LISTENER.version, source:LISTENER.json.source, quant:LISTENER.json.quant} : null, engine:S.settings.engine, ua:navigator.userAgent};
   const since=e=>e.t>=SESSION.start;
   const touched=[...new Set(S.log.filter(since).map(e=>e.ex).filter(Boolean))];
-  const run=Object.assign({}, S, meta, {session:{start:SESSION.start, end:new Date().toISOString(), exercises:touched, recordings:Object.keys(clips).length},
+  // the app's own fault report for this session: anything a learner would notice, found without anyone reporting it
+  const faults=[];
+  S.trace.filter(since).forEach(e=>{
+    if(/FAULT/.test(e.ev)) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" "+e.ev);
+    const m=/green border (\d+) ms after the cue ended/.exec(e.ev); if(m && +m[1]>150) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" SIGNAL LATE: green border "+m[1]+" ms after the teacher stopped (target 0)");
+  });
+  S.log.filter(since).forEach(e=>{ if(/LISTENING FAULT|PROGRESS RESET/.test(e.result||"")) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" "+e.result); });
+  const run=Object.assign({}, S, meta, {session:{start:SESSION.start, end:new Date().toISOString(), exercises:touched, recordings:Object.keys(clips).length, faults},
     log:S.log.filter(since), trace:S.trace.filter(since), clips});
   const blob=new Blob([JSON.stringify(run,null,1)],{type:"application/json"});
   const d=new Date(), pad=n=>String(n).padStart(2,"0");
