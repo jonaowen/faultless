@@ -131,7 +131,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <!-- the teacher's name tag, as in DISE (Lesson 1: "Point to your name tag and say your name") -->
     <g id="claireTag" transform="rotate(-3 214 466)"><rect x="189" y="453" width="50" height="23" rx="3.5" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.3"/>
       <rect x="189" y="453" width="50" height="4.6" rx="2" fill="#c8453b"/>
-      <text x="214" y="471.5" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5" font-weight="700" fill="#2a2522">Claire</text></g>
+      <text x="214" y="471.5" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5" font-weight="700" fill="#2a2522">Marie</text></g>
     <!-- neck, shaded under the chin -->
     <path d="M185 394 h30 v22 q-15 12 -30 0z" fill="url(#tNeck)"/>
     <!-- head (nods as a group) -->
@@ -335,7 +335,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.14";
+const APP_VERSION="2026-11-09.15";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -359,18 +359,20 @@ let READY=false;
    say: the answer's units (said as one, or in these chunks after an error); art: the article slot it must have;
    accept: how Chrome's recogniser may spell the word (fallback listener only). */
 const VOCAB = {
-  paul:  {name:"Paul",  kind:"person", say:["Paul."],  accept:["paul","pol","paule","pôle","pole","pool","paulo","pull","pour","parle","paroles","raoul"]},   // parle, paroles, raoul: Chrome hearing Jon's correct "Paul" (8 Nov runs, confirmed by Jon)
-  julie: {name:"Julie", kind:"person", say:["Julie."], accept:["julie","juli","julye","jolie","joli","july","julia","juliette","je l'ai","je lai","jeudi","je lis","je ris"]},
+  /* 9 Nov 2026 (Jon, after Helen's run): the people have the commonest French names (dev: fieldtest/gen/names.py): the
+     teacher Marie, the model learners Pierre and Sylvie. The keys stay claire/paul/julie (they route the recorded voices). */
+  paul:  {name:"Pierre", kind:"person", say:["Pierre."], accept:["pierre","pierres","pier","piere","pièrre","pierrot"]},
+  julie: {name:"Sylvie", kind:"person", say:["Sylvie."], accept:["sylvie","silvie","sylvi","sylvia","silvia"]},
   livre: {name:"livre", kind:"object", art:"UN",  say:["Un","livre."],  accept:["livre","livres","libre","lièvre","lire","lèvre","liv"]},
   pomme: {name:"pomme", kind:"object", art:"UNE", say:["Une","pomme."], accept:["pomme","pommes","paume","pom","pome","pomm"]},
   stylo: {name:"stylo", kind:"object", art:"UN",  say:["Un","stylo."], accept:["stylo","stylos","stilo","stylot"]},
   chaussure: {name:"chaussure", kind:"object", art:"UNE", say:["Une","chaussure."], accept:["chaussure","chaussures","chaussur","chossure"]},
   // the teacher (Lesson 1, DISE "My name is"): she points to herself
-  claire: {name:"Claire", kind:"person", say:["Claire."], accept:["claire","clair","clairs","claires","clerc","clère"]},
+  claire: {name:"Marie", kind:"person", say:["Marie."], accept:["marie","mari","maris","marri","mary","marié"]},
   // "je m'appelle": judged as one unit (Chrome's spellings are joined into this token first); the learner's own name after it is ignored
   jemappelle: {name:"je m'appelle", kind:"phrase", say:["Je m'appelle…"], rep:["Répète : je m'appelle."], accept:["jemappelle"]},
   mappelle: {name:"m'appelle", kind:"phrase", say:["M'appelle."], accept:["m'appelle","mappelle","appelle","m appelle","appel","appelle"]},
-  jmclaire: {name:"je m'appelle Claire", kind:"phrase", say:["Je m'appelle Claire."], accept:[]},
+  jmclaire: {name:"je m'appelle Marie", kind:"phrase", say:["Je m'appelle Marie."], accept:[]},
   // counting (DISE Lesson 1, Exercise 4): the numbers, and the counts said as one response
   n1: {name:"un", kind:"number", say:["Un."], accept:["un","1","hun","hein"]},
   n2: {name:"deux", kind:"number", say:["Deux."], accept:["deux","2","deu","d'eux"]},
@@ -384,6 +386,7 @@ const VOCAB = {
   fr_u: {name:"u", kind:"frag", say:["U."], gram:["u","hue","eu"], accept:["u","hue","eu","hu","eue"]},
   fr_ju: {name:"ju", kind:"frag", say:["Ju."], gram:["jus","ju"], accept:["ju","jus","jue","jûs"]},
   fr_atre: {name:"atre", kind:"frag", say:["Atre."], gram:["âtre"], accept:["atre","âtre","âtres","attre"]},
+  fr_erre: {name:"erre", kind:"frag", say:["Erre."], gram:["air","erre","ère","aire"], accept:["erre","air","ère","aire","airs","hair"]},   // the /ʁ/ at the end of "Pierre"
   fr_lut: {name:"lut", kind:"frag", say:["Lut."], gram:["lut","lutte","luth"], accept:["lut","lutte","luth","lute","luttes"]},
   count4: {name:"un deux trois quatre", kind:"seq", seq:["n1","n2","n3","n4"], say:["Un, deux, trois, quatre."], accept:[]},
 };
@@ -468,7 +471,8 @@ function genLesson(c){ return {id:c.id, gen:true, exercises:c.exercises.map(e=>(
 const GEN = window.COURSE ? Object.keys(window.COURSE).sort((a,b)=>+a.slice(1)-+b.slice(1)).map(k=>genLesson(window.COURSE[k])) : [];
 const GEN_L1 = GEN[0] || null;
 // the narrated introduction (first use only) comes before the first item of the course
-if(GEN_L1) GEN_L1.exercises[0].parts[0].items.unshift(Model("livre",{L:"livre:1",R:"pomme:1"},{intro:true, introOnly:true}));
+// (9 Nov 2026: Lesson 1 says no whole noun (gender track), so the introduction demonstrates on the teacher's name)
+if(GEN_L1) GEN_L1.exercises[0].parts[0].items.unshift(Model("claire",PJ,{intro:true, introOnly:true}));
 
 const LESSONS_HANDBUILT = [{
   id:"L1",
@@ -592,7 +596,7 @@ function caption(text){ const c=document.getElementById("caption"); if(!S.settin
    consonants take the lip rounding of the vowel that follows (anticipatory rounding).
    ============================================================ */
 const IPA = {
-  "écoute":"ekut", "à moi":"a mwa", "c'est qui":"sɛ ki", "c'est":"sɛ", "paul":"pɔl", "julie":"ʒyli",
+  "écoute":"ekut", "à moi":"a mwa", "c'est qui":"sɛ ki", "c'est":"sɛ", "paul":"pɔl", "julie":"ʒyli", "pierre":"pjɛʁ", "sylvie":"silvi", "marie":"maʁi",
   "c'est paul":"sɛ pɔl", "c'est julie":"sɛ ʒyli", "avec moi":"avɛk mwa", "à toi":"a twa", "très bien":"tʁɛ bjɛ̃",
 };
 /* Mouth shapes are derived from each sound's IPA description (Jon, 8 November 2026): for vowels, height
@@ -917,7 +921,7 @@ function nameOf(w){
   if(w.length<3 || CEST.includes(w)) return null;
   const f=fold(w); const d=NAMED.map(n=>({n, d:lev(f, fold(PEOPLE[n].name.toLowerCase()))})).sort((x,y)=>x.d-y.d);
   // one edit away, or two for words of four letters or more (so a short everyday word such as "pas" is never taken for a name)
-  const okDist = d[0].d<=1 || (d[0].d===2 && f.length>=4);
+  const okDist = (d[0].d<=1 || (d[0].d===2 && f.length>=4)) && PEOPLE[d[0].n].name.length>=3;   // never for a two-letter word: "une" is not "un"
   if(okDist && (d.length<2 || d[1].d>d[0].d) && f[0]===fold(PEOPLE[d[0].n].name.toLowerCase())[0]) return {n:d[0].n, near:true};
   return null;
 }
@@ -1689,7 +1693,7 @@ async function announce(t){
 // who says the answer in a model: the teacher, or Paul / Julie (the model learners, in their own recorded voices)
 async function sayAs(voice, units){
   if(voice==="teacher") return say(units);
-  const who = voice==="paul" ? "paul" : "julie"; badgeLit(who, true); caption("["+(who==="paul"?"Paul":"Julie")+"] "+units.join(" "));
+  const who = voice==="paul" ? "paul" : "julie"; badgeLit(who, true); caption("["+VOCAB[who].name+"] "+units.join(" "));
   const text = voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
   if(!(await playLearner(text))) await speakOne(units.join(" "), {group:true});
   badgeLit(who, false); lastSpeechEnd=Date.now();
@@ -1825,7 +1829,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(r.status==="silence" && r.speech){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
               result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
-    save(); await pointAt(t); await sayAnswer(t); rest(); return true;
+    save(); if(t.cue==="you") await modelOwnName(t); else { await pointAt(t); await sayAnswer(t); } rest(); return true;
   }
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id);
@@ -1842,10 +1846,19 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(r.ok){ smile(true); rest(); await ding(); }        // Jon 9 Nov: right = the teacher just smiles (no nod, no pointing, no echo)
   return r.ok;
 }
+/* An own-name question ("Et toi ?") is answered for the learner by a model learner answering it about themselves, never
+   by the teacher's own sentence: "Je m'appelle Claire." given as the correction is exactly what Helen copied (9 Nov 16:42). */
+let ownNameWho = "paul";
+async function modelOwnName(task){
+  const who = ownNameWho; ownNameWho = who==="paul" ? "julie" : "paul";
+  ph("a model learner's own name"); offering=false;
+  await say(task.questionUnits && task.questionUnits.length ? task.questionUnits : ["Et toi ?"]);
+  await sayAs(who, ["Je m'appelle "+VOCAB[who].name+"."]);
+}
 async function correction(task, nth){
   ph("correction "+nth);
   await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake")
-  if(task.cue==="you"){ await pointAt("self"); await say(A("jmclaire")); return; }   // her own model; then "Vas-y" again
+  if(task.cue==="you"){ await modelOwnName(task); return; }   // a model learner answers about themselves; then the question again
   await pointAt(task); await say(answerUnits(task));
   if(nth>=2 && task.answerUnits.length>1){   // build from the end: the teacher says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
@@ -1881,7 +1894,8 @@ function itemsFor(part, run, shown){
   // none in the step-5 rerun and said "Je m'appelle Claire" from then on)
   return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || isNameModel(it, a[i+1]));
 }
-const TRIAL_LIMIT = 7;     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
+const TRIAL_LIMIT = 7;
+const PART_REPEATS = 4;    // a part is gone through again at most this many times after errors; then its delayed tests take over     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
   await gestureEar(); await say(PHR.amoi); await pointAt(it); await multipleModels(it, 2); rest();
@@ -1894,7 +1908,7 @@ async function immediateRepeats(it){
   return true;
 }
 async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={}, anchor}={}){
-  let hadError=false; const shown=new Set();
+  let hadError=false; const shown=new Set(); const partRepeats={};
   // a task that reached the seven-trial limit is not asked again in this exercise: it comes back at the next lesson (DISE)
   const limited = (errorsByTask.__limited = errorsByTask.__limited || new Set());
   const ask = list => list.filter(x=>!limited.has(x.id));
@@ -1930,7 +1944,9 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       let fixed=false, tries=0;
       while(!fixed){
         errorsByTask[it.id]=(errorsByTask[it.id]||0)+1; tries++;
-        if(tries>=TRIAL_LIMIT) break;
+        // DISE: about seven trials on an item, then model it, move on, and bring it back at the next lesson. Counted over the
+        // whole exercise, not per correction (a test of 9 Nov 2026 with scattered errors corrected one task 82 times)
+        if(tries>=TRIAL_LIMIT || errorsByTask[it.id]>=TRIAL_LIMIT) break;
         await correction(it, errorsByTask[it.id]);
         fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true});
         if(fixed) fixed = await immediateRepeats(it);
@@ -1938,7 +1954,13 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
       ph("final confirmation"); smile(true); rest();
-      // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors
+      // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors.
+      // At most PART_REPEATS times: a learner whose errors are scattered across the part would otherwise never leave it;
+      // the part is then left for its delayed tests (end of the next exercise, start of the next lesson)
+      partRepeats[part.id]=(partRepeats[part.id]||0)+1;
+      if(partRepeats[part.id]>PART_REPEATS){
+        logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"PART NOT FIRM after "+PART_REPEATS+" repeats: moved on; it comes back as a delayed test", heard:[]});
+        trace("part "+part.id+" not firm after "+PART_REPEATS+" repeats: moved on"); break; }
       await flashIcon("restart");
       items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; prevTest=false; prevTarget=null; prevItem=null;
     }
