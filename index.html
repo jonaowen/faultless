@@ -334,7 +334,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.12";
+const APP_VERSION="2026-11-09.13";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1150,6 +1150,7 @@ async function listenVosk(expect, alsoOk=[]){
     return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
   }
   const v=judge(text, expect, [], alsoOk);
+  if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`);
   return Object.assign(base,{status:"heard", heard:[text], ...v});
 }
@@ -2004,10 +2005,11 @@ function courseGrammar(expect){
     VOSK.base=[...P].sort();
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
-  /* A sound piece ("Répète : ju.") is heard against itself and "anything else" only (Jon's 9 Nov 15:15 run: with the
-     course's phrases also in, Vosk took 4 of his 12 "ju" for "je" (from "je m'appelle") and 3 of his 6 "u" for nothing;
-     with the piece alone, all 18 were heard right). */
-  if(extra.length) return JSON.stringify([...new Set(extra)].concat(["[unk]"]));
+  /* A sound piece ("Répète : ju.") is heard against its own words only. With the course's phrases in, Vosk took 4 of Jon's
+     12 "ju" for "je" (9 Nov 15:15); with "[unk]" in, it took all 8 of his "u" for "[unk]" (15:35). This small model cannot
+     tell a vowel said alone from its neighbours (even the teacher's own "u" comes out as "i" against "ou", "i", "é"), so a
+     sound piece is accepted when something is said; the log says it was not judged on the sound (VOCAB kind "frag"). */
+  if(extra.length) return JSON.stringify([...new Set(extra)]);
   return JSON.stringify([...new Set(VOSK.base.concat(extra))].concat(["[unk]"]));
 }
 async function startVosk(){
