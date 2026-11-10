@@ -46,5 +46,9 @@
 "q_turn": {
 "text": "Now it's your turn.",
 "dur": 1.21
+},
+"onlyanswer": {
+"text": "Don't say the question again. Say only the answer.",
+"dur": 2.87
 }
 }

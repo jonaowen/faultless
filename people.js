@@ -865,8 +865,8 @@ const MOVES = {
       { ry: 4, lR: [-24, 2], lL: [24, 26], aL: [26, -4], aR: [-28, -18] }, { lR: [0, 0], lL: [-14, 60], aL: [10, -6], aR: [-10, -10] },
       { ry: 4, lL: [-24, 2], lR: [24, 26], aL: [-5, -12], aR: [6, -4] }, { lL: [0, 0], lR: [-14, 60], aL: [10, -6], aR: [-10, -10] },
       { ry: 4, lR: [-24, 2], lL: [24, 26], aL: [26, -4], aR: [-28, -18] }] },
-  "stand up": { dur: 2, kt: [0, 0.14, 0.36, 0.56, 1], poses: [SEATED, SEATED, RISING, UPRIGHT, UPRIGHT], side: true, chair: true, still: 2, scale: 1.08, ox: -12 },
-  "sit down": { dur: 2, kt: [0, 0.14, 0.36, 0.56, 1], poses: [UPRIGHT, UPRIGHT, RISING, SEATED, SEATED], side: true, chair: true, still: 2, scale: 1.08, ox: -12 }
+  "stand up": { dur: 2.6, kt: [0, 0.14, 0.36, 0.56, 1], poses: [SEATED, SEATED, RISING, UPRIGHT, UPRIGHT], side: true, chair: true, still: 2, scale: 1.08, ox: -12 },
+  "sit down": { dur: 2.6, kt: [0, 0.14, 0.36, 0.56, 1], poses: [UPRIGHT, UPRIGHT, RISING, SEATED, SEATED], side: true, chair: true, still: 2, scale: 1.08, ox: -12 }
 };
 function action(act, who, opts){
   opts = opts || {};
@@ -914,8 +914,13 @@ function action(act, who, opts){
     front += `<g>` + loop(`type="translate" values="0 0;0 -5;0 0"`, 0.6) + note(24, 62, 1) + `</g><g>` + loop(`type="translate" values="0 -5;0 0;0 -5"`, 0.6) + note(128, 50, 0.85) + `</g>`;
   }
   const S = K.scale || 1;
+  /* Standing up and sitting down are shown one way only (Jon, 10 Nov 2026: "it shows both standing up and sitting down.
+     That's confusing since it could be trying to teach both … It should only show the action it is currently teaching").
+     The loop used to snap from the last pose back to the first, which reads as the opposite action. Now the figure fades
+     out at the end of the movement and comes back already in the starting pose. */
+  const fade = (K.chair && !still) ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${K.dur}s" repeatCount="indefinite"/>` : "";
   const g = mk((K.chair ? "" : back) + `<g transform="translate(${80 + (K.ox || 0)} 178) scale(${S}) translate(-80 -178)">` + (K.chair ? back : "") +
-    G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g>` + front);
+    `<g>` + fade + G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g></g>` + front);
   g.querySelector("g.bust").appendChild(bust(spec, name));
   return g;
 }

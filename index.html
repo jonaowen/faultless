@@ -366,7 +366,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.19";
+const APP_VERSION="2026-11-10.20";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -541,6 +541,12 @@ function genLesson(c){ return {id:c.id, gen:true, exercises:c.exercises.map(e=>(
   parts:e.parts.map(p=>({id:p.id, label:p.label, items:p.items.map(genItem)}))}))}; }
 const GEN = window.COURSE ? Object.keys(window.COURSE).sort((a,b)=>+a.slice(1)-+b.slice(1)).map(k=>genLesson(window.COURSE[k])) : [];
 const GEN_L1 = GEN[0] || null;
+/* The narrated explanation of questions ("the learner says only the answer") was tied to an item of the hand-built
+   lessons and never played once the lessons were generated (found in the run of 10 Nov 15:36: a learner answered the
+   first either/or question, "Un ou une ?", by saying the question back, five times). It belongs to the first question
+   of the course that the teacher asks and answers herself. */
+{ let done=false; for(const L of GEN){ for(const E of L.exercises){ for(const P of E.parts){ for(const it of P.items){
+    if(!done && it.type==="model" && it.voice==="teacher" && it.questionUnits.length && /\?\s*$/.test(it.questionUnits[it.questionUnits.length-1])){ it.qIntro=true; done=true; } } } } if(done) break; } }
 // the narrated introduction (first use only) comes before the first item of the course
 // (9 Nov 2026: Lesson 1 says no whole noun (gender track), so the introduction demonstrates on the teacher's name)
 if(GEN_L1) GEN_L1.exercises[0].parts[0].items.unshift(Model("claire",PJ,{intro:true, introOnly:true}));
@@ -1019,7 +1025,11 @@ const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
   n = n.replace(/(^| )tu t'? ?app?ell?es?(?= |$)/g, "$1tutappelles");                             // tu t'appelles (said to the teacher about her)
-  n = n.replace(/(^| )l[èe]ves?[- ]toi(?= |$)/g, "$1levetoi").replace(/(^| )ass(?:ieds?|is|ois)[- ]toi(?= |$)/g, "$1assiedstoi");
+  /* "toi" at the end of the two commands, as the listener writes it. Run of 10 Nov 16:36 (Jon, Lesson 2): "Lève-toi", said
+     right every time, came out as "lève trois" 14 times in 16 and was marked wrong 14 times ("trois" is in the list as a
+     number, and an English "toi" has the r-coloured start of "trois" for this small model). Nobody says "lève trois" or
+     "lève toit": after "lève" / "assieds" those words are "toi". */
+  n = n.replace(/(^| )l[èe]ves?[- ](?:toi|trois|toits?)(?= |$)/g, "$1levetoi").replace(/(^| )ass(?:ieds?|is|ois)[- ](?:toi|trois|toits?)(?= |$)/g, "$1assiedstoi");
   n = n.replace(/(^| )([1-9]{2,7})(?= |$)/g, (m,a,d)=>a+d.split("").join(" "));                    // "1234" = un, deux, trois, quatre
   n = n.replace(/(^| )(?:il )?y ?'?en a(?= |$)/g, "$1ilyena");                                     // il y en a ("y en a cinq": the "il" is dropped in everyday speech and by the listener; 8 of 32 synthetic voices)
   /* "il" and "elle" straight before a verb, as the listener writes them for English speakers. Its word list has "y",
@@ -1301,9 +1311,25 @@ function voskClean(text, expect){
   while(w.length && w[w.length-1]==="[unk]") w.pop();
   return w.join(" ");
 }
+/* An either/or question ("Un ou une ?", "Pierre ou Sylvie ?") has its answer and the other choice in its own words. A
+   learner who does not yet know that one is to be chosen says the question back (run of 10 Nov 15:36: "un ou une", five
+   times; the listener, with no "ou" in its list, wrote "un une", "un un une" and once "un [unk]", which passed as "Un.").
+   So for these questions the question itself is in the listener's list, and an answer that has every word of the
+   question in it is that error by name: never right, and corrected for what it is (presentTest). */
+const cueWords = c => normalise(c||"").split(" ").filter(w=>w && w!=="ou");
+function repeatedCue(text, cue){
+  const c=normalise(cue||""); if(!/(^| )ou( |$)/.test(c)) return false;
+  const need=cueWords(c), have=normalise(text||"").split(" ").filter(w=>w && w!=="ou" && w!=="[unk]");
+  if(need.length<2) return false;
+  const pool=have.slice(); return need.every(w=>{ const i=pool.indexOf(w); if(i<0) return false; pool.splice(i,1); return true; });
+}
+let curCue="", lastRepeatedCue=false;
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
-  const rec=new VOSK.model.KaldiRecognizer(16000, courseGrammar(expect));    // made in the worker while the cue finishes
+  const cue=curCue, either=/(^| )ou( |$)/.test(normalise(cue||""));
+  let gram=courseGrammar(expect);
+  if(either){ try{ const g=JSON.parse(gram), q=normalise(cue); if(g.includes("[unk]") && !g.includes(q)){ g.unshift(q); gram=JSON.stringify(g); } }catch(e){} }
+  const rec=new VOSK.model.KaldiRecognizer(16000, gram);    // made in the worker while the cue finishes
   await synthIdle(); const cueEnd=lastSpeechEnd;
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
   trace("mic open");
@@ -1414,7 +1440,8 @@ async function listenVosk(expect, alsoOk=[]){
     if(raw) return Object.assign(base,{status:"heard", heard:[raw], ok:false, reason:"not the expected words"});
     return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
   }
-  const v=judge(text, expect, [], alsoOk);
+  let v=judge(text, expect, [], alsoOk);
+  if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`);
   return Object.assign(base,{status:"heard", heard:[text], ...v});
@@ -1899,6 +1926,16 @@ async function multipleModels(t, n=3, close=false){
    touch-and-name — the pointing itself), signal (the green border, exactly 0.5 s after the cue). */
 // Jon 9 Nov 14:21: no gap before a test's cue: the answer window is open-ended, so the learner thinks after the cue
 function thinkTime(){ return 0; }
+/* Pace (Jon, 10 Nov 2026, after his own run of Lesson 1): "The teacher moves very quickly … we at least need to increase the
+   pause between actual directions, between actual sentences. For example she provides a model, then pauses, and then
+   gives the answer. … when it's flying at you very quickly it's very easy to just not understand what you're supposed to
+   say … We can reduce this pause or eliminate this pause after enough lessons where the learner is confident and knows
+   what's going on but to begin with it needs to move a little slower."
+   Her speech itself is not slowed and no pause is put inside a sentence. An extra pause comes before every direction (a
+   model, a lead, a question, an action) and between a question and its answer in a model; it shrinks lesson by lesson
+   and is gone from Lesson 9. */
+const PACE_MS=[600,600,450,450,300,300,150,150];
+const pace=()=> PACE_MS[S.lesson]||0;
 // AFTER_ATOI: the gap after "Vas-y" — no longer than the gaps elsewhere, so it never sounds like the learner's turn
 // (Jon, 8 November 2026). "Vas-y" itself gives the thinking time.
 const AFTER_ATOI = 0;
@@ -1979,7 +2016,7 @@ async function presentGenModel(m){
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
   if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
-  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_); else await say(rest_); await sleep(m.voice==="teacher"?300:500); }
+  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
   await sayAs(m.voice, m.answerUnits);
 }
 /* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
@@ -2019,7 +2056,7 @@ async function presentModel(m){
   curTask="model "+m.target;
   if(m.introOnly && S.introSeen) return;
   await setPortraits(m.scene);
-  if(m.gen){ await presentGenModel(m); rest(); return; }
+  if(m.gen){ if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m); rest(); return; }
   if(m.set){                                   // "Un livre… un livre." — pointing to each in turn, no question
     ph("model: several of a kind");
     await gestureEar(); await say(PHR.amoi);
@@ -2094,7 +2131,7 @@ async function presentQIntro(m){
 async function leadSteps(t, who){
   const first = t.series ? "s0" : t;
   if(t.gen){ const pre=t.teacherUnits.filter(u=>!/^avec moi/i.test(u));
-    if(pre.length){ await pointAt(first); await sleep(150); await say(pre); await sleep(150); } }
+    if(pre.length){ await pointAt(first); await sleep(150); await say(pre); await sleep(150+pace()/2); } }
   gestureLead(); pointAt(first); await say(PHR.avecmoi);
   // Jon 9 Nov 14:21: saying it together needs 0.5 s after "Avec moi" to get ready (timed unison, unlike a test's open window)
   await sleep(LEAD_GAP);
@@ -2124,12 +2161,18 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   else offering = t.cue!=="point" || offering;                    // the "your turn" hand goes out with every question
   ph(retest? "retest" : "test");
   const expect = t.expect || expectOf(t.target);
+  curCue = (t.questionUnits||[]).join(" ");
   let r = await askAndListen(t, expect, think);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
     r = await askAndListen(t, expect, think);
   }
   rest();
+  // whichever recogniser listened: the question said back is that error by name, never a right answer
+  // (with Chrome's recogniser the question said back looks like the app's own words picked up by the microphone: "echo".
+  // The item has by now been asked twice, and the same words came back both times.)
+  if(r && (r.status==="heard" || r.status==="echo") && !r.repeatedCue && (r.heard||[]).some(h=>repeatedCue(h, curCue))) r={...r, status:"heard", ok:false, reason:"repeated the question", repeatedCue:true};
+  lastRepeatedCue = !!(r && r.repeatedCue);
   /* Own name: the same course name heard three times running, from a learner whose typed name is nothing like it. The app
      stops trusting its ears: the third is counted right, that name is never again an error for this learner, and the run
      file carries a fault line (either the listener hears this learner's name as that word, or the learner really does
@@ -2239,6 +2282,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
     let i=0, prevTest=false, prevTarget=null, prevItem=null;
     while(i<items.length){
       const it=items[i];
+      if(prevItem) await sleep(pace());                       // a moment between one direction and the next (early lessons)
       if(it.type==="act"){ await presentAct(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       if(it.type==="model"){ await presentModel(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       if(it.kind==="lead"){ await presentLead(it); prevTest=false; prevItem=it; i++; continue; }
@@ -2247,6 +2291,9 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       prevTest=true; prevTarget=it.target; prevItem=it;
       if(ok){ i++; continue; }
       hadError=true; scheduleDelayed(part, anchor);
+      /* The learner said the question back: that is not a wrong French answer but not knowing what is asked for. The
+         narrator (English, as in the introduction) says so once, then the usual correction follows. */
+      if(lastRepeatedCue){ lastRepeatedCue=false; rest(); await narrate("onlyanswer"); }
 
       if(firstOfItem){
         // a brand-new item that failed at its first test: start over with several models, a lead and the test (Zig, Part 4, 17:04)
@@ -2324,7 +2371,11 @@ async function main(){
   if(S.ex===0 && !S.finished[lesson.exercises[0].id]){
     for(const d of S.delayed.filter(x=>x.dueLessonStart===lesson.id)){ d.dueLessonStart=null; await runDelayed(d, {afterEx: lesson.exercises[0].id, lessonStart: nextLessonId(lesson.id)}); }
   }
-  for(let ei=S.ex; ei<lesson.exercises.length; ei++){
+  /* Every exercise of the lesson that is not finished, from the first: not only those from the saved place on. Run of 10 Nov
+     16:06: Exercise 2 had been left unfinished and the place moved past it (the tester panel's jump); the lesson then
+     "finished" with eight of nine exercises done, and every press of the start button only rang the chime again:
+     Lesson 2 could not be reached. */
+  for(let ei=0; ei<lesson.exercises.length; ei++){
     const exId=lesson.exercises[ei].id;
     if(!S.finished[exId]) await runExercise(S.lesson, ei);
     // end of an exercise: delayed tests due after it (also catches any left over if the app was closed here)
@@ -2522,7 +2573,7 @@ $("optRate").oninput=e=>{ S.settings.rate=+e.target.value; save(); };
 // developer: jump to any lesson and exercise (the page reloads there, ready to start)
 (function(){ const sel=$("optJump"); LESSONS.forEach((L,li)=>L.exercises.forEach((E,ei)=>{ const o=document.createElement("option"); o.value=li+":"+ei; o.textContent=`Lesson ${li+1}, Exercise ${ei+1} (${E.title})`; sel.appendChild(o); })); })();
 $("btnJump").onclick=()=>{ const [li,ei]=$("optJump").value.split(":").map(Number);
-  S.lesson=li; S.ex=ei; LESSONS[li].exercises.forEach((E,k)=>{ if(k>=ei) delete S.finished[E.id]; });
+  S.lesson=li; S.ex=ei; LESSONS[li].exercises.forEach((E,k)=>{ if(k>=ei) delete S.finished[E.id]; else if(!S.finished[E.id]){ S.finished[E.id]=true; S.exHadError[E.id]=false; } });      // a jump is the tester's decision to skip what comes before: counted as done, so the lesson can end
   logEntry({result:`JUMP to Lesson ${li+1}, Exercise ${ei+1} (tester)`, heard:[]}); save(); location.reload(); };
 $("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); const L=LESSONS[S.lesson]; delete S.finished[L.exercises[S.ex].id]; save(); $("panel").hidden=true; };
 $("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d, {afterEx:null, lessonStart:null}); await endScreen(); } finally{ running=false; } };
