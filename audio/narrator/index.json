@@ -1,11 +1,11 @@
 {
 "watch": {
 "text": "Watch how this learner uses the app.",
-"dur": 2.14
+"dur": 2.77
 },
 "red": {
 "text": "When the border is red, the learner just listens, and says nothing.",
-"dur": 3.84
+"dur": 4.12
 },
 "avec_a": {
 "text": "When the teacher says,",
@@ -13,38 +13,38 @@
 },
 "avec_b": {
 "text": "the border turns green, and the learner says it at the same time as the teacher. Listen to both voices together.",
-"dur": 6.02
+"dur": 6.19
 },
 "again": {
 "text": "Again. Together, at the same time.",
-"dur": 2.38
-},
-"only": {
-"text": "The learner only speaks when the border is green.",
-"dur": 2.42
-},
-"yourturn": {
-"text": "Now it's your turn. Speak clearly and loudly.",
-"dur": 3.06
+"dur": 2.36
 },
 "rep_b": {
 "text": "the border turns green, and the learner says it once, on their own.",
-"dur": 3.67
+"dur": 4.5
 },
 "point_b": {
 "text": "and then points, the border turns green, and the learner says the name, on their own.",
-"dur": 5.06
+"dur": 5.05
+},
+"only": {
+"text": "The learner only speaks when the border is green.",
+"dur": 2.24
+},
+"yourturn": {
+"text": "Now it's your turn. Speak clearly and loudly.",
+"dur": 3.0
 },
 "q_a": {
 "text": "Now the teacher asks a question, and answers it herself.",
-"dur": 3.2
+"dur": 3.4
 },
 "q_b": {
 "text": "When she asks it again, the border turns green, and the learner says only the answer.",
-"dur": 4.7
+"dur": 4.99
 },
 "q_turn": {
 "text": "Now it's your turn.",
-"dur": 1.03
+"dur": 1.21
 }
 }
