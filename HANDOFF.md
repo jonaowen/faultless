@@ -147,7 +147,11 @@ real recordings. **It could not climb even after that repair** (found 10 Nov 03:
 regression clip right to become champion, the base model it restarted from fails that gate itself, and round 123's
 checkpoints (0.41 against 0.10) were all refused. Now a candidate must be no worse than the champion on the
 regression clips to climb; shipping still needs all of them right. If `hc/events.log` shows round after round of "no
-improvement" with scores above the champion's, look at the gate first. **A container restart kills it** (it happened on 10 Nov at 00:34, in the middle of round 123, the
+improvement" with scores above the champion's, look at the gate first. Confirmed working: round 124 (10 Nov 04:08)
+made `hc/champion_r124`, score 0.47 (the lost champion had 0.81 after 26 rounds). **The champion's weights are still
+not in git** (151 MB; GitHub refuses files over 100 MB), so every new container loses the champion and the climb
+starts again from the base model. Open with Jon (§6): save the champion in half precision (about 75 MB) in this
+repo. **A container restart kills it** (it happened on 10 Nov at 00:34, in the middle of round 123, the
 first round after the repair). Start it again, detached, at the start of every session if `ps aux | grep hillclimb`
 shows nothing: `cd dev/listener && (setsid nohup nice -n 10 ./rebuild_and_climb.sh >> rebuild.log 2>&1 < /dev/null &)`.
 Stop it (`kill -STOP`) while `replay.js` or `ownpath.js` run, and continue it (`kill -CONT`) after.
@@ -178,6 +182,9 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
 
 - *Est-ce que* or rising intonation for yes/no questions (recommended: rising intonation).
 - Old clips for Claire/Paul/Julie are still in `audio/` (unused; harmless).
+- Hill climb: its best model is lost with every container. Save it in `faultless-dev` in half precision (about 75 MB
+  added to the repository each time it is saved), or accept that each session climbs from the base model?
+- The branch `learner-v23-wip` in `faultless-dev` is a superseded backup (the session could not delete it).
 
 ## 7. Bundle contents (`dev/`)
 
