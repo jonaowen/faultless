@@ -118,12 +118,15 @@ the name screen and the own-name check. Validation before release is the table i
 whole-lesson oracle, every real recording replayed through the real listening path, own-name recordings, the name
 screen checks.
 
-**Artificial learner:** version 2.2 (`dev/fieldtest/learner_private/`, `learner_calibration.md`).
-- Against the eight real runs: score 0.236 (v2.1: 0.063), weighted recall 0.631, 15 real errors, 3 missed. The misses
-  and the plan for v2.3 are at the end of `learner_eval/README.md`.
-- On the course (L1–4, 8 learners, first-time correct): old course 67/64/67/57 %; now 74/78/80/67 %. Own-name tests in
-  Lesson 4: 0.19 → 1.00 correct. Its greeting predictions are not yet reliable: check them on the first real run of
-  the new Lesson 4.
+**Artificial learner:** version 2.3 (`dev/fieldtest/learner_private/`, `learner_calibration.md` §0.6).
+- Against the eight real runs: score 0.290 (v2.1: 0.063, v2.2: 0.236), weighted recall 0.677, 15 real errors, 2
+  missed. v2.3 added the carry-over of the last answer's form ("Salut." for "Salut, Marie."; a bare name after a
+  bare-name answer). Most of its gain is that one "Salut." answer: see "How far to trust the gain" in
+  `learner_eval/README.md`, which also has the two misses left on purpose and the list for v2.4.
+- Hesitations (`learner_eval/hes.py`, reported only): the learner ranks Jon's 39 late starts above his fluent answers
+  only weakly (AUC 0.65) and is blind to the commonest cause, a change of question.
+- On the course (L1–4, 8 learners, first-time correct): old course 67/64/67/57 %; now 74/79/78/68 %. Its greeting
+  predictions are not yet checked against people: check them on the first real run of the new Lesson 4.
 - Run: `cd dev/fieldtest && LEARNER_PROCS=2 python3 bin/learn.py --course course/L001-L020.json --upto L4 --runs 8 --seed 1 --out <report.json>`
 - **Isolation rule:** the learner is maintained by a separate agent that never reads `gen/`, `design_log.md`,
   `formats.md`, course notes, `docs/` or `design/`. Brief it with `learner_eval/README.md`.
@@ -140,7 +143,11 @@ champion's weights are lost). Fixed in `hillclimb.py` (10 Nov): it checks for th
 `ft2/ck200` or `base600`, and after three failed rounds running writes `hc/BROKEN` and `HILL CLIMB BROKEN` in
 `hc/events.log`. **Check `hc/BROKEN` and the last lines of `hc_run.log` at the start of every session.** It still
 trains on the old names (Claire, Paul, Julie). The shipping listener is Vosk; its "hill climb" is the replay harness on
-real recordings. **A container restart kills it** (it happened on 10 Nov at 00:34, in the middle of round 123, the
+real recordings. **It could not climb even after that repair** (found 10 Nov 03:45): a candidate had to judge every
+regression clip right to become champion, the base model it restarted from fails that gate itself, and round 123's
+checkpoints (0.41 against 0.10) were all refused. Now a candidate must be no worse than the champion on the
+regression clips to climb; shipping still needs all of them right. If `hc/events.log` shows round after round of "no
+improvement" with scores above the champion's, look at the gate first. **A container restart kills it** (it happened on 10 Nov at 00:34, in the middle of round 123, the
 first round after the repair). Start it again, detached, at the start of every session if `ps aux | grep hillclimb`
 shows nothing: `cd dev/listener && (setsid nohup nice -n 10 ./rebuild_and_climb.sh >> rebuild.log 2>&1 < /dev/null &)`.
 Stop it (`kill -STOP`) while `replay.js` or `ownpath.js` run, and continue it (`kill -CONT`) after.
@@ -160,7 +167,7 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
    §2. Check first: did the greeting tests go
    right first time, was any right answer refused (English voices saying "Pierre" were the weakest in synthetic tests),
    is there any `FAULT OWN NAME UNSURE`.
-2. **Learner v2.3:** the kinds of miss listed in `learner_eval/README.md`.
+2. **Learner v2.4:** the list at the end of "Where it stands" in `learner_eval/README.md`.
 3. **Hesitations as ground truth for the learner:** the run doctor now measures them; `learner_eval` scores errors
    only. A slow start on a right answer is a near-miss the learner should also predict (lower weight than an error).
 4. **Lessons 5+** into the app: convert, record clips, oracle, ship. Rule 1k loosens at Lesson 6 (a model learner only
