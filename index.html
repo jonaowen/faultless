@@ -347,12 +347,13 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson3.js"></script>
 <script src="course/lesson4.js"></script>
 <script src="listener/vosk/vosk.js"></script>
+<script src="people.js"></script>
 <script>
 "use strict";
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.17";
+const APP_VERSION="2026-11-10.18";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -406,13 +407,34 @@ const VOCAB = {
   fr_erre: {name:"erre", kind:"frag", say:["Erre."], gram:["air","erre","ère","aire"], accept:["erre","air","ère","aire","airs","hair"]},   // the /ʁ/ at the end of "Pierre"
   fr_lut: {name:"lut", kind:"frag", say:["Lut."], gram:["lut","lutte","luth"], accept:["lut","lutte","luth","lute","luttes"]},
   count4: {name:"un deux trois quatre", kind:"seq", seq:["n1","n2","n3","n4"], say:["Un, deux, trois, quatre."], accept:[]},
+  /* Lessons 5-10 (10 Nov 2026). The words below enter the listener's word list only from the exercise that first
+     tests them (courseGrammar): a word the learner has not met yet can only take a right answer away. */
+  n5: {name:"cinq", kind:"number", say:["Cinq."], accept:["cinq","5","cinque","sinq"]},
+  n6: {name:"six", kind:"number", say:["Six."], accept:["six","6","sis","sisse"]},
+  n7: {name:"sept", kind:"number", say:["Sept."], accept:["sept","7","set","cette","sète","sette","ça"]},     // "ça": see tokensOf
+  count5: {name:"un deux trois quatre cinq", kind:"seq", seq:["n1","n2","n3","n4","n5"], say:["Un, deux, trois, quatre, cinq."], accept:[]},
+  count6: {name:"un deux trois quatre cinq six", kind:"seq", seq:["n1","n2","n3","n4","n5","n6"], say:["Un, deux, trois, quatre, cinq, six."], accept:[]},
+  count7: {name:"un deux trois quatre cinq six sept", kind:"seq", seq:["n1","n2","n3","n4","n5","n6","n7"], say:["Un, deux, trois, quatre, cinq, six, sept."], accept:[]},
+  cle: {name:"clé", kind:"object", art:"UNE", say:["Une","clé."], accept:["clé","clés","clef","clefs","cle","cles"]},
+  // the verbs of "Il fait quoi ?": only the forms that sound the same are accepted ("manger", "mangé" are other words)
+  mange: {name:"mange", kind:"word", say:[], accept:["mange","manges","mangent"]},
+  dort: {name:"dort", kind:"word", say:[], accept:["dort","dors","dorent"]},
+  boit: {name:"boit", kind:"word", say:[], accept:["boit","bois"]},
+  // "il y en a": one unit, like "je m'appelle" (tokensOf joins it)
+  ilyena: {name:"il y en a", kind:"phrase", say:["Il y en a…"], accept:["ilyena"]},
+  fr_ange: {name:"ange", kind:"frag", say:["Ange."], gram:["ange","anges","en","an"], accept:["ange","anges","hange","anche"]},        // the end of "mange"
+  fr_or: {name:"or", kind:"frag", say:["Or."], gram:["or","hors","ors","aure"], accept:["or","hors","ors","ore"]},                      // the end of "dort"
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
 // function-word slots in an expected answer, with the spellings Chrome may give them
 const expectOf = id => VOCAB[id].seq ? VOCAB[id].seq.slice() : VOCAB[id].art ? [VOCAB[id].art, id] : [id];
 const NAMED = Object.keys(VOCAB).filter(n=>["person","object","number"].includes(VOCAB[n].kind));   // words the near-match rule may guess
 const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","sai","cet","c'","s'","cé","sé","saint","sain","sein"];
-const SLOT = { CEST, UN:["un","1","hun","hein"], UNE:["une","1","eune","üne"] };
+const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener writes for a short "un" once "il y en a" is in its list (a real answer, 9 Nov 16:41; 2 of 16 English synthetic voices) */ UNE:["une","1","eune","üne"],
+  // Lessons 5-10: the small word in front carries the person ("il" and "elle" are judged exactly), yes and no, "ça va"
+  IL:["il","ils","île"], ELLE:["elle","elles","el","aile","ailes"], OUI:["oui","ouais","ouï","ouie"], NON:["non","nom","nan"],
+  CA:["ça","ca","sa","ç'a"], VA:["va","vas","vat"] };
+const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
 /* Script structure (NIFDI part-firming handout):
@@ -576,7 +598,7 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:10, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:11, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -584,7 +606,7 @@ const SESSION = {start:new Date().toISOString(), clips:[]};
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
   // version 8 (DISE formats: model, lead, Répète; pointing; then the question): progress and the introduction start again
-  if(!s.stateVer || s.stateVer<10){ Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, stateVer:10});
+  if(!s.stateVer || s.stateVer<11){    /* 11: the lessons were re-sequenced at DISE's rate (.18); a place saved in the old lessons means nothing in the new */  Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, stateVer:11});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
   } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
@@ -805,7 +827,11 @@ function heardNow(){        // the audio-context time of the sound coming out of
   return {t: actx.currentTime - (actx.outputLatency||actx.baseLatency||0), how:"reported latency"};
 }
 async function playTeacher(text, onStart){
-  const k=clipKey(text), meta=TEACHER.index && TEACHER.index[k];
+  // a question that has the same words as a statement ("Il mange ?" / "Il mange.", "Ça va ?" / "Ça va.") has its own
+  // recording, with the rising tune, under <key>_q; where there is none, the one recording serves both
+  let k=clipKey(text);
+  if(/\?\s*$/.test(text) && TEACHER.index && TEACHER.index[k+"_q"] && TEACHER.raw[k+"_q"]) k+="_q";
+  const meta=TEACHER.index && TEACHER.index[k];
   if(!meta || !TEACHER.raw[k]) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
   return new Promise(res=>{
@@ -887,7 +913,7 @@ function speakOne(text, opts={}){
    (Jon 9 Nov 16:04: connected speech at the normal rate, but nobody says a string of numbers that fast, and the learner
    follows a sequence more easily at that pace). Each number is its own clip. */
 const COUNT_GAP = 500;
-const COUNT_RE = /^(?:(répète)\s*:\s*)?((?:un|deux|trois|quatre)(?:\s*,\s*(?:un|deux|trois|quatre))+)\s*[.…]?$/i;
+const COUNT_RE = /^(?:(répète)\s*:\s*)?((?:un|deux|trois|quatre|cinq|six|sept)(?:\s*,\s*(?:un|deux|trois|quatre|cinq|six|sept))+)\s*[.…]?$/i;
 function countParts(u){ const m=COUNT_RE.exec(u.trim()); if(!m) return null;
   const nums=m[2].split(/\s*,\s*/).map(n=>n.charAt(0).toUpperCase()+n.slice(1).toLowerCase()+".");
   return {repete:!!m[1], nums}; }
@@ -962,7 +988,26 @@ function nameOf(w){
 const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
-  n = n.replace(/(^| )([1-9]{2,4})(?= |$)/g, (m,a,d)=>a+d.split("").join(" "));                    // "1234" = un, deux, trois, quatre
+  n = n.replace(/(^| )([1-9]{2,7})(?= |$)/g, (m,a,d)=>a+d.split("").join(" "));                    // "1234" = un, deux, trois, quatre
+  n = n.replace(/(^| )(?:il )?y ?'?en a(?= |$)/g, "$1ilyena");                                     // il y en a ("y en a cinq": the "il" is dropped in everyday speech and by the listener; 8 of 32 synthetic voices)
+  /* "il" and "elle" straight before a verb, as the listener writes them for English speakers. Its word list has "y",
+     "en", "a" (the pieces of "il y en a") and "un", and it prefers them to the short words "il" and "elle": of 16 English
+     synthetic voices saying "il mange", 13 came out as "y en mange"; "elle mange" came out as "un mange" for 9 and
+     "a en mange" for 2 (10 Nov 2026, dev/harness/replay/test510.js). None of these is anything a learner says, and none
+     turned one pronoun into the other. A verb with nothing before it is still "left out il". */
+  n = n.replace(/(^| )(?:un|a en|a) (?=(?:mange|manges|dort|dors|boit|bois)(?: |$))/g, "$1elle ");     // first: "a en" is "elle", not "a" + "il"
+  n = n.replace(/(^| )(?:y en|y|en) (?=(?:mange|manges|dort|dors|boit|bois)(?: |$))/g, "$1il ");
+  /* "ça" (in the list for "Ça va") is what the listener writes for an English "c'est" and "sept": "c'est une clé" came
+     out as "ça une clé" for 11 of the 16 English voices, "sept" as "ça" for 11, "quatre" as "quatre ça" for 6. "Ça" before
+     un/une is "c'est"; after "quatre" it is the end of that word; alone it counts as "sept" (VOCAB n7). */
+  n = n.replace(/(^| )ça (?=(?:un|une)(?: |$))/g, "$1c'est ");
+  n = n.replace(/(^| )quatre ça(?= |$)/g, "$1quatre");
+  /* From the replay of the real recordings on the Lesson 4 word list (10 Nov 2026; 7 of 350 answers that .17 accepted were
+     refused): Jon's "une chaussure" came out as "une ça chaussure" three times and as "il chaussure" once. A "ça" in the
+     middle of an answer, not followed by "va" (and not after "six", where it is "sept"), is not a word anyone said. "Il" or
+     "elle" straight before a thing's name is "une" (the listener's nearest short word; "un" does not come out that way). */
+  n = n.replace(/(\S) ça(?= (?!va(?: |$))\S)/g, (m,a,off,str)=> /(?:^| )six$/.test(str.slice(0,off+a.length)) ? m : a);
+  n = n.replace(/(^| )(?:il|elle) (?=(?:livres?|pommes?|stylos?|chaussures?|cl[ée]s?|clefs?)(?: |$))/g, "$1une ");
   for(const [re,to] of MULTI) n = n.replace(re, to);
   const toks = n.split(" ").filter(w=>w && !FILLERS.includes(w));
   const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)) flat.push(m[1], m[2]); else flat.push(w); });
@@ -1030,6 +1075,22 @@ function judge(text, expect, echoes=[], alsoOk=[]){
   if(t.length<whole.length && t.every((w,i)=> SLOT[whole[i]] ? SLOT[whole[i]].includes(w) : (nameOf(w)||{}).n===whole[i])) return {ok:false, reason:"only the start of the answer"};
   const target = expect.filter(x=>x!=="REST").slice(-1)[0];
   const said = t.map(nameOf).filter(Boolean).map(r=>r.n);
+  /* A sentence with every word in place but one or two wrong ("elle mange" for "il mange", "il dort" for "il mange"): the
+     run file says which word, so that a pronoun error can be told from a verb error without the recording. */
+  if(whole.length>=2 && t.length===whole.length){
+    const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (nameOf(w)||{}).n===e;
+    const bad = whole.map((e,i)=>[e,t[i]]).filter(([e,w])=>!fitsAt(e,w));
+    if(bad.length && bad.length<whole.length && !bad.some(([e])=>VOCAB[e] && VOCAB[e].kind==="person"))
+      return {ok:false, reason:"said "+bad.map(([e,w])=>"\""+w+"\" for \""+(SLOT_WORD[e]||(VOCAB[e]?VOCAB[e].name:e))+"\"").join(", ")};
+  }
+  // the end of the answer without its beginning ("un stylo" for "c'est un stylo", "cinq" for "il y en a cinq", "mange" for "il mange")
+  if(t.length<whole.length && t.length>=1){ const tail=whole.slice(whole.length-t.length), fitsAt=(e,w)=> SLOT[e] ? SLOT[e].includes(w) : (nameOf(w)||{}).n===e;
+    if(tail.every((e,i)=>fitsAt(e,t[i]))){ const gone=whole.slice(0,whole.length-t.length);
+      if(gone.length===1 && (gone[0]==="UN"||gone[0]==="UNE")) return {ok:false, reason:"word without its article"};       // as before (Lessons 1-4)
+      return {ok:false, reason:"left out \""+gone.map(e=>SLOT_WORD[e]||(VOCAB[e]?VOCAB[e].name:e)).join(" ")+"\""}; } }
+  // one word for another of the same kind ("six" for "sept"): say which; a person's name stays "wrong name"
+  if(whole.length===1 && t.length===1 && said.length===1 && said[0]!==target && VOCAB[target] && VOCAB[target].kind!=="person" && VOCAB[said[0]].kind!=="person")
+    return {ok:false, reason:"said \""+VOCAB[said[0]].name+"\" for \""+VOCAB[target].name+"\""};
   if(said.some(n=>n!==target)) return {ok:false, reason:"wrong name"};
   if(SLOT[expect[0]] && t.length===1 && said[0]===target) return {ok:false, reason:"word without its "+(expect[0]==="CEST"?"c'est":"article")};
   return {ok:false, reason:"not the expected words"};
@@ -1122,7 +1183,7 @@ function listen(expect, alsoOk=[]){
    free transcript says the same words ("text"). The older rule ("margin") took it if it scored close to the transcript. */
 const LISTEN = { rule:"text", T: 0.3 };
 const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿ' ]/g," ").replace(/\s+/g," ").trim();   // a hesitation (euh) is not the intended response
-function phraseOf(want){ const w=want.filter(x=>x!=="REST").map(x=> x==="CEST"?"c'est" : x==="UN"?"un" : x==="UNE"?"une" : VOCAB[x] ? VOCAB[x].name : x).join(" ");
+function phraseOf(want){ const w=want.filter(x=>x!=="REST").map(x=> SLOT_WORD[x] ? SLOT_WORD[x] : VOCAB[x] ? VOCAB[x].name : x).join(" ");
   return w.charAt(0).toUpperCase()+w.slice(1)+"."; }
 function candidatePhrases(){
   const c=[]; for(const n of Object.keys(PEOPLE)){ const N=PEOPLE[n].name; c.push(`C'est ${N}.`, `${N}.`, `Euh, c'est ${N}.`); }
@@ -1510,11 +1571,20 @@ function fingerCard(n){       // a hand held up, n fingers raised (DISE L1 Ex 4:
     <rect x="58" y="160" width="52" height="24" rx="6" fill="#36536b"/>`;
   return g;
 }
+/* Lessons 5-10 (people.js, window.PICS): people doing things (eating, sleeping), with looks that tell them apart; Pierre
+   and Sylvie in other clothes; keys; groups of five to seven things; a hand or two showing five to seven fingers. */
+const PEOPLE_KIND=["man","woman","boy","girl"];
 function genPicture(e){
-  if(e.person) return portrait(e.person);
+  const blank=()=>document.createElementNS(svgNS,"g");
+  if(e.person) return (window.PICS && (e.doing || (e.looks && e.looks.length))) ? PICS.person(e, VOCAB[e.person].name) : portrait(e.person);
+  if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
+  if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
+  if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
+  if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
   if(e.is==="numeral") return numberCard("n"+e.value);
-  if(e.is==="finger") return fingerCard(e.count||1);
+  if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
   const n=e.count||1; if(n===1) return onePicture(e);
+  if(n>4 && window.PICS) return PICS.group(n, ()=>onePicture(e));
   const g=document.createElementNS(svgNS,"g"), k = n===2 ? 0.58 : 0.5;
   const pos = n===2 ? [[-34,0],[34,0]] : n===3 ? [[-36,24],[36,24],[0,-30]] : [[-36,24],[36,24],[-36,-30],[36,-30]];
   pos.slice(0,n).forEach(([dx,dy])=>{ const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80+dx-80*k} ${100+dy-100*k}) scale(${k})`); c.appendChild(onePicture(e)); g.appendChild(c); });
@@ -2221,17 +2291,27 @@ const VOSK = {model:null, grammar:null, failed:false};
    when one is the answer: sounds that close to words would otherwise take real answers ("Claire" heard as "sûr"). */
 function courseGrammar(expect){
   const norm=t=>t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿ' -]/g," ").replace(/\s+/g," ").trim();
+  const frag_=u=>Object.keys(VOCAB).some(k=>VOCAB[k].kind==="frag" && norm(VOCAB[k].say[0])===u);
   if(!VOSK.base){
     const frag=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="frag").map(k=>norm(VOCAB[k].say[0])));
-    const P=new Set();
-    for(const L of LESSONS) for(const E of L.exercises) for(const Pt of E.parts) for(const it of Pt.items){
-      if(it.kind!=="test") continue; const u=norm((it.answerUnits||[]).join(" ")); if(!u || frag.has(u)) continue; P.add(u); }
-    for(const k of Object.keys(VOCAB)) if(!["frag","phrase"].includes(VOCAB[k].kind)) for(const u of VOCAB[k].say) P.add(norm(u));
-    const nouns=Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="object").map(k=>VOCAB[k].name.toLowerCase());
-    for(const p of [...P]){ const w=p.split(" "); if(w.length<=2) w.forEach(x=>P.add(x)); }
-    for(const n of nouns){ P.add(n); P.add("un "+n); P.add("une "+n); }      // the other article with every noun
-    ["c'est"].forEach(x=>P.add(x)); P.delete(""); P.delete("je"); P.delete("m'appelle"); P.add("je m'appelle"); P.add("m'appelle");
-    VOSK.base=[...P].sort();
+    /* Every phrase is kept with the place in the course ([lesson, exercise]) where it is first tested. Phrases of
+       Lessons 1-4 are in the list from the start, as they were when every real recording was replayed (versions .15 to
+       .17). A phrase first tested in Lesson 5 or later enters the list at that exercise: before it, the learner cannot
+       mean it, and it can only take a right answer away (the greetings did exactly that to "C'est Marie.", below). */
+    const P=new Map(), at=(u,pos)=>{ if(!u) return; const o=P.get(u); if(!o || pos[0]<o[0] || (pos[0]===o[0] && pos[1]<o[1])) P.set(u,pos); };
+    const keyAt={};                                    // where each vocabulary word is first part of a tested answer
+    LESSONS.forEach((L,li)=>L.exercises.forEach((E,ei)=>E.parts.forEach(Pt=>Pt.items.forEach(it=>{
+      if(it.kind!=="test") return;
+      for(const k of (it.expect||[])) if(VOCAB[k] && !keyAt[k]) keyAt[k]=[li,ei];
+      const u=norm((it.answerUnits||[]).join(" ")); if(!u || frag.has(u)) return; at(u,[li,ei]); }))));
+    // a count ("un, deux, … cinq") is reached when its last number is
+    for(const k of Object.keys(VOCAB)) if(VOCAB[k].seq && !keyAt[k]){ const last=keyAt[VOCAB[k].seq[VOCAB[k].seq.length-1]]; if(last) keyAt[k]=last; }
+    for(const k of Object.keys(VOCAB)) if(!["frag","phrase"].includes(VOCAB[k].kind)) for(const u of VOCAB[k].say) at(norm(u), keyAt[k]||[0,0]);
+    const nouns=Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="object");
+    for(const [p,pos] of [...P]){ const w=p.split(" "); if(w.length<=2) w.forEach(x=>at(x,pos)); }
+    for(const k of nouns){ const n=VOCAB[k].name.toLowerCase(), pos=keyAt[k]||[0,0]; at(n,pos); at("un "+n,pos); at("une "+n,pos); }      // the other article with every noun
+    at("c'est",[0,0]); P.delete(""); P.delete("je"); P.delete("m'appelle"); at("je m'appelle",[0,0]); at("m'appelle",[0,0]);
+    VOSK.base=[...P.keys()].sort(); VOSK.from=P;
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
   /* A sound piece ("Répète : ju.") is heard against its own words only. With the course's phrases in, Vosk took 4 of Jon's
@@ -2251,6 +2331,11 @@ function courseGrammar(expect){
     LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>(it.expect||[]).includes("salut"))) && (VOSK.greetFrom=[li,ei]))); }
   const g=VOSK.greetFrom, greets = (expect||[]).includes("salut") || (g && (S.lesson>g[0] || (S.lesson===g[0] && S.ex>=g[1])));
   if(!greets) base = base.filter(p=>!/salut/.test(p));
+  // Lessons 3+ (Lessons 1-2 hear one list, as the four lessons of .17 did): only what has been reached (see VOSK.from above); the answer asked for is always in
+  const GATED_FROM=2, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
+  base = base.filter(p=>reached(VOSK.from.get(p)||[0,0]));
+  const own = (expect||[]).length ? norm(phraseOf(expect)) : "";
+  if(own && !frag_(own)) { base=base.concat([own]); const w=own.split(" "); if(w.length<=2) base=base.concat(w.filter(x=>x!=="je" && x!=="m'appelle")); }
   return JSON.stringify([...new Set(base.concat(extra))].concat(["[unk]"]));
 }
 async function startVosk(){
