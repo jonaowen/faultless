@@ -11,7 +11,7 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-09.16`, Lessons 1–4. Versions .9 to .16 shipped on 9–10 Nov, one pull request each
+- **Live version:** `2026-11-10.18`, Lessons 1–4 **at DISE's rate of introduction** (they hold what Lessons 1–11 held up to .17). Versions .9 to .18 shipped on 9–10 Nov, one pull request each
   (branch `handoff-wip`, restarted from `main` after every merge).
 - **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
   artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
@@ -113,15 +113,26 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 16:04 | Jon, L3 | genuine un/une errors: the gender track; a tapped mic: the device advice | .14, .15 |
 | 16:42 | A second tester (knows no French), L1 | turns closed before they spoke; called themselves "Claire"; the correction pointed at the teacher | .15 |
 | 20:49 | Jon, L4 | "Salut." for "Salut, Claire."; bare "Jon" again | .16 |
+| 10 Nov 08:22 | Jon, L4 on .16 | the teacher's name asked with her tag hidden: "Claire" (her old name), "Jon", "Sylvie"; "how many" never about one thing | .17 |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
-the name screen and the own-name check. Validation before release is the table in `dev/harness/replay/README.md`:
-whole-lesson oracle, every real recording replayed through the real listening path, own-name recordings, the name
-screen checks.
+the name screen and the own-name check.
+
+**Version .17** (10 Nov): course changes only, from the 08:22 run (`fieldtest/design_log.md` §12):
+- **Rule 1s:** the teacher always wears her name tag (it was hidden on purpose in review frames; 1114 tasks).
+- **Rule 1t:** "Il y en a combien ?" is asked about ONE thing from Lesson 1, of a finger or a masculine thing only
+  ("Un."). "Une." for one feminine thing stays out until Lesson 21: on the artificial learner it made the answer
+  depend on the kind of thing. Four variants were built and compared before this one was chosen (`gen/one.py`,
+  switches `FF_ONE`, `FF_OUT`). **Do that for every change to a format.**
+- `gen/looks.py`: people's looks now fit the person (no beard on a girl, no dress on Pierre).
+
+Validation before a release is the table in `dev/harness/replay/README.md`: whole-lesson oracle, every real recording
+replayed through the real listening path, own-name recordings, the name screen checks. A release that changes only
+lesson files needs the oracle; one that touches listening needs the replays too.
 
 **Artificial learner:** version 2.3 (`dev/fieldtest/learner_private/`, `learner_calibration.md` §0.6).
-- Against the eight real runs: score 0.290 (v2.1: 0.063, v2.2: 0.236), weighted recall 0.677, 15 real errors, 2
-  missed. v2.3 added the carry-over of the last answer's form ("Salut." for "Salut, Marie."; a bare name after a
+- Against the first eight real runs: score 0.290 (v2.1: 0.063, v2.2: 0.236), weighted recall 0.677, 15 real errors, 2
+  missed. With the ninth run (10 Nov 08:22, held out): 0.163; it did not predict the hidden-tag error. v2.3 added the carry-over of the last answer's form ("Salut." for "Salut, Marie."; a bare name after a
   bare-name answer). Most of its gain is that one "Salut." answer: see "How far to trust the gain" in
   `learner_eval/README.md`, which also has the two misses left on purpose and the list for v2.4.
 - Hesitations (`learner_eval/hes.py`, reported only): the learner ranks Jon's 39 late starts above his fluent answers
@@ -181,7 +192,30 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
 
 ## 5. Next steps
 
-1. **Jon's next run file** (most likely Lesson 4 on .16): run the doctor on it with `--relisten`, then diagnose as in
+0. **The re-sequence at DISE's rate (Jon, 10 Nov; rule 1u in `fieldtest/formats.md`, `design_log.md` §13).** Jon: our
+   Lessons 1–4 taught a small fraction of what DISE's teach; the rate of introduction must match DISE's. Cause: two
+   new-material exercises a lesson from Lesson 1, then each lesson filled to DISE's exercise count with reviews.
+   - `gen/v4_rate.py` (`cd dev/fieldtest/gen && FF_RATE=dise FF_OUT=../course_rate python3 build.py`) builds Lessons
+     1–10 at DISE's rate from the compact lessons of the flat course (flat 1–36): 2,924 tasks, no check findings.
+     `course/` still holds the flat course (`FF_RATE=flat`, the default of `build.py`), kept for comparison.
+   - **App .18 plays new Lessons 1–4** (`appconv/convert.py ../fieldtest/course_rate/L001-L020.json L<n> ...`).
+     New in the app: `people.js` (window.PICS: people eating, drinking, sleeping, walking, with looks; keys; dogs;
+     cars; fingers and groups to ten), the words il/elle + mange/dort/boit, c'est, cinq to sept, oui, non, ça va, clé;
+     a question with the same words as a statement has its own recording (`<key>_q`); the word list is gated from
+     Lesson 3 (a phrase enters when its exercise is reached); saved state version 11 (old places are reset).
+   - Listening for the new words was tuned on synthetic voices only (`harness/replay/mk510.py`, `test510.js`): no real
+     person has yet said "il mange" to the app. The first real run of new Lessons 3–4 is the test; run the doctor
+     with `--relisten` on it before anything else.
+   - **To do, Lessons 5–10 in the app:** about 55 new answers (c'est pas …, tu/je + verb, … pas, huit to dix, chien,
+     homme/femme, c'est bon, oui ça va et toi …) in `convert.py` EXPECT and `index.html` VOCAB/judge; pictures not yet
+     drawn: speech bubbles, the teacher eating/drinking/walking and turned to a model learner, an eater smiling or
+     pulling a face (cake, milk), things "on the table"; rows of 8–10 frames; clips (`dev/voice/clipcheck.py <app> 5 10`
+     lists them). The picture helper's proposal for the hooks is in this session's notes (design_log §13).
+   - **Nouns:** DISE has 26 by Lesson 10, this sequence 14. Add from the content analysis, each with a picture, a
+     listening check and clips.
+   - When Lessons 5–10 play in the app: make `dise` the default of `gen/rate.py`, move the flat course out of
+     `course/`, and re-run the artificial learner over all ten.
+1. **Jon's next run file** (most likely Lesson 4 on .17): run the doctor on it with `--relisten`, then diagnose as in
    §2. Check first: did the greeting tests go
    right first time, was any right answer refused (English voices saying "Pierre" were the weakest in synthetic tests),
    is there any `FAULT OWN NAME UNSURE`.
