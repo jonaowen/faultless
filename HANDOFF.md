@@ -65,7 +65,8 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
   happen. Ground truth: real testers' errors. Every run file is fed to it (`learner_eval/`), then the course is run
   through it again. Missing a real error is punished heavily, most of all Jon's (he knows French, so an error of his
   is a severe programme fault: weight 3); a predicted error nobody made costs little (0.1).
-- **The listening hill climb should always be running** (`dev/listener/rebuild_and_climb.sh`).
+- **The listening hill climb should always be running** (`dev/listener/start_climb.sh`). It can only run while a
+  session is active: see §4.
 - **Never stop and wait for Jon on long tasks** unless he says to pause.
 - **The ElevenLabs key was deleted;** never reuse it.
 
@@ -148,12 +149,25 @@ regression clip right to become champion, the base model it restarted from fails
 checkpoints (0.41 against 0.10) were all refused. Now a candidate must be no worse than the champion on the
 regression clips to climb; shipping still needs all of them right. If `hc/events.log` shows round after round of "no
 improvement" with scores above the champion's, look at the gate first. Confirmed working: round 124 (10 Nov 04:08)
-made `hc/champion_r124`, score 0.47 (the lost champion had 0.81 after 26 rounds). **The champion's weights are still
-not in git** (151 MB; GitHub refuses files over 100 MB), so every new container loses the champion and the climb
-starts again from the base model. Open with Jon (§6): save the champion in half precision (about 75 MB) in this
-repo. **A container restart kills it** (it happened on 10 Nov at 00:34, in the middle of round 123, the
-first round after the repair). Start it again, detached, at the start of every session if `ps aux | grep hillclimb`
-shows nothing: `cd dev/listener && (setsid nohup nice -n 10 ./rebuild_and_climb.sh >> rebuild.log 2>&1 < /dev/null &)`.
+made `hc/champion_r124`, score 0.47, and round 125 `hc/champion_r125`, score 0.81 with every regression clip right
+(the lost champion had 0.81 after 26 rounds).
+
+**The champion is now kept outside the container** (`dev/listener/champion_store.py`; Jon, 10 Nov: yes). The weights
+in half precision (71 MB), the small files and `hc/state.json` are one commit on the branch **`hc-weights`** of this
+repository; every save replaces the commit before, so the branch never grows and a clone of `main` never downloads
+it. `hillclimb.py` saves on every new champion and pushes at most once every 3 hours; `rebuild_and_climb.sh` and
+`hillclimb.py` restore it when the champion's weights are not on disk (a new container). Checked: a model restored
+from the branch and transcribed afresh scored 0.4723, the same as the original. **Before ending a session:**
+`cd dev/listener && python3 -I champion_store.py save && python3 -I champion_store.py push`.
+
+**The container is stopped a few minutes after the session goes idle** (seen 10 Nov 00:34 and 04:26; processes die,
+files stay). So the climb runs only while a session is active. What limits the loss:
+- a round that was cut off is scored when the climb next starts (`cut_off_round` in `hillclimb.py`): that is how
+  round 125's checkpoint, already at 0.81 when the container stopped, became champion four hours later;
+- `dev/listener/start_climb.sh` starts the loop if it is not running. In the container of 10 Nov a SessionStart hook
+  runs it (`/home/user/.claude/settings.json`, which is in no repository; not yet seen to fire). In a new container
+  run `start_climb.sh` by hand and set the hook up again.
+
 Stop it (`kill -STOP`) while `replay.js` or `ownpath.js` run, and continue it (`kill -CONT`) after.
 
 **Run doctor** (`dev/qa/run_doctor.py`, extended 10 Nov): `python3 -I run_doctor.py <run.json> [--md out.md]
@@ -182,8 +196,10 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
 
 - *Est-ce que* or rising intonation for yes/no questions (recommended: rising intonation).
 - Old clips for Claire/Paul/Julie are still in `audio/` (unused; harmless).
-- Hill climb: its best model is lost with every container. Save it in `faultless-dev` in half precision (about 75 MB
-  added to the repository each time it is saved), or accept that each session climbs from the base model?
+- Hill climb: it stops when the session goes idle. Keeping a session awake for it is possible (a tracked background
+  task keeps the container up for 2 hours at most, then one model turn is needed to start the next) but costs
+  usage every 2 hours, day and night. Not done. Jon to decide: accept "runs during sessions", pay for keep-alive,
+  or move the climb to a machine that stays on.
 - The branch `learner-v23-wip` in `faultless-dev` is a superseded backup (the session could not delete it).
 
 ## 7. Bundle contents (`dev/`)
