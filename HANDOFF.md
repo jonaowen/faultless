@@ -11,9 +11,10 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-10.19`: Lessons 1–4 **rebuilt exercise for exercise from DISE, with actions** (§5 item
-  00). The next block is Lessons 5–20 (§5 item 000). Versions .9 to .19 shipped on 9–10 Nov, one pull request each
-  (branch `handoff-wip`, restarted from `main` after every merge).
+- **Live version:** `2026-11-10.20`: Lessons 1–4, after Jon's own runs of 10 Nov (§5 item 0000, design log §14): the
+  either/or format taught on names first, gender blocks, slower pace in the early lessons, the explanation of
+  questions, "lève-toi" no longer heard as "lève trois". The next block is Lessons 5–20 (§5 item 000). One pull request
+  per version (branch `handoff-wip`, restarted from `main` after every merge).
 - **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
   artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
   it contains DISE materials Jon owns. Nothing from it may go into the public repo except generated lesson files,
@@ -115,6 +116,9 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 16:42 | A second tester (knows no French), L1 | turns closed before they spoke; called themselves "Claire"; the correction pointed at the teacher | .15 |
 | 20:49 | Jon, L4 | "Salut." for "Salut, Claire."; bare "Jon" again | .16 |
 | 10 Nov 08:22 | Jon, L4 on .16 | the teacher's name asked with her tag hidden: "Claire" (her old name), "Jon", "Sylvie"; "how many" never about one thing | .17 |
+| 10 Nov 15:36 | Jon himself (he knows no French; he met the rebuilt lesson cold), L1 on .19 | **said the question back**: "un ou une" for "Un." / "Une.", five times running (L1 Ex 2); one of the five passed as "un [unk]" | .20, course (cause C8) |
+| 10 Nov 16:06 | Jon, rest of L1 | 66 of 66 right (28 of them "Un ou une ?"); Exercise 2 had been jumped over, and the lesson could then never end | .20 |
+| 10 Nov 16:36 | Jon, L2 on .19 | **"Lève-toi", said right, heard as "lève trois" 14 times in 16** and marked wrong (seven-trial limit reached); the stand-up box also showed sitting down; whole figures look barrel-chested | .20 (listener, animation, lesson), figures: artist |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.
@@ -193,15 +197,34 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
 
 ## 5. Next steps
 
+0000. **RUN OF 10 NOV 15:36 (first real learner on the rebuilt Lesson 1): the question said back.** Diagnosis and fix in
+   `dev/fieldtest/design_log.md` §14. In short: "Un ou une ?" was the first either/or question of the course, met
+   together with new content, modelled by one voice, never answered by the learner before its test, after 27 turns of
+   saying the teacher's words back. Course: `gen/firstformats.py` (the format first on the three names, models in
+   Pierre's and Sylvie's voices, leads that carry the question) and cause **C8** in `gen/causes.py`, also a build
+   check: no question format is first tested without a model in another voice. App .20: the narrated explanation of
+   questions plays (it had been dead since the lessons were generated); `repeatedCue` (the question is in the
+   listener's list for that turn; an answer with all its words is "repeated the question", never right; the narrator
+   says "Don't say the question again. Say only the answer."); `main()` runs every unfinished exercise. Tools:
+   `harness/replay/cuecheck.js` (the five recordings), `repeatq.js` (a simulated learner who says the question back),
+   `stuck.js` (a run file's saved place), `qa/run_doctor.py` class REPEATED THE QUESTION. Voices: Sylvie's cannot say
+   "Trois." or "Non." (`dev/voice/retake_learner.py`); the generator gives those lines to Pierre.
+
 000. **THE FIRST 20-LESSON BLOCK (Jon, 10 Nov, after .19's plan): "Usually DI programmes are field tested in 20-lesson
    blocks. So build the first 20 lessons, then I'll work through them, providing feedback after each session."** He
    does one lesson a day (spacing). Shipped in stages: .19 = Lessons 1–4; then 5–10, 11–15, 16–20.
    - Plan, exercise by exercise against DISE for Lessons 5–10, and the content of 11–20:
      `dev/docs/Lessons 5-20, the first field-test block.md`. Content and order from the skill map
      (`dev/analysis/skillmap/items.py`); rate and exercise counts from DISE (5–10: 15, 17, 17, 19, 17, 16).
-   - My exercise record of DISE stops at Lesson 10. Jon was asked (10 Nov) for the Lesson 11–20 presentation-book
-     pages; without them 11–20 are laid out from the Teacher's Guide tracks at 17 exercises each.
-   - Open with Jon: the "was doing" past (je dansais) at Lesson 9 by do-then-stop, the "did" past not until 38.
+   - My exercise record of DISE stops at Lesson 10. **Jon, 10 Nov: "I don't have the Lesson 11–20 scripts, use the
+     Teacher's Guide"**: Lessons 11–20 are laid out on the Teacher's Guide tracks at 17 exercises each.
+   - **The times (decided 10 Nov).** Jon first ruled "Keep the past at Lesson 9", then, after the check against the error
+     reference showed the cost: "ignore my ruling because I don't know French. Do what's best in light of this new
+     information". Decision: now (L4) → going to (*je vais danser*, L9–10) → did (*il a dansé* L14, *j'ai dansé* L15);
+     avoir at L12; **no "was doing" past of action verbs in this block** (*je dansais* is one weak vowel from *j'ai dansé*
+     and from the learner error *je dansé*); *c'était* (L10) and *il y avait* (L17) stay as states. Reasons in the plan,
+     rule 6. The skill map (`dev/analysis/skillmap/items.py` and the published page) still shows the old placement and
+     must be brought into line.
    - Generator for 5–10: `gen/v5_05_10.py` (written by a helper from the plan; check `reports/v5_05_10_needs.md` for
      what the app must support). Then: `appconv/convert.py`, pictures (`people.js`), recordings (`dev/voice`), the
      word list, and the tests of §4, as for .19.
