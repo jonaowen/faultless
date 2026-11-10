@@ -1,192 +1,189 @@
-# Faultless French: handoff (9 Nov 2026, 11:45)
+# Faultless French: handoff (10 Nov 2026)
 
-For the next Claude session working with Jon Owen. Read this first, then `docs/` and `dev/fieldtest/formats.md`.
+For the next Claude session working with Jon Owen. (The copy in the dev bundle, `faultless-dev/HANDOFF.md`, is the
+master: if the two differ, that one is right.) Read this first, then `dev/fieldtest/formats.md` (every teaching
+rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_eval/README.md` (the learner loop).
 
 ## 1. What this is
 
-**Faultless French** is a spoken-French course delivered as a phone web app. It is part of a series called "Faultless" (Faultless German etc. to follow). It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken English, Engelmann). Jon is a NIFDI trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
+**Faultless French** is a spoken-French course delivered as a phone web app, the first of a series ("Faultless").
+It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken English, Engelmann). Jon is a NIFDI
+trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
-- **Live app:** https://jonaowen.github.io/faultless (GitHub repo `jonaowen/faultless`, branch `main`, served by GitHub Pages; the repo is PUBLIC).
-- **Live version:** `2026-11-08`… then `2026-11-09.8` (Lesson 1 only).
-- **Work in progress (not live):** branch `handoff-wip` (commit 4334d7b). It has Lessons 1–4, and every naming task cued by a question. See §5.
-- **Dev bundle** (this archive's `dev/` folder; NOT in the public repo because it contains DISE materials Jon owns):
-  - the course generator (designer);
-  - the artificial learner;
-  - the listener training;
-  - voice scripts;
-  - test harnesses;
-  - research notes.
+- **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
+- **Live version:** `2026-11-09.16`, Lessons 1–4. Versions .9 to .16 shipped on 9–10 Nov, one pull request each
+  (branch `handoff-wip`, restarted from `main` after every merge).
+- **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
+  artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
+  it contains DISE materials Jon owns. Nothing from it may go into the public repo except generated lesson files,
+  clips and this handoff.
 
 ## 2. Jon's standing rules (keep all of them)
 
 **Teaching design**
-- **DI must be gapless and efficient.**
-  - Exercises are made of parts, each part a small expansion of the last.
-  - No long chains of one task form: switch the form after a few trials (build.py flags 6+).
-  - Follow the rubric (`dev/rubric.txt`).
-- **Formats come from DISE; content and sequence come from the analysis of spoken French.**
-  - Read the DISE Teacher's Guide carefully for every design decision.
-  - Written words: no more often than DISE uses them. Only name tags and numerals; no French noun labels.
-- **Natural everyday spoken French only.** Always check that what is taught is the most natural French.
-- **Only the intended response is correct.**
-- **The learner types no name**, and Claire never says the learner's name.
-  - `[prénom]` appears only in lead/test answers.
-  - Only *je m'appelle* is judged.
-- **Self-referent answers are modelled by Paul and Julie first** (formats rule 1k). Example: Claire asks Paul "Et toi ?" and he says *Je m'appelle Paul*; she asks Julie and she says *Je m'appelle Julie*; then the learner is asked. This came from Jon's first run.
-- **Every naming task is cued by a spoken question from Lesson 1** (rule 1n, Jon's ruling 9 Nov):
-  - *C'est quoi ?* for things, *C'est qui ?* for people;
-  - Claire models each question herself, showing its range of answers, before it is tested;
-  - never a silent point or a bare *Vas-y* for naming.
+- **DI must be gapless and efficient.** Exercises are made of parts, each a small expansion of the last. No long
+  chains of one task form (build.py flags 6+). Follow the rubric (`dev/rubric.txt`).
+- **Formats come from DISE; content and sequence come from the analysis of spoken French.** Read the DISE Teacher's
+  Guide for every design decision. Written words: only name tags and numerals.
+- **Natural everyday spoken French only.** **Only the intended response is correct.**
+- **The people are Marie (teacher), Pierre and Sylvie (model learners)**: the commonest French names of their kind
+  (Jon, 9 Nov). The code's internal keys stay `claire`, `paul`, `julie`; `gen/names.py` renames on output.
+- **The learner types their first name once, at the start** (Jon, 9 Nov; rule 1q; this replaces "the learner types no
+  name"). The teacher never says it. The listener cannot recognise it. The app uses it only to tell a course person's
+  name said in its place ("Je m'appelle Marie." from someone not called Marie).
+- **Own-name answers are shown by a model learner first** (rule 1k, extended after the first naive tester's run): in Lessons 1–5 every
+  own-name test comes straight after a model learner's "Je m'appelle Pierre."; from Lesson 6, the first of each
+  exercise. The teacher's name never comes straight after an own-name test. The app's correction of an own-name answer
+  is a model learner's sentence, never the teacher pointing at herself.
+- **The form of the last answer carries over** (rule 1p): no own-name test straight after a bare-name answer.
+- **Every part of an answer must do work** (rule 1r): a part that never varies gets dropped ("Salut." for "Salut,
+  Marie."). Greetings come from three greeters; the model learners greet in their own voices (`cue_by`).
+- **Every naming task is cued by a spoken question** (rule 1n): *C'est quoi ?* / *C'est qui ?*; never a silent point.
+- **The gender track** (rule 1o): each noun's front word is practised alone ("Un ou une ?" on the picture) for two
+  lessons before the noun is said whole; Lesson 1 has gender only. A noun is always introduced with its front word.
+- **Counting:** the numbers are said one at a time, 0.5 s apart; counting tasks include a single object.
 
 **App behaviour**
 - **The mic is never on in leads.** No tapping.
-- **The green border means "respond".** Since 9 Nov 10:15 it comes the INSTANT the teacher stops speaking (it was 0.5 s before), and listening starts at the same moment.
-- **Right answer:** Claire just smiles (plus a ding). No nod, no pointing, no saying it back, no "Très bien".
-- **No pointing at pictures.** A gold border marks what Claire means. She keeps two gestures: hand to chest for herself, and an open palm for "your turn".
-- **Everything runs in-app and must scale.**
-- **The app plays exactly the script that was field-tested** (rule 1m). `appconv/convert.py` changes format only. Content changes go into `gen/` and are re-tested.
+- **The green border means "respond"**: the instant the cue ends, and listening starts at the same moment. No gap
+  before a test. After "Avec moi" there is 0.5 s before speaking together. No spoken "Écoute". As little time between
+  tasks as possible: "every millisecond counts".
+- **Right answer:** the teacher smiles, plus a ding. Nothing else.
+- **No pointing at pictures.** A gold border marks what the teacher means; a green ring marks a model learner who is
+  speaking a cue.
+- **Every play screen** (app opened, every lesson start) says: speak clearly and loudly; put the phone on a flat
+  surface and do not touch it or its microphone.
+- **The app plays exactly the script that was field-tested** (rule 1m). `appconv/convert.py` changes format only.
 
 **Process**
-- **Fix whole classes of bugs.** When feedback shows a fault, fix that class of fault across the whole app, not just the instance Jon hit.
-- **Work it out from the run file.** Jon pastes a run file without explanation, and you must reconstruct what happened from it alone:
-  - the log and trace, plus the real audio of his answers (ground truth);
-  - the `session.faults` list at the top: the app's own fault report;
-  - the run file holds only that session.
-- **The listening-accuracy hill climb should always be running in the background** (`dev/listener/hillclimb.py`). It is resumable and must be restarted every ~110 minutes.
+- **Fix whole classes of faults**, not the instance.
+- **Work it out from the run file alone.** Jon sends a run file, often with no comment. Find every confusion and its
+  cause, split them into **app faults** and **programme design faults**, fix all of them, ship. Do not ask him what he
+  said: listen to the recording in the run file ("too long ago for me to remember"). The goal he set: every slight
+  confusion of every tester diagnosed and fixed with little or no input from him.
+- **The artificial learner is a model to be trained** (Jon, 9 Nov). Input: the course sequence. Output: where errors
+  happen. Ground truth: real testers' errors. Every run file is fed to it (`learner_eval/`), then the course is run
+  through it again. Missing a real error is punished heavily, most of all Jon's (he knows French, so an error of his
+  is a severe programme fault: weight 3); a predicted error nobody made costs little (0.1).
+- **The listening hill climb should always be running** (`dev/listener/rebuild_and_climb.sh`).
 - **Never stop and wait for Jon on long tasks** unless he says to pause.
 - **The ElevenLabs key was deleted;** never reuse it.
 
-## 3. The app: how it works (`index.html`, one file)
+## 3. The app (`index.html`, one file)
 
-- **Course:** `course/lessonN.js` is generated by `dev/appconv/convert.py` from `dev/fieldtest/course/L001-L020.json`. It sets `window.COURSE.LN = {exercises → parts → items}`, where each item is `{kind: model|lead|test, teacher, answer, scene:{row:[…], side:{paul,julie}, claireTag?}, at: s0..s5|pL|pR|self|you|none, voice: teacher|paul|julie, expect, noEcho, hold}`.
-- **Engine:**
-  - `genItem` / `genLesson` turn items into the engine's model, lead and test objects.
-  - `runParts` handles part-firming, delayed tests and the seven-trial limit.
-  - `presentGenModel`, `leadSteps`, `presentTest`, `askAndListen` and `correction` run each task.
-- **Pictures:**
-  - `genPicture` draws books, apples, pens, shoes, numerals, fingers and persons (with colours and looks).
-  - `buildRow` lays out the row.
-  - Paul and Julie appear as side badges when objects are also on screen.
-  - `goldOn` / `goldOff` draw the gold border.
-- **Teacher voice:** Piper `fr_FR-siwis-medium` clips in `audio/teacher/` plus `index.json`, which holds phone timings for lip sync.
-  - Lips follow the AUDIO CLOCK (`heardNow()` via `getOutputTimestamp`), not a timer.
-  - Every "Répète : X" clip is "Répète :" + a 300 ms gap + the standalone X clip (`dev/voice/compose_repete.py`). This came from Jon's run: the TTS had run "Répète : un" together into "répé-tun".
-  - Clips for a held line ("Je m'appelle…") use the key suffix `_suite`.
-- **Learner voices:** Paul is Piper `fr_FR-tom-medium`; Julie is `fr_FR-upmc-medium`, speaker 0. Files are in `audio/learner/`, with Julie's prefixed `julie_`. The narrator is `en_GB-jenny_dioco`.
-- **Listening:**
-  - The MAIN listener is **Vosk** (Kaldi small French model, WASM, `listener/vosk/vosk.js`, plus the 42 MB `model-fr.tar.gz` in the repo).
-  - It uses a grammar: every answer the course asks for, the other article with every noun, and `[unk]`.
-  - In the WIP branch the grammar is built per task, and sound pieces like "ju" or "sure" are added only when they are the answer (`courseGrammar(expect)`).
-  - Every answer is recorded. Audio is held in IndexedDB and exported in the run file.
-  - The fallback is Chrome Web Speech. NEVER record in parallel with it: on Android the recording takes the microphone and Chrome hears nothing, with no error raised (Jon's 09:46 run).
-  - The old in-app Whisper-tiny listener (`listener/model/*.onnx`) is no longer used while Vosk loads; it is kept for the hill climb.
-- **Microphone:** `getUserMedia` with echoCancellation OFF. With it on, Android goes into "call" audio mode and the teacher's voice lags behind her lips. The mic is warmed at the start of a test (never in leads), so listening starts the instant the cue ends.
-- **Self-checks written to the trace and summarised in `session.faults` when a run is saved:**
-  - `AV FAULT`: lip-sync, with speaker delay and frame gaps;
-  - `SIGNAL LATE`: the green border came more than 150 ms after the teacher stopped;
-  - `LISTENING FAULT`: speech was recorded but the recogniser heard nothing (unscored);
-  - `PROGRESS RESET`.
-- **Tester panel (gear icon):**
-  - "Go to" jumps to any lesson and exercise; progress does NOT reset on new versions unless `stateVer` changes.
-  - Manual mode.
-  - The listener choice.
-- **Self-update:** `version.json` must match `APP_VERSION` in `index.html`; bump both on every release.
+- **Course:** `course/lessonN.js`, generated by `dev/appconv/convert.py` from `dev/fieldtest/course/L001-L020.json`.
+  Each item: `{kind: model|lead|test, teacher, answer, scene, at, voice, expect, noEcho, hold, cueVoice?, cueAt?}`.
+  `cueVoice` + `cueAt`: the cue is spoken by that pictured model learner (their recordings, a green ring round them).
+- **Engine:** `genItem`, `runParts` (part-firming, delayed tests, seven-trial limit over the exercise, at most 4 part
+  repeats), `presentGenModel`, `leadSteps`, `presentTest`, `askAndListen`, `correction`.
+- **Voices (Piper):** teacher `fr_FR-siwis-medium` (`audio/teacher/`, with phone timings for lip sync); Pierre
+  `fr_FR-tom-medium` and Sylvie `fr_FR-upmc-medium` (`audio/learner/`, Sylvie's prefixed `julie_`); narrator
+  `en_GB-jenny_dioco`. Lips follow the audio clock.
+- **Listening:** Vosk small French (WASM) with a closed word list built per task by `courseGrammar(expect)`:
+  - the course's answers plus `[unk]`; sound pieces ("ju") only when they are the answer, and then without `[unk]`;
+  - *je m'appelle* only when the answer has it; greetings only from the first exercise that teaches one (they cost
+    "C'est Marie." accuracy in Lessons 1–3);
+  - the end of an answer: loudness above 300 Hz, and the turn ends once the whole right answer has stood for 0.45 s;
+  - the teacher's own echo and sound with no words are ignored;
+  - every answer is recorded and exported in the run file.
+- **Judging** (`judge`): exact on the gender word; "only the start of the answer" is its own verdict. Own-name tests
+  (`expect: ["jemappelle","REST"]`) pass on *je m'appelle* + any name, EXCEPT a course person's name when the typed
+  name is not like it (`ownMaybe`: same word, same first sound, within two letters, or a like ending all count as
+  "could be their own"). Fail-safe: the same course name heard three times running as the learner's own is accepted
+  from then on and the trace says `FAULT OWN NAME UNSURE`.
+- **Name screen** (`#who`, `askWho()`): shown once before the first lesson; Reset asks again; the tester panel has a
+  name field. Stored as `S.learnerName` (first name only; it is in the run file).
+- **Self-checks** in the trace, summarised in `session.faults`: `AV FAULT`, `SIGNAL LATE`, `LISTENING FAULT`,
+  `PROGRESS RESET`, `FAULT OWN NAME UNSURE`.
+- **Self-update:** `version.json` must equal `APP_VERSION` in `index.html`; bump both on every release.
+- **Microphone:** echo cancellation OFF (with it on, Android goes into call mode and the lips lag). NEVER record in
+  parallel with Chrome's recogniser (the fallback listener).
 
-## 4. Where things stand (9 Nov, 11:45)
+## 4. Where things stand
 
-**Jon's runs today**
-- **07:57, version .1:** he was unsure whether to say his own name, which led to the Paul and Julie rule.
-- **08:54:**
-  - progress didn't reset;
-  - Exercise 3 ("un"): the "répé-tun" problem, and Chrome heard nothing.
-- **09:46, version .3:** parallel recording broke Chrome. He said all 17 answers correctly, and they are recorded in `dev/real_audio/run0946/`.
-- **10:13, version .5:** Vosk got 3 out of 3.
-- **10:53, version .8:**
-  - Vosk was right throughout: Jon's answers were judged as he said them.
-  - The one design fault: a silent point after a counting question. That led to rule 1n.
-  - The run file showed "SIGNAL LATE" of about 182 ms, caused by a 180 ms pause after every `say()`. The fix is in the WIP branch: `say(..., tail=0)` before a learner's turn.
-- **Lip sync on "Écoute":** Jon reported it twice. Version .8 drives the mouth from the audio clock. It is not yet confirmed on his phone; check `av …` lines and `AV FAULT` in his next run file.
+**Runs of 9 Nov** (raw files with audio: `dev/real_audio/runs_20261109/`; rulings: `learner_eval/labels.json`)
 
-**Artificial learner**
-- It is at version 2.1 (`dev/fieldtest/learner_private/`, documented in `dev/fieldtest/learner_calibration.md` §0.4). Version 2.1 detects AMBIGUOUS tests: examples that fit more than one interpretation, reproducing Jon's name confusion.
-- Run it with: `python3 dev/fieldtest/bin/learn.py --course dev/fieldtest/course/L001-L020.json --upto L4 --runs 4 --seed 1 --out <report.json>`
+| Run | Who, what | What it showed | Fixed in |
+|---|---|---|---|
+| 14:18 | Jon, L2 | "Libra" accepted for "livre" | judge |
+| 14:21 | Jon | pauses: too short after "Avec moi", needless elsewhere | .10 |
+| 15:07 | Jon, L2 | long waits after answers; no single object in counting; bare "Jon" after a bare-name answer | .11, course |
+| 15:15, 15:35 | Jon, L3 | sound pieces ("ju", "u") misheard | .12, .13 |
+| 16:04 | Jon, L3 | genuine un/une errors: the gender track; a tapped mic: the device advice | .14, .15 |
+| 16:42 | A second tester (knows no French), L1 | turns closed before they spoke; called themselves "Claire"; the correction pointed at the teacher | .15 |
+| 20:49 | Jon, L4 | "Salut." for "Salut, Claire."; bare "Jon" again | .16 |
 
-  | Run on L1–4 | First-time correct, by lesson | Ambiguity errors |
-  |---|---|---|
-  | Before the explicit cues | 76 / 63 / 60 / 61% | 69 |
-  | With the explicit cues | 66–69 / 63–68 / 70 / 63–67% | 35–81 |
+**Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
+the name screen and the own-name check. Validation before release is the table in `dev/harness/replay/README.md`:
+whole-lesson oracle, every real recording replayed through the real listening path, own-name recordings, the name
+screen checks.
 
-- With 4 runs the noise is about ±5 points. Its biggest remaining error is un/une ("kept 'un' from identical examples"). That is a long-standing pattern of this learner and may be partly an artefact.
-- It is FAR from the zero-error goal. Treat its numbers as relative; Jon's rule is to judge against the DISE baseline.
-- Isolation rule: the learner is maintained by a separate agent that must never read `gen/`, `design_log.md`, `formats.md` or the course notes.
+**Artificial learner:** version 2.2 (`dev/fieldtest/learner_private/`, `learner_calibration.md`).
+- Against the eight real runs: score 0.236 (v2.1: 0.063), weighted recall 0.631, 15 real errors, 3 missed. The misses
+  and the plan for v2.3 are at the end of `learner_eval/README.md`.
+- On the course (L1–4, 8 learners, first-time correct): old course 67/64/67/57 %; now 74/78/80/67 %. Own-name tests in
+  Lesson 4: 0.19 → 1.00 correct. Its greeting predictions are not yet reliable: check them on the first real run of
+  the new Lesson 4.
+- Run: `cd dev/fieldtest && LEARNER_PROCS=2 python3 bin/learn.py --course course/L001-L020.json --upto L4 --runs 8 --seed 1 --out <report.json>`
+- **Isolation rule:** the learner is maintained by a separate agent that never reads `gen/`, `design_log.md`,
+  `formats.md`, course notes, `docs/` or `design/`. Brief it with `learner_eval/README.md`.
 
-**Course design**
-- `dev/fieldtest/gen/` is the generator. Run `python3 dev/fieldtest/gen/build.py` from `dev/fieldtest`; it writes `course/L001-L020.json` and `.md`, and `L021-L040.json` and `.md`.
-- The latest build applies two post-processes:
-  - `no_learner_name`: no learner name tag; Claire uses no learner name;
-  - `explicit_cues`: rule 1n.
-- Lessons 21–40 are built but not clean under the learner.
-- The overnight plan (field-test 20-lesson blocks until there are zero errors, then make them lean, then go on to L41+) is NOT finished.
-- **Open decision:** *Est-ce que* or rising intonation for yes/no questions. The recommendation is rising intonation (everyday French).
+**Course:** `cd dev/fieldtest/gen && python3 build.py` writes `course/L001-L020` and `L021-L040` (.json and .md):
+9619 tasks, 656 exercises. Known findings: Lesson 3 has 3 new-material exercises (limit 2); Lessons 28 and 29 have 11
+tracks. Lessons 5–40 are built but not converted for the app or field-tested with people.
 
-**Listener training (Whisper hill climb)**
-- `dev/listener/` holds `hillclimb.py`, `gen_l1.py`, `ingest.py`, `export.py` and the rest.
-- METRIC 4 now covers every Lesson 1 answer.
-- The best checkpoint so far is `hc/champion_r025`, score 0.7675. It is NOT in this bundle (147 MB); retrain from `base600` or `ft2/ck200` if needed.
-- Nothing validates under the shipping rule yet: held-out accept ≥ 0.90 for English voices and ≥ 0.80 for French, reject ≥ 0.98, and ≥ 3 real recordings right.
-- The synthetic data (1.8 GB) is not bundled; regenerate it with `gen_v3.py` / `gen_l1.py`.
-- Since Vosk is now the main listener, the most valuable "hill climb" is probably Vosk-side:
-  - grammar per task;
-  - n-best acceptance;
-  - endpoint timing;
-  - all scored on Jon's real recordings.
-- `dev/qa/listen_check.py` with `judge_check.js` runs every course answer, in synthetic voices plus Jon's clips, through the Vosk grammar and the app's judge.
-  - Current result: Jon's real clips are all right.
-  - Synthetic voices are weaker, especially single words and the sound pieces ("U.", "Ju.", "Paul.").
+**Hill climb** (Whisper listener, not the shipping listener). **It produced nothing from 9 Nov 15:56 to 10 Nov 00:10.**
+Cause: model weights are not in git, so in a fresh container `hc/champion_r026/` exists but holds no
+`model.safetensors`; the code checked only that the folder was there. Every round that started from the champion
+failed in 4 s and every other round crashed when the champion was re-scored (rounds 27–122 are all failures; the
+champion's weights are lost). Fixed in `hillclimb.py` (10 Nov): it checks for the weights file, restarts from
+`ft2/ck200` or `base600`, and after three failed rounds running writes `hc/BROKEN` and `HILL CLIMB BROKEN` in
+`hc/events.log`. **Check `hc/BROKEN` and the last lines of `hc_run.log` at the start of every session.** It still
+trains on the old names (Claire, Paul, Julie). The shipping listener is Vosk; its "hill climb" is the replay harness on
+real recordings. **A container restart kills it** (it happened on 10 Nov at 00:34, in the middle of round 123, the
+first round after the repair). Start it again, detached, at the start of every session if `ps aux | grep hillclimb`
+shows nothing: `cd dev/listener && (setsid nohup nice -n 10 ./rebuild_and_climb.sh >> rebuild.log 2>&1 < /dev/null &)`.
+Stop it (`kill -STOP`) while `replay.js` or `ownpath.js` run, and continue it (`kill -CONT`) after.
 
-## 5. The WIP branch `handoff-wip`: finish and ship this first
+**Run doctor** (`dev/qa/run_doctor.py`, extended 10 Nov): `python3 -I run_doctor.py <run.json> [--md out.md]
+[--relisten PORT] [--relisten-all]`. From the run file alone it lists every error with its class, what came before
+it and the class of fix, and every **hesitation** (speech began late: 1.8 times the tester's own median or 1 s,
+whichever is more), with what changed at that task (new question, longer answer, delayed test) and a table of the
+questions the tester is slow on as a rule. Classes added: PART OF THE ANSWER LEFT OUT (with whether the part had ever
+varied, whether the answers before were shorter, and whether the turn was cut off) and ANSWER FORM CARRIED OVER (a
+bare name after a bare-name answer). `--relisten` plays the recordings to Vosk again (free, and with only the run's
+words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Reports: `dev/qa/doctor_*.md`.
 
-What it contains:
-- **Lessons 2–4** in the app (`course/lesson2-4.js`), with:
-  - new VOCAB entries: `salut`, plus the sound pieces `fr_sure`, `fr_u`, `fr_ju`, `fr_atre` and `fr_lut`, each with homophone words for Vosk ("ju"→"jus", "atre"→"âtre", "lut"→"lutte");
-  - new teacher and learner clips;
-  - pen and shoe colours and lengths;
-  - Claire's name tag hidden where the script says "no name tag".
-- **Rule 1n applied to all lessons** (naming cued by *C'est quoi ?* / *C'est qui ?*).
-- **No pause before a learner's turn** (the SIGNAL LATE fix).
-- **Per-task Vosk grammar.**
-- **`window.__expect`** for an oracle test harness.
+## 5. Next steps
 
-What it still needs:
-1. **A full simulated run of L1–L4** with the oracle harness `dev/harness/a18.js`: the fake recogniser answers whatever the app expects. The earlier answer-list harness (`a17.js`) is invalid past L1, because delayed tests come at the start of the next lesson. Before the last changes, L1 alone passed 72/72.
-2. **Phone-speed check:** `dev/harness/av1.js` (CPU ×6) for AV/SIGNAL faults.
-3. **Re-check** `listen_check.py` / `judge_check.js`.
-4. **Screenshots** of the scenes (`shots15.js`).
-5. **Merge** to `main`, bump to `2026-11-09.9`, and verify that Pages serves it.
+1. **Jon's next run file** (most likely Lesson 4 on .16): run the doctor on it with `--relisten`, then diagnose as in
+   §2. Check first: did the greeting tests go
+   right first time, was any right answer refused (English voices saying "Pierre" were the weakest in synthetic tests),
+   is there any `FAULT OWN NAME UNSURE`.
+2. **Learner v2.3:** the kinds of miss listed in `learner_eval/README.md`.
+3. **Hesitations as ground truth for the learner:** the run doctor now measures them; `learner_eval` scores errors
+   only. A slow start on a right answer is a near-miss the learner should also predict (lower weight than an error).
+4. **Lessons 5+** into the app: convert, record clips, oracle, ship. Rule 1k loosens at Lesson 6 (a model learner only
+   before the first own-name test of each exercise): watch the first real runs there.
+5. **Naive testers:** one so far (the 16:42 run); that run showed more than all of Jon's.
 
-The harnesses expect the app served over http. Run `python3 -m http.server 8765 --directory <repo>`; the `file://` route can't load the worklet or Vosk.
+## 6. Open with Jon
 
-## 6. Jon's latest messages, and what is owed to him
-
-- "Time to build the next few lessons so I can test them as well": Lessons 2–4 are in `handoff-wip`, not shipped yet.
-- "For truly clean data we need someone who doesn't know any French": not yet answered.
-  - Jon's runs can catch app and presentation faults, but he knows French, so they can't measure learning.
-  - Suggest one to three naive testers (friends, colleagues, or a paid panel). The app is just a URL, and the run-file system already captures everything.
-  - Possibly add a one-tap "send my run" for testers.
-- Not yet confirmed on his phone:
-  - the lip-sync fix;
-  - whether "un/deux/trois" still recognise well now that echo cancellation is off.
+- *Est-ce que* or rising intonation for yes/no questions (recommended: rising intonation).
+- Old clips for Claire/Paul/Julie are still in `audio/` (unused; harmless).
 
 ## 7. Bundle contents (`dev/`)
 
 | Folder or file | What it is |
 |---|---|
-| `fieldtest/` | Generator (`gen/`), course JSON and MD, interface schema, `formats.md` (all rules), `design_log.md`, `learner_calibration.md`, artificial learner (`learner_private/`, with DISE L1–10 text in `dise_raw/`, Jon's material), CLI `bin/learn.py`, today's reports (`reports/run_0911`) |
-| `appconv/convert.py` | Field-test JSON → `course/lessonN.js`. Usage: `python3 appconv/convert.py fieldtest/course/L001-L020.json L2 <repo>/course/lesson2.js` |
-| `voice/` | `make_teacher.py` (`ONLY="line|line" python3 make_teacher.py <repo>`; SAY_AS fixes TTS readings), `compose_repete.py`, `make_narrator.py`. The Piper voices are in the Python package plus `.onnx` files (the old path is `scratchpad/vosk/voices`; download fr_FR-siwis/tom/upmc-medium and en_GB-jenny_dioco from Piper's releases) |
-| `listener/` | Hill-climb code, `data/real` (labelled real clips), state |
-| `harness/` | Playwright tests, listening checks, screenshot scripts |
-| `qa/` | `heard_regression.js` (judge regression; `hr_live.js` points at a served copy) |
-| `design/` | Research: DISE findings, ToI principles, spoken-French facts, course brief. Also `pre_design.md` and other notes |
-| `real_audio/` | Jon's recorded answers (run0946: 17 answers, all correct) |
-| `docs/` | The two design docs ("whole-course design", and "DISE L1–10: what Faultless follows, and why"), exported from Claude Docs |
+| `fieldtest/gen/` | The course generator: `build.py` (and its checks), lesson files, `names.py`, `selfmodels.py` (rule 1k), `greet.py` (greeters), `gender.py` (rule 1o) |
+| `fieldtest/` | Course JSON and MD, `interface/course_schema.md`, `formats.md`, `design_log.md`, `learner_calibration.md`, `learner_private/`, `bin/learn.py` |
+| `fieldtest/learner_eval/` | The learner scored against real testers: `ingest.py`, `labels.json`, `truth.py`, `score.py`, `courses/` (the course each app version played) |
+| `appconv/convert.py` | `python3 convert.py ../fieldtest/course/L001-L020.json L4 <repo>/course/lesson4.js` |
+| `voice/` | `make_teacher.py`, `compose_repete.py`, `make_narrator.py` (Piper; voices are not in git) |
+| `harness/replay/` | Release checks on real recordings and synthetic voices; see its README |
+| `harness/` | Older Playwright tests, listening checks, screenshot scripts |
+| `qa/` | `run_doctor.py` (reads a run file and lists faults), `heard_regression.js` |
+| `real_audio/` | Testers' run files with audio |
+| `listener/` | Whisper hill climb |
+| `design/`, `docs/` | Research and the two design documents |

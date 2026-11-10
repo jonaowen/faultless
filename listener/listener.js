@@ -161,7 +161,7 @@
      opts.maxMs: hard limit (the model hears at most 6 s).
      opts.onSpeechEnd(audio, {speechStart, lastVoice, voicedMsAfter(ms), level(ms0,ms1), peak(ms0,ms1)}) may return true to keep listening (e.g. the answer so far is incomplete), or "reset" when
      nothing was recognised in that sound (it was not an answer: e.g. the end of the teacher's own voice from the
-     speaker, Helen's run 9 Nov 16:42): listening goes on as if no one had spoken, until noSpeechMs from the start;
+     speaker, tester H's run 9 Nov 16:42): listening goes on as if no one had spoken, until noSpeechMs from the start;
      opts.onStart(stop, sound): stop() ends the capture at once (the recogniser already has the whole answer); sound has
      voicedMsAfter, level and peak, measured on the capture's own clock (ms from its start), and state() (the clock now,
      when speech started or -1, when sound was last heard).

@@ -48,6 +48,14 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 #gender[hidden]{display:none}
 #gender button{width:132px;height:170px;border-radius:20px;border:2px solid var(--frame-line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #gender button:focus-visible,#gender button:hover{border-color:var(--go)}
+#who{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:16vh;box-sizing:border-box;z-index:36;background:var(--bg)}   /* in the top half: the phone's keyboard covers the lower half */
+#who[hidden]{display:none}
+#who form{display:flex;flex-direction:column;align-items:center;gap:22px;width:min(320px,82vw)}
+#who label{font-size:22px;color:var(--ink,#22252b);text-align:center}
+#who input{width:100%;box-sizing:border-box;font-size:26px;padding:12px 14px;border-radius:14px;border:2px solid var(--frame-line);background:#fff;text-align:center}
+#who input:focus{outline:none;border-color:var(--go)}
+#who button{width:84px;height:84px;border-radius:50%;border:0;background:var(--go);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#who button:disabled{background:#c9c4b8;cursor:default}
 #save{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(114px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
 #save.busy{opacity:.35}
 #save.done{background:var(--go);opacity:1}
@@ -106,6 +114,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <g id="sideBadges"></g>
     <!-- gold border round whatever the teacher is pointing at (Jon 9 Nov: with four pictures the finger alone is not clear) -->
     <rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
+    <rect id="speakRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0" style="transition:opacity .12s"/>
   </g>
   <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
   <g id="tutor">
@@ -283,6 +292,13 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <button id="manualOk" title="Count as correct">✓</button>
   <button id="manualBad" title="Count as wrong">✗</button>
 </div>
+<div id="who" hidden lang="en">
+  <form id="whoForm" autocomplete="off">
+    <label for="whoName">Type your first name</label>
+    <input id="whoName" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done">
+    <button id="whoOk" type="submit" disabled aria-label="OK"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </form>
+</div>
 <div id="gender" hidden>
   <button id="gM" aria-label="homme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><rect x="30" y="34" width="36" height="52" rx="8" fill="#2b2f36"/><rect x="18" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="68" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="31" y="84" width="15" height="62" rx="6" fill="#2b2f36"/><rect x="50" y="84" width="15" height="62" rx="6" fill="#2b2f36"/></svg></button>
   <button id="gF" aria-label="femme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><path d="M38 34 h20 q6 0 8 6 l18 56 h-72 l18 -56 q2 -6 8 -6z" fill="#2b2f36"/><rect x="35" y="94" width="11" height="52" rx="5" fill="#2b2f36"/><rect x="50" y="94" width="11" height="52" rx="5" fill="#2b2f36"/></svg></button>
@@ -300,6 +316,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <div class="row"><label><input type="checkbox" id="optManual"> Manual mode (no microphone: type or tick answers)</label></div>
   <div class="row">Listening <select id="optEngine"><option value="app">In-app listener (on the phone)</option><option value="google">Chrome's online recogniser (old)</option></select></div>
   <div class="row"><label><input type="checkbox" id="optKeepAudio"> Keep the audio of each answer in the log (stays on this phone until you download the log)</label></div>
+  <div class="row">Learner's first name <input type="text" id="optName" maxlength="30" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:11em"></div>
   <div class="row">Learner's gender <select id="optGender"><option value="m">Man</option><option value="f">Woman</option></select></div>
   <div class="row">Voice <select id="optVoice"></select></div>
   <div class="row">Pause between units <input type="range" id="optPause" min="150" max="1200" step="50"> <span id="pauseVal"></span> ms</div>
@@ -335,7 +352,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-09.15";
+const APP_VERSION="2026-11-09.16";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -359,7 +376,7 @@ let READY=false;
    say: the answer's units (said as one, or in these chunks after an error); art: the article slot it must have;
    accept: how Chrome's recogniser may spell the word (fallback listener only). */
 const VOCAB = {
-  /* 9 Nov 2026 (Jon, after Helen's run): the people have the commonest French names (dev: fieldtest/gen/names.py): the
+  /* 9 Nov 2026 (Jon, after tester H's run): the people have the commonest French names (dev: fieldtest/gen/names.py): the
      teacher Marie, the model learners Pierre and Sylvie. The keys stay claire/paul/julie (they route the recorded voices). */
   paul:  {name:"Pierre", kind:"person", say:["Pierre."], accept:["pierre","pierres","pier","piere","pièrre","pierrot"]},
   julie: {name:"Sylvie", kind:"person", say:["Sylvie."], accept:["sylvie","silvie","sylvi","sylvia","silvia"]},
@@ -460,6 +477,8 @@ function genItem(it){
   const tu=unitsOf(it.teacher), ans = it.answer.includes("… ") ? it.answer.split(/(?<=…)\s+/) : [it.answer];
   const o={gen:true, id:it.id, target:keyOf(it.answer), at:it.at||"none", scene:it.scene, teacherUnits:tu, voice:it.voice||"teacher",
     answerUnits:ans, questionUnits:tu.filter(u=>!/^avec moi/i.test(u) && !/^vas-y/i.test(u) && !/^écoute/i.test(u)), hold:it.hold};
+  // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
+  if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   if(it.kind==="model") return Object.assign(o,{type:"model"});
   if(it.kind==="lead") return Object.assign(o,{type:"task", kind:"lead"});
   const t0=tu[0]||"";
@@ -828,8 +847,8 @@ async function learnerClip(text){
   if(!(url in clipBufs)) clipBufs[url]=(async()=>{ audioUnlock(); const r=await fetch(url); if(!r.ok) throw new Error("no clip "+url); return await actx.decodeAudioData(await r.arrayBuffer()); })().catch(e=>{ trace(String(e.message||e)); return null; });
   return clipBufs[url];
 }
-/* Fetch ahead the model learners' clips the course uses (what Pierre and Sylvie say in a model, and their own-name
-   answers), so each starts on time. Only clips that exist are asked for: asking for one per word of the vocabulary gave
+/* Fetch ahead the model learners' clips the course uses (what Pierre and Sylvie say in a model, the cues they say
+   themselves, and their own-name answers), so each starts on time. Only clips that exist are asked for: asking for one per word of the vocabulary gave
    fifteen "no clip" lines in every run's trace, which hid any clip that was really missing. */
 let learnerPreloaded=false;
 function preloadLearner(){
@@ -838,6 +857,7 @@ function preloadLearner(){
   const want = new Set(["paul","julie"].map(w=>say(w, ["Je m'appelle "+VOCAB[w].name+"."])));
   GEN.forEach(L=>L.exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
     if(it.type==="model" && it.voice && it.voice!=="teacher") want.add(say(it.voice, it.answerUnits));
+    if(it.cueVoice && it.questionUnits.length) want.add(say(it.cueVoice, it.questionUnits));      // a cue in a model learner's own voice
     if(it.introOnly) want.add(answerUnits(it).join(" ")); }))));        // the introduction: the model learner says it with the teacher
   want.forEach(t=>learnerClip(t));
 }
@@ -955,6 +975,37 @@ function stripEcho(toks, echoes){
     for(let i=0;i+e.length<=t.length;){ if(e.every((w,k)=>t[i+k]===w)) t.splice(i,e.length); else i++; } }
   return t.filter((w,i)=> i===0 || w!==t[i-1]);   // a stutter ("c'est c'est") counts once
 }
+/* The learner's own first name, typed once at the start of the course (Jon, 9 Nov 2026), so that "Je m'appelle Marie."
+   from a learner who is not called Marie is an error (tester H's run, 9 Nov 16:42: she called herself by the teacher's name
+   seven times and the app, knowing no name, counted each one right).
+   The listener's word list has only the course's words, so the typed name itself is never recognised (it comes out as
+   "[unk]", as another word, or as nothing): what CAN be recognised is one of the three course names said in its place.
+   But the listener also hears a course name for other names that sound like it. Measured on "Je m'appelle <name>" for
+   75 English and French first names in 10 voices (496 in which "je m'appelle" was heard): a course name came out for
+   100 of them. "marie" for Mary, Marion, Martin, Margaret, Mark, Murray (the same first sound), for Emily, Barry, Henry,
+   Terry, Chloe (the same last sound); "pierre" for Peter, Claire, Karen; "sylvie" for Sophie, Sidney, Cilla.
+   A learner whose own name could be heard as that course name is therefore never marked wrong for it. ownMaybe: the same
+   name, the same first sound, nearly the same spelling, the same last sound, or (for Pierre) an "air" sound in it. With
+   these the same 496 gave no false error. And whatever the typed name, a learner heard to say the same course name three
+   times running is believed (presentTest), the name is remembered (S.ownAlias) and the run file says so. */
+const EE = /(ie|i|y|ee|ey|ye|is|it|ix|oe|eigh|phoebe|daphne|penelope|hermione|persephone|calliope|ariadne|niamh)$/;
+const NAME_ENDS = [[EE, EE], [/(r|re)$/, /(r|re|rs|res|rd|rt)$|[ae]i?r+[aeiouy]/]];     // [the course name, the typed name]
+function firstSound(f){
+  if(/^ph/.test(f)) return "f";
+  if(/^(c[eiy]|sc[eiy]|ps)/.test(f)) return "s";
+  if(/^(ch[rl]|c[^h]|k[^n]|q)/.test(f)) return "k";
+  if(/^(g[eiy]|j)/.test(f)) return "j";
+  if(/^(kn|gn|pn)/.test(f)) return "n";
+  if(/^wr/.test(f)) return "r";
+  return f[0];
+}
+function ownMaybe(key){
+  if(!S.learnerName) return true;                                   // no name typed: nothing to check against
+  if((S.ownAlias||[]).includes(key)) return true;
+  const c=fold(VOCAB[key].name.toLowerCase());
+  return normalise(S.learnerName).split(/[ -]/).filter(Boolean).some(w=>{ const f=fold(w);
+    return f===c || VOCAB[key].accept.includes(w) || firstSound(f)===firstSound(c) || lev(f,c)<=2 || NAME_ENDS.some(([rc,rf])=>rc.test(c) && rf.test(f)); });
+}
 // judge: expected = [CEST, name] or [name]; returns {ok, reason, near}
 function judge(text, expect, echoes=[], alsoOk=[]){
   const raw=tokensOf(text);
@@ -968,7 +1019,15 @@ function judge(text, expect, echoes=[], alsoOk=[]){
       if(SLOT[e]){ if(!SLOT[e].includes(w)) return null; }
       else { const r=nameOf(w); if(!r || r.n!==e) return null; if(r.near) near.push(w); } }
     return near; };
-  for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(nr) return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
+  for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(!nr) continue;
+    if(want[want.length-1]==="REST"){      // the learner's own name comes next: a course person's name there is someone else's
+      const r=nameOf(t[want.length-1]||"");
+      if(r && !r.near && VOCAB[r.n].kind==="person" && !ownMaybe(r.n)) return {ok:false, reason:"said "+VOCAB[r.n].name+"'s name, not their own", otherName:r.n};
+    }
+    return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
+  const whole = expect.filter(x=>x!=="REST");
+  // the start of the answer and then nothing more ("Salut." for "Salut, Marie !", "un" for "un livre"): not a wrong name
+  if(t.length<whole.length && t.every((w,i)=> SLOT[whole[i]] ? SLOT[whole[i]].includes(w) : (nameOf(w)||{}).n===whole[i])) return {ok:false, reason:"only the start of the answer"};
   const target = expect.filter(x=>x!=="REST").slice(-1)[0];
   const said = t.map(nameOf).filter(Boolean).map(r=>r.n);
   if(said.some(n=>n!==target)) return {ok:false, reason:"wrong name"};
@@ -1148,15 +1207,15 @@ async function listenVosk(expect, alsoOk=[]){
   trace("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
   /* The end of the teacher's own question can reach the microphone from the speaker (echo cancellation is off: it puts
-     Android in call mode). Helen 9 Nov 16:42: it closed the turn before she began, 11 times. On the recordings that
+     Android in call mode). tester H 9 Nov 16:42: it closed the turn before she began, 11 times. On the recordings that
      sound is short (under 100 ms), far quieter than the learner (a tenth to an eighth of her voice) and gives no words.
      So: sound in the first 450 ms cannot start an answer on its own, and sound with no words in it is not an answer
      (listening goes on).
      A first word that starts within 200 ms of the microphone opening is nearly always the LEARNER, answering fast: six
-     of the seven such words in 487 recorded test answers were (Helen's "un livre" from 180 ms and "je m'appelle" from
+     of the seven such words in 487 recorded test answers were (tester H's "un livre" from 180 ms and "je m'appelle" from
      120 ms; "un" and "quatre" from 0 ms straight after "Répète : un / quatre", at the learner's own loudness; "deux" and
      "trois" from 180 ms). All six ended 330 ms or more after the microphone opened. They are never thrown away.
-     The seventh was the speaker: Helen 16:41:41, "un" from 31 to 150 ms after "Il y en a combien ?" (the last sound of
+     The seventh was the speaker: tester H 16:41:41, "un" from 31 to 150 ms after "Il y en a combien ?" (the last sound of
      "combien", loudest the instant the microphone opened and 12 dB down within 0.1 s; she had not begun). No learner's
      word is over that soon, so a first word that ENDS within 250 ms of the microphone opening is the end of the
      teacher's own cue and is not counted: listening goes on as if it had not been heard. The recogniser gives word times
@@ -1221,13 +1280,13 @@ async function listenVosk(expect, alsoOk=[]){
       // an unexpected first word and no word times yet: was it the end of the teacher's own cue? (see above)
       if(rawNow && !nFinal && rawNow.split(" ")[0]!==want.split(" ")[0]){ await askTimes(); t=textNow(); rawNow=rawAll();
         if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false; }
-      // nothing recognised in that sound: not an answer (Helen 9 Nov 16:42: the end of Claire's own question, heard from the
+      // nothing recognised in that sound: not an answer (tester H 9 Nov 16:42: the end of Claire's own question, heard from the
       // speaker, closed the turn after 0.7 s and the question was asked again before she could begin, 11 times)
       if(rawNow && longTail()){ t=textNow(); rawNow=rawAll(); }
       if(!rawNow){ trace("sound with no words at "+(Date.now()-cueEnd)+" ms: still listening"); return "reset"; }
       if(expect.includes("REST") && t && rawNow===want){
         /* Only "je m'appelle" recognised. Has the learner said their name? A name the recogniser has no word for can give
-           nothing at all, not even "[unk]" (Helen 9 Nov 16:42, two of her own-name answers; Jon 15:05:27): the turn then
+           nothing at all, not even "[unk]" (tester H 9 Nov 16:42, two of her own-name answers; Jon 15:05:27): the turn then
            stayed open 2 to 6 s after a complete answer, with no smile and no ding, so she said it all again, and soon
            said "Claire" instead, which closed at once. So: ask the recogniser where "m'appelle" ended (a final result has
            the word times) and measure the sound after it. Measured on the recordings: 500 to 570 ms of sound after
@@ -1749,6 +1808,11 @@ async function askAndListen(task, expect, think=0, alsoOk=[]){
     offering=true; pointAt("you"); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
     return listen(expect, alsoOk);
   }
+  if(task.cueVoice){                      // a model learner says the cue: the gold border on them (who it is about), the green ring while they speak
+    pointAt(task.cueAt); if(think) await sleep(think);
+    await cueAs(task.cueVoice, task.questionUnits);
+    return listen(expect, alsoOk);
+  }
   pointAt(task);                          // focus: the gold border comes on as she speaks
   if(think) await sleep(think);
   await say(task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
@@ -1761,12 +1825,40 @@ async function announce(t){
 }
 // Model (not a task)
 // who says the answer in a model: the teacher, or Paul / Julie (the model learners, in their own recorded voices)
+/* Who is speaking: the green ring round a model learner's picture while their recording plays. As a small badge beside
+   the teacher they have had it since the first lessons; as one of the pictures in the row (scenes with no objects) they
+   had none, so nothing on screen showed which of the two was talking. */
+function slotOfPerson(who){
+  if(document.getElementById("badge_"+who)) return who==="paul" ? "pL" : "pR";
+  if(curScene && curScene.row){ const i=curScene.row.findIndex(x=>(x && typeof x==="object" ? x.person : String(x).split(":")[0])===who); if(i>=0) return "s"+i; }
+  return null;
+}
+function speakLit(who, on){
+  badgeLit(who, on);
+  const g=document.getElementById("speakRing"); if(!g) return;
+  const slot = on ? slotOfPerson(who) : null, b = slot && /^s\d$/.test(slot) ? BOUNDS[slot] : null;
+  if(!b){ g.setAttribute("opacity",0); return; }
+  const m=10; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m); g.setAttribute("opacity",1);
+}
 async function sayAs(voice, units){
   if(voice==="teacher") return say(units);
-  const who = voice==="paul" ? "paul" : "julie"; badgeLit(who, true); caption("["+VOCAB[who].name+"] "+units.join(" "));
+  const who = voice==="paul" ? "paul" : "julie"; speakLit(who, true); caption("["+VOCAB[who].name+"] "+units.join(" "));
   const text = voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
   if(!(await playLearner(text))) await speakOne(units.join(" "), {group:true});
-  badgeLit(who, false); lastSpeechEnd=Date.now();
+  speakLit(who, false); lastSpeechEnd=Date.now();
+}
+/* A cue said by a model learner in their own voice (Jon's Lesson 4 run, 9 Nov 20:49: only Claire ever greeted, so the
+   name in "Salut, Claire !" never changed, did no work, and was dropped). Each of the three people now greets, and the
+   name answered is the greeter's. Like say(): the microphone is closed while it plays and the learner's turn follows at
+   once. */
+async function cueAs(voice, units){
+  if(!units.length) return;
+  const who = voice==="paul" ? "paul" : "julie";
+  stopRec(); recentSaid.push(units.join(" ")); trace("say["+VOCAB[who].name+"]: "+units.join(" · "));
+  speakLit(who, true); caption("["+VOCAB[who].name+"] "+units.join(" "));
+  const text = voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
+  if(!(await playLearner(text))){ trace("no recording of "+VOCAB[who].name+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
+  speakLit(who, false); lastSpeechEnd=Date.now();
 }
 async function presentGenModel(m){
   ph("model");
@@ -1775,7 +1867,7 @@ async function presentGenModel(m){
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
   if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
-  if(rest_.length){ await say(rest_); await sleep(m.voice==="teacher"?300:500); }
+  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_); else await say(rest_); await sleep(m.voice==="teacher"?300:500); }
   await sayAs(m.voice, m.answerUnits);
 }
 async function presentModel(m){
@@ -1893,13 +1985,23 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
     r = await askAndListen(t, expect, think);
   }
   rest();
+  /* Own name: the same course name heard three times running, from a learner whose typed name is nothing like it. The app
+     stops trusting its ears: the third is counted right, that name is never again an error for this learner, and the run
+     file carries a fault line (either the listener hears this learner's name as that word, or the learner really does
+     keep giving that name: the recordings say which). */
+  if(t.cue==="you" && r.status==="heard"){
+    if(!r.otherName) ownHeard=null;
+    else { ownHeard = ownHeard && ownHeard.n===r.otherName ? {n:r.otherName, c:ownHeard.c+1} : {n:r.otherName, c:1};
+      if(ownHeard.c>=3){ S.ownAlias=[...(S.ownAlias||[]), r.otherName]; ownHeard=null;
+        trace("FAULT OWN NAME UNSURE: \""+VOCAB[r.otherName].name+"\" heard as the learner's own name three times running (typed name \""+S.learnerName+"\"): counted right, and no longer checked for this learner");
+        r={...r, ok:true, reason:"own name heard as "+VOCAB[r.otherName].name+" three times running: believed"}; delete r.otherName; } } }
   /* The learner spoke (the recording has speech) but the recogniser returned nothing, twice: a listening fault, not the
      learner's error (Jon 9 Nov: "un" said exactly as the teacher said it, rejected every time). Not scored, not corrected:
      the teacher says the answer and the lesson goes on; the recording is kept so the listener can be trained on it. */
   if(r.status==="silence" && r.speech){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
               result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
-    save(); if(t.cue==="you") await modelOwnName(t); else { await pointAt(t); await sayAnswer(t); } rest(); return true;
+    save(); if(t.cue==="you") await modelOwnName(t); else { await pointAt(t.cueVoice ? t.cueAt : t); await sayAnswer(t); } rest(); return true;
   }
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id);
@@ -1917,8 +2019,8 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   return r.ok;
 }
 /* An own-name question ("Et toi ?") is answered for the learner by a model learner answering it about themselves, never
-   by the teacher's own sentence: "Je m'appelle Claire." given as the correction is exactly what Helen copied (9 Nov 16:42). */
-let ownNameWho = "paul";
+   by the teacher's own sentence: "Je m'appelle Claire." given as the correction is exactly what tester H copied (9 Nov 16:42). */
+let ownNameWho = "paul", ownHeard = null;
 async function modelOwnName(task){
   const who = ownNameWho; ownNameWho = who==="paul" ? "julie" : "paul";
   ph("a model learner's own name"); offering=false;
@@ -1929,7 +2031,7 @@ async function correction(task, nth){
   ph("correction "+nth);
   await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake")
   if(task.cue==="you"){ await modelOwnName(task); return; }   // a model learner answers about themselves; then the question again
-  await pointAt(task); await say(answerUnits(task));
+  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));
   if(nth>=2 && task.answerUnits.length>1){   // build from the end: the teacher says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
     ph("build from end");
@@ -1960,7 +2062,7 @@ function itemsFor(part, run, shown){
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
   if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || isNameModel(it, a[i+1]));
   // "test" (step 5 and delayed tests): the part's tests, and the model learner's own answer that comes right before an
-  // "Et toi ?" (Paul or Julie saying their own name is what shows the learner to say theirs: rule 1k; Helen 9 Nov 16:42 had
+  // "Et toi ?" (Paul or Julie saying their own name is what shows the learner to say theirs: rule 1k; tester H 9 Nov 16:42 had
   // none in the step-5 rerun and said "Je m'appelle Claire" from then on)
   return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || isNameModel(it, a[i+1]));
 }
@@ -2140,7 +2242,15 @@ function courseGrammar(expect){
   /* "je m'appelle" is in the grammar only when the answer has it: otherwise its "je" takes the start of "Julie" (Jon's
      9 Nov 16:04 run: a correct "Julie" heard as "je") */
   const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire"].includes(e));
-  const base = self ? VOSK.base : VOSK.base.filter(p=>!/m'appelle/.test(p));
+  let base = self ? VOSK.base : VOSK.base.filter(p=>!/m'appelle/.test(p));
+  /* The greetings ("salut", "salut marie"…) are in the list only from the exercise that teaches them (Lesson 4), or when
+     the answer is one. With them in, "c'est Marie / Pierre / Sylvie" was heard as "salut …" (same names, one short word
+     before): "C'est Marie." in 8 English voices, 6 of 16 right with the greetings in the list and 14 of 16 without;
+     "C'est Pierre." in 5 French voices, 8 of 10 and 10 of 10. A learner in Lessons 1 to 3 has never heard "salut". */
+  if(VOSK.greetFrom===undefined){ VOSK.greetFrom=null;
+    LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>(it.expect||[]).includes("salut"))) && (VOSK.greetFrom=[li,ei]))); }
+  const g=VOSK.greetFrom, greets = (expect||[]).includes("salut") || (g && (S.lesson>g[0] || (S.lesson===g[0] && S.ex>=g[1])));
+  if(!greets) base = base.filter(p=>!/salut/.test(p));
   return JSON.stringify([...new Set(base.concat(extra))].concat(["[unk]"]));
 }
 async function startVosk(){
@@ -2192,6 +2302,7 @@ function renderPanel(){
   const cv=currentVoice();
   $("status").innerHTML = `Version ${APP_VERSION} · Speech recognition: <b>${SR? (recogBroken? "unavailable": "available (fr-FR)") : "not supported in this browser"}</b> · Voice: <b>${cv?cv.name:"none"}</b>` + ($("status").dataset.msg? `<br>${$("status").dataset.msg}`:"");
   if(S.learnerGender) $("optGender").value=S.learnerGender;
+  if(document.activeElement!==$("optName")) $("optName").value=S.learnerName||"";
   $("optCaption").checked=S.settings.caption; $("optManual").checked=S.settings.manual;
   $("optEngine").value=S.settings.engine||"app"; $("optKeepAudio").checked=S.settings.keepAudio!==false;
   $("optPause").value=S.settings.pause; $("pauseVal").textContent=S.settings.pause;
@@ -2211,6 +2322,8 @@ $("flag").onclick=()=>{ logEntry({task:curTask, phase, result:"TESTER FLAG", hea
 $("gear").onclick=()=>{ $("panel").hidden=false; renderPanel(); };
 $("closePanel").onclick=()=>{ $("panel").hidden=true; };
 $("optGender").onchange=e=>{ S.learnerGender=e.target.value; save(); };
+$("optName").onchange=e=>{ const v=cleanName(e.target.value); if(!v){ e.target.value=S.learnerName||""; return; }      // another learner on the same phone
+  if(v!==S.learnerName){ S.learnerName=v; delete S.ownAlias; ownHeard=null; trace("learner's first name changed in the tester panel"); } save(); };
 $("optCaption").onchange=e=>{ S.settings.caption=e.target.checked; save(); };
 $("optManual").onchange=e=>{ S.settings.manual=e.target.checked; save(); };
 $("optEngine").onchange=e=>{ S.settings.engine=e.target.value; save(); };
@@ -2225,7 +2338,7 @@ $("btnJump").onclick=()=>{ const [li,ei]=$("optJump").value.split(":").map(Numbe
   logEntry({result:`JUMP to Lesson ${li+1}, Exercise ${ei+1} (tester)`, heard:[]}); save(); location.reload(); };
 $("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exercise ends, or reload the page."); const L=LESSONS[S.lesson]; delete S.finished[L.exercises[S.ex].id]; save(); $("panel").hidden=true; };
 $("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d, {afterEx:null, lessonStart:null}); await endScreen(); } finally{ running=false; } };
-$("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); };
+$("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); askWho(); };   // a new learner: name and gender are asked again
 /* Save (developer only): one file with the whole log and every recorded answer (audio linked to its log line by clip id).
    Answers are stored on the phone as they happen, so closing the app loses nothing; this writes them out. */
 async function saveRun(){
@@ -2256,8 +2369,16 @@ $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const 
 function alertish(m){ setStatus(m); }
 
 READY=true; load(); renderVoiceSelect(); renderPanel(); rest();
-// asked once, at the very start of the course, with pictures not words; changeable in settings
-if(!S.learnerGender){ $("gender").hidden=false; }
+// asked once, at the very start of the course; changeable in the tester panel. First name (typed), then gender (pictures).
+function cleanName(v){ return String(v||"").replace(/[^\p{L}\p{M}' \-]/gu," ").replace(/\s+/g," ").trim().slice(0,30); }
+function askWho(){
+  if(!S.learnerName){ $("who").hidden=false; $("whoName").value=""; $("whoOk").disabled=true; setTimeout(()=>{ try{ $("whoName").focus(); }catch(e){} }, 60); }
+  if(!S.learnerGender){ $("gender").hidden=false; }
+}
+$("whoName").oninput=e=>{ $("whoOk").disabled=!cleanName(e.target.value); };
+$("whoForm").onsubmit=e=>{ e.preventDefault(); const v=cleanName($("whoName").value); if(!v) return;
+  S.learnerName=v; delete S.ownAlias; trace("learner's first name typed"); save(); try{ $("whoName").blur(); }catch(e){} $("who").hidden=true; };
+askWho();
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
