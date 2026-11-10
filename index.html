@@ -366,7 +366,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.20";
+const APP_VERSION="2026-11-10.21";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1324,6 +1324,7 @@ function repeatedCue(text, cue){
   const pool=have.slice(); return need.every(w=>{ const i=pool.indexOf(w); if(i<0) return false; pool.splice(i,1); return true; });
 }
 let curCue="", lastRepeatedCue=false;
+let holdEar=false;
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
   const cue=curCue, either=/(^| )ou( |$)/.test(normalise(cue||""));
@@ -2056,7 +2057,7 @@ async function presentModel(m){
   curTask="model "+m.target;
   if(m.introOnly && S.introSeen) return;
   await setPortraits(m.scene);
-  if(m.gen){ if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m); rest(); return; }
+  if(m.gen){ if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m); if(holdEar) goldOff(); else rest(); return; }
   if(m.set){                                   // "Un livre… un livre." — pointing to each in turn, no question
     ph("model: several of a kind");
     await gestureEar(); await say(PHR.amoi);
@@ -2284,7 +2285,11 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       const it=items[i];
       if(prevItem) await sleep(pace());                       // a moment between one direction and the next (early lessons)
       if(it.type==="act"){ await presentAct(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
-      if(it.type==="model"){ await presentModel(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
+      /* A string of models by the teacher ("Un. Un. Un. Un."): her listening hand stays at her ear from the first to the last
+         (Jon, 10 Nov 2026: "she is holding her hand to her ear and then lowering it again, over and over again, and it's
+         distracting … she puts her hand down when the string of models is complete"). */
+      if(it.type==="model"){ const nx=items[i+1]; holdEar = !!(it.gen && it.voice==="teacher" && nx && nx.type==="model" && nx.gen && nx.voice==="teacher" && !nx.qIntro);
+        await presentModel(it); holdEar=false; shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       if(it.kind==="lead"){ await presentLead(it); prevTest=false; prevItem=it; i++; continue; }
       const firstOfItem = run==="first" && prevItem && prevItem.kind==="lead" && prevItem.target===it.target;
       const ok=await presentTest(it,{firstSeen, atoi:!prevTest, think:thinkTime(it,{prevTarget, firstOfItem})});
