@@ -11,10 +11,13 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-10.20`: Lessons 1–4, after Jon's own runs of 10 Nov (§5 item 0000, design log §14): the
-  either/or format taught on names first, gender blocks, slower pace in the early lessons, the explanation of
-  questions, "lève-toi" no longer heard as "lève trois". The next block is Lessons 5–20 (§5 item 000). One pull request
-  per version (branch `handoff-wip`, restarted from `main` after every merge).
+- **Live version:** `2026-11-10.21`: Lessons 1–4. Since .19, all from Jon's own runs of 10 Nov (§4 table, §5 item 0000,
+  design log §14): the either/or format taught on names first, gender blocks, slower pace in the early lessons, the
+  explanation of questions, "lève-toi" heard right, whole figures redrawn, the listening hand held through a string
+  of models (`holdEar`), "how many?" with nothing else on the screen (`gen/countalone.py`). Next: Lessons 5–20 (§5 item
+  000), a female "you" figure (`opts.sex`), a low-cut filter on the microphone and a spoken warning when it is swamped
+  (run 21:33: the phone lay on his chest; `/home/user/faultless23`, to be checked against every real recording).
+  One pull request per version (branch `handoff-wip`, restarted from `main` after every merge).
 - **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
   artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
   it contains DISE materials Jon owns. Nothing from it may go into the public repo except generated lesson files,
@@ -119,6 +122,8 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 10 Nov 15:36 | Jon himself (he knows no French; he met the rebuilt lesson cold), L1 on .19 | **said the question back**: "un ou une" for "Un." / "Une.", five times running (L1 Ex 2); one of the five passed as "un [unk]" | .20, course (cause C8) |
 | 10 Nov 16:06 | Jon, rest of L1 | 66 of 66 right (28 of them "Un ou une ?"); Exercise 2 had been jumped over, and the lesson could then never end | .20 |
 | 10 Nov 16:36 | Jon, L2 on .19 | **"Lève-toi", said right, heard as "lève trois" 14 times in 16** and marked wrong (seven-trial limit reached); the stand-up box also showed sitting down; whole figures look barrel-chested | .20 (listener, animation, lesson), figures: artist |
+| 10 Nov 21:11 | Jon, rest of L2 on .20 | 46 of 47 right; **"Trois." for two shoes** shown beside one pen (three things on the screen; the question does not say what to count) | .21, course (cause C10: `gen/countalone.py`) |
+| 10 Nov 21:33 | Jon, start of L3 on .20 | no learner error: the phone lay on his chest and a low rumble (heartbeat, breathing; 99 % of the energy under 300 Hz, at full scale) drowned his voice; one "Lève-toi" came out as "trois" and was marked wrong | next: low-cut filter, spoken warning |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.
