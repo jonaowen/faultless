@@ -42,6 +42,17 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 #play button{width:128px;height:128px;border-radius:50%;border:0;background:var(--go);box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #play button svg{width:56px;height:56px;margin-left:8px}
 #play[hidden]{display:none}
+/* Which lesson (Jon, 10 Nov 2026): learners are advised to do one lesson a day, so they must see which lesson they are on
+   and when the day's lesson is done. Large on every start screen; small in the corner while the lesson runs. */
+#lessonHead{text-align:center;font:700 34px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
+#lessonHead small{display:block;margin-top:8px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:320px}
+#lessonHead .ok{color:var(--go)}
+#play.dayDone button{width:84px;height:84px;background:#8a9099;box-shadow:none}
+#play.dayDone button svg{width:36px;height:36px;margin-left:5px}
+#play.dayDone #howtoBox{display:none}
+#playNext{font:500 16px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#6b7079;margin-top:-16px}
+#playNext:empty{display:none}
+#lessonTag{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));left:calc(18px + env(safe-area-inset-left,0px));z-index:20;height:40px;display:flex;align-items:center;font:600 16px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#6b7079}
 #playBtn.loading{background:conic-gradient(var(--go) calc(var(--p,0)*360deg), #c9c4b8 0);opacity:.85;cursor:progress}
 #playBtn.loading svg{opacity:.5}
 #gender{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:28px;z-index:35;background:var(--bg)}
@@ -111,6 +122,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
       <g class="fade" id="slotR"></g>
     </g>
     <g id="frameRow" class="fade" opacity="0"></g>
+    <g id="actBox" opacity="0"></g>
     <g id="sideBadges"></g>
     <!-- gold border round whatever the teacher is pointing at (Jon 9 Nov: with four pictures the finger alone is not clear) -->
     <rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
@@ -303,7 +315,8 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <button id="gM" aria-label="homme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><rect x="30" y="34" width="36" height="52" rx="8" fill="#2b2f36"/><rect x="18" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="68" y="34" width="10" height="46" rx="5" fill="#2b2f36"/><rect x="31" y="84" width="15" height="62" rx="6" fill="#2b2f36"/><rect x="50" y="84" width="15" height="62" rx="6" fill="#2b2f36"/></svg></button>
   <button id="gF" aria-label="femme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><path d="M38 34 h20 q6 0 8 6 l18 56 h-72 l18 -56 q2 -6 8 -6z" fill="#2b2f36"/><rect x="35" y="94" width="11" height="52" rx="5" fill="#2b2f36"/><rect x="50" y="94" width="11" height="52" rx="5" fill="#2b2f36"/></svg></button>
 </div>
-<div id="play"><div id="howtoBox" lang="en"><div class="howto before"><span class="ph" aria-hidden="true"></span><span>Watch how the learner only responds when the border of their device turns green.</span></div><div class="howto before"><span class="ph red" aria-hidden="true"></span><span>When the border is red, they don't respond.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 12h6l8-7v24l-8-7H4z" fill="#2b2f36"/><path d="M22 11c2.5 3 2.5 9 0 12M26 7c5 5 5 15 0 20" stroke="#2b2f36" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span>Speak clearly and loudly.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><rect x="7" y="17" width="20" height="8" rx="2" fill="none" stroke="#2b2f36" stroke-width="2.4"/><path d="M2 28h30" stroke="#2b2f36" stroke-width="2.6" stroke-linecap="round"/><path d="M19 4l-2 9M14 7l3 6 4-4" stroke="#2b2f36" stroke-width="0" fill="none"/><path d="M10 5l14 9M24 5L10 14" stroke="#b3261e" stroke-width="2.6" stroke-linecap="round"/></svg><span>Put your phone on a flat surface and don't touch it or its microphone during the lesson.</span></div></div><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button></div>
+<div id="lessonTag" lang="en"></div>
+<div id="play"><div id="lessonHead" lang="en"></div><div id="howtoBox" lang="en"><div class="howto before"><span class="ph" aria-hidden="true"></span><span>Watch how the learner only responds when the border of their device turns green.</span></div><div class="howto before"><span class="ph red" aria-hidden="true"></span><span>When the border is red, they don't respond.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 12h6l8-7v24l-8-7H4z" fill="#2b2f36"/><path d="M22 11c2.5 3 2.5 9 0 12M26 7c5 5 5 15 0 20" stroke="#2b2f36" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span>Speak clearly and loudly.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><rect x="7" y="17" width="20" height="8" rx="2" fill="none" stroke="#2b2f36" stroke-width="2.4"/><path d="M2 28h30" stroke="#2b2f36" stroke-width="2.6" stroke-linecap="round"/><path d="M19 4l-2 9M14 7l3 6 4-4" stroke="#2b2f36" stroke-width="0" fill="none"/><path d="M10 5l14 9M24 5L10 14" stroke="#b3261e" stroke-width="2.6" stroke-linecap="round"/></svg><span>Put your phone on a flat surface and don't touch it or its microphone during the lesson.</span></div></div><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button><div id="playNext" lang="en"></div></div>
 <button id="save" aria-label="Save run (developer)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z" fill="none" stroke="#6b7079" stroke-width="2" stroke-linejoin="round"/><path d="M8 3v6h8V3M8 21v-7h8v7" fill="none" stroke="#6b7079" stroke-width="2"/></svg></button>
 <button id="flag" aria-label="Tester flag"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 22V3h11l-1.5 4L16 11H7v11z" fill="#6b7079"/></svg></button>
 <button id="gear" aria-label="Tester panel"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#6b7079" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.4l1.9 1.5-2 3.4-2.3-.9c-.6.5-1.2.8-1.9 1.1l-.3 2.4h-4l-.3-2.4c-.7-.3-1.3-.6-1.9-1.1l-2.3.9-2-3.4 1.9-1.5a7 7 0 010-2.2L1.6 8.6l2-3.4 2.3.9c.6-.5 1.2-.8 1.9-1.1L8.1 2.6h4l.3 2.4c.7.3 1.3.6 1.9 1.1l2.3-.9 2 3.4-1.9 1.5a7 7 0 010 2.2z"/></svg></button>
@@ -353,7 +366,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.18";
+const APP_VERSION="2026-11-10.19";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -420,6 +433,21 @@ const VOCAB = {
   mange: {name:"mange", kind:"word", say:[], accept:["mange","manges","mangent"]},
   dort: {name:"dort", kind:"word", say:[], accept:["dort","dors","dorent"]},
   boit: {name:"boit", kind:"word", say:[], accept:["boit","bois"]},
+  /* Actions (10 Nov 2026; Jon: "you needn't shy away from having actions just because the app can't check the actions"):
+     the commands are words the learner SAYS in "Répète" steps and in "Je danse." / "Tu danses."; one spoken form serves the
+     command and je / tu / il. Doing them is an item of its own (presentAct), with nothing to judge. */
+  danse: {name:"danse", kind:"word", say:["Danse."], accept:["danse","danses","dansent","dance"]},
+  saute: {name:"saute", kind:"word", say:["Saute."], accept:["saute","sautes","sautent","sot","sotte"]},
+  souris: {name:"souris", kind:"word", say:["Souris."], accept:["souris","sourit","sourie"]},
+  marche: {name:"marche", kind:"word", say:["Marche."], accept:["marche","marches","marchent"]},
+  levetoi: {name:"lève toi", kind:"phrase", say:["Lève-toi."], accept:["levetoi"]},
+  assiedstoi: {name:"assieds toi", kind:"phrase", say:["Assieds-toi."], accept:["assiedstoi"]},
+  fr_leve: {name:"lève", kind:"frag", say:["Lève."], gram:["lève","lèves","lèvent"], accept:["lève","lèves","lèvent","leve"]},
+  fr_toi: {name:"toi", kind:"frag", say:["Toi."], gram:["toi","toit"], accept:["toi","toit","toits"]},
+  fr_assieds: {name:"assieds", kind:"frag", say:["Assieds."], gram:["assieds","assied","assis"], accept:["assieds","assied","assis","assise"]},
+  fr_ris: {name:"ris", kind:"frag", say:["Ris."], gram:["ris","rit","riz"], accept:["ris","rit","riz","rie"]},
+  tappelles: {name:"t'appelles", kind:"phrase", say:["T'appelles."], accept:["t'appelles","tappelles","t'appelle","appelles","t appelles","appelle"]},
+  tutappelles: {name:"tu t'appelles", kind:"phrase", say:["Tu t'appelles…"], accept:["tutappelles"]},
   // "il y en a": one unit, like "je m'appelle" (tokensOf joins it)
   ilyena: {name:"il y en a", kind:"phrase", say:["Il y en a…"], accept:["ilyena"]},
   fr_ange: {name:"ange", kind:"frag", say:["Ange."], gram:["ange","anges","en","an"], accept:["ange","anges","hange","anche"]},        // the end of "mange"
@@ -433,8 +461,9 @@ const CEST = ["c'est","cest","s'est","ses","ces","sait","sais","sai","cet","c'",
 const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener writes for a short "un" once "il y en a" is in its list (a real answer, 9 Nov 16:41; 2 of 16 English synthetic voices) */ UNE:["une","1","eune","üne"],
   // Lessons 5-10: the small word in front carries the person ("il" and "elle" are judged exactly), yes and no, "ça va"
   IL:["il","ils","île"], ELLE:["elle","elles","el","aile","ailes"], OUI:["oui","ouais","ouï","ouie"], NON:["non","nom","nan"],
-  CA:["ça","ca","sa","ç'a"], VA:["va","vas","vat"] };
-const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va" };
+  CA:["ça","ca","sa","ç'a"], VA:["va","vas","vat"],
+  JE:["je","j'","jeu","jeux"], TU:["tu","tue","tus","t'"] };
+const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
 /* Script structure (NIFDI part-firming handout):
@@ -501,6 +530,7 @@ function genItem(it){
     answerUnits:ans, questionUnits:tu.filter(u=>!/^avec moi/i.test(u) && !/^vas-y/i.test(u) && !/^écoute/i.test(u)), hold:it.hold};
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
+  if(it.kind==="show" || it.kind==="do") return Object.assign(o,{type:"act", kind:it.kind, act:it.act, target:it.kind+" "+it.act});
   if(it.kind==="model") return Object.assign(o,{type:"model"});
   if(it.kind==="lead") return Object.assign(o,{type:"task", kind:"lead"});
   const t0=tu[0]||"";
@@ -598,7 +628,7 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    interrupted exercise (never mid-task).
    ============================================================ */
 const KEY="frDI.v1";
-const defaults = () => ({stateVer:11, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -606,7 +636,7 @@ const SESSION = {start:new Date().toISOString(), clips:[]};
 function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON.parse(raw); S=Object.assign(defaults(), s); S.settings=Object.assign(defaults().settings, s.settings||{});
   // version 2 of the saved state: scores from before 2026-11-07.5 came from listening faults, so progress restarts; the log is kept
   // version 8 (DISE formats: model, lead, Répète; pointing; then the question): progress and the introduction start again
-  if(!s.stateVer || s.stateVer<11){    /* 11: the lessons were re-sequenced at DISE's rate (.18); a place saved in the old lessons means nothing in the new */  Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, stateVer:11});
+  if(!s.stateVer || s.stateVer<12){    /* 11: the lessons were re-sequenced at DISE's rate (.18). 12: Lessons 1-4 rebuilt exercise for exercise, with actions (.19). A place saved in the old lessons means nothing in the new */  Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, doneDay:null, stateVer:12});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
   } }catch(e){} }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
@@ -854,7 +884,7 @@ async function playTeacher(text, onStart){
     setTimeout(()=>{ onStart&&onStart(); }, 30+lat);
   });
 }
-/* The introduction's narrator: English, a different voice from the teacher, never moving the teacher's mouth. */
+/* The introduction's narrator: English (a standard southern English voice: Jon, 10 Nov 2026), a different voice from the teacher, never moving the teacher's mouth. */
 const NARR={}; 
 async function narrate(key){
   audioUnlock(); trace("narrator: "+key);
@@ -988,6 +1018,8 @@ function nameOf(w){
 const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
+  n = n.replace(/(^| )tu t'? ?app?ell?es?(?= |$)/g, "$1tutappelles");                             // tu t'appelles (said to the teacher about her)
+  n = n.replace(/(^| )l[èe]ves?[- ]toi(?= |$)/g, "$1levetoi").replace(/(^| )ass(?:ieds?|is|ois)[- ]toi(?= |$)/g, "$1assiedstoi");
   n = n.replace(/(^| )([1-9]{2,7})(?= |$)/g, (m,a,d)=>a+d.split("").join(" "));                    // "1234" = un, deux, trois, quatre
   n = n.replace(/(^| )(?:il )?y ?'?en a(?= |$)/g, "$1ilyena");                                     // il y en a ("y en a cinq": the "il" is dropped in everyday speech and by the listener; 8 of 32 synthetic voices)
   /* "il" and "elle" straight before a verb, as the listener writes them for English speakers. Its word list has "y",
@@ -1002,6 +1034,7 @@ function tokensOf(text){
      un/une is "c'est"; after "quatre" it is the end of that word; alone it counts as "sept" (VOCAB n7). */
   n = n.replace(/(^| )ça (?=(?:un|une)(?: |$))/g, "$1c'est ");
   n = n.replace(/(^| )quatre ça(?= |$)/g, "$1quatre");
+  n = n.replace(/(^| )c'est oui(?= |$)/g, "$1souris");            // "souris" from English voices: "c'est oui" 6 of 16 (10 Nov 2026); nobody says "c'est oui"
   /* From the replay of the real recordings on the Lesson 4 word list (10 Nov 2026; 7 of 350 answers that .17 accepted were
      refused): Jon's "une chaussure" came out as "une ça chaussure" three times and as "il chaussure" once. A "ça" in the
      middle of an answer, not followed by "va" (and not after "six", where it is "sept"), is not a word anyone said. "Il" or
@@ -1080,6 +1113,14 @@ function judge(text, expect, echoes=[], alsoOk=[]){
   if(whole.length>=2 && t.length===whole.length){
     const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (nameOf(w)||{}).n===e;
     const bad = whole.map((e,i)=>[e,t[i]]).filter(([e,w])=>!fitsAt(e,w));
+    /* je / tu: the listener cannot yet be trusted to tell them apart. Synthetic voices, 10 Nov 2026: "je marche" came out as
+       "tu marches" for 9 of 16 English voices and "tu souris" as "je souris" for 6 of 16 French ones. Refusing a right
+       answer on the very contrast being taught would teach the opposite, so when the verb is right and the only mismatch
+       is je for tu or tu for je, the answer is accepted and the run file says so (FAULT PERSON UNSURE): the recording is
+       kept, and the run doctor's re-listening decides what was said. To be removed when real recordings show the
+       listener can be trusted here. */
+    if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU"))      // whatever short word was heard in its place ("un danses", "pomme danses": 4 of 16 English voices)
+      return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+bad[0][1]+"\" where \""+SLOT_WORD[bad[0][0]]+"\" was expected; accepted, not judged on the person", unsure:"person"};
     if(bad.length && bad.length<whole.length && !bad.some(([e])=>VOCAB[e] && VOCAB[e].kind==="person"))
       return {ok:false, reason:"said "+bad.map(([e,w])=>"\""+w+"\" for \""+(SLOT_WORD[e]||(VOCAB[e]?VOCAB[e].name:e))+"\"").join(", ")};
   }
@@ -1636,7 +1677,7 @@ function setSideBadges(side){
 }
 function badgeLit(who, on){ const r=document.querySelector("#badge_"+who+" .ring"); if(r) r.setAttribute("opacity", on?1:0); }
 async function setPortraits(sc){
-  sc=sceneOf(sc); if(!sc) return; const key=(sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.claireTag===false?"|notag":"");
+  sc=sceneOf(sc); if(!sc) return; const key=(sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.claireTag===false?"|notag":"")+(sc.teacherDoing?"|T:"+sc.teacherDoing:"")+(sc.learnerDoing?"|Y:"+sc.learnerDoing:"");
   if(key===curSceneKey) return;
   const first = curSceneKey===null;
   goldOff(); lastPoint=null;
@@ -1646,6 +1687,7 @@ async function setPortraits(sc){
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
   { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
+  if(sc.teacherDoing) actBox("marie", sc.teacherDoing); else if(sc.learnerDoing) actBox("you", sc.learnerDoing); else actBox(null);
   curScene=sc; curSceneKey=key;
 
 }
@@ -1940,6 +1982,39 @@ async function presentGenModel(m){
   if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_); else await say(rest_); await sleep(m.voice==="teacher"?300:500); }
   await sayAs(m.voice, m.answerUnits);
 }
+/* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
+   for, a box could come up showing an animation of the user doing the action with the label 'You:' above it. The user will
+   then figure out what they're supposed to do. The app will always assume the user did it correctly and give them a fair time
+   to do the action."
+   show: the teacher says the command and does it (box "Marie:"). do: she says it, the border goes green, the "You:" box
+   comes up (animated the first ACT_SHOWN times each action is asked for, then a still picture), the app waits ACT_TIME and
+   goes on with the ding of a right answer. Nothing is listened for. */
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:2600};
+function actBox(who, act, still){
+  const g=document.getElementById("actBox"); if(!g) return;
+  if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); return; }
+  const label = who==="you" ? "You:" : VOCAB.claire.name+":";
+  g.innerHTML=`<text x="200" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
+    <g transform="translate(120,24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="${who==="you"?"var(--go)":"var(--frame-line)"}" stroke-width="${who==="you"?4:2}"/><g id="actPic"></g></g>`;
+  try{ if(window.PICS && PICS.action) document.getElementById("actPic").appendChild(PICS.action(act, who==="you"?"you":"marie", {still:!!still})); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
+  g.setAttribute("opacity",1);
+}
+async function presentAct(a){
+  curTask=a.kind+" "+a.act; ph("action: "+(a.kind==="show"?"the teacher does it":"the learner does it")+" ("+a.act+")");
+  await setPortraits(a.scene); actBox(null);
+  const cmd=a.teacherUnits||[];
+  if(a.kind==="show"){
+    gestureEar(); await pointAt("self"); if(cmd.length) await say(cmd);
+    actBox("marie", a.act); await sleep(ACT_TIME[a.act]||3000); actBox(null); rest(); return;
+  }
+  offering=true; await pointAt("you"); if(cmd.length) await say(cmd);
+  S.actSeen=S.actSeen||{}; const seen=S.actSeen[a.act]||0;
+  signal(true); trace("your turn to do: "+a.act+(seen<ACT_SHOWN?" (shown)":" (still picture)"));
+  actBox("you", a.act, seen>=ACT_SHOWN);
+  await sleep(ACT_TIME[a.act]||3000);
+  S.actSeen[a.act]=seen+1; signal(false); actBox(null);
+  await ding(); rest();
+}
 async function presentModel(m){
   curTask="model "+m.target;
   if(m.introOnly && S.introSeen) return;
@@ -1972,14 +2047,14 @@ async function presentModel(m){
 }
 /* The introduction (Jon, 8 November 2026, after testing with his family): a narrated demo in English of what the learner
    does, shown by the on-screen learner, in the formats of the exercise that follows. Red border: listen only. "Avec moi":
-   say it at the same time as the teacher (shown three times: the most confusing part for testers). "Répète": say it once,
+   say it at the same time as the teacher (shown twice. It was three times, as the most confusing part for testers; Jon, 10 Nov 2026: "That's too much. It should only be 2"). "Répète": say it once,
    alone. "Vas-y" and the teacher points: say the name. Last: the learner only speaks when the border is green. */
 async function presentIntro(m){
   ph("introduction"); await setScene("class");
   await narrate("watch");
   await narrate("red");
   await gestureEar(); await say(PHR.amoi); await pointAt(m); await sleep(250); await multipleModels(m, 3, true); rest(); await sleep(400);
-  for(let k=0;k<3;k++){
+  for(let k=0;k<2;k++){
     if(k===0){ await narrate("avec_a"); await gestureLead(); await say(PHR.avecmoi); rest(); await sleep(200); await narrate("avec_b"); }
     else await narrate("again");
     ph("introduction: lead "+(k+1));
@@ -2125,16 +2200,19 @@ function scheduleDelayed(part, anchor){
   save();
 }
 // a model learner (Paul, Julie) answering about themselves right before the learner is asked the same about themselves
+// an action the learner is asked to do straight before being asked what they are doing ("Danse." then "Tu fais quoi ?"):
+// it goes with that question whenever the question is asked again
+const isActBefore = (it, next) => it && it.type==="act" && it.kind==="do" && next && next.type==="task" && next.scene && next.scene.learnerDoing;
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
   if(run==="first")  return part.items;                                            // models, leads and tests
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
-  if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || isNameModel(it, a[i+1]));
+  if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]));
   // "test" (step 5 and delayed tests): the part's tests, and the model learner's own answer that comes right before an
   // "Et toi ?" (Paul or Julie saying their own name is what shows the learner to say theirs: rule 1k; tester H 9 Nov 16:42 had
   // none in the step-5 rerun and said "Je m'appelle Claire" from then on)
-  return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || isNameModel(it, a[i+1]));
+  return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]));
 }
 const TRIAL_LIMIT = 7;
 const PART_REPEATS = 4;    // a part is gone through again at most this many times after errors; then its delayed tests take over     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
@@ -2161,6 +2239,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
     let i=0, prevTest=false, prevTarget=null, prevItem=null;
     while(i<items.length){
       const it=items[i];
+      if(it.type==="act"){ await presentAct(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       if(it.type==="model"){ await presentModel(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       if(it.kind==="lead"){ await presentLead(it); prevTest=false; prevItem=it; i++; continue; }
       const firstOfItem = run==="first" && prevItem && prevItem.kind==="lead" && prevItem.target===it.target;
@@ -2259,6 +2338,7 @@ async function endScreen(){
   await ding(true);
   await sleep(1200);
   document.getElementById("tick").style.opacity=0;
+  S.doneDay=dayKey(); save(); trace("lesson finished: Lesson "+(S.lesson+1));
   showPlay(true);
 }
 
@@ -2266,7 +2346,24 @@ async function endScreen(){
    START / RESUME
    ============================================================ */
 let running=false;
-function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); el.hidden=!on; }
+function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); if(on) lessonHead(afterDemo); el.hidden=!on; }
+/* The start screen says which lesson this is. When the lesson was finished today it says so, and that the next lesson is for
+   tomorrow (one lesson a day: what was learned has to fade a little before it is practised again); the button is still
+   there, smaller and grey, for anyone who has to go on. On a later day the same state shows the next lesson's number. */
+const dayKey=()=>{ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); };
+function lessonHead(afterDemo){
+  const h=document.getElementById("lessonHead"), nx=document.getElementById("playNext"), el=document.getElementById("play");
+  const L=LESSONS[S.lesson], n=S.lesson+1, done=L.exercises.every(e=>S.finished[e.id]), more=n<LESSONS.length;
+  const today=done && S.doneDay===dayKey();
+  el.classList.toggle("dayDone", today && !afterDemo); nx.textContent="";
+  if(afterDemo || !done){ const started=!afterDemo && (S.ex>0 || !!S.finished[L.exercises[0].id]);
+    h.innerHTML="Lesson "+n+(started? "<small>Carry on from where you stopped.</small>":""); }
+  else if(today){ h.innerHTML='<span class="ok">Lesson '+n+" finished</span><small>"+(more? "That is today's lesson done. Come back tomorrow for Lesson "+(n+1)+".":"That is the last lesson there is so far.")+"</small>";
+    nx.textContent = more? "Lesson "+(n+1) : "Lesson "+n+" again"; }
+  else h.innerHTML = more? "Lesson "+(n+1) : "Lesson "+n+"<small>This is the last lesson there is so far. You can do it again.</small>";
+  lessonTag(done && !today && more? n+1 : n);
+}
+function lessonTag(n){ document.getElementById("lessonTag").textContent="Lesson "+(n||S.lesson+1); }
 let playWaiter=null;
 function afterDemoScreen(){ rest(); showPlay(true, true); return new Promise(r=>{ playWaiter=r; }); }
 /* The listener model is downloaded when the page opens (once; then it is kept on the phone).
@@ -2306,11 +2403,16 @@ function courseGrammar(expect){
       const u=norm((it.answerUnits||[]).join(" ")); if(!u || frag.has(u)) return; at(u,[li,ei]); }))));
     // a count ("un, deux, … cinq") is reached when its last number is
     for(const k of Object.keys(VOCAB)) if(VOCAB[k].seq && !keyAt[k]){ const last=keyAt[VOCAB[k].seq[VOCAB[k].seq.length-1]]; if(last) keyAt[k]=last; }
-    for(const k of Object.keys(VOCAB)) if(!["frag","phrase"].includes(VOCAB[k].kind)) for(const u of VOCAB[k].say) at(norm(u), keyAt[k]||[0,0]);
+    /* Only words the loaded lessons ask for (10 Nov 2026). Until now every word in VOCAB was in the list from the first
+       lesson, used or not: with "sept" in the list and no lesson using it, "saute" came out as "sept" (synthetic voices,
+       and the teacher's own recording until it was lengthened). */
+    for(const k of Object.keys(VOCAB)) if(!["frag","phrase"].includes(VOCAB[k].kind) && keyAt[k]) for(const u of VOCAB[k].say) at(norm(u), keyAt[k]);
     const nouns=Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="object");
     for(const [p,pos] of [...P]){ const w=p.split(" "); if(w.length<=2) w.forEach(x=>at(x,pos)); }
-    for(const k of nouns){ const n=VOCAB[k].name.toLowerCase(), pos=keyAt[k]||[0,0]; at(n,pos); at("un "+n,pos); at("une "+n,pos); }      // the other article with every noun
-    at("c'est",[0,0]); P.delete(""); P.delete("je"); P.delete("m'appelle"); at("je m'appelle",[0,0]); at("m'appelle",[0,0]);
+    for(const k of nouns){ if(!keyAt[k]) continue; const n=VOCAB[k].name.toLowerCase(), pos=keyAt[k]; at(n,pos); at("un "+n,pos); at("une "+n,pos); }      // the other article with every noun
+    { let cpos=null; LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>it.kind==="test" && (it.expect||[]).includes("CEST"))) && (cpos=[li,ei])));
+      P.delete("c'est"); at("c'est", cpos||[0,0]); }       // "c'est" enters with its first sentence, not before
+    P.delete(""); P.delete("je"); P.delete("m'appelle"); at("je m'appelle",[0,0]); at("m'appelle",[0,0]);
     VOSK.base=[...P.keys()].sort(); VOSK.from=P;
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
@@ -2366,6 +2468,7 @@ document.getElementById("playBtn").onclick=async ()=>{
     else { lesson.exercises.forEach(e=>delete S.finished[e.id]); S.ex=0; }        // the last lesson there is: replay it
     save();
   }
+  lessonTag();
   try{ await main(); } finally { running=false; }
 };
 
@@ -2453,7 +2556,7 @@ $("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise
 $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const n=await saveRun(); b.classList.remove("busy"); b.classList.add("done"); setTimeout(()=>b.classList.remove("done"),1500); };
 function alertish(m){ setStatus(m); }
 
-READY=true; load(); renderVoiceSelect(); renderPanel(); rest();
+READY=true; load(); renderVoiceSelect(); renderPanel(); rest(); lessonHead(false);
 // asked once, at the very start of the course; changeable in the tester panel. First name (typed), then gender (pictures).
 function cleanName(v){ return String(v||"").replace(/[^\p{L}\p{M}' \-]/gu," ").replace(/\s+/g," ").trim().slice(0,30); }
 function askWho(){

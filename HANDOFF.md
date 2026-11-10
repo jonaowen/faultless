@@ -11,7 +11,8 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-10.18`, Lessons 1–4 **at DISE's rate of introduction** (they hold what Lessons 1–11 held up to .17). Versions .9 to .18 shipped on 9–10 Nov, one pull request each
+- **Live version:** `2026-11-10.19`: Lessons 1–4 **rebuilt exercise for exercise from DISE, with actions** (§5 item
+  00). The next block is Lessons 5–20 (§5 item 000). Versions .9 to .19 shipped on 9–10 Nov, one pull request each
   (branch `handoff-wip`, restarted from `main` after every merge).
 - **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
   artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
@@ -192,6 +193,46 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
 
 ## 5. Next steps
 
+000. **THE FIRST 20-LESSON BLOCK (Jon, 10 Nov, after .19's plan): "Usually DI programmes are field tested in 20-lesson
+   blocks. So build the first 20 lessons, then I'll work through them, providing feedback after each session."** He
+   does one lesson a day (spacing). Shipped in stages: .19 = Lessons 1–4; then 5–10, 11–15, 16–20.
+   - Plan, exercise by exercise against DISE for Lessons 5–10, and the content of 11–20:
+     `dev/docs/Lessons 5-20, the first field-test block.md`. Content and order from the skill map
+     (`dev/analysis/skillmap/items.py`); rate and exercise counts from DISE (5–10: 15, 17, 17, 19, 17, 16).
+   - My exercise record of DISE stops at Lesson 10. Jon was asked (10 Nov) for the Lesson 11–20 presentation-book
+     pages; without them 11–20 are laid out from the Teacher's Guide tracks at 17 exercises each.
+   - Open with Jon: the "was doing" past (je dansais) at Lesson 9 by do-then-stop, the "did" past not until 38.
+   - Generator for 5–10: `gen/v5_05_10.py` (written by a helper from the plan; check `reports/v5_05_10_needs.md` for
+     what the app must support). Then: `appconv/convert.py`, pictures (`people.js`), recordings (`dev/voice`), the
+     word list, and the tests of §4, as for .19.
+   - Also in .19: the introduction's narrator is Piper `en_GB-cori-medium` (Jon: the first one was Irish; "a neutral,
+     standard English voice"); `dev/voice/make_narrator.py` re-records every line and keeps only takes Whisper hears
+     word for word. "Avec moi" is demonstrated twice, not three times (Jon). **Which lesson** (Jon: learners do one
+     lesson a day and must know when the day's lesson is done): `lessonHead()` puts "Lesson N" on every start screen,
+     "Lesson N finished. That is today's lesson done. Come back tomorrow for Lesson N+1." when the lesson was finished
+     today (`S.doneDay`; the button stays, smaller and grey), and a small "Lesson N" in the corner while the lesson
+     runs. Saved state version 12 (places in the .18 lessons are reset; the introduction plays again).
+00. **REBUILD OF LESSONS 1–4 (Jon, 10 Nov, after seeing .18's plan; this comes before everything below).** His rulings:
+   Lessons 1–4 are fixed first; a Faultless lesson matches the DISE lesson of the same number in content and in number
+   of exercises (9, 11, 14, 16), whatever the length; practice is spaced over the following lessons, not bulked in one
+   sitting; **actions are in** (the app assumes the learner does them: a "You:" box with an animation the first several
+   times, a fair time, then on); the rules about where a learner errs come from the causes of REAL errors, not from the
+   simulated learner. Plan and French choices: `dev/docs/Lessons 1-4 rebuilt from DISE, exercise for exercise.md`.
+   - Generator: `gen/v5_dise.py` (`FF_RATE=dise5 FF_OUT=../course_dise5 python3 build.py`): 50 exercises, 853 tasks, no
+     findings. New task kinds `show` (the teacher does the action) and `do` (the learner does it). Actions: Danse, Saute,
+     Souris, Lève-toi, Assieds-toi, Marche. "I am a student / you are a teacher" is Je m'appelle … / Tu t'appelles Marie
+     (cue "Et moi ?"; Pierre and Sylvie ask it too, so the name varies).
+   - `gen/causes.py <course.json> [n]`: where the cause of each real error recurs (C1 front word before noun, C2 answer
+     about oneself shown only by the teacher, C3 form carry-over, C4 a part that never varies, C6 answer not on screen,
+     C7 taught then not asked). `gen/spacing.py`: share of each item's practice in its first lesson and after.
+   - **Shipped as .19** from `/home/user/faultless20` (copies: `dev/appwork/index.19.html`, `people.19.js`): converter and
+     `index.html` handle show/do (`presentAct`, `actBox`), the new words, `PICS.action` (animated figures,
+     `people.js`). Tests on the exact files: whole-lesson run 449/449, no faults; `selfjudge.js` 449 own answers
+     accepted, 0 of 11,924 other answers accepted (27 je/tu answers accepted and flagged); replay of 348 real
+     recordings, no verdict changed. **Not checked by a person:** the new recordings and the narrator; the new words
+     have never been said to the app by a real voice. **je / tu are not judged** (`FAULT PERSON UNSURE` in the trace:
+     the listener cannot tell them apart on synthetic voices; remove the rule when real recordings show it can).
+   - .18 was the interim (old exercises re-packed four to a lesson; no actions).
 0. **The re-sequence at DISE's rate (Jon, 10 Nov; rule 1u in `fieldtest/formats.md`, `design_log.md` §13).** Jon: our
    Lessons 1–4 taught a small fraction of what DISE's teach; the rate of introduction must match DISE's. Cause: two
    new-material exercises a lesson from Lesson 1, then each lesson filled to DISE's exercise count with reviews.

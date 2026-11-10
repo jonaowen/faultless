@@ -13,6 +13,11 @@
      PICS.fingers(n)           a hand (two hands from 6) holding up n fingers (to 10), in the style of fingerCard()
      PICS.dog(spec)            a dog: looks grey / golden / brown / black / white / spotted, puppy, big, small, running,
                                sitting, lying down; spec.doing "sleeping" | "eating"; spec.count > 1 lays several out
+     PICS.action(act, who, opts)   an action shown in a loop: act "dance" | "jump" | "smile" | "stand up" | "sit down" | "walk";
+                               who "you" (the learner: a neutral adult, no name tag) | "marie" (the teacher) | "paul" | "julie";
+                               opts.still = true: one frozen frame; opts.name: the text of the name tag; opts.looks: as for a person.
+                               PICS.person({person: "paul" | "julie", doing: "dancing" | "jumping" | "smiling" | "standing up" |
+                               "sitting down" | "walking"}) gives the same (spec.still = true for the frozen frame)
      PICS.car(spec)            a car: looks red / black / green / blue, old, sports, small; spec.count > 1 lays several out
         (for a person, spec.doing may also be "drinking": a glass of water at the mouth, or "walking": a whole figure
         in mid-stride; looks may be written "in a coat", "with a hat", "wearing glasses")
@@ -127,7 +132,13 @@ const doingOf = spec => String(spec && spec.doing || "").toLowerCase().split(/[ 
 function traits(spec, variant){
   const looks = (spec.looks || []).map(lookName).filter(x => x !== "in a row" && x !== "a row"), L = {}; looks.forEach(x => L[x] = 1);
   let c;
-  if (spec.person){
+  if (spec.person === "marie" || spec.person === "you"){
+    const M = spec.person === "marie";                     // Marie: the tutor of index.html (her skin, hair and jumper); you: a neutral adult
+    c = { named: spec.person, kind: M ? "woman" : "man", skin: M ? ["#f3cfae", "#e8b892", "#cf9873"] : SKIN.tan, hair: M ? ["#5c4132", "#4a3326", "#3a271c"] : HAIR.jet,
+      top: M ? ["#4a6b86", "#36536b"] : COL.green, topName: M ? "slate" : "green", iris: M ? "#5e3f27" : "#4a3524", style: M ? "marie" : "you", beard: false,
+      brow: M ? "#4a3326" : "#2a2422", lip: M ? "#c4626a" : "#bf6660", cap: "orange", hat: "felt", band: "#2b2b30", pack: "orange", umb: "yellow", scarf: "mustard",
+      coat: "camel", suit: "charcoal", tie: null, glasses: "#26262b", round: false, bag: "mustard" };
+  } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
       top: P ? COL.blue : COL.julieRed, topName: P ? "blue" : "julieRed", iris: P ? "#4b6f8f" : "#5a3a22", style: P ? "paul" : "julie", beard: P,
@@ -202,6 +213,12 @@ function hairOf(style, u, c){
   switch (style){
     case "paul": return { front: `<path d="M47 84 q-2-40 33-42 q35 2 33 42 q-4-14-12-20 q-12 4-24 2 q-12-2-18-6 q-8 8-12 24z" fill="${H}"/>
          <path d="M58 54 q8-6 22-6 M64 50 q10-4 22 0 M72 47 q10-2 20 2" stroke="#8c6545" stroke-width="1.1" fill="none" opacity=".6"/>` };
+    case "marie": { const T = `transform="translate(80 48) scale(.744) translate(-200 -302)"`;   // the tutor's own hair paths, at the size of these heads
+      return { back: `<path ${T} d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="${H}"/>`,
+        front: `<path ${T} d="M156 354 q-2-58 44-60 q46 2 44 60 q-4-26-16-38 q-14-6-30-3 q-10 4-22 3 q-6 4-10 12 q-6 10-10 26z" fill="${H}"/>
+          <path ${T} d="M188 297 q-14 8-22 26 M190 302 q-12 10-17 22 M214 299 q12 8 18 26 M222 302 q10 10 13 24" stroke="#6b4b39" stroke-width="1.6" fill="none" opacity=".5" stroke-linecap="round"/>` }; }
+    case "you": return { back: `<path d="M44.5 92 Q40 39 80 36.5 Q120 39 115.5 92 Q117 104 111.5 113 L103 102 H57 L48.5 113 Q43 104 44.5 92Z" fill="${H}"/>`,
+      front: `<path d="M47 86 q-3-45 33-47 q36 2 33 47 q-3-14-9-21 q-10 6-24 4 q-14-1-24-8 q-6 9-9 25z" fill="${H}"/>` + strand("M60 53 q12-8 28-6 M68 48 q10-3 20 1") };
     case "julie": return { back: `<path d="M40 98 q-2-64 40-66 q42 2 40 66 q2 50-8 78 q-32 8-64 0 q-10-28-8-78z" fill="${H}"/>`,
       front: `<path d="M47 90 q-3-46 33-48 q36 2 33 48 q-6-22-18-30 q-12 8-34 6 q-8 6-10 12 q-2 4-4 12z" fill="${H}"/>
          <path d="M78 44 q-14 6-22 24 M86 45 q12 8 18 26" stroke="#4a372d" stroke-width="1.1" fill="none" opacity=".6"/>` };
@@ -263,6 +280,7 @@ function bust(spec, name, variant){
   const c = traits(spec, variant), L = c.L, u = "pk" + (seq++) + "_", kid = c.kid, fem = c.fem, P = c.named === "paul", J = c.named === "julie";
   const act = doingOf(spec), sleeping = act === "sleeping", eating = act === "eating", drinking = act === "drinking";
   const skin = c.skin, top = c.top;
+  const smile = spec._smile || "";                         // "anim" | "still": the mouth goes from neutral to a broad smile (PICS.action "smile")
   // body shape: Pierre and Sylvie keep the portrait's; other women are a little narrower; children much narrower
   const B = kid ? { x0: 36, x1: 124, yt: 133, cw: 28, drop: 30, neck: "M73 112 h14 v20 q-7 5-14 0z", vw: 10, vb: 168 }
     : (fem && !c.named) ? { x0: 27, x1: 133, yt: 132, cw: 31, drop: 36, neck: "M71 110 h18 v20 q-9 7-18 0z", vw: 13, vb: 174 }
@@ -271,10 +289,10 @@ function bust(spec, name, variant){
   const TP = torso(B.x0, B.x1, B.yt, B.cw, B.drop), nx0 = B.x0 + B.cw, nx1 = B.x1 - B.cw, yt = B.yt;
   const outerName = L.coat ? c.coat : L.suit ? c.suit : null, outer = outerName ? COL[outerName] : null;
   const acc = n => COL[n] || COL.orange;
-  const plain = c.named && !sleeping && !eating && !drinking && !Object.keys(L).length;
+  const plain = c.named && !sleeping && !eating && !drinking && !smile && !Object.keys(L).length;
   const hair = hairOf(c.style, u, c);
-  const browCol = c.old ? "#b9b9b4" : P ? "#4f3622" : J ? "#2a1d17" : c.hair[2];
-  const lip = P ? "#b8645f" : J ? "#c75a64" : fem ? (c.skinName === "dark" || c.skinName === "brown" ? "#a8404e" : "#cf5266") : (c.skinName === "dark" || c.skinName === "brown" ? "#8a4a44" : "#b8645f");
+  const browCol = c.old ? "#b9b9b4" : c.brow ? c.brow : P ? "#4f3622" : J ? "#2a1d17" : c.hair[2];
+  const lip = c.lip ? c.lip : P ? "#b8645f" : J ? "#c75a64" : fem ? (c.skinName === "dark" || c.skinName === "brown" ? "#a8404e" : "#cf5266") : (c.skinName === "dark" || c.skinName === "brown" ? "#8a4a44" : "#b8645f");
 
   let defs = `<radialGradient id="${u}s" gradientUnits="userSpaceOnUse" cx="76" cy="${kid ? 82 : 78}" r="46"><stop offset="0" stop-color="${skin[0]}"/><stop offset=".65" stop-color="${skin[1]}"/><stop offset="1" stop-color="${skin[2]}"/></radialGradient>
       <linearGradient id="${u}h" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${c.hair[0]}"/><stop offset=".55" stop-color="${c.hair[1]}"/><stop offset="1" stop-color="${c.hair[2]}"/></linearGradient>
@@ -318,7 +336,7 @@ function bust(spec, name, variant){
         <path d="M${nx0 + 4} ${yt + 1.5} q${(nx1 - nx0 - 8) / 2} ${kid ? 12 : 15} ${nx1 - nx0 - 8} 0" stroke="${L["red jumper"] ? "#e8756c" : "#fff"}" stroke-width="1.2" fill="none" stroke-dasharray="1.6 3" opacity=".9"/>
         <path d="M${B.x0 + 16} ${yt + 30} v${60 - 30} M${B.x1 - 16} ${yt + 30} v30" stroke="${L["red jumper"] ? "#8f2620" : top[1]}" stroke-width="1.6" opacity=".45"/>`;
     } else if (c.named){
-      body += `<path d="M62 131 q18 ${P ? 10 : 14} 36 0" stroke="${P ? "#2f538a" : "#8a2a25"}" stroke-width="3.5" fill="none" opacity=".55" stroke-linecap="round"/>`;
+      body += `<path d="M62 131 q18 ${P ? 10 : 14} 36 0" stroke="${P ? "#2f538a" : J ? "#8a2a25" : top[1]}" stroke-width="3.5" fill="none" opacity="${P || J ? ".55" : ".9"}" stroke-linecap="round"/>`;
     } else if (fem && !kid){                           // a scooped neck
       body += `<path d="M${nx0 + 5} ${yt + 0.4} q${(nx1 - nx0 - 10) / 2} 22 ${nx1 - nx0 - 10} 0z" fill="${skin[1]}"/>
         <path d="M${nx0 + 5} ${yt + 0.6} q${(nx1 - nx0 - 10) / 2} 22 ${nx1 - nx0 - 10} 0" stroke="${top[1]}" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/>`;
@@ -409,7 +427,20 @@ function bust(spec, name, variant){
      <ellipse cx="77" cy="103.4" rx="1.4" ry=".8" fill="#8f5c42" opacity=".5"/><ellipse cx="83" cy="103.4" rx="1.4" ry=".8" fill="#8f5c42" opacity=".5"/>`;
   // mouth
   const my = F.my;
-  if (eating) head += `<ellipse cx="81.5" cy="${111.4 + my}" rx="8.4" ry="7.4" fill="#551a1a" stroke="${lip}" stroke-width="1.8"/>
+  if (smile){
+    /* neutral mouth -> broad smile and back: the corners go out and up, the teeth show, the cheeks lift and the eyes narrow */
+    const an = smile === "anim", K = `keyTimes="0;0.14;0.4;0.8;1" dur="1.3s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1;0.4 0 0.6 1"`;
+    const A = (attr, a, b) => an ? `<animate attributeName="${attr}" values="${a};${a};${b};${b};${a}" ${K}/>` : "";
+    const V = (a, b) => an ? a : b;
+    const m0 = "M70.5 109.6 Q80 110.8 89.5 109.6 Q80 112.4 70.5 109.6 Z", m1 = "M63.5 105.4 Q80 111.4 96.5 105.4 Q80 127 63.5 105.4 Z";
+    const t0 = "M72 109.9 Q80 110.9 88 109.9 Q80 111.3 72 109.9 Z", t1 = "M66.4 107 Q80 112.2 93.6 107 Q80 118.4 66.4 107 Z";
+    head += `<path d="${V(m0, m1)}" fill="#5a1b1d" stroke="${lip}" stroke-width="2.4" stroke-linejoin="round">${A("d", m0, m1)}</path>
+      <path d="${V(t0, t1)}" fill="#fffdf8">${A("d", t0, t1)}</path>
+      <g opacity="${V(0, 1)}">${A("opacity", 0, 1)}<ellipse cx="60.5" cy="99" rx="10" ry="6.4" fill="url(#${u}b)"/><ellipse cx="99.5" cy="99" rx="10" ry="6.4" fill="url(#${u}b)"/>
+        <path d="M58.4 94.6 q8.6 -5.2 17.2 0 q-8.6 5.6 -17.2 0z M84.4 94.6 q8.6 -5.2 17.2 0 q-8.6 5.6 -17.2 0z" fill="${skin[1]}"/>
+        <path d="M59 93.6 q8 -4.4 16 0 M85 93.6 q8 -4.4 16 0" stroke="${skin[2]}" stroke-width="1.3" fill="none" stroke-linecap="round"/></g>`;
+  }
+  else if (eating) head += `<ellipse cx="81.5" cy="${111.4 + my}" rx="8.4" ry="7.4" fill="#551a1a" stroke="${lip}" stroke-width="1.8"/>
      <path d="M74.6 ${108.2 + my} Q81.5 ${104.6 + my} 88.4 ${108.2 + my} Q88 ${110.6 + my} 81.5 ${109.6 + my} Q75 ${110.6 + my} 74.6 ${108.2 + my} Z" fill="#fff"/>
      <ellipse cx="81.5" cy="${116 + my}" rx="4.6" ry="2.2" fill="#d9706f"/>`;
   else if (drinking) head += `<path d="M73.5 ${112.6 + my} Q80 ${118.2 + my} 86.5 ${112.2 + my}" stroke="${lip}" stroke-width="3" fill="none" stroke-linecap="round"/>`;   // the lower lip, under the rim
@@ -418,6 +449,7 @@ function bust(spec, name, variant){
   else head += `<path d="M69.5 109.4 Q80 116.5 90.5 109.4 Q80 112.6 69.5 109.4 Z" fill="${lip}"/>
      <path d="M70 109.6 Q80 114.2 90 109.6" stroke="#8a3b3b" stroke-width="1.1" fill="none" stroke-linecap="round"/>
      <path d="M68 108 q-1.4 1.6 0 3.4 M92 108 q1.4 1.6 0 3.4" stroke="${skin[2]}" stroke-width="0.9" fill="none" opacity=".7"/>`;
+  if (false) head += "";
   if (!c.beard && c.stache) head += (c.old ? "" : `<path d="M49 92 q2 28 31 33 q29-5 31-33 q-3 12-10 17 q-6-6-21-6 q-15 0-21 6 q-7-5-10-17z" fill="${c.hair[1]}" opacity=".42"/>`) + `<path d="M63 ${106.4 - (eating ? 2.4 : 0)} q17-8.4 34 0 q-3 5.4-9.4 3.6 q-7.6-2.8-15.2 0 q-6.4 1.8-9.4-3.6z" fill="url(#${u}h)"${c.old ? ' stroke="#8f8f89" stroke-width="1"' : ""}/>` +
       (c.old ? "" : `<path d="M71 ${118.5 + (eating ? 2.5 : 0)} q9 4 18 0 q-1.5 7.5-9 8 q-7.5-.5-9-8z" fill="url(#${u}h)" opacity=".95"/>`);
   if (kid && !sleeping && (hashStr(c.kind + c.style + c.topName) % 2 === 0))
@@ -450,7 +482,7 @@ function bust(spec, name, variant){
   let front = hair.over ? (sleeping ? `<g transform="rotate(-6 80 122)">${hair.over}</g>` : hair.over) : "";
   if (c.named && name !== null && name !== undefined && name !== ""){
     const nm = String(name).replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
-    const tw = Math.max(P ? 50 : 56, nm.length * 7.6 + 4);
+    const tw = Math.max(J ? 56 : 50, nm.length * 7.6 + 4);
     front += `<g class="nametag"><rect x="${80 - tw / 2}" y="146" width="${tw}" height="24" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/>
      <rect x="${80 - tw / 2}" y="146" width="${tw}" height="5" rx="2" fill="#c8453b"/>
      <text x="80" y="166" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522">${nm}</text></g>`;
@@ -571,6 +603,9 @@ function person(spec, name){
   spec = spec || {};
   const looks = spec.looks || [], n = spec.count || 1;
   if (!spec.person && (n > 1 || looks.indexOf("in a row") >= 0)) return row(spec, n);
+  const acted = ACT_OF[doingOf(spec)];
+  if (acted && (spec.person === "paul" || spec.person === "julie" || spec.person === "marie" || spec.person === "you"))
+    return action(acted, spec.person, { looks: spec.looks, name: name, still: !!spec.still });
   if (doingOf(spec) === "walking") return walker(spec, name);
   return bust(spec, name);
 }
@@ -804,5 +839,86 @@ function car(spec){
   return n > 1 ? group(n, () => oneCar(spec)) : oneCar(spec);
 }
 
-window.PICS = { person, key, group, fingers, dog, car };
+
+/* ---------- actions that the learner does, the teacher shows and Pierre and Sylvie are pictured doing ----------
+   PICS.action(act, who, opts): act "dance" | "jump" | "smile" | "stand up" | "sit down" | "walk"; who "you" | "marie" | "paul" | "julie";
+   opts.still = true gives one frozen frame. The figure is the usual head and shoulders, half size, on a jointed body; the joints
+   are turned by SMIL <animateTransform> (no script timers), so the picture loops by itself wherever it is put.
+   The poses were drawn from the Mulberry symbols (dance, jump, sit, stand, walk, get out of chair, smile) and from photographs
+   of people jumping and walking (Stanford 40 Actions): a jump is knees tucked, arms flung up and the ground left behind; a dance is
+   one arm up, the other out, one leg kicked to the side, the body swaying; a walk is a scissor stride with the arms low. */
+const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump", smiling: "smile", smile: "smile", standing: "stand up", stand: "stand up",
+  sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk" };
+const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
+const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
+const SEATED = { rx: 2, ry: 26, lL: [-90, 90], lR: [-90, 90], aL: [-4, -70], aR: [-8, -75] },
+      RISING = { rx: 13, ry: 9, br: 14, lL: [-48, 58], lR: [-48, 58], aL: [-26, -30], aR: [-34, -28] },
+      UPRIGHT = { rx: 28, ry: 0, lL: [0, 0], lR: [0, 0], aL: [3, 0], aR: [-3, 0] };
+const D_A = { rx: -6, br: -11, aL: [158, -22], aR: [-108, -42], lL: [10, 0], lR: [-56, 34] }, D_M = { ry: 1, aL: [100, -70], aR: [-100, 70], lL: [12, -22], lR: [-12, 22] },
+      D_B = { rx: 6, br: 11, aR: [-158, 22], aL: [108, 42], lR: [-10, 0], lL: [56, -34] };
+const J_C = { ry: 5.3, lL: [28, -52], lR: [-28, 52], aL: [18, 10], aR: [-18, -10] }, J_UP = { ry: -22, lL: [42, -86], lR: [-42, 86], aL: [152, -12], aR: [-152, 12], sh: 0.5 };
+const MOVES = {
+  dance: { dur: 1.2, kt: [0, 0.25, 0.5, 0.75, 1], poses: [D_A, D_M, D_B, D_M, D_A], still: 0, scale: 1.1 },
+  jump: { dur: 1.2, kt: [0, 0.2, 0.44, 0.58, 0.82, 1], poses: [J_C, { ry: -3, lL: [4, 0], lR: [-4, 0], aL: [100, 10], aR: [-100, -10] }, J_UP,
+      Object.assign({}, J_UP, { ry: -20 }), { ry: 0, lL: [6, 0], lR: [-6, 0], aL: [70, 10], aR: [-70, -10] }, J_C], still: 2, scale: 1.04 },
+  walk: { dur: 1.1, kt: [0, 0.25, 0.5, 0.75, 1], linear: true, side: true, scale: 1.1, still: 0, poses: [
+      { ry: 4, lR: [-24, 2], lL: [24, 26], aL: [26, -4], aR: [-28, -18] }, { lR: [0, 0], lL: [-14, 60], aL: [10, -6], aR: [-10, -10] },
+      { ry: 4, lL: [-24, 2], lR: [24, 26], aL: [-5, -12], aR: [6, -4] }, { lL: [0, 0], lR: [-14, 60], aL: [10, -6], aR: [-10, -10] },
+      { ry: 4, lR: [-24, 2], lL: [24, 26], aL: [26, -4], aR: [-28, -18] }] },
+  "stand up": { dur: 2, kt: [0, 0.14, 0.36, 0.56, 1], poses: [SEATED, SEATED, RISING, UPRIGHT, UPRIGHT], side: true, chair: true, still: 2, scale: 1.08, ox: -12 },
+  "sit down": { dur: 2, kt: [0, 0.14, 0.36, 0.56, 1], poses: [UPRIGHT, UPRIGHT, RISING, SEATED, SEATED], side: true, chair: true, still: 2, scale: 1.08, ox: -12 }
+};
+function action(act, who, opts){
+  opts = opts || {};
+  act = ACT_OF[String(act || "").toLowerCase().split(/[ ,]/)[0]] || "smile";
+  who = who === "marie" || who === "paul" || who === "julie" ? who : "you";
+  const still = !!opts.still, spec = { person: who }, name = who === "you" ? "" : (opts.name || WHO_NAME[who]);
+  if (opts.looks && opts.looks.length) spec.looks = opts.looks;
+  if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
+  const c = traits(spec), L = c.L, K = MOVES[act], u = "pa" + (seq++) + "_", skin = c.skin;
+  const outerName = L.coat ? c.coat : L.suit ? c.suit : null, sleeve = outerName ? COL[outerName] : c.top;
+  const legs = L.suit ? COL[c.suit] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
+  const P = K.poses.map(p => Object.assign({}, POSE0, p)), n = P.length, si = K.still;
+  const SY = 97, UA = 21, FA = 20, AW = 9.5, HY = 126, TH = 26, SH = 26, LW = 12;
+  const timing = `keyTimes="${K.kt.join(";")}" dur="${K.dur}s" repeatCount="indefinite"` + (K.linear ? "" : ` calcMode="spline" keySplines="${Array(n - 1).fill("0.4 0 0.6 1").join(";")}"`);
+  const G = (type, vals, inner) => `<g transform="${type}(${vals[si]})">` + (still || vals.every(v => v === vals[0]) ? "" : `<animateTransform attributeName="transform" type="${type}" values="${vals.join(";")}" ${timing}/>`) + inner + `</g>`;
+  const seg = (x, y, len, w, pair) => `<path d="M${x} ${y} v${len}" stroke="${pair[1]}" stroke-width="${w + 2}" stroke-linecap="round"/><path d="M${x} ${y} v${len}" stroke="${pair[0]}" stroke-width="${w - 1.4}" stroke-linecap="round"/>`;
+  const leg = (hx, key, pair, toe) => G("rotate", P.map(p => `${p[key][0]} ${hx} ${HY}`), seg(hx, HY, TH, LW, pair) +
+    G("rotate", P.map(p => `${p[key][1]} ${hx} ${HY + TH}`), `<ellipse cx="${hx + toe}" cy="${HY + TH + SH - 2.6}" rx="${K.side ? 9.5 : 8}" ry="4.6" fill="#2c2623"/>` + seg(hx, HY + TH, SH - 5, LW - 1.5, pair)));
+  const arm = (sx, key) => G("rotate", P.map(p => `${p[key][0]} ${sx} ${SY}`), seg(sx, SY, UA, AW, sleeve) +
+    G("rotate", P.map(p => `${p[key][1]} ${sx} ${SY + UA}`), `<circle cx="${sx}" cy="${SY + UA + FA}" r="5.6" fill="${skin[1]}" stroke="${skin[2]}" stroke-width="1"/>` + seg(sx, SY + UA, FA - 4, AW - 1, sleeve)));
+  const far = [legs[1], legs[1]];
+  const body = (K.side ? leg(77, "lL", far, 4) + leg(84, "lR", legs, 4) : leg(72, "lL", legs, -2) + leg(88, "lR", legs, 2)) +
+    `<path d="M55.5 111 H104.5 L101.5 129 Q80 136 58.5 129 Z" fill="${legs[1]}"/><rect x="52.4" y="108" width="55.2" height="8" rx="3" fill="${sleeve[1]}"/>` +
+    G("translate", P.map(p => `${p.bx} ${p.by}`), G("rotate", P.map(p => `${p.br} 80 118`), (K.side ? arm(57.5, "aL") : "") + `<g class="bust" transform="translate(43.2 27) scale(.46)"></g>` + (K.side ? "" : arm(57.5, "aL")) + arm(102.5, "aR")));
+  let back = "", front = "";
+  const loop = (attrs, dur, extra) => still ? "" : `<animateTransform attributeName="transform" ${attrs} dur="${dur}s" repeatCount="indefinite"${extra || ""}/>`;
+  if (K.chair){
+    back += `<ellipse cx="74" cy="181" rx="40" ry="4" fill="#000" opacity=".1"/>
+      <path d="M49 161 L44 100 M57 161 L55 100" stroke="#6e5140" stroke-width="5" stroke-linecap="round"/><path d="M41 101 Q49 96 58 100 L57.4 111 Q49 108 42 112 Z" fill="#7f604c" stroke="#5e4535" stroke-width="1.2"/>
+      <path d="M43 124 Q50 121 56.6 123 M44 138 Q50 135 56.8 137" stroke="#6e5140" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M50 164 L48 180 M94 164 L96 180" stroke="#5e4535" stroke-width="5" stroke-linecap="round"/><rect x="44" y="158.5" width="56" height="8" rx="3.5" fill="#8a6a52" stroke="#5e4535" stroke-width="1.2"/>`;
+    if (still){ const up = act === "stand up", ax = 132, y0 = up ? 96 : 52, y1 = up ? 52 : 96, hd = up ? 1 : -1;      // which way: an arrow, only in the frozen frame
+      front += `<path d="M${ax} ${y0} V${y1 + hd * 4}" stroke="#3fae5a" stroke-width="7" stroke-linecap="round"/><path d="M${ax - 11} ${y1 + hd * 12} L${ax} ${y1} L${ax + 11} ${y1 + hd * 12}" stroke="#3fae5a" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`; }
+  } else {
+    back += `<g transform="translate(80 181)">` + G("scale", P.map(p => `${p.sh}`), `<ellipse cx="0" cy="0" rx="30" ry="4.2" fill="#000" opacity=".13"/>`) + `</g>`;
+  }
+  if (act === "walk"){                                      // the ground slides back under the feet (walking on the spot); frozen: marks behind
+    back += `<clipPath id="${u}g"><rect x="26" y="176" width="108" height="14"/></clipPath><g clip-path="url(#${u}g)"><g>` + loop(`type="translate" values="0 0;-26 0"`, 0.55) +
+      [30, 56, 82, 108, 134, 160].map(x => `<path d="M${x} 186.5 h11" stroke="#b9bec6" stroke-width="3" stroke-linecap="round"/>`).join("") + `</g></g>`;
+    if (still) front += `<path d="M22 112 h14 M16 126 h18 M22 140 h14" stroke="#b9bec6" stroke-width="3.4" stroke-linecap="round"/>`;
+  }
+  if (act === "jump" && still) front += `<path d="M62 160 Q80 169 98 160 M68 170 Q80 175.5 92 170" stroke="#b9bec6" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+  if (act === "dance"){                                     // music in the air: two notes that bob
+    const note = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="0" rx="6" ry="4.4" fill="#6a55b8" transform="rotate(-20)"/><path d="M5.4 -1 V-22 q9 2 11 10" stroke="#6a55b8" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
+    front += `<g>` + loop(`type="translate" values="0 0;0 -5;0 0"`, 0.6) + note(24, 62, 1) + `</g><g>` + loop(`type="translate" values="0 -5;0 0;0 -5"`, 0.6) + note(128, 50, 0.85) + `</g>`;
+  }
+  const S = K.scale || 1;
+  const g = mk((K.chair ? "" : back) + `<g transform="translate(${80 + (K.ox || 0)} 178) scale(${S}) translate(-80 -178)">` + (K.chair ? back : "") +
+    G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g>` + front);
+  g.querySelector("g.bust").appendChild(bust(spec, name));
+  return g;
+}
+
+window.PICS = { person, key, group, fingers, dog, car, action };
 })();
