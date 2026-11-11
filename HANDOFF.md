@@ -11,19 +11,28 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-10.22`: Lessons 1–10, built from `dev/fieldtest/course_dise5b` (the course of record).
-  New since .21: Lessons 5–10 playable (`dev/appconv/convert.py` tables + `VOCAB`/`SLOT` in `index.html`); every new
-  question or instruction FORMAT is first shown at least twice with another voice answering (cause C8 rewritten around
-  frames, design log §15; evidence: the artificial learner v3, `fieldtest/reports/learner_v3_findings.md`), which
-  changed L1 Ex1, L3 Ex3, L3 Ex10 and L4 Ex8; a female "you" figure (`sex: S.learnerGender`); a 160 Hz low-cut on the
-  microphone; a spoken warning when the microphone is swamped (`LISTENER.swamp()`, `FAULT MICROPHONE SWAMPED`).
-  Checks on the shipped files: oracle Lessons 1–10 2113 of 2113 (`dev/harness/replay/oracle10.js`; `oracle404.js`
-  cannot hold ten lessons of trace), selfjudge 0 right answers refused and 0 wrong accepted, real recordings 323 of 348
-  with the Lesson 4 word list (324 on .19) and 316 with the Lesson 10 word list (lost: "Une chaussure." x3, "Deux." x4,
-  "Un." x1). **Known weak listening in Lessons 5–10** (synthetic English voices, a poor predictor): "Deux clés.",
-  "Une voiture.", "Dix.", "Bon.", "Un homme.", "Pierre et Sylvie."; "tu vas X" for "je vais X" and "un V" for
-  "on/elle V" are accepted as `FAULT PERSON UNSURE` and must be ruled from the recording. Next: Lessons 11–20 into the
-  app (pictures exist), Jon's sessions on Lessons 3–10.
+- **Live version:** `2026-11-10.23`: Lessons 1–10, built from `dev/fieldtest/course_dise5b` (the course of record).
+  New since .22 (all from the run of 11 Nov 08:28): (1) every model and learner clip that the automatic check did not
+  hear was re-recorded (Sylvie's "Une." was unintelligible and cost a real error), and a **release gate** now fails the
+  build on any answer clip the app's own listener does not hear as its line
+  (`python3 -I dev/voice/clipcheck.py <app> 1 10 --gate <port>`; allow-list `dev/voice/clip_allow.json`; rerun the whole
+  gate after any re-recording); (2) the **new-asker rule** (design log §16): before anyone but the teacher asks a
+  question about themselves, two models show a model learner asking and another answering; on screen the asker has a
+  green ring, a tail pointing at whoever must answer, and a hand on their own name tag; 17 exercises changed in
+  Lessons 1–4 and 7–10; (3) **user profiles** (tester panel: drop-down, Add, Remove; `frDI.users` + one state per user
+  under `frDI.u.<id>`; switching reloads and resumes where that user was; person badge with the name top right; run
+  files carry `user`; about 25 users fit in storage).
+  Checks on the shipped files: whole-lesson run of Lessons 1–10 2138 of 2138 (`dev/harness/replay/oracle10.js`),
+  selfjudge 0 right answers refused and 0 wrong accepted, real recordings 323 of 348 with the Lesson 4 word list and
+  316 with the Lesson 10 list, release gate passed (299 answer clips, 0 fail, 8 allow-listed teacher word-pieces, 1
+  unsteady: the teacher's "Tu manges."), `profiles.js` all OK. **Known weak listening in Lessons 5–10** is as in .22:
+  "Deux clés.", "Une voiture.", "Dix.", "Bon.", "Un homme.", "Pierre et Sylvie."; "tu vas X" for "je vais X" and
+  "un V" for "on/elle V" are accepted as `FAULT PERSON UNSURE` and must be ruled from the recording.
+  **Next version is a course revision, not yet in the app:** `dev/fieldtest/course_dise6` (Lessons 1–10 revised on
+  11 Nov: touch-counting, tap responses, written words with outlined parts and blue silent letters, every French
+  complication taught explicitly, DISE compared item by item). Read design log §17–§22, `fieldtest/complications.md`,
+  `fieldtest/dise_inventory.md` and `docs/Lessons 1-10, the revision of 11 November (dise6).md` before touching it. It
+  needs about 180 recordings and new app capabilities, and the artificial learner has not yet been re-run on it.
   One pull request per version (branch `handoff-wip`, restarted from `main` after every merge).
 - **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
   artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
@@ -131,6 +140,7 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 10 Nov 16:36 | Jon, L2 on .19 | **"Lève-toi", said right, heard as "lève trois" 14 times in 16** and marked wrong (seven-trial limit reached); the stand-up box also showed sitting down; whole figures look barrel-chested | .20 (listener, animation, lesson), figures: artist |
 | 10 Nov 21:11 | Jon, rest of L2 on .20 | 46 of 47 right; **"Trois." for two shoes** shown beside one pen (three things on the screen; the question does not say what to count) | .21, course (cause C10: `gen/countalone.py`) |
 | 10 Nov 21:33 | Jon, start of L3 on .20 | no learner error: the phone lay on his chest and a low rumble (heartbeat, breathing; 99 % of the energy under 300 Hz, at full scale) drowned his voice; one "Lève-toi" came out as "trois" and was marked wrong | .22 (low-cut filter, spoken warning) |
+| 11 Nov 08:28 | Jon, L3 on .22 | 174 of 177 right. (1) **Sylvie's model "Une." was unintelligible** (he could not tell un from une; said "un" for the key). (2) Pierre's "Et moi ?" and (3) Marie's "Je m'appelle comment ?" at the start of Ex 13 both answered "Je m'appelle Jon." after 2+ s: a question about the asker answered about himself (only Marie had ever asked it) | .23: clips re-recorded with a release gate; new-asker rule in the generator (design log §16) |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.
@@ -300,7 +310,7 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
    only. A slow start on a right answer is a near-miss the learner should also predict (lower weight than an error).
 4. **Lessons 5+** into the app: convert, record clips, oracle, ship. Rule 1k loosens at Lesson 6 (a model learner only
    before the first own-name test of each exercise): watch the first real runs there.
-5. **Naive testers:** one so far (the 16:42 run); that run showed more than all of Jon's.
+5. **Naive testers:** one so far (the 16:42 run); it showed more in one run than all of Jon's.
 
 ## 6. Open with Jon
 

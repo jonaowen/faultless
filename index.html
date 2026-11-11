@@ -71,6 +71,10 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 #save.busy{opacity:.35}
 #save.done{background:var(--go);opacity:1}
 #save.done path{stroke:#fff}
+/* Whose turn on this phone (.23, developer profiles): a small person and the name, top right under the three buttons, on every screen */
+#userBadge{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:calc(18px + env(safe-area-inset-right,0px));z-index:40;max-width:150px;display:flex;align-items:center;gap:5px;padding:2px 8px 2px 5px;border-radius:12px;border:1px solid var(--frame-line);background:var(--panel);font:600 13px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#4a4f58;cursor:pointer;opacity:.9}
+#userBadge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#userBadge svg{flex:none}
 #gear{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(18px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
 #caption{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(34,37,43,.82);color:#fff;padding:6px 14px;border-radius:8px;font-size:17px;z-index:25;max-width:90vw;text-align:center}
 #caption[hidden]{display:none}
@@ -127,6 +131,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <!-- gold border round whatever the teacher is pointing at (Jon 9 Nov: with four pictures the finger alone is not clear) -->
     <rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
     <rect id="speakRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0" style="transition:opacity .12s"/>
+    <g id="askMark"></g>
   </g>
   <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
   <g id="tutor">
@@ -321,9 +326,14 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <button id="flag" aria-label="Tester flag"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 22V3h11l-1.5 4L16 11H7v11z" fill="#6b7079"/></svg></button>
 <button id="gear" aria-label="Tester panel"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#6b7079" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.4l1.9 1.5-2 3.4-2.3-.9c-.6.5-1.2.8-1.9 1.1l-.3 2.4h-4l-.3-2.4c-.7-.3-1.3-.6-1.9-1.1l-2.3.9-2-3.4 1.9-1.5a7 7 0 010-2.2L1.6 8.6l2-3.4 2.3.9c.6-.5 1.2-.8 1.9-1.1L8.1 2.6h4l.3 2.4c.7.3 1.3.6 1.9 1.1l2.3-.9 2 3.4-1.9 1.5a7 7 0 010 2.2z"/></svg></button>
 
+<button id="userBadge" lang="en" aria-label="User"><svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.5" fill="#6b7079"/><path d="M3.5 21c0-5 4-7.5 8.5-7.5s8.5 2.5 8.5 7.5z" fill="#6b7079"/></svg><span id="userName"></span></button>
 <aside id="panel" hidden>
   <div class="row" style="justify-content:space-between"><h2>Tester panel</h2><button id="closePanel">Close</button></div>
   <div class="note" id="status"></div>
+  <h3>User</h3>
+  <div class="row">Who is using the app <select id="optUser" style="max-width:12em"></select> <button id="btnUserRemove">Remove this user</button></div>
+  <div class="row">Add a user <input type="text" id="optUserNew" maxlength="30" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:9em" placeholder="first name"> <button id="btnUserAdd">Add</button></div>
+  <div class="note" id="userNote">Each user has their own place in the course, their own log and their own recordings. Choosing a user goes to where that user last was.</div>
   <h3>Settings</h3>
   <div class="row"><label><input type="checkbox" id="optCaption"> Show French text (testing only)</label></div>
   <div class="row"><label><input type="checkbox" id="optManual"> Manual mode (no microphone: type or tick answers)</label></div>
@@ -372,7 +382,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.22";
+const APP_VERSION="2026-11-10.23";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -695,7 +705,29 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    STATE — saved after every task; resume = start of the
    interrupted exercise (never mid-task).
    ============================================================ */
-const KEY="frDI.v1";
+/* Users (.23, developer only: Jon tests with his family on one phone). frDI.users = {current, list:[{id, name}]}; each user's
+   whole saved state (place in the course, finished exercises, delayed tests, name and gender, introductions seen, log, trace)
+   is under its own key, frDI.u.<id>. A phone that has the single state of .22 and before (frDI.v1) becomes the first user,
+   named from the learner's name, with nothing lost. The settings of the tester panel go with the phone, not the user: they
+   are carried over at every switch. Recordings are in IndexedDB under ids that begin with the user's id, and a run file has
+   only the recordings of its own session (a switch reloads the page, which starts a new session), so one user's recordings
+   never get into another's run file. */
+const USERS_KEY="frDI.users", OLD_KEY="frDI.v1";
+function loadUsers(){
+  let u=null; try{ u=JSON.parse(localStorage.getItem(USERS_KEY)||"null"); }catch(e){}
+  if(!u || !Array.isArray(u.list) || !u.list.length){
+    let old=null; try{ old=JSON.parse(localStorage.getItem(OLD_KEY)||"null"); }catch(e){}
+    const name = old && old.learnerName ? String(old.learnerName) : "User 1";
+    u={current:"u1", list:[{id:"u1", name}]};
+    try{ if(old) localStorage.setItem("frDI.u.u1", JSON.stringify(old)); localStorage.setItem(USERS_KEY, JSON.stringify(u)); if(old) localStorage.removeItem(OLD_KEY); }catch(e){}
+  }
+  if(!u.list.some(x=>x.id===u.current)) u.current=u.list[0].id;
+  return u;
+}
+const USERS=loadUsers();
+const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
+const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
+const KEY="frDI.u."+USERS.current;
 const defaults = () => ({stateVer:12, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
@@ -707,7 +739,40 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!s.stateVer || s.stateVer<12){    /* 11: the lessons were re-sequenced at DISE's rate (.18). 12: Lessons 1-4 rebuilt exercise for exercise, with actions (.19). A place saved in the old lessons means nothing in the new */  Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, doneDay:null, stateVer:12});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
   } }catch(e){} }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} renderPanel(); }
+/* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
+   the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
+   the oldest half of this user's trace goes and the save is tried again: the place in the course must never fail to be saved. */
+function save(){
+  for(let k=0;k<4;k++){ try{ localStorage.setItem(KEY, JSON.stringify(S)); break; }
+    catch(e){ if(!S.trace || S.trace.length<50) break; S.trace.splice(0, Math.ceil(S.trace.length/2)); S.trace.push({t:new Date().toISOString(), task:"", phase:"", ev:"FAULT STORAGE FULL: the oldest half of the trace was dropped so that the place in the course could be saved"}); } }
+  renderPanel(); }
+// Change who is using the app: this user's state is saved (short), the other becomes current, and the page starts again at
+// that user's place. Starting again is what stops the sound and the microphone cleanly, whatever was going on.
+function switchUser(id){
+  if(id===USERS.current || !USERS.list.some(x=>x.id===id)) return;
+  trace("user changed: from "+currentUser().name+" to "+USERS.list.find(x=>x.id===id).name);
+  S.trace=(S.trace||[]).slice(-300); S.log=(S.log||[]).slice(-300);
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+  try{ const raw=localStorage.getItem("frDI.u."+id), o=raw?JSON.parse(raw):null; if(o){ o.settings=S.settings; localStorage.setItem("frDI.u."+id, JSON.stringify(o)); } }catch(e){}
+  USERS.current=id; saveUsers(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload();
+}
+function addUser(name){
+  name=cleanName(name); if(!name) return "Type a name.";
+  if(USERS.list.some(x=>x.name.toLowerCase()===name.toLowerCase())) return "There is already a user called "+name+".";
+  const id="u"+(Math.max(0,...USERS.list.map(x=>+String(x.id).slice(1)||0))+1);
+  const fresh=defaults(); fresh.learnerName=name; fresh.settings=S.settings;
+  try{ localStorage.setItem("frDI.u."+id, JSON.stringify(fresh)); }catch(e){ return "This phone's storage is full."; }
+  USERS.list.push({id, name}); saveUsers(); switchUser(id); return "";
+}
+function removeUser(id){
+  if(USERS.list.length<2) return "The last user cannot be removed.";
+  const u=USERS.list.find(x=>x.id===id); if(!u) return "";
+  if(!confirm("Remove "+u.name+" from this phone? Their place in the course and their log are deleted.")) return "";
+  USERS.list=USERS.list.filter(x=>x.id!==id); try{ localStorage.removeItem("frDI.u."+id); }catch(e){}
+  try{ clipStore("all").then(all=>Object.keys(all).filter(k=>k.startsWith(id+"_")).forEach(k=>clipStore("del", k))); }catch(e){}
+  if(USERS.current===id){ USERS.current=USERS.list[0].id; saveUsers(); location.reload(); } else { saveUsers(); renderPanel(); }
+  return "";
+}
 
 /* ============================================================
    SPEECH OUT — slow, unit by unit, French voice
@@ -1411,7 +1476,7 @@ let clipSeq=0, localBroken=false;
 const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||("app/"+(window.LISTENER?LISTENER.version:"")), recPeak:r.recPeak, raw:r.raw} : (r.recNote? {recNote:r.recNote} : {});
 async function keepClip(audio){
   if(!S.settings.keepAudio) return null;
-  const id="c"+Date.now().toString(36)+(clipSeq++);
+  const id=USERS.current+"_c"+Date.now().toString(36)+(clipSeq++);      // the user's id first: whose recording it is
   try{ await clipStore("put", id, LISTENER.wav(audio)); SESSION.clips.push(id); return id; }catch(e){ return null; }
 }
 /* Every answer is recorded, whichever recogniser judges it (Jon 9 Nov: "the real audio of what happened is the ground truth").
@@ -1434,7 +1499,7 @@ function startParallelRecording(){
 function clipStore(op, key, val){
   return new Promise((res,rej)=>{ const r=indexedDB.open("faultless-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
     r.onerror=()=>rej(r.error); r.onsuccess=()=>{ const db=r.result, tx=db.transaction("clips", op==="get"||op==="all"?"readonly":"readwrite"), st=tx.objectStore("clips");
-      let q; if(op==="put") q=st.put(val,key); else if(op==="get") q=st.get(key); else if(op==="all"){ const out={}; const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; return; } else q=st.clear();
+      let q; if(op==="put") q=st.put(val,key); else if(op==="del") q=st.delete(key); else if(op==="get") q=st.get(key); else if(op==="all"){ const out={}; const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; return; } else q=st.clear();
       q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }; });
 }
 async function listenLocal(expect, alsoOk){
@@ -2031,7 +2096,7 @@ function pointPose(side){            // reach towards the picture frame on that 
   return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
 }
 
-function rest(){ offering=false; goldOff(); ARMS.go(POSE.rest, 280); }
+function rest(){ offering=false; askMark(null); goldOff(); ARMS.go(POSE.rest, 280); }
 function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
 let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
@@ -2039,6 +2104,7 @@ let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; gold
 // to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
 const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||/^s\d+$/.test(s);
 async function pointAt(who){
+  askMark(null);
   const side = sideOf(who); if(side==="none") return;
   if(ON_SCREEN(side)){ goldOn(side);
     if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
@@ -2195,7 +2261,7 @@ async function askAndListen(task, expect, think=0, alsoOk=[]){
   }
   if(task.cueVoice){                      // a model learner says the cue: the gold border on them (who it is about), the green ring while they speak
     pointAt(task.cueAt); if(think) await sleep(think);
-    await cueAs(task.cueVoice, task.questionUnits, task.cueAt);
+    await cueAs(task.cueVoice, task.questionUnits, task.cueAt, task);
     return listen(expect, alsoOk);
   }
   pointAt(task);                          // focus: the gold border comes on as she speaks
@@ -2237,13 +2303,34 @@ async function sayAs(voice, units){
    name in "Salut, Claire !" never changed, did no work, and was dropped). Each of the three people now greets, and the
    name answered is the greeter's. Like say(): the microphone is closed while it plays and the learner's turn follows at
    once. */
-async function cueAs(voice, units, at){
+/* Who asks whom (.23; the course now has a model learner ask about himself, "Et moi ?", "Je fais quoi ?", first of the other
+   model learner and then of the learner). While a pictured person asks: the green ring round them (speakLit); a hand with
+   its finger on their own name tag when the question is about themselves (the item points at the asker: Marie does the
+   same with her own hand for "Et moi ?"); and the ring has a tail towards the one who is asked: the other picture when a
+   model learner answers, down and out of the screen when the learner does. People.js has no picture of Pierre or Sylvie
+   pointing or turned, so these marks are drawn over their pictures here. */
+function askMark(slot, self, to){
+  const g=document.getElementById("askMark"); if(!g) return;
+  if(slot==="said"){ g.querySelectorAll("path").forEach(e=>e.remove()); return; }      // the question is over: the tail goes with the ring; the hand stays on the name tag until the next thing is pointed at
+  g.replaceChildren();
+  const b = slot && BOUNDS[slot]; if(!b) return; const k=b.w/160; let h="";
+  if(self){ const tx=b.x+104*k, ty=b.y+161*k, sc=0.62*k, len=56*sc*0.707;
+    h+=`<g transform="translate(${(tx+len).toFixed(1)},${(ty+len).toFixed(1)}) rotate(135) scale(${sc.toFixed(3)})"><use href="#hs_point"/></g>`; }
+  if(to){ const m=14, cy=b.y+b.h/2, tb=to!=="you" && BOUNDS[to];
+    if(to==="you") h+=`<path d="M${b.x+b.w/2-11} ${b.y+b.h+m-3} L${b.x+b.w/2} ${b.y+b.h+m+13} L${b.x+b.w/2+11} ${b.y+b.h+m-3} Z" fill="#3fae5a"/>`;
+    else if(tb){ const right=tb.x>b.x, x0=right ? b.x+b.w+m-3 : b.x-m+3, x1=right ? x0+13 : x0-13; h+=`<path d="M${x0} ${cy-11} L${x1} ${cy} L${x0} ${cy+11} Z" fill="#3fae5a"/>`; } }
+  g.innerHTML=h;
+}
+async function cueAs(voice, units, at, item){
   if(!units.length) return;
   const who = voice in VOICE_PREFIX ? voice : "julie";
+  if(item){ const slot=slotOfPerson(who) || (at && at!=="none" ? sideOf(at) : null), ans = item.type==="model" && item.voice && item.voice!=="teacher" ? slotOfPerson(item.voice) : item.type==="model" ? null : "you";
+    const moving = ((item.scene||{}).row||[]).some(x=>x.person===who && Object.keys(x).some(k=>k!=="person"));      // drawn doing something, or holding up a card, or with a face: the name tag is not where the plain portrait has it, so no hand (the ring and its tail still say who asks whom)
+    askMark(slot, !moving && !!at && at!=="none" && sideOf(item.at)===sideOf(at), ans); }
   stopRec(); recentSaid.push(units.join(" ")); trace("say["+voiceName(who)+"]: "+units.join(" · "));
   speakLit(who, true, at); caption("["+voiceName(who)+"] "+units.join(" "));
   if(!(await playLearner(voiceLine(who, units)))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
-  speakLit(who, false); lastSpeechEnd=Date.now();
+  speakLit(who, false); askMark("said"); lastSpeechEnd=Date.now();
 }
 async function presentGenModel(m){
   ph("model");
@@ -2252,7 +2339,7 @@ async function presentGenModel(m){
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
   if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
-  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
+  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt, m); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
   await sayAs(m.voice, m.answerUnits);
 }
 /* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
@@ -2858,7 +2945,12 @@ function renderVoiceSelect(){
   const cv=currentVoice(); if(cv) sel.value=cv.name;
   renderPanel();
 }
+function renderUsers(){
+  try{ $("userName").textContent=currentUser().name; const sel=$("optUser"); sel.innerHTML=""; USERS.list.forEach(u=>{ const o=document.createElement("option"); o.value=u.id; o.textContent=u.name; sel.appendChild(o); }); sel.value=USERS.current;
+    $("btnUserRemove").disabled = USERS.list.length<2; }catch(e){}
+}
 function renderPanel(){
+  renderUsers();
   try{ $("optJump").value=S.lesson+":"+S.ex; }catch(e){}
   if(!READY) return;
   if(!$("status")) return;
@@ -2883,10 +2975,16 @@ function renderPanel(){
 $("flag").onclick=()=>{ logEntry({task:curTask, phase, result:"TESTER FLAG", heard:[]}); trace("tester flag"); save();
   $("flag").classList.add("hit"); setTimeout(()=>$("flag").classList.remove("hit"), 600); };
 $("gear").onclick=()=>{ $("panel").hidden=false; renderPanel(); };
+$("userBadge").onclick=()=>{ $("panel").hidden=false; renderPanel(); try{ $("optUser").focus(); }catch(e){} };
+$("optUser").onchange=e=>switchUser(e.target.value);
+$("btnUserAdd").onclick=()=>{ const m=addUser($("optUserNew").value); if(m) $("userNote").textContent=m; };
+$("optUserNew").addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnUserAdd").click(); });
+$("btnUserRemove").onclick=()=>{ const m=removeUser($("optUser").value); if(m) $("userNote").textContent=m; };
 $("closePanel").onclick=()=>{ $("panel").hidden=true; };
 $("optGender").onchange=e=>{ S.learnerGender=e.target.value; save(); };
 $("optName").onchange=e=>{ const v=cleanName(e.target.value); if(!v){ e.target.value=S.learnerName||""; return; }      // another learner on the same phone
-  if(v!==S.learnerName){ S.learnerName=v; delete S.ownAlias; ownHeard=null; trace("learner's first name changed in the tester panel"); } save(); };
+  if(v!==S.learnerName){ S.learnerName=v; delete S.ownAlias; ownHeard=null; trace("learner's first name changed in the tester panel");
+    if(!USERS.list.some(x=>x.id!==USERS.current && x.name.toLowerCase()===v.toLowerCase())){ currentUser().name=v; saveUsers(); } } save(); };
 $("optCaption").onchange=e=>{ S.settings.caption=e.target.checked; save(); };
 $("optManual").onchange=e=>{ S.settings.manual=e.target.checked; save(); };
 $("optEngine").onchange=e=>{ S.settings.engine=e.target.value; save(); };
@@ -2907,7 +3005,7 @@ $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=default
 async function saveRun(){
   const inSession = new Set(SESSION.clips);
   let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ if(!inSession.has(k)) continue; let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
-  const meta={app:APP_VERSION, savedAt:new Date().toISOString(), listener: window.LISTENER&&LISTENER.json ? {model:LISTENER.version, source:LISTENER.json.source, quant:LISTENER.json.quant} : null, engine:S.settings.engine, ua:navigator.userAgent};
+  const meta={app:APP_VERSION, user:{id:USERS.current, name:currentUser().name}, savedAt:new Date().toISOString(), listener: window.LISTENER&&LISTENER.json ? {model:LISTENER.version, source:LISTENER.json.source, quant:LISTENER.json.quant} : null, engine:S.settings.engine, ua:navigator.userAgent};
   const since=e=>e.t>=SESSION.start;
   const touched=[...new Set(S.log.filter(since).map(e=>e.ex).filter(Boolean))];
   // the app's own fault report for this session: anything a learner would notice, found without anyone reporting it
@@ -2921,7 +3019,7 @@ async function saveRun(){
     log:S.log.filter(since), trace:S.trace.filter(since), clips});
   const blob=new Blob([JSON.stringify(run,null,1)],{type:"application/json"});
   const d=new Date(), pad=n=>String(n).padStart(2,"0");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`faultless-run-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`faultless-run-${currentUser().name.normalize("NFD").replace(/[^A-Za-z0-9]/g,"").slice(0,20)||USERS.current}-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   trace("saved run file: "+a.download+" ("+Object.keys(clips).length+" recordings)"); save();
   return Object.keys(clips).length;
@@ -2940,7 +3038,7 @@ function askWho(){
 }
 $("whoName").oninput=e=>{ $("whoOk").disabled=!cleanName(e.target.value); };
 $("whoForm").onsubmit=e=>{ e.preventDefault(); const v=cleanName($("whoName").value); if(!v) return;
-  S.learnerName=v; delete S.ownAlias; trace("learner's first name typed"); save(); try{ $("whoName").blur(); }catch(e){} $("who").hidden=true; };
+  S.learnerName=v; delete S.ownAlias; trace("learner's first name typed"); if(/^User \d+$/.test(currentUser().name) || USERS.list.length===1){ currentUser().name=v; saveUsers(); } save(); try{ $("whoName").blur(); }catch(e){} $("who").hidden=true; };
 askWho();
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
