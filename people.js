@@ -174,6 +174,10 @@
    suit, scarf, backpack, bag, umbrella, red dress, and everything worn on the head. "stand up" and "sit down" show ONE movement: it is played
    once, the end is held, the figure fades out and is back in its first pose when the loop (2.6 s) begins again; the chair does not move.
    "raise hand" does the same instead of lowering the arm. dance, jump and walk are true loops (first pose = last pose).
+   The learner ("you") as a man or a woman: opts.sex "m" (default) | "f" on PICS.action and PICS.together; spec.sex on PICS.person
+   ({person: "you", sex: "f", did / card / looks tall, short ...}), on PICS.going and PICS.at (spec.sex, or who: {person: "you", sex: "f"}).
+   "f": the woman's build, the same skin and green top, black hair in a ponytail, no name tag. PICS.hand shows only a hand and a green cuff:
+   the same for both. On the women's whole figures the name tag is made narrower, to fit the chest.
 
    Nothing is random: the same spec always gives the same picture. Every gradient and clip path has its own id, so the
    same picture can be on the screen several times. No written words, except the name tags and the "z z Z" of sleep. */
@@ -297,6 +301,7 @@ function traits(spec, variant){
       top: M ? ["#4a6b86", "#36536b"] : COL.green, topName: M ? "slate" : "green", iris: M ? "#5e3f27" : "#4a3524", style: M ? "marie" : "you", beard: false,
       brow: M ? "#4a3326" : "#2a2422", lip: M ? "#c4626a" : "#bf6660", cap: "orange", hat: "felt", band: "#2b2b30", pack: "orange", umb: "yellow", scarf: "mustard",
       coat: "camel", suit: "charcoal", tie: null, glasses: "#26262b", round: false, bag: "mustard" };
+    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
   } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
@@ -842,13 +847,13 @@ function person(spec, name){
   if (!spec.person && (n > 1 || looks.indexOf("in a row") >= 0)) return row(spec, n);
   const acted = ACT_OF[doingOf(spec)];
   if (acted && (spec.person === "paul" || spec.person === "julie" || spec.person === "marie" || spec.person === "you"))
-    return action(acted, spec.person, { looks: spec.looks, name: name, still: !!spec.still });
+    return action(acted, spec.person, { looks: spec.looks, name: name, still: !!spec.still, sex: spec.sex });
   if (doingOf(spec) === "walking") return walker(spec, name);
   const high = liveTall(spec) ? null : looks.map(lookName).find(x => HEIGHT[x]);
   if (spec.card || high)                                   // about to do it: standing still with the picture card of the action; tall / short: the whole figure by a measuring post
-    return action("stop", spec.person, { looks: looks.filter(x => !HEIGHT[lookName(x)]), name: name, card: spec.card, size: high, spec: spec });
+    return action("stop", spec.person, { looks: looks.filter(x => !HEIGHT[lookName(x)]), name: name, card: spec.card, size: high, spec: spec, sex: spec.sex });
   if (spec.did || doingOf(spec) === "raising" || doingOf(spec) === "stopped")      // just stopped (did: what they were doing), or a hand up: the action figure
-    return action(spec.did ? "stop" : doingOf(spec), spec.person, { looks: spec.looks, name: name, still: !!spec.still, after: spec.did });
+    return action(spec.did ? "stop" : doingOf(spec), spec.person, { looks: spec.looks, name: name, still: !!spec.still, after: spec.did, sex: spec.sex });
   if (spec.holding) return holder(spec, name);
   if (doingOf(spec) === "reading") return reader(spec, name);
   return bust(spec, name);
@@ -1156,6 +1161,7 @@ function action(act, who, opts){
   who = who === "marie" || who === "paul" || who === "julie" ? who : "you";
   const still = !!opts.still, spec = opts.spec && !opts.spec.person && opts.spec.is ? { is: opts.spec.is } : { person: who }, name = who === "you" ? "" : (opts.name || WHO_NAME[who]);
   if (opts.looks && opts.looks.length) spec.looks = opts.looks;
+  if (opts.sex === "f" && spec.person === "you") spec.sex = "f";      // the learner as a woman (opts.sex "f"; "m", the default, is the man)
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
@@ -1233,6 +1239,8 @@ function action(act, who, opts){
   spec._head = true;
   const hd = bust(spec, name), slot = k => g.querySelector(`g[data-s="${u}${k}"]`);      // the head from the portrait: its hair behind the trunk, the rest in front
   slot("h").appendChild(hd.querySelector("defs")); slot("b").appendChild(hd.querySelector("g.hb")); slot("h").appendChild(hd.querySelector("g.hd"));
+  const tag = c.fem ? g.querySelector(`g[data-s="${u}h"] g.nametag`) : null;       // a woman's chest is narrower than her name tag: the tag is made to fit
+  if (tag){ const f = r2(Math.min(1, (2 * ch - 3) / (+tag.querySelector("rect").getAttribute("width") * W.hs))); if (f < 1) tag.setAttribute("transform", `translate(80 158) scale(${f}) translate(-80 -158)`); }
   return g;
 }
 
@@ -1893,15 +1901,15 @@ function scene(is, of, u, k){
   return `<rect width="160" height="190" fill="#e4f3fb"/><g transform="translate(-8 -24) scale(1.12)">${house(lookOf({}))}</g>` + (nm ? `<rect x="${r2(117 - tw / 2)}" y="121" width="${r2(tw)}" height="15" rx="3" fill="#fffdf6" stroke="#8a867a" stroke-width="1.4"/><text x="117" y="132.5" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="10" font-weight="700" fill="#2a2522">${nm}</text>` : "");
 }
 /* who goes or is somewhere: "you" | "marie" | a person spec. A named person is the whole action figure; a stranger is the walker (going) or head and shoulders (at) */
-function figure(who, walking){
-  const s = typeof who === "string" ? { person: who } : (who || { person: "you" }), named = s.person === "paul" || s.person === "julie" || s.person === "marie" || s.person === "you";
-  if (named) return { full: 1, g: action(walking ? "walk" : "stop", s.person, { still: true, looks: s.looks, name: s.name }) };
+function figure(who, walking, sex){
+  const s = typeof who === "string" ? { person: who, sex: sex } : (who || { person: "you", sex: sex }), named = s.person === "paul" || s.person === "julie" || s.person === "marie" || s.person === "you";
+  if (named) return { full: 1, g: action(walking ? "walk" : "stop", s.person, { still: true, looks: s.looks, name: s.name, sex: s.sex || sex }) };
   return walking ? { full: 1, g: walker(s) } : { full: 0, g: bust(s) };
 }
 const placeOf = p => { p = typeof p === "string" ? { is: p } : (p || {}); return [String(p.is || "house").toLowerCase().trim().replace(/^(the|a) /, ""), p.of]; };
 function goingPic(spec){
   spec = spec || {};
-  const u = "pg" + (seq++) + "_", p = placeOf(spec.to), f = figure(spec.who, true);
+  const u = "pg" + (seq++) + "_", p = placeOf(spec.to), f = figure(spec.who, true, spec.sex);
   const g = mk(`<defs><clipPath id="${u}c"><rect x="0" y="0" width="160" height="190" rx="16"/></clipPath></defs><g transform="translate(60 44) scale(.61)"><g clip-path="url(#${u}c)">${scene(p[0], p[1], u)}</g><rect width="160" height="190" rx="16" fill="none" stroke="#8f98a3" stroke-width="2.6"/></g>
     <path d="M30 181 H60" stroke="#fff" stroke-width="11" stroke-linecap="round"/><path d="M30 181 H58" stroke="#3fae5a" stroke-width="6.5" stroke-linecap="round"/><path d="M50 171.5 L61 181 L50 190.5" stroke="#3fae5a" stroke-width="6.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <g class="who" transform="translate(-13 80) scale(.52)"></g>`);
@@ -1910,7 +1918,7 @@ function goingPic(spec){
 }
 function atPic(spec){
   spec = spec || {};
-  const u = "pg" + (seq++) + "_", p = placeOf(spec.place), f = figure(spec.who, false);
+  const u = "pg" + (seq++) + "_", p = placeOf(spec.place), f = figure(spec.who, false, spec.sex);
   const g = mk(`<defs><clipPath id="${u}c"><rect x="0" y="0" width="160" height="190" rx="13"/></clipPath></defs><g clip-path="url(#${u}c)">${scene(p[0], p[1], u)}<g class="who" transform="${f.full ? "translate(-14 62) scale(.68)" : "translate(-6 84) scale(.56)"}"></g></g>`);
   g.querySelector("g.who").appendChild(f.g);
   return g;

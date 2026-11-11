@@ -50,5 +50,9 @@
 "onlyanswer": {
 "text": "Don't say the question again. Say only the answer.",
 "dur": 2.87
+},
+"swamped": {
+"text": "Put your phone on a flat surface. The microphone is picking up a loud noise.",
+"dur": 4.28
 }
 }
