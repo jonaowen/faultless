@@ -130,13 +130,14 @@
   // ---------- microphone ----------
   // The audio system is set up once (it needs a tap from the learner); the microphone itself is switched on
   // only for each answer and off again straight after, so it is never on while the teacher talks or during leads.
-  let ctx=null, node=null, stream=null, srcNode=null, armed=false, chunks=[], onChunk=null;
+  let ctx=null, node=null, rawNode=null, stream=null, srcNode=null, armed=false, chunks=[], rawChunks=[], onChunk=null;
   async function openMic(){                 // call from a tap: sets up audio and asks for microphone permission once
     if(!ctx){
       ctx = new AudioContext({sampleRate:SR});
       const code = `class Tap extends AudioWorkletProcessor{ process(i){ const c=i[0]&&i[0][0]; if(c) this.port.postMessage(c.slice(0)); return true; } } registerProcessor("tap", Tap);`;
       await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code],{type:"application/javascript"})));
       node = new AudioWorkletNode(ctx, "tap"); node.port.onmessage = e => { if(armed){ chunks.push(e.data); onChunk&&onChunk(e.data); } };
+      rawNode = new AudioWorkletNode(ctx, "tap"); rawNode.port.onmessage = e => { if(armed) rawChunks.push(e.data); };      // the microphone as it is, before the low cut (see swamp)
     }
     if(ctx.state==="suspended") await ctx.resume();
     await micOn(); micOff();                 // permission now, not in the middle of the first answer
@@ -147,11 +148,36 @@
     // teacher's voice behind her lips (Jon 9 Nov 10:27). Nothing is captured while she speaks, so there is no echo to cancel.
     stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:true, channelCount:1}});
     if(ctx.state==="suspended") await ctx.resume();
-    srcNode = ctx.createMediaStreamSource(stream); srcNode.connect(node);      // not connected to the speakers
+    srcNode = ctx.createMediaStreamSource(stream);
+    /* Low rumble is cut before anything listens (run of 10 Nov 2026, 21:33: every answer refused or unheard; in the seven
+       recordings 99-100 % of the energy was below 300 Hz, thumps at full scale about once a second, the voice underneath.
+       Speech needs nothing below about 150 Hz; with that band removed the same recordings went from 1 of 7 heard right to
+       4 of 7). Two second-order high-pass stages at 160 Hz. */
+    const hp1 = ctx.createBiquadFilter(), hp2 = ctx.createBiquadFilter();
+    for(const f of [hp1, hp2]){ f.type = "highpass"; f.frequency.value = 160; f.Q.value = 0.707; }
+    srcNode.connect(hp1); hp1.connect(hp2); hp2.connect(node);      // not connected to the speakers
+    if(rawNode) srcNode.connect(rawNode);
   }
   function micOff(){
     if(srcNode){ try{ srcNode.disconnect(); }catch(e){} srcNode=null; }
     if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  }
+  /* Is the microphone swamped? (run of 10 Nov 2026, 21:33: the phone lay on the owner's chest; thumps at full scale about
+     once a second, the voice underneath; every answer refused or unheard.) Measured on the last turn's sound BEFORE the low
+     cut: its loudest sample, and the share of its energy below 150 Hz (one FFT over the turn). The seven recordings of that
+     run: peak 1.00, share 0.977 to 0.993. The 487 recorded answers of the other runs: share at most 0.851 (144 of them reach
+     a peak of 0.98). Swamped: peak at least 0.98 and share at least 0.93. */
+  function swamp(){
+    const a=join(rawChunks); if(a.length<SR*0.3) return {swamped:false, peak:0, low:0};
+    let peak=0; for(let i=0;i<a.length;i++){ const v=Math.abs(a[i]); if(v>peak) peak=v; }
+    if(peak<0.98) return {swamped:false, peak:+peak.toFixed(3), low:null};
+    let n=1; while(n<a.length) n<<=1; const re=new Float64Array(n), im=new Float64Array(n); re.set(a);
+    for(let i=1,j=0;i<n;i++){ let bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit; if(i<j){ const t=re[i]; re[i]=re[j]; re[j]=t; } }
+    for(let len=2;len<=n;len<<=1){ const ang=-2*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang);
+      for(let i=0;i<n;i+=len){ let cr=1, ci=0; for(let k=0;k<len/2;k++){ const ur=re[i+k], ui=im[i+k], vr=re[i+k+len/2]*cr-im[i+k+len/2]*ci, vi=re[i+k+len/2]*ci+im[i+k+len/2]*cr;
+        re[i+k]=ur+vr; im[i+k]=ui+vi; re[i+k+len/2]=ur-vr; im[i+k+len/2]=ui-vi; const t=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=t; } } }
+    let lowE=0, tot=0; const cut=Math.floor(150*n/SR); for(let k=0;k<=n/2;k++){ const e=re[k]*re[k]+im[k]*im[k]; tot+=e; if(k<cut) lowE+=e; }
+    const low=tot>0 ? lowE/tot : 0; return {swamped: low>=0.93, peak:+peak.toFixed(3), low:+low.toFixed(3)};
   }
   function join(cs){ let n=0; for(const c of cs) n+=c.length; const a=new Float32Array(n); let o=0; for(const c of cs){ a.set(c,o); o+=c.length; } return a; }
 
@@ -172,7 +198,7 @@
   function capture(opts={}){
     const noSpeech=opts.noSpeechMs||7000, endSil=opts.endSilenceMs||800, maxMs=Math.min(opts.maxMs||6000, J? J.frames*10 : 6000);
     return new Promise(resolve=>{
-      chunks=[]; armed=true;
+      chunks=[]; rawChunks=[]; armed=true;
       const fr=320;                   // 20 ms frames
       let buf=new Float32Array(0), t=0, floor=null, speechStart=-1, lastVoice=-1, checking=false, done=false;
       const energies=[], voicedRun=[], voicedLog=[];      // voicedLog: was each 20 ms frame voiced (for voicedMsAfter)
@@ -227,5 +253,5 @@
     for(let i=0;i<n;i++) v.setInt16(44+i*2, Math.max(-1,Math.min(1,audio[i]))*32767, true);
     return new Uint8Array(b);
   }
-  window.LISTENER = {version:MODEL_VERSION, load, openMic, micOn, micOff, capture, recognise, logMel, wav, get json(){ return J; }, get ready(){ return !!enc; }, get audioReady(){ return !!(ctx && node); }};
+  window.LISTENER = {version:MODEL_VERSION, load, openMic, micOn, micOff, capture, swamp, recognise, logMel, wav, get json(){ return J; }, get ready(){ return !!enc; }, get audioReady(){ return !!(ctx && node); }};
 })();

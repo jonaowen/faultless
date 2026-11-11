@@ -359,6 +359,12 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson2.js"></script>
 <script src="course/lesson3.js"></script>
 <script src="course/lesson4.js"></script>
+<script src="course/lesson5.js"></script>
+<script src="course/lesson6.js"></script>
+<script src="course/lesson7.js"></script>
+<script src="course/lesson8.js"></script>
+<script src="course/lesson9.js"></script>
+<script src="course/lesson10.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script>
@@ -366,7 +372,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.21";
+const APP_VERSION="2026-11-10.22";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -430,16 +436,16 @@ const VOCAB = {
   count7: {name:"un deux trois quatre cinq six sept", kind:"seq", seq:["n1","n2","n3","n4","n5","n6","n7"], say:["Un, deux, trois, quatre, cinq, six, sept."], accept:[]},
   cle: {name:"clé", kind:"object", art:"UNE", say:["Une","clé."], accept:["clé","clés","clef","clefs","cle","cles"]},
   // the verbs of "Il fait quoi ?": only the forms that sound the same are accepted ("manger", "mangé" are other words)
-  mange: {name:"mange", kind:"word", say:[], accept:["mange","manges","mangent"]},
-  dort: {name:"dort", kind:"word", say:[], accept:["dort","dors","dorent"]},
-  boit: {name:"boit", kind:"word", say:[], accept:["boit","bois"]},
+  mange: {name:"mange", kind:"word", verb:true, tu:"manges", say:[], accept:["mange","manges","mangent"]},
+  dort: {name:"dort", kind:"word", verb:true, tu:"dors", say:[], accept:["dort","dors","dorent"]},
+  boit: {name:"boit", kind:"word", verb:true, tu:"bois", alone:"bois", say:[], accept:["boit","bois"]},
   /* Actions (10 Nov 2026; Jon: "you needn't shy away from having actions just because the app can't check the actions"):
      the commands are words the learner SAYS in "Répète" steps and in "Je danse." / "Tu danses."; one spoken form serves the
      command and je / tu / il. Doing them is an item of its own (presentAct), with nothing to judge. */
-  danse: {name:"danse", kind:"word", say:["Danse."], accept:["danse","danses","dansent","dance"]},
-  saute: {name:"saute", kind:"word", say:["Saute."], accept:["saute","sautes","sautent","sot","sotte"]},
-  souris: {name:"souris", kind:"word", say:["Souris."], accept:["souris","sourit","sourie"]},
-  marche: {name:"marche", kind:"word", say:["Marche."], accept:["marche","marches","marchent"]},
+  danse: {name:"danse", kind:"word", verb:true, on:true, tu:"danses", say:["Danse."], accept:["danse","danses","dansent","dance"]},
+  saute: {name:"saute", kind:"word", verb:true, on:true, tu:"sautes", say:["Saute."], accept:["saute","sautes","sautent","sot","sotte"]},
+  souris: {name:"souris", kind:"word", verb:true, on:"only", il:"sourit", say:["Souris."], accept:["souris","sourit","sourie"]},
+  marche: {name:"marche", kind:"word", verb:true, on:true, tu:"marches", say:["Marche."], accept:["marche","marches","marchent"]},
   levetoi: {name:"lève toi", kind:"phrase", say:["Lève-toi."], accept:["levetoi"]},
   assiedstoi: {name:"assieds toi", kind:"phrase", say:["Assieds-toi."], accept:["assiedstoi"]},
   fr_leve: {name:"lève", kind:"frag", say:["Lève."], gram:["lève","lèves","lèvent"], accept:["lève","lèves","lèvent","leve"]},
@@ -452,6 +458,55 @@ const VOCAB = {
   ilyena: {name:"il y en a", kind:"phrase", say:["Il y en a…"], accept:["ilyena"]},
   fr_ange: {name:"ange", kind:"frag", say:["Ange."], gram:["ange","anges","en","an"], accept:["ange","anges","hange","anche"]},        // the end of "mange"
   fr_or: {name:"or", kind:"frag", say:["Or."], gram:["or","hors","ors","aure"], accept:["or","hors","ors","ore"]},                      // the end of "dort"
+  /* Lessons 5-10 as rebuilt from DISE (version .20, 10 Nov 2026). Everything below is data for the tables of
+     dev/appconv/convert.py: a new lesson's words are added here and there, and nothing else has to change.
+     Nouns (kind "object"): art = the front word; pl = the written plural where it is not name + "s" (phraseOf writes the
+       plural after "des" or a number, so the listener's word list gets the answer as it is written).
+     Verbs (verb:true: the il / elle rules of tokensOf apply before them): one key for all the forms that sound the same;
+       tu / il / alone = the written form after "tu", after il / elle / on / a name, and said alone as a command (phraseOf).
+     The past ("dansais") is another key than the present ("danse"): they are judged apart. */
+  n8: {name:"huit", kind:"number", say:["Huit."], accept:["huit","8","huits"]},
+  n9: {name:"neuf", kind:"number", say:["Neuf."], accept:["neuf","9","neufs"]},
+  n10: {name:"dix", kind:"number", say:["Dix."], accept:["dix","10"]},
+  chien: {name:"chien", kind:"object", art:"UN", say:["Un","chien."], accept:["chien","chiens"]},
+  voiture: {name:"voiture", kind:"object", art:"UNE", say:["Une","voiture."], accept:["voiture","voitures"]},
+  homme: {name:"homme", kind:"object", art:"UN", say:["Un","homme."], accept:["homme","hommes"]},
+  femme: {name:"femme", kind:"object", art:"UNE", say:["Une","femme."], accept:["femme","femmes"]},
+  gateau: {name:"gâteau", kind:"object", art:"UN", pl:"gâteaux", say:["Un","gâteau."], accept:["gâteau","gâteaux","gateau","gateaux"]},
+  cafe: {name:"café", kind:"object", art:"UN", say:["Un","café."], accept:["café","cafés","cafe","cafes"]},
+  banane: {name:"banane", kind:"object", art:"UNE", say:["Une","banane."], accept:["banane","bananes"]},
+  table: {name:"table", kind:"object", art:"UNE", say:["Une","table."], accept:["table","tables"]},
+  chaise: {name:"chaise", kind:"object", art:"UNE", say:["Une","chaise."], accept:["chaise","chaises"]},
+  sac: {name:"sac", kind:"object", art:"UN", say:["Un","sac."], accept:["sac","sacs"]},
+  boite: {name:"boîte", kind:"object", art:"UNE", say:["Une","boîte."], accept:["boîte","boîtes","boite","boites"]},
+  maison: {name:"maison", kind:"object", art:"UNE", say:["Une","maison."], accept:["maison","maisons"]},
+  porte: {name:"porte", kind:"object", art:"UNE", say:["Une","porte."], accept:["porte","portes"]},
+  chat: {name:"chat", kind:"object", art:"UN", say:["Un","chat."], accept:["chat","chats"]},
+  lit: {name:"lit", kind:"word", verb:true, tu:"lis", say:[], accept:["lit","lis","lits"]},
+  leve: {name:"lève", kind:"word", verb:true, tu:"lèves", say:[], accept:["lève","lèves","lèvent","leve"]},        // "lève la main" (the sound piece "lève" of "Lève-toi" is fr_leve)
+  dansais: {name:"dansais", kind:"word", verb:true, il:"dansait", say:[], accept:["dansais","dansait","dansaient"]},
+  sautais: {name:"sautais", kind:"word", verb:true, il:"sautait", say:[], accept:["sautais","sautait","sautaient"]},
+  marchais: {name:"marchais", kind:"word", verb:true, il:"marchait", say:[], accept:["marchais","marchait","marchaient"]},
+  compte: {name:"compte", kind:"word", say:[], accept:["compte","comptes","comptent","comte","conte"]},
+  apprend: {name:"apprend", kind:"word", verb:true, tu:"apprends", say:[], accept:["apprend","apprends","apprennent"]},     // il / elle apprend le français ("j'apprends" is the unit below)
+  // the verb after vais / vas / va (the near future, Lesson 9); the spellings are the ones that sound the same
+  danser: {name:"danser", kind:"word", inf:true, say:[], accept:["danser","dansé","dansez","dansée","dansés"]},
+  sauter: {name:"sauter", kind:"word", inf:true, say:[], accept:["sauter","sauté","sautez","sautée","sautés"]},
+  marcher: {name:"marcher", kind:"word", inf:true, say:[], accept:["marcher","marché","marchez","marchée","marchés"]},
+  sourire: {name:"sourire", kind:"word", inf:true, say:[], accept:["sourire","sourires"]},
+  manger: {name:"manger", kind:"word", inf:true, say:[], accept:["manger","mangé","mangez","mangée","mangés"]},
+  lever: {name:"lever", kind:"word", inf:true, say:[], accept:["lever","levé","levez","levée","levés"]},
+  boire: {name:"boire", kind:"word", inf:true, say:[], accept:["boire"]},
+  // sound pieces of Lesson 8 (the ends of "café", "banane", "table"): judged like the pieces of Lessons 2-4 (something was said)
+  fr_fe: {name:"fé", kind:"frag", say:["Fé."], gram:["fée","fait","fais"], accept:["fé","fée","fées","fait","fais","faits"]},
+  fr_nane: {name:"nane", kind:"frag", say:["Nane."], gram:["âne","anne","nana"], accept:["nane","âne","ânes","anne","nana","nanas"]},
+  fr_ble: {name:"ble", kind:"frag", say:["Ble."], gram:["bleu","blé","bleue"], accept:["ble","bleu","bleue","bleus","blé","blés"]},
+  japprends: {name:"j'apprends", kind:"word", say:[], accept:["j'apprends","j'apprend","japprends"]},              // one unit, like "je m'appelle"
+  sappelle: {name:"s'appelle", kind:"word", say:[], accept:["sappelle"]},                                            // il / elle s'appelle … (tokensOf joins it)
+  bonjour: {name:"bonjour", kind:"word", say:["Bonjour."], accept:["bonjour","bonjours"]},
+  bon: {name:"bon", kind:"word", say:[], accept:["bon","bons","bond","bonds"]},
+  francais: {name:"français", kind:"word", say:[], accept:["français","francais"]},
+  main: {name:"main", kind:"word", say:[], accept:["main","mains"]},
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
 // function-word slots in an expected answer, with the spellings Chrome may give them
@@ -462,8 +517,13 @@ const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener
   // Lessons 5-10: the small word in front carries the person ("il" and "elle" are judged exactly), yes and no, "ça va"
   IL:["il","ils","île"], ELLE:["elle","elles","el","aile","ailes"], OUI:["oui","ouais","ouï","ouie"], NON:["non","nom","nan"],
   CA:["ça","ca","sa","ç'a"], VA:["va","vas","vat"],
-  JE:["je","j'","jeu","jeux"], TU:["tu","tue","tus","t'"] };
-const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu" };
+  JE:["je","j'","jeu","jeux"], TU:["tu","tue","tus","t'"],
+  // Lessons 5-10 (.20): not, the plural front word, we, and, the / of / to in fixed answers, "it was"
+  PAS:["pas","pa"], DES:["des","dès","dés"], ON:["on","ont"], ET:["et","eh","hé"], BIEN:["bien","biens"], LE:["le","la","là"],      /* "le français" came out as "la français" for 8 of 16 English voices; no answer of the course sets le against la for a word (ruling of 11 Nov 2026) */ LA:["la","là"],
+  DE:["de","d'"], A:["à","a","ah","un"],     /* "un": "à cinq" came out as "un cinq" for 5 of 16 English voices (10 Nov 2026); no answer is "un cinq" */ CETAIT:["c'était","c'étaient","s'était","c'etait","cétait"],
+  VAIS:["vais"] };          // je vais + verb (Lesson 9). "tu vas" and "il va" are the slot VA above ("vas" and "va" sound the same; phraseOf writes "vas" after "tu")
+const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu",
+  PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
 /* Script structure (NIFDI part-firming handout):
@@ -530,6 +590,8 @@ function genItem(it){
     answerUnits:ans, questionUnits:tu.filter(u=>!/^avec moi/i.test(u) && !/^vas-y/i.test(u) && !/^écoute/i.test(u)), hold:it.hold};
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
+  // "say" (Lessons 9+): the teacher says a line that nobody answers (her reply in a conversation; "Arrête." to a pictured person)
+  if(it.kind==="say") return Object.assign(o,{type:"say", kind:"say", target:"say "+keyOf(it.teacher)});
   if(it.kind==="show" || it.kind==="do") return Object.assign(o,{type:"act", kind:it.kind, act:it.act, target:it.kind+" "+it.act});
   if(it.kind==="model") return Object.assign(o,{type:"model"});
   if(it.kind==="lead") return Object.assign(o,{type:"task", kind:"lead"});
@@ -902,7 +964,16 @@ async function narrate(key){
 async function speakTeacher(text, opts={}){ if(!(await playTeacher(text, opts.withLearner))) await speakOne(text, opts); }
 /* The model learner's voice: recorded clips in a second French voice, so the learner can be heard saying the
    answer at the same time as the teacher (two voices at once is not possible with the phone's speech). */
-const LEARNER_CLIP = t => "audio/learner/"+t.toLowerCase().replace(/[’']/g,"").replace(/[^a-zà-ÿ ]/g,"").trim().replace(/\s+/g,"_")+".mp3";
+/* Whose recording (.20): Pierre's files have no prefix, Sylvie's start "julie_"; the two people nobody knows (Lesson 7: a man
+   and a woman who say "Bonjour.") have voices of their own, "man_" and "woman_". A question that a model learner also says
+   as a statement ("Ça va ?" / "Ça va.") has its own recording, <key>_q, as the teacher's have: LEARNER_TWINS lists them
+   (there is no index of these files, and asking for a file that is not there is a fault in the run file). */
+const VOICE_PREFIX = {paul:"", julie:"julie ", man:"man ", woman:"woman "};
+const voiceName = v => VOCAB[v] ? VOCAB[v].name : v==="man" ? "the man" : "the woman";
+const voiceLine = (v, units) => VOICE_PREFIX[v]+units.join(" ");
+const LEARNER_TWINS = ["ça_va"];
+const LEARNER_CLIP = t => { const k=t.toLowerCase().replace(/[’']/g,"").replace(/[^a-zà-ÿ ]/g,"").trim().replace(/\s+/g,"_");
+  return "audio/learner/"+k+(/\?\s*$/.test(t) && LEARNER_TWINS.includes(k.replace(/^(?:julie|man|woman)_/,"")) ? "_q" : "")+".mp3"; };
 const clipBufs={};
 async function learnerClip(text){
   const url=LEARNER_CLIP(text);
@@ -915,7 +986,7 @@ async function learnerClip(text){
 let learnerPreloaded=false;
 function preloadLearner(){
   if(learnerPreloaded) return; learnerPreloaded=true;
-  const say = (voice, units) => voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
+  const say = voiceLine;
   const want = new Set(["paul","julie"].map(w=>say(w, ["Je m'appelle "+VOCAB[w].name+"."])));
   GEN.forEach(L=>L.exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
     if(it.type==="model" && it.voice && it.voice!=="teacher") want.add(say(it.voice, it.answerUnits));
@@ -949,7 +1020,7 @@ function speakOne(text, opts={}){
    (Jon 9 Nov 16:04: connected speech at the normal rate, but nobody says a string of numbers that fast, and the learner
    follows a sequence more easily at that pace). Each number is its own clip. */
 const COUNT_GAP = 500;
-const COUNT_RE = /^(?:(répète)\s*:\s*)?((?:un|deux|trois|quatre|cinq|six|sept)(?:\s*,\s*(?:un|deux|trois|quatre|cinq|six|sept))+)\s*[.…]?$/i;
+const COUNT_RE = /^(?:(répète)\s*:\s*)?((?:un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)(?:\s*,\s*(?:un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix))+)\s*[.…]?$/i;
 function countParts(u){ const m=COUNT_RE.exec(u.trim()); if(!m) return null;
   const nums=m[2].split(/\s*,\s*/).map(n=>n.charAt(0).toUpperCase()+n.slice(1).toLowerCase()+".");
   return {repete:!!m[1], nums}; }
@@ -1021,10 +1092,33 @@ function nameOf(w){
   return null;
 }
 // Chrome's multi-word spellings of a one-word answer (e.g. "je l'ai" for Julie) are turned back into the word first
+/* The word lists of the rules below come from VOCAB (.20), so a new verb or noun needs no change here. A verb's forms are
+   its name and its tu / il / alone forms (for mange, dort, boit: exactly the six forms these rules listed by hand until
+   .19); a noun's are the spellings in its accept list that begin with its name (livre, livres; clé, clés, cle, clef…). */
+const reEsc = x => x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const VERB_FORMS = [...new Set(Object.values(VOCAB).filter(v=>v.verb).flatMap(v=>[v.name, v.tu, v.il, v.alone].filter(Boolean)))].map(reEsc).join("|");
+const NOUN_FORMS = [...new Set(Object.values(VOCAB).filter(v=>v.kind==="object").flatMap(v=>v.accept.filter(a=>fold(a).startsWith(fold(v.name)))))].map(reEsc).join("|");
+/* "un" before a verb (.20). Before mange, dort, boit it was "elle" (the measurement in tokensOf). Before the verbs the course
+   says with "on" (VOCAB on: danse, saute, marche, sourit) the listener writes "un" for "on" AND for "elle", about as often:
+   of the 16 English synthetic clips of each answer, "on danse" came out as "un danse" for 6 and "elle danse" for 3; "on
+   marche" for 3 and "elle marche" for 4; "on saute (pas)" for 3 and "elle saute" for 7 (10 Nov 2026, test20.js). So "un"
+   before those verbs is left as it is heard (the answer is then refused: reported, to be ruled on as an "unsure" class).
+   Before "sourit", which the course says only with "on" (on:"only"), it is "on": "un souris / sourit" for 4 of 16. */
+const ON_FORMS = [...new Set(Object.values(VOCAB).filter(v=>v.verb && v.on==="only").flatMap(v=>[v.name, v.tu, v.il, v.alone].filter(Boolean)))].map(reEsc).join("|");
+const ELLE_FORMS = [...new Set(Object.values(VOCAB).filter(v=>v.verb && !v.on).flatMap(v=>[v.name, v.tu, v.il, v.alone].filter(Boolean)))].map(reEsc).concat(["sappelle"]).join("|");
+const INF_FORMS = Object.values(VOCAB).filter(v=>v.inf).map(v=>reEsc(v.name)).join("|");
+const RE_ELLE_VERB = new RegExp("(^| )(?:un|a en|a) (?=(?:"+ELLE_FORMS+")(?: |$))","g"), RE_IL_VERB = new RegExp("(^| )(?:y en|y|en) (?=(?:"+VERB_FORMS+")(?: |$))","g");
+const RE_ON_VERB = new RegExp("(^| )un (?=(?:"+ON_FORMS+")(?: |$))","g"), RE_ETON_VERB = new RegExp("(^| )et on (?=(?:"+VERB_FORMS+")(?: |$))","g");
+const RE_ELLE_VA = new RegExp("(^| )(?:un|à) (?=va (?:pas )?(?:"+INF_FORMS+")(?: |$))","g");
+const RE_JE_VAIS = new RegExp("(^| )(?:chat|chien|ça) (?:va|vais|vas) (?=(?:pas )?(?:"+INF_FORMS+")(?: |$))","g");
+const RE_DES_NOUN = new RegExp("(^| )table (?=(?:"+NOUN_FORMS+")(?: |$))","g"), RE_CETAIT_NOUN = new RegExp("(^| )c'était (?=(?:"+NOUN_FORMS+")(?: |$))","g");
+const RE_SYLVIE = new RegExp("(^| )souris (?=(?:"+VERB_FORMS+"|et)(?: |$))","g");
+const RE_IL_NOUN = new RegExp("(^| )(?:il|elle) (?=(?:"+NOUN_FORMS+")(?: |$))","g");
 const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
   n = n.replace(/(^| )tu t'? ?app?ell?es?(?= |$)/g, "$1tutappelles");                             // tu t'appelles (said to the teacher about her)
+  n = n.replace(/(^| )s'app?ell?e(?:s|nt)?(?= |$)/g, "$1sappelle");                                 // il / elle s'appelle … (the pronoun before it is judged)
   /* "toi" at the end of the two commands, as the listener writes it. Run of 10 Nov 16:36 (Jon, Lesson 2): "Lève-toi", said
      right every time, came out as "lève trois" 14 times in 16 and was marked wrong 14 times ("trois" is in the list as a
      number, and an English "toi" has the r-coloured start of "trois" for this small model). Nobody says "lève trois" or
@@ -1037,8 +1131,38 @@ function tokensOf(text){
      synthetic voices saying "il mange", 13 came out as "y en mange"; "elle mange" came out as "un mange" for 9 and
      "a en mange" for 2 (10 Nov 2026, dev/harness/replay/test510.js). None of these is anything a learner says, and none
      turned one pronoun into the other. A verb with nothing before it is still "left out il". */
-  n = n.replace(/(^| )(?:un|a en|a) (?=(?:mange|manges|dort|dors|boit|bois)(?: |$))/g, "$1elle ");     // first: "a en" is "elle", not "a" + "il"
-  n = n.replace(/(^| )(?:y en|y|en) (?=(?:mange|manges|dort|dors|boit|bois)(?: |$))/g, "$1il ");
+  n = n.replace(RE_ELLE_VERB, "$1elle ");     // first: "a en" is "elle", not "a" + "il"
+  n = n.replace(RE_IL_VERB, "$1il ");
+  /* Lessons 5-10 (.20). What the listener writes for the new answers when it mishears them, measured on 8 French and 8
+     English-accented synthetic voices at two speeds (dev/harness/replay/mk20.py, test20.js, t20sum.js; 10 Nov 2026; the
+     word list of the end of Lesson 10; counts are of the 16 English clips of that answer unless said). None of these is
+     anything a learner says, and none turns one answer of the course into another.
+     - "et on" + verb is "il": "il marche" came out as "et on marche" for 9, "il saute" as "et on saute" for 3, "il danse"
+       and "il mange pas" for 1 each; "on" + verb never did (0 of 64).
+     - "un" + sourit is "on"; "un" + danse / saute / marche is left alone (see RE_ON_VERB above).
+     - "un" or "à" before "va" + verb is "elle": "elle va danser" came out as "un / à va danser" for 9, "elle va sauter"
+       as "un va sauter" for 7, "elle va pas sauter" as "un va pas sauter" for 6; "un s'appelle Sylvie" for 2 (ELLE_FORMS).
+     - "table" + a thing's name is "des": "des pommes" came out as "table pomme(s)" for 8, "des clés", "des stylos", "des
+       sacs" as "table …" for 4 each, "des chiens" for 3.
+     - "c'était" + a thing's name with no front word is "c'est des": "c'est des clés / pommes / sacs" 3 each, "c'est des
+       chiens" 4, "c'est des livres" 2 ("c'était" is followed by un / une / bon in every answer that has it).
+     - "lit va" is "livre" (an English "leevr"): "trois lit va" 5, "c'est (pas) (un / des) lit va" 5; not after il / elle.
+     - "apprend" after va / vas / vais is "pas" (an English "pah"): "ça va apprend" 5, "il / elle va apprend sauter" 5.
+     - "c'était" at the end after va / vas / vais / pas is "sauter" (an English "so-tay"): 15 clips over the six answers
+       that end in "sauter" ("tu vas c'était", "il va pas un c'était").
+     - "souris" where a name stands is "Sylvie": "salut souris" 4, "souris mange" 5, "souris mange pas" 4, "elle
+       s'appelle souris" 2, "souris et pierre" 1 (the verb "souris" is never followed by a verb or "et", nor said after
+       "salut" or "s'appelle"). */
+  n = n.replace(/(^| )(va|vas|vais) apprend(?= |$)/g, "$1$2 pas");
+  n = n.replace(/(^| )(va|vas|vais|pas) (?:un |il )?c'était$/g, "$1$2 sauter");
+  /* "chat va danser", "ça va pas sauter": "je vais …" from English voices (je vais danser: chat va danser 5 of 16; je vais
+     sauter: chat va / vais sauter 8; je vais marcher: ça va marcher 4, chat vais marcher 4; je vais pas sauter: chat / ça va
+     pas sauter 7). "Ça va" is never followed by a verb in the course, and nobody says "chat va danser" (ruling of 11 Nov 2026). */
+  n = n.replace(RE_JE_VAIS, "$1je vais ");
+  n = n.replace(RE_ETON_VERB, "$1il ").replace(RE_ON_VERB, "$1on ").replace(RE_ELLE_VA, "$1elle ");      // after the two above: "un va apprend c'était" is "elle va pas sauter"
+  n = n.replace(RE_DES_NOUN, "$1des ").replace(RE_CETAIT_NOUN, "$1c'est des ");
+  n = n.replace(/(?<!(?:^| )(?:il|elle))(^| )lit va(?= |$)/g, "$1livre");
+  n = n.replace(RE_SYLVIE, "$1sylvie ").replace(/(^| )(salut|sappelle|et) souris(?= |$)/g, "$1$2 sylvie");
   /* "ça" (in the list for "Ça va") is what the listener writes for an English "c'est" and "sept": "c'est une clé" came
      out as "ça une clé" for 11 of the 16 English voices, "sept" as "ça" for 11, "quatre" as "quatre ça" for 6. "Ça" before
      un/une is "c'est"; after "quatre" it is the end of that word; alone it counts as "sept" (VOCAB n7). */
@@ -1050,10 +1174,10 @@ function tokensOf(text){
      middle of an answer, not followed by "va" (and not after "six", where it is "sept"), is not a word anyone said. "Il" or
      "elle" straight before a thing's name is "une" (the listener's nearest short word; "un" does not come out that way). */
   n = n.replace(/(\S) ça(?= (?!va(?: |$))\S)/g, (m,a,off,str)=> /(?:^| )six$/.test(str.slice(0,off+a.length)) ? m : a);
-  n = n.replace(/(^| )(?:il|elle) (?=(?:livres?|pommes?|stylos?|chaussures?|cl[ée]s?|clefs?)(?: |$))/g, "$1une ");
+  n = n.replace(RE_IL_NOUN, "$1une ");
   for(const [re,to] of MULTI) n = n.replace(re, to);
   const toks = n.split(" ").filter(w=>w && !FILLERS.includes(w));
-  const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w)) flat.push(m[1], m[2]); else flat.push(w); });
+  const flat=[]; toks.forEach(w=>{ const m=w.match(/^([cs]')(.+)$/); if(m && !CEST.includes(w) && !SLOT.CETAIT.includes(w)) flat.push(m[1], m[2]); else flat.push(w); });      // "c'était" is one word
   return flat;
 }
 // remove the app's own recent words (picked up by the microphone), except anything that is or contains the answer
@@ -1105,6 +1229,7 @@ function judge(text, expect, echoes=[], alsoOk=[]){
     if(!tt.length || tt.length%want.length) return null; let near=[];
     for(let i=0;i<tt.length;i++){ const e=want[i%want.length], w=tt[i];
       if(SLOT[e]){ if(!SLOT[e].includes(w)) return null; }
+      else if(VOCAB[e] && VOCAB[e].accept.includes(w)){ }          // a spelling of the expected word itself ("lève" is the verb of "lève la main" and the sound piece of "Lève-toi")
       else { const r=nameOf(w); if(!r || r.n!==e) return null; if(r.near) near.push(w); } }
     return near; };
   for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(!nr) continue;
@@ -1115,13 +1240,13 @@ function judge(text, expect, echoes=[], alsoOk=[]){
     return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
   const whole = expect.filter(x=>x!=="REST");
   // the start of the answer and then nothing more ("Salut." for "Salut, Marie !", "un" for "un livre"): not a wrong name
-  if(t.length<whole.length && t.every((w,i)=> SLOT[whole[i]] ? SLOT[whole[i]].includes(w) : (nameOf(w)||{}).n===whole[i])) return {ok:false, reason:"only the start of the answer"};
+  if(t.length<whole.length && t.every((w,i)=> SLOT[whole[i]] ? SLOT[whole[i]].includes(w) : (VOCAB[whole[i]] && VOCAB[whole[i]].accept.includes(w)) || (nameOf(w)||{}).n===whole[i])) return {ok:false, reason:"only the start of the answer"};
   const target = expect.filter(x=>x!=="REST").slice(-1)[0];
   const said = t.map(nameOf).filter(Boolean).map(r=>r.n);
   /* A sentence with every word in place but one or two wrong ("elle mange" for "il mange", "il dort" for "il mange"): the
      run file says which word, so that a pronoun error can be told from a verb error without the recording. */
   if(whole.length>=2 && t.length===whole.length){
-    const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (nameOf(w)||{}).n===e;
+    const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (VOCAB[e] && VOCAB[e].accept.includes(w)) || (nameOf(w)||{}).n===e;
     const bad = whole.map((e,i)=>[e,t[i]]).filter(([e,w])=>!fitsAt(e,w));
     /* je / tu: the listener cannot yet be trusted to tell them apart. Synthetic voices, 10 Nov 2026: "je marche" came out as
        "tu marches" for 9 of 16 English voices and "tu souris" as "je souris" for 6 of 16 French ones. Refusing a right
@@ -1129,13 +1254,33 @@ function judge(text, expect, echoes=[], alsoOk=[]){
        is je for tu or tu for je, the answer is accepted and the run file says so (FAULT PERSON UNSURE): the recording is
        kept, and the run doctor's re-listening decides what was said. To be removed when real recordings show the
        listener can be trusted here. */
-    if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU"))      // whatever short word was heard in its place ("un danses", "pomme danses": 4 of 16 English voices)
+    /* .20: but not when what was heard there is another subject the course teaches (il, elle, on, a person's name). Until
+       Lesson 4 no answer had one of those before the verbs of je / tu; from Lesson 5 "Il danse.", "On saute.", "Pierre marche."
+       are answers, and this rule would have passed 36 such pairs as "unsure" ("Il danse." for "Tu danses."). The listener does
+       not write them for je / tu: of 416 synthetic clips of the je / tu answers of Lessons 5-10 (208 English, 208 French),
+       none began with il, elle, on or a name (English "je": je 22, tu 24, other words 82 of 128: chat, chien, ça, pas…). */
+    /* Rulings of 11 Nov 2026 (the learner wrongly corrected for a right answer is the worse fault; the recording is kept):
+       - "tu vas X" for "je vais X" and the reverse: the je / tu pair again, with its verb form (English "je vais danser"
+         came out as "tu vas danser" for 5 of 16): accepted, not judged on the person.
+       - "un" + verb where "on" or "elle" is expected (un danse: on 6, elle 3 of 16; un saute: on 3, elle 7; un marche: on 3,
+         elle 4): accepted as unsure.
+       - "elle" + verb for "on" + verb and the reverse (3-4 of 16 for marche): unsure, unless the part being run asks for
+         both (judgePart: then the part is there to tell them apart, and the answer is judged as heard). */
+    { const e0=whole[0], e1=whole[1], w0=t[0], w1=t[1], rest=bad.every(([e])=>e===e0 || e===e1);
+      if(bad.length===2 && rest && ((e0==="JE" && e1==="VAIS" && SLOT.TU.includes(w0) && SLOT.VA.includes(w1)) || (e0==="TU" && e1==="VA" && SLOT.JE.includes(w0) && SLOT.VAIS.includes(w1))))
+        return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+w0+" "+w1+"\" where \""+SLOT_WORD[e0]+" "+(e0==="TU"?"vas":"vais")+"\" was expected; accepted, not judged on the person", unsure:"person"};
+      if(bad.length===1 && bad[0][0]===e0 && (e0==="ON" || e0==="ELLE")){
+        const both = !judgePart || (judgePart.on && judgePart.elle);
+        if(w0==="un" || (!both && (e0==="ON" ? SLOT.ELLE : SLOT.ON).includes(w0)))
+          return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+w0+"\" where \""+SLOT_WORD[e0]+"\" was expected; accepted, not judged on the person", unsure:"person"}; } }
+    const otherSubject = w => SLOT.IL.includes(w) || SLOT.ELLE.includes(w) || SLOT.ON.includes(w) || ((nameOf(w)||{}).n && VOCAB[nameOf(w).n].kind==="person" && !nameOf(w).near);
+    if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU") && !otherSubject(bad[0][1]))      // whatever short word was heard in its place ("un danses", "pomme danses": 4 of 16 English voices)
       return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+bad[0][1]+"\" where \""+SLOT_WORD[bad[0][0]]+"\" was expected; accepted, not judged on the person", unsure:"person"};
     if(bad.length && bad.length<whole.length && !bad.some(([e])=>VOCAB[e] && VOCAB[e].kind==="person"))
       return {ok:false, reason:"said "+bad.map(([e,w])=>"\""+w+"\" for \""+(SLOT_WORD[e]||(VOCAB[e]?VOCAB[e].name:e))+"\"").join(", ")};
   }
   // the end of the answer without its beginning ("un stylo" for "c'est un stylo", "cinq" for "il y en a cinq", "mange" for "il mange")
-  if(t.length<whole.length && t.length>=1){ const tail=whole.slice(whole.length-t.length), fitsAt=(e,w)=> SLOT[e] ? SLOT[e].includes(w) : (nameOf(w)||{}).n===e;
+  if(t.length<whole.length && t.length>=1){ const tail=whole.slice(whole.length-t.length), fitsAt=(e,w)=> SLOT[e] ? SLOT[e].includes(w) : (VOCAB[e] && VOCAB[e].accept.includes(w)) || (nameOf(w)||{}).n===e;
     if(tail.every((e,i)=>fitsAt(e,t[i]))){ const gone=whole.slice(0,whole.length-t.length);
       if(gone.length===1 && (gone[0]==="UN"||gone[0]==="UNE")) return {ok:false, reason:"word without its article"};       // as before (Lessons 1-4)
       return {ok:false, reason:"left out \""+gone.map(e=>SLOT_WORD[e]||(VOCAB[e]?VOCAB[e].name:e)).join(" ")+"\""}; } }
@@ -1234,7 +1379,15 @@ function listen(expect, alsoOk=[]){
    free transcript says the same words ("text"). The older rule ("margin") took it if it scored close to the transcript. */
 const LISTEN = { rule:"text", T: 0.3 };
 const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿ' ]/g," ").replace(/\s+/g," ").trim();   // a hesitation (euh) is not the intended response
-function phraseOf(want){ const w=want.filter(x=>x!=="REST").map(x=> SLOT_WORD[x] ? SLOT_WORD[x] : VOCAB[x] ? VOCAB[x].name : x).join(" ");
+/* The words of an expected answer, as they are written (.20): "des livres", "trois clés", "tu manges", "on sourit", "il dansait",
+   "Bois." The listener's word list is built from these, and its own spelling of what it heard is compared with them. */
+function phraseOf(want){ const ws=want.filter(x=>x!=="REST");
+  const w=ws.map((x,i)=>{ const prev=ws[i-1]; if(x==="VA" && prev==="TU") return "vas"; if(SLOT_WORD[x]) return SLOT_WORD[x]; const v=VOCAB[x]; if(!v) return x;
+    if(v.kind==="object" && (prev==="DES" || /^n(?:[2-9]|10)$/.test(prev||""))) return v.pl || v.name+"s";
+    if(v.tu && prev==="TU") return v.tu;
+    if(v.il && (prev==="IL" || prev==="ELLE" || prev==="ON" || (VOCAB[prev] && VOCAB[prev].kind==="person"))) return v.il;
+    if(v.alone && i===0) return v.alone;
+    return v.name; }).join(" ");
   return w.charAt(0).toUpperCase()+w.slice(1)+"."; }
 function candidatePhrases(){
   const c=[]; for(const n of Object.keys(PEOPLE)){ const N=PEOPLE[n].name; c.push(`C'est ${N}.`, `${N}.`, `Euh, c'est ${N}.`); }
@@ -1385,7 +1538,7 @@ async function listenVosk(expect, alsoOk=[]){
   const textNow=()=>voskClean(rawAll(), expect);
   let buf=[], n=0;
   const feed=c=>{ buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
-  const want=phraseOf(expect).toLowerCase().replace(/[.!?]/g,"").trim();
+  const want=listenerWords(phraseOf(expect).toLowerCase().replace(/[.!?]/g,"").trim());
   // an answer that stops part-way ("un…", "je m'appelle…" before the name) may be a slow learner: keep listening a little
   // the answer has ended after 0.45 s of quiet (was 0.7 s; Jon 9 Nov 14:21: responses per minute is what counts). An answer
   // that is still incomplete ("un…") gets the extra wait below, so a slow learner is not cut off.
@@ -1427,6 +1580,13 @@ async function listenVosk(expect, alsoOk=[]){
       }
       return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
   clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" ("+earlyWhy+")":""));
+  /* The microphone swamped by a loud low noise (the phone lying on something that moves: LISTENER.swamp): nothing the
+     listener writes for such a turn means anything. Not scored (a listening fault); the narrator says what to do, once
+     an exercise (presentTest). */
+  { const sw = LISTENER.swamp ? LISTENER.swamp() : null;
+    if(sw && sw.swamped){ try{ rec.remove(); }catch(e){} const clip=await keepClip(cap.all);
+      trace("FAULT MICROPHONE SWAMPED: loudest sample "+sw.peak+" of full scale, "+Math.round(sw.low*100)+" % of the sound below 150 Hz; the turn is not scored");
+      return {clip, engine:"vosk", expectPhrase:phraseOf(expect), raw:"", status:"silence", heard:[], ok:false, reason:"microphone swamped", speech:true, swamped:true}; } }
   if(n){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } rec.acceptWaveformFloat(a,16000); }
   await new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,1500); });
   try{ rec.remove(); }catch(e){}
@@ -1643,15 +1803,72 @@ function fingerCard(n){       // a hand held up, n fingers raised (DISE L1 Ex 4:
 /* Lessons 5-10 (people.js, window.PICS): people doing things (eating, sleeping), with looks that tell them apart; Pierre
    and Sylvie in other clothes; keys; groups of five to seven things; a hand or two showing five to seven fingers. */
 const PEOPLE_KIND=["man","woman","boy","girl"];
-function genPicture(e){
+/* Lessons 5-10 as rebuilt (.20): the picture library (people.js) is drawn by someone else and may be older than this file.
+   Whatever it cannot draw yet becomes a plain card with a dashed edge, and the run file gets a fault line: never an error.
+   picKnows asks the library itself: a new action is known if its picture is not the one an unknown action gets (the smile);
+   "did" (someone who has just stopped) is known if it changes the picture. */
+const PIC = { known:{}, missing:{} };
+const picSig = g => g.innerHTML.replace(/\d+(?:\.\d+)?/g,"#");
+function picKnows(what){
+  if(what in PIC.known) return PIC.known[what];
+  let ok=false;
+  try{ if(!window.PICS) ok=false;
+    else if(what==="did") ok = picSig(PICS.person({person:"paul", did:"dancing"}, "P")) !== picSig(PICS.person({person:"paul"}, "P"));
+    else if(what==="together") ok = typeof PICS.together==="function";
+    else if(what==="card") ok = picSig(PICS.action("stop", "you", {still:true, card:"dancing"})) !== picSig(PICS.action("stop", "you", {still:true}));
+    else if(what==="person card") ok = picSig(PICS.person({person:"paul", card:"dancing"}, "P")) !== picSig(PICS.person({person:"paul"}, "P"));
+    else if(what==="smile") ok = !!PICS.action;
+    else ok = !!PICS.action && picSig(PICS.action(what, "you", {still:true})) !== picSig(PICS.action("smile", "you", {still:true}));
+  }catch(e){ ok=false; }
+  return (PIC.known[what]=ok);
+}
+function placeholder(what){
+  if(!PIC.missing[what]){ PIC.missing[what]=1; trace("FAULT PICTURE MISSING: the picture library cannot draw \""+what+"\" (a plain card is shown)"); }
+  const g=document.createElementNS(svgNS,"g");
+  g.innerHTML=`<rect x="16" y="22" width="128" height="146" rx="12" fill="none" stroke="#b9ae98" stroke-width="2.5" stroke-dasharray="7 7"/>
+    <text x="80" y="100" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" fill="#8a8274">${String(what).replace(/[<&]/g,"")}</text>`;
+  return g;
+}
+// a card (a picture or a flag "in Marie's hand"): a white card with a soft shadow, the picture inside it
+function cardOf(inner, k=0.74){
+  const g=document.createElementNS(svgNS,"g");
+  g.innerHTML=`<rect x="20" y="20" width="120" height="150" rx="9" fill="#000" opacity=".08" transform="translate(3 4)"/><rect x="20" y="20" width="120" height="150" rx="9" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/>`;
+  const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80-80*k} ${95-95*k}) scale(${k})`); c.appendChild(inner); g.appendChild(c); return g;
+}
+const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
+const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand"};
+// things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
+function thingPicture(e){
+  const lib = window.PICS && PICS.thing && (!PICS.things || PICS.things.includes(String(e.is).toLowerCase()));
+  if(lib){ try{ const g=PICS.thing(e.is==="picture card" ? Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e) : e); if(g) return g; }catch(err){ trace("FAULT picture "+e.is+": "+err.message); } }
+  const L=e.looks||[];
+  if(e.is==="picture card" && !lib){ const act=ACT_NAME[e.doing]||e.doing; return cardOf(picKnows(act) ? PICS.action(act, "you", {still:true}) : placeholder(act)); }
+  if(e.is==="French flag") return cardOf(mkG(`<rect x="14" y="52" width="44" height="86" fill="#2a4b9b"/><rect x="58" y="52" width="44" height="86" fill="#ffffff"/><rect x="102" y="52" width="44" height="86" fill="#d8372e"/><rect x="14" y="52" width="132" height="86" fill="none" stroke="#9aa0a8" stroke-width="1.5"/>`), 0.8);
+  if(e.is==="face"){ const m = L.includes("feeling good") ? "M56 110 Q80 136 104 110" : L.includes("feeling bad") ? "M56 124 Q80 100 104 124" : "M58 116 H102";
+    const brow = L.includes("feeling bad") ? `<path d="M52 72 L70 78 M108 72 L90 78" stroke="#5a4632" stroke-width="4" stroke-linecap="round"/>` : "";
+    return mkG(`<circle cx="80" cy="98" r="56" fill="#f6d26b" stroke="#c9a23a" stroke-width="3"/><circle cx="62" cy="88" r="6" fill="#3a2f22"/><circle cx="98" cy="88" r="6" fill="#3a2f22"/>${brow}<path d="${m}" stroke="#3a2f22" stroke-width="5" fill="none" stroke-linecap="round"/>`); }
+  if(e.is==="plate") return mkG(`<ellipse cx="80" cy="122" rx="62" ry="24" fill="#000" opacity=".08" transform="translate(2 5)"/><ellipse cx="80" cy="118" rx="62" ry="24" fill="#fbfaf5" stroke="#cfc9bb" stroke-width="2"/><ellipse cx="80" cy="116" rx="40" ry="14" fill="none" stroke="#e0dacb" stroke-width="2"/>`);
+  return placeholder(e.is+(e.count>1?" ×"+e.count:""));
+}
+const OWN_THING=["book","apple","pen","shoe"];         // drawn in this file since Lesson 1 (objectPicture)
+function genPicture(e){ try{ return genPicture0(e); }catch(err){ trace("FAULT picture "+(e.person||e.is)+": "+err.message); return placeholder(e.person||e.is); } }
+function genPicture0(e){
   const blank=()=>document.createElementNS(svgNS,"g");
-  if(e.person) return (window.PICS && (e.doing || (e.looks && e.looks.length))) ? PICS.person(e, VOCAB[e.person].name) : portrait(e.person);
+  if(e.person){
+    if(!window.PICS) return portrait(e.person);
+    // someone who has just stopped: the library's standing figure, or (an older library) the action's frozen frame
+    if(e.did) return picKnows("did") ? PICS.person(e, VOCAB[e.person].name) : PICS.person(Object.assign({}, e, {doing:e.did, still:true}), VOCAB[e.person].name);
+    if(e.card && !picKnows("person card")){        // going to do it (Lesson 9), and a library that cannot draw the card in the hand: the card in the corner of the picture
+      const g=document.createElementNS(svgNS,"g"), c=document.createElementNS(svgNS,"g"); g.appendChild((e.looks && e.looks.length) ? PICS.person(Object.assign({}, e, {card:undefined}), VOCAB[e.person].name) : portrait(e.person));
+      c.setAttribute("transform","translate(94 2) scale(.42)"); c.appendChild(thingPicture({is:"picture card", doing:e.card, count:1})); g.appendChild(c); return g; }
+    return (e.doing || e.holding || e.card || (e.looks && e.looks.length)) ? PICS.person(e, VOCAB[e.person].name) : portrait(e.person); }
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
   if(e.is==="numeral") return numberCard("n"+e.value);
   if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
+  if(!OWN_THING.includes(e.is)) return thingPicture(e);
   const n=e.count||1; if(n===1) return onePicture(e);
   if(n>4 && window.PICS) return PICS.group(n, ()=>onePicture(e));
   const g=document.createElementNS(svgNS,"g"), k = n===2 ? 0.58 : 0.5;
@@ -1664,10 +1881,10 @@ function picture(spec){ if(typeof spec==="object") return genPicture(spec);
   return k==="person" ? portrait(id) : k==="number" ? numberCard(id) : objectPicture(id, +inst||1); }
 // a numeral card (DISE Lesson 1, Exercise 4 shows the numerals 1–4); numerals, unlike French words, do not mislead pronunciation
 function numberCard(id){
-  const g=document.createElementNS(svgNS,"g"), d=id.slice(1);
+  const g=document.createElementNS(svgNS,"g"), d=id.slice(1), two=d.length>1;       // "10": two digits in the same card
   g.innerHTML=`<rect x="22" y="26" width="116" height="142" rx="12" fill="#000" opacity=".08" transform="translate(3 4)"/>
     <rect x="22" y="26" width="116" height="142" rx="12" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/>
-    <text x="80" y="140" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="116" font-weight="700" fill="#2b3a55">${d}</text>`;
+    <text x="80" y="${two?128:140}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="${two?84:116}" font-weight="700" fill="#2b3a55"${two?' textLength="100" lengthAdjust="spacingAndGlyphs"':''}>${d}</text>`;
   return g;
 }
 /* A scene is two frames {L, R}, or a row of three or four smaller frames {row:[…]} (several of a kind, a series,
@@ -1676,9 +1893,10 @@ function numberCard(id){
 const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
 const frameRow=document.getElementById("frameRow"), fL=document.getElementById("frameL"), fR=document.getElementById("frameR");
 function buildRow(items){
-  const n=items.length, gap=n>2?10:24, w=Math.min(160,(344-gap*(n-1))/n), h=w*190/160, y=24+(190-h)/2, k=w/160, x0=200-(n*w+(n-1)*gap)/2;
+  // one row up to five pictures; six to ten (Lesson 10: ten numerals) in two rows, read left to right, top row first
+  const N=items.length, rows=N>5?2:1, n=Math.ceil(N/rows), gap=n>2?10:24, w=Math.min(160,(344-gap*(n-1))/n), h=w*190/160, vg=8, y0=24+(190-(rows*h+(rows-1)*vg))/2, k=w/160;
   frameRow.replaceChildren();
-  items.forEach((spec,i)=>{ const x=x0+i*(w+gap);
+  items.forEach((spec,i)=>{ const r=Math.floor(i/n), inRow=Math.min(n, N-r*n), x0=200-(inRow*w+(inRow-1)*gap)/2, x=x0+(i-r*n)*(w+gap), y=y0+r*(h+vg);
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
     const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
@@ -1704,9 +1922,25 @@ function setSideBadges(side){
   }
 }
 function badgeLit(who, on){ const r=document.querySelector("#badge_"+who+" .ring"); if(r) r.setAttribute("opacity", on?1:0); }
+/* What the action box shows for a scene (.20): the teacher or the learner doing something, both of them together (Lesson 6:
+   "On danse."), either of them having just stopped (Lesson 9: the past, shown by do-then-stop: the same figure, now still),
+   or the learner's own state (Lesson 9: a face, the answer to "Ça va ?"). */
+const BOX_KEYS=["teacherDoing","learnerDoing","bothDoing","teacherDid","learnerDid","teacherWill","learnerWill","learnerFace"];
+function boxOf(sc){ return !sc ? null : sc.bothDoing ? ["both", sc.bothDoing, {}] : sc.teacherDoing ? ["marie", sc.teacherDoing, {}] : sc.learnerDoing ? ["you", sc.learnerDoing, {}]
+  : sc.teacherWill ? ["marie", sc.teacherWill, {will:true}] : sc.learnerWill ? ["you", sc.learnerWill, {will:true}]      // going to do it: standing, holding the picture card of the action
+  : sc.teacherDid ? ["marie", sc.teacherDid, {stopped:true}] : sc.learnerDid ? ["you", sc.learnerDid, {stopped:true}] : sc.learnerFace ? ["you", "face", {face:sc.learnerFace}] : null; }
+const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.claireTag===false?"|notag":"")+BOX_KEYS.map(k=>sc[k]?"|"+k+":"+sc[k]:"").join("");
 async function setPortraits(sc){
-  sc=sceneOf(sc); if(!sc) return; const key=(sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.claireTag===false?"|notag":"")+(sc.teacherDoing?"|T:"+sc.teacherDoing:"")+(sc.learnerDoing?"|Y:"+sc.learnerDoing:"");
+  sc=sceneOf(sc); if(!sc) return; const key=sceneKey(sc);
   if(key===curSceneKey) return;
+  /* The action box stands where the pictures are. Model learners who are only looking on (nothing to do, no special look)
+     are then shown as the small badges beside the teacher, wherever the script put them (Lesson 4, "Je fais quoi ?" answered
+     by Pierre while Marie dances: until .19 the box covered half of each of their pictures). alias: where each went. */
+  if(boxOf(sc) && sc.row && sc.row.length){
+    if(sc.row.every(x=>x && typeof x==="object" && x.person && !x.doing && !x.did && !x.card && !(x.looks && x.looks.length))){
+      const alias={}, side=Object.assign({}, sc.side||{}); sc.row.forEach((x,i)=>{ side[x.person]=true; alias["s"+i] = x.person==="paul" ? "pL" : "pR"; });
+      sc=Object.assign({}, sc, {row:[], side, alias}); }
+    else trace("FAULT LAYOUT: the action box and "+sc.row.length+" picture(s) are on the screen together"); }
   const first = curSceneKey===null;
   goldOff(); lastPoint=null;
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
@@ -1715,7 +1949,7 @@ async function setPortraits(sc){
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
   { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
-  if(sc.teacherDoing) actBox("marie", sc.teacherDoing); else if(sc.learnerDoing) actBox("you", sc.learnerDoing); else actBox(null);
+  { const b=boxOf(sc); if(b) actBox(b[0], b[1], b[2]); else actBox(null); }
   curScene=sc; curSceneKey=key;
 
 }
@@ -1803,7 +2037,7 @@ function thumb(){}
 let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
 // Jon 9 Nov 10:27: no pointing at the pictures; the gold border alone shows what the teacher means. Her hand still goes
 // to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
-const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||/^s\d$/.test(s);
+const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||/^s\d+$/.test(s);
 async function pointAt(who){
   const side = sideOf(who); if(side==="none") return;
   if(ON_SCREEN(side)){ goldOn(side);
@@ -1859,7 +2093,8 @@ let offering=false;
 // which frame holds the item ("L"/"R" may also be given directly, e.g. to point at each of two books in turn)
 // what to point at: a task or model (its "at" slot, or its target), a slot ("L", "R", "s0"…, "self", "you"), or an item id
 const sideOf = t => { if(t && typeof t==="object") t = t.at || t.target;
-  if(t==="L"||t==="R"||t==="self"||t==="you"||t==="none"||t==="pL"||t==="pR"||/^s\d$/.test(t||"")) return t;
+  if(curScene && curScene.alias && curScene.alias[t]) return curScene.alias[t];      // a picture shown as a small badge (see setPortraits)
+  if(t==="L"||t==="R"||t==="self"||t==="you"||t==="none"||t==="pL"||t==="pR"||/^s\d+$/.test(t||"")) return t;
   if(t==="claire"||t==="jmclaire") return "self";
   if(!curScene || !t) return "R";
   if(curScene.row){ const i=curScene.row.findIndex(x=>x.split(":")[0]===t); return "s"+Math.max(0,i); }
@@ -1960,7 +2195,7 @@ async function askAndListen(task, expect, think=0, alsoOk=[]){
   }
   if(task.cueVoice){                      // a model learner says the cue: the gold border on them (who it is about), the green ring while they speak
     pointAt(task.cueAt); if(think) await sleep(think);
-    await cueAs(task.cueVoice, task.questionUnits);
+    await cueAs(task.cueVoice, task.questionUnits, task.cueAt);
     return listen(expect, alsoOk);
   }
   pointAt(task);                          // focus: the gold border comes on as she speaks
@@ -1979,35 +2214,35 @@ async function announce(t){
    the teacher they have had it since the first lessons; as one of the pictures in the row (scenes with no objects) they
    had none, so nothing on screen showed which of the two was talking. */
 function slotOfPerson(who){
+  if(who!=="paul" && who!=="julie") return null;
   if(document.getElementById("badge_"+who)) return who==="paul" ? "pL" : "pR";
   if(curScene && curScene.row){ const i=curScene.row.findIndex(x=>(x && typeof x==="object" ? x.person : String(x).split(":")[0])===who); if(i>=0) return "s"+i; }
   return null;
 }
-function speakLit(who, on){
+function speakLit(who, on, at){            // at: where the speaker is, for someone with no name (the man and the woman of Lesson 7)
   badgeLit(who, on);
   const g=document.getElementById("speakRing"); if(!g) return;
-  const slot = on ? slotOfPerson(who) : null, b = slot && /^s\d$/.test(slot) ? BOUNDS[slot] : null;
+  const slot = on ? (slotOfPerson(who) || (at && at!=="none" ? sideOf(at) : null)) : null, b = slot && /^s\d+$/.test(slot) ? BOUNDS[slot] : null;
   if(!b){ g.setAttribute("opacity",0); return; }
   const m=10; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m); g.setAttribute("opacity",1);
 }
 async function sayAs(voice, units){
   if(voice==="teacher") return say(units);
-  const who = voice==="paul" ? "paul" : "julie"; speakLit(who, true); caption("["+VOCAB[who].name+"] "+units.join(" "));
-  const text = voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
-  if(!(await playLearner(text))) await speakOne(units.join(" "), {group:true});
+  const who = voice in VOICE_PREFIX ? voice : "julie"; speakLit(who, true); caption("["+voiceName(who)+"] "+units.join(" "));
+  trace("say["+voiceName(who)+"]: "+units.join(" · "));
+  if(!(await playLearner(voiceLine(who, units)))) await speakOne(units.join(" "), {group:true});
   speakLit(who, false); lastSpeechEnd=Date.now();
 }
 /* A cue said by a model learner in their own voice (Jon's Lesson 4 run, 9 Nov 20:49: only Claire ever greeted, so the
    name in "Salut, Claire !" never changed, did no work, and was dropped). Each of the three people now greets, and the
    name answered is the greeter's. Like say(): the microphone is closed while it plays and the learner's turn follows at
    once. */
-async function cueAs(voice, units){
+async function cueAs(voice, units, at){
   if(!units.length) return;
-  const who = voice==="paul" ? "paul" : "julie";
-  stopRec(); recentSaid.push(units.join(" ")); trace("say["+VOCAB[who].name+"]: "+units.join(" · "));
-  speakLit(who, true); caption("["+VOCAB[who].name+"] "+units.join(" "));
-  const text = voice==="paul" ? units.join(" ") : "julie "+units.join(" ");
-  if(!(await playLearner(text))){ trace("no recording of "+VOCAB[who].name+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
+  const who = voice in VOICE_PREFIX ? voice : "julie";
+  stopRec(); recentSaid.push(units.join(" ")); trace("say["+voiceName(who)+"]: "+units.join(" · "));
+  speakLit(who, true, at); caption("["+voiceName(who)+"] "+units.join(" "));
+  if(!(await playLearner(voiceLine(who, units)))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
   speakLit(who, false); lastSpeechEnd=Date.now();
 }
 async function presentGenModel(m){
@@ -2017,7 +2252,7 @@ async function presentGenModel(m){
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
   if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
-  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
+  if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
   await sayAs(m.voice, m.answerUnits);
 }
 /* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
@@ -2027,31 +2262,96 @@ async function presentGenModel(m){
    show: the teacher says the command and does it (box "Marie:"). do: she says it, the border goes green, the "You:" box
    comes up (animated the first ACT_SHOWN times each action is asked for, then a still picture), the app waits ACT_TIME and
    goes on with the ding of a right answer. Nothing is listened for. */
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:2600};
-function actBox(who, act, still){
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:2600, "raise hand":3600, eat:3600, drink:3600, stop:2200};
+/* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
+   opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
+   shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
+const ACTBOX={key:null};
+function actPicture(who, act, opt){
+  if(opt.face) return thingPicture({is:"face", looks:[opt.face], count:1, sex:S.learnerGender==="f"?"f":"m"});
+  if(!window.PICS || !PICS.action) return placeholder(act);
+  const sex = S.learnerGender==="f" ? "f" : "m";            // the learner's own figure ("you") is a woman or a man, as chosen at the start
+  if(who==="both"){
+    if(picKnows("together")) return PICS.together(act, {still:!!opt.still, sex});
+    const g=document.createElementNS(svgNS,"g");            // an older library: the two figures side by side, each half size
+    [["marie",-2],["you",82]].forEach(([w,x])=>{ const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${x} 46) scale(.5)`); c.appendChild(picKnows(act) ? PICS.action(act, w, {still:!!opt.still}) : placeholder(act)); g.appendChild(c); });
+    return g; }
+  if(opt.will){       // the near future (Lesson 9): the figure stands still and holds the card of what it is going to do
+    if(picKnows("card")) return PICS.action("stop", who, {still:true, card:act, sex});
+    const g=document.createElementNS(svgNS,"g"), a=ACT_NAME[act]||act;        // an older library: the standing figure, and the card beside it
+    [[picKnows("stop") ? PICS.action("stop", who, {still:true}) : placeholder("stop"), -14, 30, .68], [thingPicture({is:"picture card", doing:act, count:1}), 76, 58, .52]].forEach(([pic,x,y,k])=>{ const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${x} ${y}) scale(${k})`); c.appendChild(pic); g.appendChild(c); });
+    return g; }
+  if(opt.stopped) return picKnows("stop") ? PICS.action("stop", who, {still:true, after:act, sex}) : picKnows(act) ? PICS.action(act, who, {still:true, sex}) : placeholder(act);
+  return picKnows(act) ? PICS.action(act, who, {still:!!opt.still, sex}) : placeholder(act);
+}
+function actBox(who, act, opt){
   const g=document.getElementById("actBox"); if(!g) return;
-  if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); return; }
-  const label = who==="you" ? "You:" : VOCAB.claire.name+":";
+  if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); ACTBOX.key=null; return; }
+  opt = opt===true ? {still:true} : (opt||{});
+  const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||""].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
+  const mine = who!=="marie", label = who==="you" ? "You:" : who==="both" ? VOCAB.claire.name+" and you:" : VOCAB.claire.name+":";
   g.innerHTML=`<text x="200" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
-    <g transform="translate(120,24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="${who==="you"?"var(--go)":"var(--frame-line)"}" stroke-width="${who==="you"?4:2}"/><g id="actPic"></g></g>`;
-  try{ if(window.PICS && PICS.action) document.getElementById("actPic").appendChild(PICS.action(act, who==="you"?"you":"marie", {still:!!still})); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
+    <g transform="translate(120,24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="${mine?"var(--go)":"var(--frame-line)"}" stroke-width="${mine?4:2}"/><g id="actPic"></g></g>`;
+  try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
   g.setAttribute("opacity",1);
 }
 async function presentAct(a){
   curTask=a.kind+" "+a.act; ph("action: "+(a.kind==="show"?"the teacher does it":"the learner does it")+" ("+a.act+")");
-  await setPortraits(a.scene); actBox(null);
-  const cmd=a.teacherUnits||[];
+  const sc=sceneOf(a.scene)||{}, cmd=a.teacherUnits||[], own=boxOf(sc);       // own: the scene itself says what the box shows (Lessons 5+)
+  const bare=Object.assign({}, sc); BOX_KEYS.forEach(k=>delete bare[k]);
+  if(a.act==="stop"){
+    /* The past is shown by do-then-stop (Lesson 9). The figure is moving: still on the screen from the task before, or put
+       back for a moment when the stop comes on its own (a part gone through again as its tests). Then it stands still. */
+    const show=a.kind==="show", was = show ? sc.teacherDid : sc.learnerDid, moving=Object.assign({}, bare, show ? {teacherDoing:was} : {learnerDoing:was});
+    if(ACTBOX.key!==[show?"marie":"you", was, "", "", ""].join("|")){ await setPortraits(moving); await sleep(1500); }
+    if(show){ await pointAt("self"); if(cmd.length) await say(cmd); }
+    else { offering=true; await pointAt("you"); if(cmd.length) await say(cmd); signal(true); trace("your turn to do: stop"); }
+    await setPortraits(sc); trace("stop shown: "+(show?"the teacher":"the learner")+" was doing \""+was+"\" and now stands still");
+    await sleep(ACT_TIME.stop);
+    if(!show){ signal(false); await ding(); }
+    rest(); return;
+  }
+  await setPortraits(bare);
   if(a.kind==="show"){
+    // she says the command and does it; or says nothing and does what she has just been told ("Danse."); or says what she
+    // is going to do ("Je vais marcher."), THEN does it: the box comes up only when she has finished speaking
     gestureEar(); await pointAt("self"); if(cmd.length) await say(cmd);
-    actBox("marie", a.act); await sleep(ACT_TIME[a.act]||3000); actBox(null); rest(); return;
+    actBox("marie", a.act); await sleep(ACT_TIME[a.act]||3000);
+    if(own) await setPortraits(sc); else actBox(null);        // she goes on doing it into the question that follows ("Je fais quoi ?")
+    rest(); return;
   }
   offering=true; await pointAt("you"); if(cmd.length) await say(cmd);
   S.actSeen=S.actSeen||{}; const seen=S.actSeen[a.act]||0;
-  signal(true); trace("your turn to do: "+a.act+(seen<ACT_SHOWN?" (shown)":" (still picture)"));
-  actBox("you", a.act, seen>=ACT_SHOWN);
+  signal(true); trace("your turn to do: "+a.act+(sc.bothDoing?" (with the teacher)":"")+(seen<ACT_SHOWN?" (shown)":" (still picture)"));
+  actBox(sc.bothDoing ? "both" : "you", a.act, {still:seen>=ACT_SHOWN});
   await sleep(ACT_TIME[a.act]||3000);
-  S.actSeen[a.act]=seen+1; signal(false); actBox(null);
+  S.actSeen[a.act]=seen+1; signal(false);
+  if(own) await setPortraits(sc); else actBox(null);
   await ding(); rest();
+}
+/* "say" (Lessons 9+): the teacher says a line and nobody answers (red border, like a model). Two uses. Her reply in a
+   conversation ("Ça va bien, merci." after the learner's "Ça va ?"). And a command to a pictured person, "Arrête." to
+   Pierre, "Arrêtez." to Pierre and Sylvie: the task's scene shows them stopped, so they are shown still moving first (as
+   in the task before), she says it, and then they stand still: the change is what shows the past. */
+const stopsSomeone = sc => !!(sc && sc.row && sc.row.some(x=>x && typeof x==="object" && x.did));
+async function presentSay(a){
+  curTask=a.id; ph("the teacher speaks (no answer)");
+  const sc=sceneOf(a.scene)||{}, stop=stopsSomeone(sc);
+  if(stop){ const moving=Object.assign({}, sc, {row: sc.row.map(x=> x && x.did ? Object.assign({}, x, {doing:x.did, did:undefined}) : x)});
+    if(sceneKey(moving)!==curSceneKey){ await setPortraits(moving); await sleep(1500); } }
+  else {
+    /* A command to a pictured person whose result the task's scene shows ("Arrête." to Pierre, who was dancing in the task
+       before and is not in this one): the same people are still on the screen, so she says it to the picture as it is,
+       and the picture changes when she has said it. */
+    const who = x => x && typeof x==="object" ? (x.person || x.is) : x, cur=curScene;
+    const result = /^s\d+$/.test(a.at||"") && cur && cur.row && sc.row && cur.row.length===sc.row.length && sc.row.every((x,i)=>who(x)===who(cur.row[i])) && sceneKey(sc)!==curSceneKey;
+    if(result){ await pointAt(a); await say(a.teacherUnits); await setPortraits(sc); await pointAt(a); trace("command shown: the picture changed after \""+a.teacherUnits.join(" ")+"\""); await sleep(1300); rest(); return; }
+    await setPortraits(sc); }
+  if(a.at && a.at!=="none") await pointAt(a);
+  await say(a.teacherUnits);
+  if(stop){ await setPortraits(sc); if(a.at && a.at!=="none") await pointAt(a); trace("stop shown: the pictured people now stand still"); await sleep(1300); }
+  else await sleep(350);
+  rest();
 }
 async function presentModel(m){
   curTask="model "+m.target;
@@ -2165,6 +2465,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   curCue = (t.questionUnits||[]).join(" ");
   let r = await askAndListen(t, expect, think);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
+    if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; rest(); await narrate("swamped"); }      // before asking again: the learner can put the phone down
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
     r = await askAndListen(t, expect, think);
   }
@@ -2187,10 +2488,11 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   /* The learner spoke (the recording has speech) but the recogniser returned nothing, twice: a listening fault, not the
      learner's error (Jon 9 Nov: "un" said exactly as the teacher said it, rejected every time). Not scored, not corrected:
      the teacher says the answer and the lesson goes on; the recording is kept so the listener can be trained on it. */
+  if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; rest(); await narrate("swamped"); }      // "Put your phone on a flat surface. The microphone is picking up a loud noise."
   if(r.status==="silence" && r.speech){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
               result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
-    save(); if(t.cue==="you") await modelOwnName(t); else { await pointAt(t.cueVoice ? t.cueAt : t); await sayAnswer(t); } rest(); return true;
+    save(); if(isOwnName(t)) await modelOwnName(t); else { await pointAt(t.cueVoice ? t.cueAt : t); await sayAnswer(t); } rest(); return true;
   }
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id);
@@ -2210,6 +2512,11 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
 /* An own-name question ("Et toi ?") is answered for the learner by a model learner answering it about themselves, never
    by the teacher's own sentence: "Je m'appelle Claire." given as the correction is exactly what tester H copied (9 Nov 16:42). */
 let ownNameWho = "paul", ownHeard = null;
+let judgePart = null;      // which of "on" and "elle" the part being run has as answers (judge: the on / elle ruling)
+/* An own-name task is one whose answer goes on with the learner's own name. Until .19 every task with the teacher's palm to
+   the learner (cue "you") was corrected as one: after a wrong answer to "Tu fais quoi ?" a model learner said "Je m'appelle
+   Pierre." The other "you" tasks ("Tu fais quoi ?", "Tu faisais quoi ?", "Ça va ?") are corrected with their own answer. */
+const isOwnName = t => t.cue==="you" && (!t.gen || (t.expect||[]).includes("REST"));
 async function modelOwnName(task){
   const who = ownNameWho; ownNameWho = who==="paul" ? "julie" : "paul";
   ph("a model learner's own name"); offering=false;
@@ -2219,7 +2526,7 @@ async function modelOwnName(task){
 async function correction(task, nth){
   ph("correction "+nth);
   await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake")
-  if(task.cue==="you"){ await modelOwnName(task); return; }   // a model learner answers about themselves; then the question again
+  if(isOwnName(task)){ await modelOwnName(task); return; }   // a model learner answers about themselves; then the question again
   await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));
   if(nth>=2 && task.answerUnits.length>1){   // build from the end: the teacher says the start, the green border cues the rest
     recentSaid=[]; await say([task.answerUnits[0]+"…"]);
@@ -2246,17 +2553,22 @@ function scheduleDelayed(part, anchor){
 // a model learner (Paul, Julie) answering about themselves right before the learner is asked the same about themselves
 // an action the learner is asked to do straight before being asked what they are doing ("Danse." then "Tu fais quoi ?"):
 // it goes with that question whenever the question is asked again
-const isActBefore = (it, next) => it && it.type==="act" && it.kind==="do" && next && next.type==="task" && next.scene && next.scene.learnerDoing;
+const isActBefore = (it, next) => it && it.type==="act" && it.kind==="do" && next && next.type==="task" && next.scene && (next.scene.learnerDoing || next.scene.bothDoing);
+// a stop (Lesson 9: "Arrête." to the learner, to a pictured person, or the teacher stopping): what shows the past of the question after it
+const isStop = it => it && ((it.type==="act" && it.act==="stop") || (it.type==="say" && stopsSomeone(it.scene)));
+// what the teacher says or does in answer to the learner: her reply ("Ça va bien, merci."), or doing what she was told ("Danse.")
+const isReply = (it, prev) => it && prev && prev.type==="task" && prev.kind==="test" && (it.type==="say" || (it.type==="act" && it.kind==="show" && !(it.teacherUnits||[]).length));
+const goesWith = (it, i, a) => isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]);
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
   if(run==="first")  return part.items;                                            // models, leads and tests
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
-  if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]));
+  if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || goesWith(it, i, a));
   // "test" (step 5 and delayed tests): the part's tests, and the model learner's own answer that comes right before an
   // "Et toi ?" (Paul or Julie saying their own name is what shows the learner to say theirs: rule 1k; tester H 9 Nov 16:42 had
   // none in the step-5 rerun and said "Je m'appelle Claire" from then on)
-  return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]));
+  return part.items.filter((it,i,a)=>(it.type==="task" && it.kind==="test") || goesWith(it, i, a));
 }
 const TRIAL_LIMIT = 7;
 const PART_REPEATS = 4;    // a part is gone through again at most this many times after errors; then its delayed tests take over     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
@@ -2280,11 +2592,13 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
     let items=ask(itemsFor(part, run, shown));
     if(!items.length) continue;
     ctx.part=part.id; trace("part "+part.id+" ("+run+"): "+part.label);
+    judgePart = {on: part.items.some(x=>(x.expect||[])[0]==="ON"), elle: part.items.some(x=>(x.expect||[])[0]==="ELLE")};
     let i=0, prevTest=false, prevTarget=null, prevItem=null;
     while(i<items.length){
       const it=items[i];
       if(prevItem) await sleep(pace());                       // a moment between one direction and the next (early lessons)
       if(it.type==="act"){ await presentAct(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
+      if(it.type==="say"){ await presentSay(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       /* A string of models by the teacher ("Un. Un. Un. Un."): her listening hand stays at her ear from the first to the last
          (Jon, 10 Nov 2026: "she is holding her hand to her ear and then lowering it again, over and over again, and it's
          distracting … she puts her hand down when the string of models is complete"). */
@@ -2442,8 +2756,13 @@ const VOSK = {model:null, grammar:null, failed:false};
 /* What the listener may hear: every answer the course asks for (and each of its words, and the other article with each
    noun), plus "[unk]" for anything else. The sound pieces of the pronunciation exercises ("sure", "ju"…) are added only
    when one is the answer: sounds that close to words would otherwise take real answers ("Claire" heard as "sûr"). */
+/* A word the listener's model does not have is dropped from its list without any error, and the answer can then never be
+   heard: found for "dansais" (dev/harness/replay/vocabcheck.js lists every such word; run it whenever words are added). The
+   list is given a word the model has that sounds the same, here "dansait"; the judge takes either spelling (VOCAB accept). */
+const LISTENER_SPELLING = {"dansais":"dansait"};
+const listenerWords = t => t.split(" ").map(w=>LISTENER_SPELLING[w]||w).join(" ");
 function courseGrammar(expect){
-  const norm=t=>t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿ' -]/g," ").replace(/\s+/g," ").trim();
+  const norm=t=>listenerWords(t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿ' -]/g," ").replace(/\s+/g," ").trim());
   const frag_=u=>Object.keys(VOCAB).some(k=>VOCAB[k].kind==="frag" && norm(VOCAB[k].say[0])===u);
   if(!VOSK.base){
     const frag=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="frag").map(k=>norm(VOCAB[k].say[0])));

@@ -1,4 +1,4 @@
-# Faultless French: handoff (10 Nov 2026)
+# Faultless French: handoff (11 Nov 2026)
 
 For the next Claude session working with Jon Owen. (The copy in the dev bundle, `faultless-dev/HANDOFF.md`, is the
 master: if the two differ, that one is right.) Read this first, then `dev/fieldtest/formats.md` (every teaching
@@ -11,12 +11,19 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-10.21`: Lessons 1–4. Since .19, all from Jon's own runs of 10 Nov (§4 table, §5 item 0000,
-  design log §14): the either/or format taught on names first, gender blocks, slower pace in the early lessons, the
-  explanation of questions, "lève-toi" heard right, whole figures redrawn, the listening hand held through a string
-  of models (`holdEar`), "how many?" with nothing else on the screen (`gen/countalone.py`). Next: Lessons 5–20 (§5 item
-  000), a female "you" figure (`opts.sex`), a low-cut filter on the microphone and a spoken warning when it is swamped
-  (run 21:33: the phone lay on his chest; `/home/user/faultless23`, to be checked against every real recording).
+- **Live version:** `2026-11-10.22`: Lessons 1–10, built from `dev/fieldtest/course_dise5b` (the course of record).
+  New since .21: Lessons 5–10 playable (`dev/appconv/convert.py` tables + `VOCAB`/`SLOT` in `index.html`); every new
+  question or instruction FORMAT is first shown at least twice with another voice answering (cause C8 rewritten around
+  frames, design log §15; evidence: the artificial learner v3, `fieldtest/reports/learner_v3_findings.md`), which
+  changed L1 Ex1, L3 Ex3, L3 Ex10 and L4 Ex8; a female "you" figure (`sex: S.learnerGender`); a 160 Hz low-cut on the
+  microphone; a spoken warning when the microphone is swamped (`LISTENER.swamp()`, `FAULT MICROPHONE SWAMPED`).
+  Checks on the shipped files: oracle Lessons 1–10 2113 of 2113 (`dev/harness/replay/oracle10.js`; `oracle404.js`
+  cannot hold ten lessons of trace), selfjudge 0 right answers refused and 0 wrong accepted, real recordings 323 of 348
+  with the Lesson 4 word list (324 on .19) and 316 with the Lesson 10 word list (lost: "Une chaussure." x3, "Deux." x4,
+  "Un." x1). **Known weak listening in Lessons 5–10** (synthetic English voices, a poor predictor): "Deux clés.",
+  "Une voiture.", "Dix.", "Bon.", "Un homme.", "Pierre et Sylvie."; "tu vas X" for "je vais X" and "un V" for
+  "on/elle V" are accepted as `FAULT PERSON UNSURE` and must be ruled from the recording. Next: Lessons 11–20 into the
+  app (pictures exist), Jon's sessions on Lessons 3–10.
   One pull request per version (branch `handoff-wip`, restarted from `main` after every merge).
 - **Dev bundle:** the private repo `jonaowen/faultless-dev` (branch `main`). It holds the course generator, the
   artificial learner, listener training, voice scripts, harnesses, real recordings and research. It is private because
@@ -123,7 +130,7 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 10 Nov 16:06 | Jon, rest of L1 | 66 of 66 right (28 of them "Un ou une ?"); Exercise 2 had been jumped over, and the lesson could then never end | .20 |
 | 10 Nov 16:36 | Jon, L2 on .19 | **"Lève-toi", said right, heard as "lève trois" 14 times in 16** and marked wrong (seven-trial limit reached); the stand-up box also showed sitting down; whole figures look barrel-chested | .20 (listener, animation, lesson), figures: artist |
 | 10 Nov 21:11 | Jon, rest of L2 on .20 | 46 of 47 right; **"Trois." for two shoes** shown beside one pen (three things on the screen; the question does not say what to count) | .21, course (cause C10: `gen/countalone.py`) |
-| 10 Nov 21:33 | Jon, start of L3 on .20 | no learner error: the phone lay on his chest and a low rumble (heartbeat, breathing; 99 % of the energy under 300 Hz, at full scale) drowned his voice; one "Lève-toi" came out as "trois" and was marked wrong | next: low-cut filter, spoken warning |
+| 10 Nov 21:33 | Jon, start of L3 on .20 | no learner error: the phone lay on his chest and a low rumble (heartbeat, breathing; 99 % of the energy under 300 Hz, at full scale) drowned his voice; one "Lève-toi" came out as "trois" and was marked wrong | .22 (low-cut filter, spoken warning) |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.
