@@ -132,6 +132,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
     <rect id="speakRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0" style="transition:opacity .12s"/>
     <g id="askMark"></g>
+    <g id="tagMark"></g>
   </g>
   <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
   <g id="tutor">
@@ -382,7 +383,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-10.23";
+const APP_VERSION="2026-11-11.24";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -602,15 +603,35 @@ function genItem(it){
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // "say" (Lessons 9+): the teacher says a line that nobody answers (her reply in a conversation; "Arrête." to a pictured person)
   if(it.kind==="say") return Object.assign(o,{type:"say", kind:"say", target:"say "+keyOf(it.teacher)});
-  if(it.kind==="show" || it.kind==="do") return Object.assign(o,{type:"act", kind:it.kind, act:it.act, target:it.kind+" "+it.act});
+  // "figure" (dise5c, .24): what was "do": Marie's command, and the learner's own figure does it (presentAct); nothing is asked
+  if(it.kind==="show" || it.kind==="do" || it.kind==="figure") return Object.assign(o,{type:"act", kind:it.kind, act:it.act, target:it.kind+" "+it.act});
   if(it.kind==="model") return Object.assign(o,{type:"model"});
   if(it.kind==="lead") return Object.assign(o,{type:"task", kind:"lead"});
   const t0=tu[0]||"";
   const cue = it.at==="you" ? "you" : /^répète/i.test(t0) ? "repeat" : o.questionUnits.length ? "question" : "point";
   return Object.assign(o,{type:"task", kind:"test", cue, vasy:/^vas-y/i.test(t0), tag:"new", expect:it.expect, noEcho:!!it.noEcho});
 }
+/* The learner's own name tag (.24, after tester H's run of 11 Nov 21:12: twelve own-name answers gave the name a model learner
+   had just said). Every own-name item gets a card for the learner at the end of the row, with a name tag that reads the
+   typed first name in the same style as Pierre's and Sylvie's: the own-name test and lead (the learner's turn), and the
+   model learner's own-name answer just before it ("Je m'appelle Pierre."), so the pictures do not move between the two.
+   The visible rule: say the name on the lit tag (tagLit). The course's own scene is not changed; the card is added here. */
+const OWN_LEAD_RE = /^Je m'appelle…$/;
+function markOwn(o){
+  const ans=(o.answerUnits||[]).join(" ");
+  const own = (o.type==="task" && o.kind==="test" && (o.expect||[]).includes("REST"))
+    || (o.type==="model" && o.voice==="teacher" && o.at==="you" && OWN_LEAD_RE.test(ans))         // dise5c (own_tag "lit"): Marie's held "Je m'appelle…", her hand on the learner's tag
+    || (o.type==="task" && o.kind==="lead" && o.at==="you" && OWN_LEAD_RE.test(ans))
+    || (o.type==="model" && (o.voice==="paul" || o.voice==="julie") && ans==="Je m'appelle "+VOCAB[o.voice].name+".");
+  if(!own) return o;
+  o.ownName=true; if(o.type==="model"){ if(o.voice==="teacher") o.ownHeld=true; else o.ownModel=true; }
+  const sc=o.scene;
+  if(sc && Array.isArray(sc.row) && !sc.row.some(x=>x && x.person==="you") && !Object.keys(sc).some(k=>/(Doing|Did|Will|Face)$/.test(k)))
+    o.scene=Object.assign({}, sc, {row: sc.row.concat([{person:"you"}])});
+  return o;
+}
 function genLesson(c){ return {id:c.id, gen:true, exercises:c.exercises.map(e=>({id:e.id, title:e.title, track:e.track,
-  parts:e.parts.map(p=>({id:p.id, label:p.label, items:p.items.map(genItem)}))}))}; }
+  parts:e.parts.map(p=>({id:p.id, label:p.label, items:p.items.map(genItem).map(markOwn)}))}))}; }
 const GEN = window.COURSE ? Object.keys(window.COURSE).sort((a,b)=>+a.slice(1)-+b.slice(1)).map(k=>genLesson(window.COURSE[k])) : [];
 const GEN_L1 = GEN[0] || null;
 /* The narrated explanation of questions ("the learner says only the answer") was tied to an item of the hand-built
@@ -1741,6 +1762,26 @@ function portrait(who){
      <text x="80" y="166" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522">${VOCAB[who].name}</text></g>`;
   return g;
 }
+/* The learner's card (.24): a plain figure (the learner is not drawn as anyone in particular) and a name tag reading the
+   first name they typed, in the style of the tags above (white, red band, bold dark letters), as wide as the name needs
+   up to the width of the card; a long name is squeezed to fit. No name: an empty tag (the name screen asks for one). */
+const LEARNER_TAG = {w:56, h:24};
+function learnerTagName(){ const n=String(S.learnerName||"").trim(); if(n) return n; const u=currentUser(); return u && !/^User \d+$/.test(u.name) ? u.name : ""; }
+function learnerCard(){
+  const g=document.createElementNS(svgNS,"g"), name=learnerTagName();
+  const width = t => { try{ const c=learnerCard.cv||(learnerCard.cv=document.createElement("canvas").getContext("2d")); c.font='700 14px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return c.measureText(t).width; }catch(e){ return t.length*8.4; } };
+  const MAXT=136; let lines=[name];
+  if(width(name)>MAXT){ const cuts=[...name.matchAll(/[ -]/g)].map(m=>m.index);          // a long name goes on two lines, broken at the space or hyphen nearest the middle
+    if(cuts.length){ const c=cuts.reduce((a,b)=>Math.abs(b-name.length/2)<Math.abs(a-name.length/2)?b:a); lines=[name.slice(0, name[c]==="-"?c+1:c), name.slice(c+1)]; } }
+  const tws=lines.map(width), w=Math.max(50, Math.min(MAXT+12, Math.max(...tws)+14)), h=lines.length>1 ? 40 : 24; LEARNER_TAG.w=w; LEARNER_TAG.h=h;
+  const esc1=t=>String(t).replace(/[<&"]/g,c=>({"<":"&lt;","&":"&amp;",'"':"&quot;"}[c]));
+  g.innerHTML=`<circle cx="80" cy="80" r="29" fill="#c9d1da"/>
+    <path d="M20 190 v-22 q0-34 38-40 h44 q38 6 38 40 v22z" fill="#aeb9c5"/>
+    <g class="nametag"><rect x="${(80-w/2).toFixed(1)}" y="146" width="${w.toFixed(1)}" height="${h}" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/>
+     <rect x="${(80-w/2).toFixed(1)}" y="146" width="${w.toFixed(1)}" height="5" rx="2" fill="#c8453b"/>
+     ${lines.map((t,i)=>`<text x="80" y="${166+i*16}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522"${tws[i]>MAXT?` textLength="${MAXT}" lengthAdjust="spacingAndGlyphs"`:""}>${esc1(t)}</text>`).join("")}</g>`;
+  return g;
+}
 /* Objects for Exercise 2: three different books and three different apples (DISE: several of a kind, so the word names
    the kind, not one picture). Drawn in the 160 x 190 frame, with soft gradients and a contact shadow. */
 let picSeq=0;
@@ -1919,6 +1960,7 @@ const OWN_THING=["book","apple","pen","shoe"];         // drawn in this file sin
 function genPicture(e){ try{ return genPicture0(e); }catch(err){ trace("FAULT picture "+(e.person||e.is)+": "+err.message); return placeholder(e.person||e.is); } }
 function genPicture0(e){
   const blank=()=>document.createElementNS(svgNS,"g");
+  if(e.person==="you") return learnerCard();                // the learner's own card and name tag (.24, markOwn)
   if(e.person){
     if(!window.PICS) return portrait(e.person);
     // someone who has just stopped: the library's standing figure, or (an older library) the action's frozen frame
@@ -2007,7 +2049,7 @@ async function setPortraits(sc){
       sc=Object.assign({}, sc, {row:[], side, alias}); }
     else trace("FAULT LAYOUT: the action box and "+sc.row.length+" picture(s) are on the screen together"); }
   const first = curSceneKey===null;
-  goldOff(); lastPoint=null;
+  goldOff(); tagLit(null); lastPoint=null;
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
   if(sc.row){ buildRow(sc.row); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
@@ -2096,7 +2138,18 @@ function pointPose(side){            // reach towards the picture frame on that 
   return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
 }
 
-function rest(){ offering=false; askMark(null); goldOff(); ARMS.go(POSE.rest, 280); }
+function rest(){ offering=false; askMark(null); tagLit(null); goldOff(); ARMS.go(POSE.rest, 280); }
+/* The lit name tag (.24): a gold outline round the name tag of the person in that slot (the learner's card, Pierre's or
+   Sylvie's picture), with the card's own gold border. Lit for the learner at their own-name turn, and for Pierre or Sylvie
+   while they answer their own-name model (with their hand on the tag, askMark). The rule shown: say the name on the lit tag. */
+function tagLit(slot){
+  const g=document.getElementById("tagMark"); if(!g) return; g.replaceChildren();
+  const b=slot && BOUNDS[slot]; if(!b || !curScene || !curScene.row) return;
+  const p=curScene.row[+String(slot).slice(1)], who=p && typeof p==="object" ? p.person : null; if(!who) return;
+  const k=b.w/160, tw = who==="you" ? LEARNER_TAG.w : who==="julie" ? 56 : 50, th = who==="you" ? LEARNER_TAG.h : 24, m=4;
+  g.innerHTML=`<rect x="${(b.x+(80-tw/2-m)*k).toFixed(1)}" y="${(b.y+(146-m)*k).toFixed(1)}" width="${((tw+2*m)*k).toFixed(1)}" height="${((th+2*m)*k).toFixed(1)}" rx="${(6*k).toFixed(1)}" fill="#f6d35b" fill-opacity=".28" stroke="#d4a017" stroke-width="3"/>`;
+}
+const learnerSlot = () => slotOfPerson("you");
 function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
 let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
@@ -2160,6 +2213,7 @@ let offering=false;
 // what to point at: a task or model (its "at" slot, or its target), a slot ("L", "R", "s0"…, "self", "you"), or an item id
 const sideOf = t => { if(t && typeof t==="object") t = t.at || t.target;
   if(curScene && curScene.alias && curScene.alias[t]) return curScene.alias[t];      // a picture shown as a small badge (see setPortraits)
+  if(t==="you"){ const s=slotOfPerson("you"); if(s) return s; }                     // the learner's own card is on the screen (own-name items, .24): she means it
   if(t==="L"||t==="R"||t==="self"||t==="you"||t==="none"||t==="pL"||t==="pR"||/^s\d+$/.test(t||"")) return t;
   if(t==="claire"||t==="jmclaire") return "self";
   if(!curScene || !t) return "R";
@@ -2256,7 +2310,8 @@ async function askAndListen(task, expect, think=0, alsoOk=[]){
     return listen(expect, alsoOk);
   }
   if(task.cue==="you"){                   // about the learner: the open palm to them, then "Vas-y" (or "Et toi ?") is the cue
-    offering=true; pointAt("you"); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
+    // own name (.24): the learner's card and name tag lit
+    offering=true; pointAt("you"); if(task.ownName) tagLit(learnerSlot()); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
     return listen(expect, alsoOk);
   }
   if(task.cueVoice){                      // a model learner says the cue: the gold border on them (who it is about), the green ring while they speak
@@ -2280,8 +2335,8 @@ async function announce(t){
    the teacher they have had it since the first lessons; as one of the pictures in the row (scenes with no objects) they
    had none, so nothing on screen showed which of the two was talking. */
 function slotOfPerson(who){
-  if(who!=="paul" && who!=="julie") return null;
-  if(document.getElementById("badge_"+who)) return who==="paul" ? "pL" : "pR";
+  if(who!=="paul" && who!=="julie" && who!=="you") return null;       // "you": the learner's own card (.24)
+  if(who!=="you" && document.getElementById("badge_"+who)) return who==="paul" ? "pL" : "pR";
   if(curScene && curScene.row){ const i=curScene.row.findIndex(x=>(x && typeof x==="object" ? x.person : String(x).split(":")[0])===who); if(i>=0) return "s"+i; }
   return null;
 }
@@ -2340,6 +2395,10 @@ async function presentGenModel(m){
   if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
   if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt, m); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
+  // a model learner's own-name answer (.24): their tag lit and their hand on it while they say it (askMark: the who-asks-whom hand)
+  if(m.ownModel){ const sl=slotOfPerson(m.voice); if(sl){ askMark(sl, true, null); tagLit(sl); } }
+  // Marie's held "Je m'appelle…" for the learner (dise5c): the learner's card and tag lit, a hand on the tag
+  if(m.ownHeld){ const sl=learnerSlot(); if(sl){ askMark(sl, true, null); tagLit(sl); } }
   await sayAs(m.voice, m.answerUnits);
 }
 /* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
@@ -2378,8 +2437,11 @@ function actBox(who, act, opt){
   const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||""].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
   const mine = who!=="marie", label = who==="you" ? "You:" : who==="both" ? VOCAB.claire.name+" and you:" : VOCAB.claire.name+":";
   g.innerHTML=`<text x="200" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
-    <g transform="translate(120,24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="${mine?"var(--go)":"var(--frame-line)"}" stroke-width="${mine?4:2}"/><g id="actPic"></g></g>`;
+    <g transform="translate(120,24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
   try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
+  /* the learner's own name tag under their figure (.24), as on their card in own-name tasks: the figure is the learner */
+  if(mine && !opt.face){ const t=learnerCard().querySelector(".nametag"); if(t){ const k=1.1, x=(who==="both" ? 160 : 200);      // PICS.together puts the learner on the left
+    t.setAttribute("transform",`translate(${(x-80*k).toFixed(1)} ${(222-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); } }
   g.setAttribute("opacity",1);
 }
 async function presentAct(a){
@@ -2392,10 +2454,9 @@ async function presentAct(a){
     const show=a.kind==="show", was = show ? sc.teacherDid : sc.learnerDid, moving=Object.assign({}, bare, show ? {teacherDoing:was} : {learnerDoing:was});
     if(ACTBOX.key!==[show?"marie":"you", was, "", "", ""].join("|")){ await setPortraits(moving); await sleep(1500); }
     if(show){ await pointAt("self"); if(cmd.length) await say(cmd); }
-    else { offering=true; await pointAt("you"); if(cmd.length) await say(cmd); signal(true); trace("your turn to do: stop"); }
+    else { await youDoIntro(); rest(); if(cmd.length) await say(cmd); trace("the learner's figure does it: stop (nothing asked of the learner)"); }
     await setPortraits(sc); trace("stop shown: "+(show?"the teacher":"the learner")+" was doing \""+was+"\" and now stands still");
     await sleep(ACT_TIME.stop);
-    if(!show){ signal(false); await ding(); }
     rest(); return;
   }
   await setPortraits(bare);
@@ -2407,14 +2468,26 @@ async function presentAct(a){
     if(own) await setPortraits(sc); else actBox(null);        // she goes on doing it into the question that follows ("Je fais quoi ?")
     rest(); return;
   }
-  offering=true; await pointAt("you"); if(cmd.length) await say(cmd);
+  /* The learner does nothing (.24; Jon, 11 Nov 2026: "The user won't stand up or sit down. The user won't dance… neither will any
+     other user"; on .23 the green border came on, and tester H said the word instead: green always means "speak"). The learner's
+     own figure, with their name tag, is their stand-in and does it: no green border, no microphone, no ding, nothing asked. */
+  await youDoIntro();
+  rest(); if(cmd.length) await say(cmd);          // no open palm to the learner either (the "your turn" hand): nothing is asked
   S.actSeen=S.actSeen||{}; const seen=S.actSeen[a.act]||0;
-  signal(true); trace("your turn to do: "+a.act+(sc.bothDoing?" (with the teacher)":"")+(seen<ACT_SHOWN?" (shown)":" (still picture)"));
-  actBox(sc.bothDoing ? "both" : "you", a.act, {still:seen>=ACT_SHOWN});
+  trace("the learner's figure does it: "+a.act+(sc.bothDoing?" (with the teacher)":"")+" (nothing asked of the learner)");
+  actBox(sc.bothDoing ? "both" : "you", a.act, {});
   await sleep(ACT_TIME[a.act]||3000);
-  S.actSeen[a.act]=seen+1; signal(false);
+  S.actSeen[a.act]=seen+1;
   if(own) await setPortraits(sc); else actBox(null);
-  await ding(); rest();
+  rest();
+}
+/* Before the first such task, once (.24): the narrator says that the figure is the learner. The figure stands in the box, with
+   the learner's name tag, while it is said. */
+async function youDoIntro(){
+  if(S.youDoSeen) return;
+  ph("introduction: the learner's figure"); rest();
+  actBox("you", "stop", {still:true}); await narrate("you_do"); await narrate("you_do_b"); actBox(null);      // "This is you. … you'll answer as if you had done it yourself …"
+  S.youDoSeen=true; save();
 }
 /* "say" (Lessons 9+): the teacher says a line and nobody answers (red border, like a model). Two uses. Her reply in a
    conversation ("Ça va bien, merci." after the learner's "Ça va ?"). And a command to a pictured person, "Arrête." to
@@ -2471,20 +2544,17 @@ async function presentModel(m){
   rest();
 }
 /* The introduction (Jon, 8 November 2026, after testing with his family): a narrated demo in English of what the learner
-   does, shown by the on-screen learner, in the formats of the exercise that follows. Red border: listen only. "Avec moi":
-   say it at the same time as the teacher (shown twice. It was three times, as the most confusing part for testers; Jon, 10 Nov 2026: "That's too much. It should only be 2"). "Répète": say it once,
+   does, shown by the on-screen learner, in the formats of the exercise that follows. Red border: listen only. ("Avec moi",
+   saying it with the teacher, was shown here until .23; taken out with every lead of the app's own, Jon, 11 Nov 2026.) "Répète": say it once,
    alone. "Vas-y" and the teacher points: say the name. Last: the learner only speaks when the border is green. */
 async function presentIntro(m){
   ph("introduction"); await setScene("class");
   await narrate("watch");
   await narrate("red");
   await gestureEar(); await say(PHR.amoi); await pointAt(m); await sleep(250); await multipleModels(m, 3, true); rest(); await sleep(400);
-  for(let k=0;k<2;k++){
-    if(k===0){ await narrate("avec_a"); await gestureLead(); await say(PHR.avecmoi); rest(); await sleep(200); await narrate("avec_b"); }
-    else await narrate("again");
-    ph("introduction: lead "+(k+1));
-    await leadSteps(m, "both"); rest(); await sleep(600);
-  }
+  /* (until .23 "Avec moi" was shown twice here: "the learner says it at the same time as the teacher". Jon, 11 Nov 2026: no
+     saying it together anywhere in the app ("the person always responds late or not at all"); the lines avec_b and again
+     are no longer played) */
   await narrate("avec_a"); await gesturePalm(m); await say(m.questionUnits.length? m.questionUnits : repeatCue(m.target)); rest(); await sleep(200); await narrate("rep_b");
   ph("introduction: repeat");
   await gesturePalm(m); await pointAt(m); await sleep(300); await say(repeatCue(m.target));
@@ -2520,7 +2590,7 @@ async function leadSteps(t, who){
   const first = t.series ? "s0" : t;
   if(t.gen){ const pre=t.teacherUnits.filter(u=>!/^avec moi/i.test(u));
     if(pre.length){ await pointAt(first); await sleep(150); await say(pre); await sleep(150+pace()/2); } }
-  gestureLead(); pointAt(first); await say(PHR.avecmoi);
+  gestureLead(); pointAt(first); if(t.ownName) tagLit(learnerSlot()); await say(PHR.avecmoi);
   // Jon 9 Nov 14:21: saying it together needs 0.5 s after "Avec moi" to get ready (timed unison, unlike a test's open window)
   await sleep(LEAD_GAP);
   const on = v => who==="both" ? glow(v) : signal(v ? "lead" : false);
@@ -2579,8 +2649,17 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(r.status==="silence" && r.speech){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
               result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
-    save(); if(isOwnName(t)) await modelOwnName(t); else { await pointAt(t.cueVoice ? t.cueAt : t); await sayAnswer(t); } rest(); return true;
+    save(); if(isOwnName(t)) await ownNameCorrection(t, {why:"listening fault"}); else { await pointAt(t.cueVoice ? t.cueAt : t); await sayAnswer(t); } rest(); return true;
   }
+  /* Own name (.24): a right answer's recording is kept as this learner's model for later own-name corrections; an answer
+     that gives a course person's name and then "je m'appelle" again with a name of their own ("Je m'appelle Sylvie… je
+     m'appelle [own name]") is still an error, marked self-corrected (its correction is the same: never a model learner). */
+  if(isOwnName(t) && r.status==="heard"){
+    // (never an answer "believed" after the same course name three times: it may say that name)
+    if(r.ok && r.clip && !/three times running/.test(r.reason||"")){ S.ownClips=(S.ownClips||[]).filter(x=>x.id!==r.clip).concat([{id:r.clip, t:new Date().toISOString(), task:t.id}]).slice(-6); trace("own-name recording kept as this learner's model: "+r.clip); }
+    if(!r.ok && r.otherName && selfCorrectedOwn(r)){ r={...r, selfCorrected:true, reason:(r.reason||"")+"; then \"je m'appelle\" again with a name of their own (self-corrected)"}; }
+  }
+  ctx.lastVerdict = r;
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id);
     const f = (S.ftc[ctx.exKey] = S.ftc[ctx.exKey] || {new:{c:0,n:0}, review:{c:0,n:0}});
@@ -2591,39 +2670,100 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(!r.ok){ ctx.firm[t.target]=0; ctx.slow[t.target]=true; }      // a mistake: the pause comes in (Zig)
   if(isFirm(t.target)) delete ctx.slow[t.target];                  // the learner has it again: the pause goes
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
-            result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec});
+            result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec, ...(r.selfCorrected?{selfCorrected:true}:{})});
   save();
   if(r.ok){ smile(true); rest(); await ding(); }        // Jon 9 Nov: right = the teacher just smiles (no nod, no pointing, no echo)
   return r.ok;
 }
-/* An own-name question ("Et toi ?") is answered for the learner by a model learner answering it about themselves, never
-   by the teacher's own sentence: "Je m'appelle Claire." given as the correction is exactly what tester H copied (9 Nov 16:42). */
-let ownNameWho = "paul", ownHeard = null;
+/* Own-name corrections (.24). Until .23 an own-name error was corrected by "Et toi ?", a model learner's "Je m'appelle Pierre."
+   (or Sylvie), then "Et toi ?" again: the last thing heard before every retest was another person's name in the same frame,
+   and the learner's own name had never been heard from anyone. tester H (11 Nov 21:12) said exactly the name just heard in 12
+   own-name answers; on 9 Nov she had copied the teacher's "Je m'appelle Claire." from the correction of the time. So no
+   own-name sentence with another name is ever played between an own-name error and its retest. The correction is one of:
+   (a) "own recording": this learner's own right answer, recorded earlier (this session, or kept on the phone for this user:
+       S.ownClips, or a right own-name answer in the log whose recording is still stored), played once after "Écoute.",
+       with the learner's card and tag lit; then the retest ("Et toi ?");
+   (b) "name tag": no right own-name answer recorded yet: the learner's card and name tag are lit (the gold border), and
+       the retest follows ("Et toi ?" with the tag still lit). Nothing is said with them: no lead (Jon, 11 Nov 2026).
+   A self-corrected answer ("Je m'appelle Sylvie… je m'appelle [own name]") is an error corrected the same way. The run file
+   gets a log line with the clip played (modelClip), and that clip is put in the run file's recordings. */
+let ownHeard = null;
 let judgePart = null;      // which of "on" and "elle" the part being run has as answers (judge: the on / elle ruling)
 /* An own-name task is one whose answer goes on with the learner's own name. Until .19 every task with the teacher's palm to
    the learner (cue "you") was corrected as one: after a wrong answer to "Tu fais quoi ?" a model learner said "Je m'appelle
    Pierre." The other "you" tasks ("Tu fais quoi ?", "Tu faisais quoi ?", "Ça va ?") are corrected with their own answer. */
 const isOwnName = t => t.cue==="you" && (!t.gen || (t.expect||[]).includes("REST"));
-async function modelOwnName(task){
-  const who = ownNameWho; ownNameWho = who==="paul" ? "julie" : "paul";
-  ph("a model learner's own name"); offering=false;
-  await say(task.questionUnits && task.questionUnits.length ? task.questionUnits : ["Et toi ?"]);
-  await sayAs(who, ["Je m'appelle "+VOCAB[who].name+"."]);
+const OWN_LISTEN = ["Écoute."];          // said before the learner's own recording; [] leaves it out
+// "je m'appelle" + a course person's name, then "je m'appelle" again with no course name after it (or one that could be their own)
+function selfCorrectedOwn(r){
+  const toks=tokensOf(r.raw || (r.heard||[])[0] || ""), other=w=>{ const n=nameOf(w); return !!(n && !n.near && VOCAB[n.n].kind==="person" && !ownMaybe(n.n)); };
+  const o=toks.findIndex(other), L=toks.lastIndexOf("jemappelle");
+  return o>=0 && L>o && !toks.slice(L+1).some(other);
 }
-async function correction(task, nth){
-  ph("correction "+nth);
-  await gestureEar();                                             // step 1: give the answer at once (DISE: "say the correct word as soon as students make a mistake")
-  if(isOwnName(task)){ await modelOwnName(task); return; }   // a model learner answers about themselves; then the question again
-  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));
-  if(nth>=2 && task.answerUnits.length>1){   // build from the end: the teacher says the start, the green border cues the rest
-    recentSaid=[]; await say([task.answerUnits[0]+"…"]);
-    ph("build from end");
-    const r=await listen([task.target]); rest();          // the learner says the rest
-    logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, result:"build-from-end step "+(r.ok?"ok":"missed"), reason:r.reason, heard:r.heard.slice(0,6), ...lx(r)});
-    if(!r.ok){ await pointAt(task); await say(answerUnits(task)); }
+// the learner's earlier right own-name answers, newest first: kept ones, then any in the log (a state from before .24)
+function ownClipCandidates(){
+  const ids=(S.ownClips||[]).map(x=>x.id).reverse();
+  for(let i=(S.log||[]).length-1;i>=0;i--){ const e=S.log[i]; if(e && e.clip && e.result==="correct" && e.cue==="you" && OWN_LEAD_RE.test(e.expected||"") && !/three times running/.test(e.reason||"") && !ids.includes(e.clip)) ids.push(e.clip); }
+  return ids.filter(id=>String(id).startsWith(USERS.current+"_"));
+}
+// where the speech is in a recording (20 ms frames over a threshold from its own quiet and loud parts)
+function speechSpan(buf){
+  const d=buf.getChannelData(0), sr=buf.sampleRate, win=Math.round(sr*0.02), env=[];
+  for(let i=0;i+win<=d.length;i+=win){ let e=0; for(let k=0;k<win;k++) e+=d[i+k]*d[i+k]; env.push(Math.sqrt(e/win)); }
+  if(!env.length) return null;
+  const s=[...env].sort((a,b)=>a-b), th=Math.max((s[Math.floor(s.length/10)]||1e-4)*3.5, s[s.length-1]*0.12, 0.004);
+  const a=env.findIndex(x=>x>th); let b=-1; for(let i=env.length-1;i>=0;i--) if(env[i]>th){ b=i; break; }
+  if(a<0 || b<a) return null;
+  let pk=0; for(let i=a*win;i<Math.min(d.length,(b+1)*win);i++){ const v=Math.abs(d[i]); if(v>pk) pk=v; }
+  const t0=Math.max(0, a*0.02-0.10), t1=Math.min(buf.duration, (b+1)*0.02+0.20);
+  return {t0, t1, dur:t1-t0, peak:pk};
+}
+async function ownRecording(){
+  if(!S.settings.keepAudio && !(S.ownClips||[]).length) return null;
+  audioUnlock(); if(!actx) return null;
+  for(const id of ownClipCandidates().slice(0,8)){
+    let raw=null; try{ raw=await clipStore("get", id); }catch(e){} if(!raw) continue;
+    let buf=null; try{ const u=raw instanceof Uint8Array ? raw : new Uint8Array(raw); buf=await actx.decodeAudioData(u.buffer.slice(u.byteOffset, u.byteOffset+u.byteLength)); }catch(e){ continue; }
+    const seg=speechSpan(buf); if(!seg || seg.dur<0.5 || seg.dur>3.6 || seg.peak<0.01) continue;      // nothing in it, or a long one (said twice, or more than the answer)
+    return {id, buf, seg};
   }
-  // step 2: repeat the task (presentTest gives the cue). "Répète" needs no "Vas-y"; for touch-and-name the hand comes back first.
-  if(task.cue==="repeat") return;
+  return null;
+}
+function playOwn(o){
+  return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=o.buf; const g=actx.createGain(); g.gain.value=Math.min(6, 0.8/Math.max(o.seg.peak,0.01));
+    src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(actx.currentTime+0.03, o.seg.t0, o.seg.dur); setTimeout(()=>res(false), (o.seg.dur+1.5)*1000); });
+}
+async function ownNameCorrection(task, o={}){
+  offering=false; const slot=learnerSlot(), why=o.why||"";
+  const own = S.settings.manual ? null : await ownRecording();
+  const L = x => logEntry(Object.assign({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, heard:[], delayed:!!ctx.delayedRec, why}, x));
+  if(own){
+    ph("own-name correction: own recording"+(why?" ("+why+")":""));
+    gestureEar(); if(slot){ goldOn(slot); tagLit(slot); }
+    if(OWN_LISTEN.length) await say(OWN_LISTEN);
+    if(slot) speakLit("you", true, slot);
+    trace("own recording played: "+own.id+" ("+own.seg.t0.toFixed(2)+"-"+own.seg.t1.toFixed(2)+" s of it)");
+    await playOwn(own); speakLit("you", false);
+    if(!SESSION.clips.includes(own.id)) SESSION.clips.push(own.id);      // the run file carries the clip that was played
+    L({result:"own-name correction: the learner's own right answer played", modelClip:own.id});
+  } else {
+    ph("own-name correction: name tag"+(why?" ("+why+")":""));
+    if(slot){ goldOn(slot); tagLit(slot); } await sleep(700);
+    trace("own-name correction: no right own-name answer of this learner recorded yet; the learner's name tag is lit"+(slot?"":" (no card on the screen)"));
+    L({result:"own-name correction: the learner's name tag lit (no own recording yet)", modelClip:null});
+  }
+  lastSpeechEnd=Date.now();
+}
+/* Corrections (Jon, 11 Nov 2026: "just one model of the correct answer, and then ask the student"). One model, then the
+   learner's turn: no second model, no build-from-the-end step, no lead. A "Répète : …" cue is itself the model, so a
+   Répète task is asked again at once with nothing before it. */
+async function correction(task, nth, how=""){
+  ph("correction "+nth+(how?" ("+how+")":""));
+  if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : ""}); return; }      // then the question again
+  if(task.cue==="repeat") return;                                 // the cue "Répète : X." is the one model
+  await gestureEar();                                             // give the answer at once (DISE: "say the correct word as soon as students make a mistake")
+  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));
+  // then the task again (presentTest gives the cue). For touch-and-name the hand comes back first.
   if(task.cue==="point"){ rest(); await sleep(200); await say(PHR.atoi); return; }
   await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task); })()]);
 }
@@ -2640,7 +2780,7 @@ function scheduleDelayed(part, anchor){
 // a model learner (Paul, Julie) answering about themselves right before the learner is asked the same about themselves
 // an action the learner is asked to do straight before being asked what they are doing ("Danse." then "Tu fais quoi ?"):
 // it goes with that question whenever the question is asked again
-const isActBefore = (it, next) => it && it.type==="act" && it.kind==="do" && next && next.type==="task" && next.scene && (next.scene.learnerDoing || next.scene.bothDoing);
+const isActBefore = (it, next) => it && it.type==="act" && (it.kind==="do" || it.kind==="figure") && next && next.type==="task" && next.scene && (next.scene.learnerDoing || next.scene.bothDoing);
 // a stop (Lesson 9: "Arrête." to the learner, to a pictured person, or the teacher stopping): what shows the past of the question after it
 const isStop = it => it && ((it.type==="act" && it.act==="stop") || (it.type==="say" && stopsSomeone(it.scene)));
 // what the teacher says or does in answer to the learner: her reply ("Ça va bien, merci."), or doing what she was told ("Danse.")
@@ -2659,23 +2799,27 @@ function itemsFor(part, run, shown){
 }
 const TRIAL_LIMIT = 7;
 const PART_REPEATS = 4;    // a part is gone through again at most this many times after errors; then its delayed tests take over     // DISE: after about seven trials, model it, move on, and come back to it at the start of the next lesson
+/* The seven-trial limit: one model (Jon, 11 Nov 2026: one model, never several), then on. An own-name task (.24) gets the
+   own-name correction instead (the learner's own recording, or the lit name tag), never a model learner's own-name sentence,
+   and the rest of its part is left: runParts goes on to the next part (tester H, 11 Nov 20:58: after the limit the app went on
+   with another "Je m'appelle Pierre." and she said it again). */
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
-  await gestureEar(); await say(PHR.amoi); await pointAt(it); await multipleModels(it, 2); rest();
-  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled, moved on; part comes back at the start of the next lesson", heard:[]});
+  if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit"});
+  else { await gestureEar(); await pointAt(it.cueVoice ? it.cueAt : it); await say(answerUnits(it)); }
+  rest();
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null});
-}
-// After the first correct answer following errors: two more straight away, with a nod (Zig, Part 3, 24:21)
-async function immediateRepeats(it){
-  for(let k=0;k<2;k++){ ph("immediate repeat "+(k+1)); if(!(await presentTest(it,{retest:true, atoi:false, think:0, quiet:true}))) return false; }
-  return true;
 }
 async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={}, anchor}={}){
   let hadError=false; const shown=new Set(); const partRepeats={};
   // a task that reached the seven-trial limit is not asked again in this exercise: it comes back at the next lesson (DISE)
   const limited = (errorsByTask.__limited = errorsByTask.__limited || new Set());
+  // a part left at an own-name task's seven-trial limit is not run again in this exercise (.24; it comes back as a delayed test)
+  const limitedParts = (errorsByTask.__limitedParts = errorsByTask.__limitedParts || new Set());
   const ask = list => list.filter(x=>!limited.has(x.id));
   for(const part of parts){
+    if(limitedParts.has(part.id)){ trace("part "+part.id+" ("+run+"): left at an own-name task's seven-trial limit, not run again in this exercise"); continue; }
     let items=ask(itemsFor(part, run, shown));
     if(!items.length) continue;
     ctx.part=part.id; trace("part "+part.id+" ("+run+"): "+part.label);
@@ -2702,15 +2846,16 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       if(lastRepeatedCue){ lastRepeatedCue=false; rest(); await narrate("onlyanswer"); }
 
       if(firstOfItem){
-        // a brand-new item that failed at its first test: start over with several models, a lead and the test (Zig, Part 4, 17:04)
+        /* a brand-new item that failed at its first test. Until .23: three models, a lead and the test, and after a right
+           answer two more tests (8 to 24 s in the runs of 10-11 Nov). Jon, 11 Nov 2026: one model, then the learner; no lead.
+           Its errors are not counted towards the exercise's seven trials (as before). */
         let tries=1, fixed=false;
         while(!fixed && tries<TRIAL_LIMIT){
-          ph("start over: several models"); await gestureEar(); await say(PHR.amoi); await pointAt(it); await multipleModels(it, 3, true); rest();
-          await presentLead(it);
-          fixed=await presentTest(it,{retest:true, think:thinkTime(it,{retest:true})}); tries++;
+          await correction(it, tries, "new item");
+          fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true}); tries++;
         }
-        if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
-        if(await immediateRepeats(it)){ ph("final confirmation"); smile(true); rest(); }      // Jon 9 Nov: right = a smile
+        if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part"); break; } i++; prevTest=false; continue; }
+        ph("final confirmation"); smile(true); rest();      // Jon 9 Nov: right = a smile
         i++; prevTest=false; continue;
       }
 
@@ -2723,9 +2868,12 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         if(tries>=TRIAL_LIMIT || errorsByTask[it.id]>=TRIAL_LIMIT) break;
         await correction(it, errorsByTask[it.id]);
         fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true});
-        if(fixed) fixed = await immediateRepeats(it);
+        // (until .23 a right retest was followed by two more, "immediate repeat 1, 2": gone (Jon, 11 Nov 2026); the part's
+        // repeat below and its delayed tests are the firming check)
       }
-      if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); i++; prevTest=false; continue; }
+      if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id);
+        if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part (no further model learner's own-name model in it)"); break; }
+        i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
       ph("final confirmation"); smile(true); rest();
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors.
@@ -2898,6 +3046,11 @@ function courseGrammar(expect){
   // Lessons 3+ (Lessons 1-2 hear one list, as the four lessons of .17 did): only what has been reached (see VOSK.from above); the answer asked for is always in
   const GATED_FROM=2, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
   base = base.filter(p=>reached(VOSK.from.get(p)||[0,0]));
+  /* A count ("Un, deux, trois, quatre.") is heard against number words only (.24; tester H 11 Nov 21:08: her "trois" in a count
+     came out as "lève-toi", which is in the Lesson 1 list only because Lessons 1 and 2 share one list). */
+  if((expect||[]).length>=2 && expect.every(e=>VOCAB[e] && VOCAB[e].kind==="number")){
+    const NUMW=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="number").map(k=>norm(VOCAB[k].say[0])));
+    base = base.filter(p=>p.split(" ").every(w=>NUMW.has(w))); }
   const own = (expect||[]).length ? norm(phraseOf(expect)) : "";
   if(own && !frag_(own)) { base=base.concat([own]); const w=own.split(" "); if(w.length<=2) base=base.concat(w.filter(x=>x!=="je" && x!=="m'appelle")); }
   return JSON.stringify([...new Set(base.concat(extra))].concat(["[unk]"]));
