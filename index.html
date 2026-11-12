@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.33";
+const APP_VERSION="2026-11-12.34";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -3114,7 +3114,7 @@ async function youDoIntro(){
   ph("introduction: the learner's figure"); rest();
   // (.25: said before the first command the learner answers by a tap; the pictures make way for the figure while it is said)
   const fr=document.getElementById("frameRow"), op=fr.style.opacity, tg=TXT.g.getAttribute("opacity"); fr.style.opacity=0; TXT.g.setAttribute("opacity",0); const kept=ACTBOX.key;
-  actBox("you", "stop", {still:true}); await narrate("you_do"); await sleep(300); await narrate("you_do_b"); await sleep(400); await narrate("you_do_c"); actBox(null);      // (.27) the two questions said as questions, "are" / "were" stressed      // "This is you. When Marie tells you to do something, tap the picture of it … 'I was dancing.'"
+  actBox("you", "stop", {still:true}); await narrate("you_do"); await sleep(300); await narrate("you_do_b"); actBox(null);      // (.34, Jon 12 Nov: no English about French) "This is you. When Marie tells you to do something, tap the picture of it … Later, Marie will ask about your actions, now and before …" (the English examples of the questions and answers, you_do_c, are gone)
   fr.style.opacity=op; TXT.g.setAttribute("opacity", tg==null?1:tg);
   S.youDoSeen=true; save();
 }
