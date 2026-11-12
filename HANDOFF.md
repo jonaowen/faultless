@@ -7,7 +7,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.32` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-12.33` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
   dise5c, dise, flat — must stay byte-identical). Design log §17–§40 has every ruling and change since 11 Nov.
@@ -46,7 +46,10 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.32`: .31 plus Lessons 6–10 with DISE boards (from course_dise6); the silent count ("Compte
+- **Live version:** `2026-11-12.33`: .32 plus Marie's confirmation of each model answer in L2E6 part a ("Oui, une." /
+  "Oui, un."; the owner, 16:30: he took Pierre's and Sylvie's "Une." for a speech-generation fault). Two new teacher
+  clips. Checks: gate Lessons 1–3 passed; played in a browser (Marie names, asks, Pierre answers, Marie confirms);
+  smoke clean. Earlier: `2026-11-12.32`: .31 plus Lessons 6–10 with DISE boards (from course_dise6); the silent count ("Compte
   dans ta tête.": the hand touches each thing at a steady pace, nobody speaks) and the des/deux picture test. Checks:
   quiet whole-lesson runs L6–7 885/885, L8 502/502, L9–10 1039/1039 (one 648 ms frame stall, no wrong answer); gate
   Lessons 6–10 passed; selfjudge 0 refused; tapcards 0 failures over 322 taps; smoke clean. Earlier: `2026-11-12.31`: .30 plus L2E6 "one thing's number is its front word" shown in the cue (Marie names
