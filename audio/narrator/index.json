@@ -118,5 +118,17 @@
 "count_you_b": {
 "text": "it is the turn of the person she is talking to. They count, saying one number each time the hand touches a thing.",
 "dur": 5.92
+},
+"you_do_ex": {
+"text": "For example, when you tap the picture of dancing, imagine that you are dancing. Marie will talk to you as if you really are.",
+"dur": 7.03
+},
+"you_now": {
+"text": "Remember: Marie talks to you as if you were really doing what your figure is doing.",
+"dur": 3.44
+},
+"you_before": {
+"text": "Remember: Marie talks to you as if you had really done what your figure did.",
+"dur": 3.12
 }
 }

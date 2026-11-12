@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.34";
+const APP_VERSION="2026-11-12.35";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -2541,7 +2541,11 @@ async function cueAs(voice, units, at, item){
   const who = voice in VOICE_PREFIX ? voice : "julie";
   if(item){ const slot=slotOfPerson(who) || (at && at!=="none" ? sideOf(at) : null), ans = item.type==="model" && item.voice && item.voice!=="teacher" ? slotOfPerson(item.voice) : item.type==="model" ? null : "you";
     const moving = ((item.scene||{}).row||[]).some(x=>x.person===who && Object.keys(x).some(k=>k!=="person"));      // drawn doing something, or holding up a card, or with a face: the name tag is not where the plain portrait has it, so no hand (the ring and its tail still say who asks whom)
-    askMark(slot, !moving && !!at && at!=="none" && sideOf(item.at)===sideOf(at), ans); }
+    /* (.35; the owner's run of 12 Nov 18:01, L3E2-d3: Pierre asked him "Et moi ?" and he gave his own name, "because the arrow points
+       towards me so I assumed it wanted me to say what my own name is") Until then every pointing at the learner had meant "your own
+       name". When the learner is the one to answer, the green border already says so: no tail towards the learner; the hand on the
+       asker's own name tag is the one mark left, and it says whom the question is about. The tail stays between pictured people. */
+    askMark(slot, !moving && !!at && at!=="none" && sideOf(item.at)===sideOf(at), ans==="you" ? null : ans); }
   stopRec(); recentSaid.push(units.join(" ")); trace("say["+voiceName(who)+"]: "+units.join(" · "));
   speakLit(who, true, at); caption("["+voiceName(who)+"] "+units.join(" "));
   if(!(await playLearner(voiceLine(who, units)))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
@@ -2940,6 +2944,10 @@ async function convIntro(it){
      any kind ("À toi." is first said to Pierre in a model); "asker" before the first item in which Pierre or Sylvie asks */
   if(it.touch && !it.touch.silent){ await convOnce("count"); await convOnce("count_you"); }
   if(it.cueVoice) await convOnce("asker");
+  /* (.35, Jon 12 Nov 17:53) "when that question type actually happens, a fair bit later in the course, you will also need to put in
+     another reminder of how it works": before the first test about the learner's own figure doing something now (learnerDoing), and
+     the first about what it did (learnerDid). About the app only: no English about French. */
+  if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) await convOnce("you_now"); if(it.scene.learnerDid) await convOnce("you_before"); }
   // (.28) the audit: a convention this item uses whose line has not been said is a fault in the run file (oracle10.js lists it)
   const late=convUsed(it).filter(k=>!(S.conv||{})[k]); if(late.length) trace("FAULT CONVENTION LATE: "+late.join(", ")+" used at "+(it.id||it.target)+" before its narration");
 }
@@ -2948,6 +2956,7 @@ function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.
   if(it.board){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
   if(it.type==="tapshow") u.push("tapmodel"); if(it.tapTask) u.push("tap");
   if(it.touch && !it.touch.silent) u.push("count","count_you"); if(it.cueVoice) u.push("asker");
+  if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
 // a command answered by a tap ("Danse." with picture cards of actions): the learner's figure then does it
 const isCommandTap = t => !!(t.scene && t.scene.row && t.targets.some(s=>{ const m=/^s(\d+)$/.exec(s), x=m && t.scene.row[+m[1]]; return x && x.is==="picture card"; }));
@@ -3114,7 +3123,9 @@ async function youDoIntro(){
   ph("introduction: the learner's figure"); rest();
   // (.25: said before the first command the learner answers by a tap; the pictures make way for the figure while it is said)
   const fr=document.getElementById("frameRow"), op=fr.style.opacity, tg=TXT.g.getAttribute("opacity"); fr.style.opacity=0; TXT.g.setAttribute("opacity",0); const kept=ACTBOX.key;
-  actBox("you", "stop", {still:true}); await narrate("you_do"); await sleep(300); await narrate("you_do_b"); actBox(null);      // (.34, Jon 12 Nov: no English about French) "This is you. When Marie tells you to do something, tap the picture of it … Later, Marie will ask about your actions, now and before …" (the English examples of the questions and answers, you_do_c, are gone)
+  actBox("you", "stop", {still:true}); await narrate("you_do"); await sleep(300);
+  actBox("you", "dance"); await narrate("you_do_ex"); actBox("you", "stop", {still:true}); await sleep(300);      // (.35, Jon 12 Nov 17:53) the example, the figure dancing while it is said
+  await narrate("you_do_b"); actBox(null);      // (.34, Jon 12 Nov: no English about French) "This is you. When Marie tells you to do something, tap the picture of it … Later, Marie will ask about your actions, now and before …" (the English examples of the questions and answers, you_do_c, are gone)
   fr.style.opacity=op; TXT.g.setAttribute("opacity", tg==null?1:tg);
   S.youDoSeen=true; save();
 }
