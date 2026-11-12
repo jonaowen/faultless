@@ -7,7 +7,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.33` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-12.34` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
   dise5c, dise, flat — must stay byte-identical). Design log §17–§40 has every ruling and change since 11 Nov.
@@ -46,7 +46,11 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.33`: .32 plus Marie's confirmation of each model answer in L2E6 part a ("Oui, une." /
+- **Live version:** `2026-11-12.34`: .33 with the figure introduction's English examples of French questions and answers
+  removed (Jon, 12 Nov: no English about French; option A). `you_do_b` reworded to say only what the app will do
+  ("Later, Marie will ask about your actions, now and before. You will answer as if you had done them yourself.");
+  `you_do_c` deleted. Checks: the new line heard word for word (Whisper); the intro played in a browser; smoke
+  clean. Earlier: `2026-11-12.33`: .32 plus Marie's confirmation of each model answer in L2E6 part a ("Oui, une." /
   "Oui, un."; the owner, 16:30: he took Pierre's and Sylvie's "Une." for a speech-generation fault). Two new teacher
   clips. Checks: gate Lessons 1–3 passed; played in a browser (Marie names, asks, Pierre answers, Marie confirms);
   smoke clean. Earlier: `2026-11-12.32`: .31 plus Lessons 6–10 with DISE boards (from course_dise6); the silent count ("Compte
