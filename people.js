@@ -1154,6 +1154,9 @@ const MOVES = {
   "stand up": { dur: 2.6, kt: [0, 0.12, 0.34, 0.54, 1], poses: [SEATED, SEATED, RISING, UPRIGHT, UPRIGHT], side: true, chair: true, still: 2, scale: 1.08, ox: -12, fade: true },
   "sit down": { dur: 2.6, kt: [0, 0.12, 0.34, 0.54, 1], poses: [UPRIGHT, UPRIGHT, RISING, SEATED, SEATED], side: true, chair: true, still: 2, scale: 1.08, ox: -12, fade: true }
 };
+/* (.37, Jon 12 Nov 20:00: "make the animations that play run twice as fast ... we halved it before but that comes from doubling the
+   speed of the animation") every action plays at twice its old speed, so a whole action fits the halved time the app gives it */
+const ACT_SPEED = 2;
 function action(act, who, opts){
   opts = opts || {};
   const word = x => String(x || "").toLowerCase().trim().split(/[ ,]/)[0];
@@ -1173,7 +1176,7 @@ function action(act, who, opts){
   const SY = 97, UA = 21, FA = 20, HY = 126, TH = 26, SH = 26;                   // the skeleton: shoulders, elbows, hips, knees (the same for everybody: the poses turn these joints)
   const W = BUILD[c.kid ? "kid" : c.fem ? "woman" : "man"], q = K.side ? 0.86 : 1, AW = W.aw, LW = W.lw, sh = r2(W.sh * q), ch = r2(sh - AW / 2 + 1.5), wa = r2(W.wa * q), hip = r2(W.hip * q), xo = r2(sh + AW / 2 - 1.2);
   const lx = K.side ? [77, 84] : [r2(80 - W.hx), r2(80 + W.hx)], pc = (lx[0] + lx[1]) / 2, ph = r2((lx[1] - lx[0]) / 2 + LW / 2 + 1);
-  const timing = `keyTimes="${K.kt.join(";")}" dur="${K.dur}s" repeatCount="indefinite"` + (K.linear ? "" : ` calcMode="spline" keySplines="${Array(n - 1).fill("0.4 0 0.6 1").join(";")}"`);
+  const timing = `keyTimes="${K.kt.join(";")}" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"` + (K.linear ? "" : ` calcMode="spline" keySplines="${Array(n - 1).fill("0.4 0 0.6 1").join(";")}"`);
   const G = (type, vals, inner) => `<g transform="${type}(${vals[si]})">` + (still || vals.every(v => v === vals[0]) ? "" : `<animateTransform attributeName="transform" type="${type}" values="${vals.join(";")}" ${timing}/>`) + inner + `</g>`;
   const seg = (x, y, len, w, pair) => `<path d="M${x} ${y} v${len}" stroke="${pair[1]}" stroke-width="${r2(w + 2)}" stroke-linecap="round"/><path d="M${x} ${y} v${len}" stroke="${pair[0]}" stroke-width="${r2(w - 0.4)}" stroke-linecap="round"/>`;
   const leg = (hx, key, pair, toe) => G("rotate", P.map(p => `${p[key][0]} ${hx} ${HY}`), seg(hx, HY, TH, LW, pair) +
@@ -1212,7 +1215,7 @@ function action(act, who, opts){
   if (opts.size){ const y = r2(178 - (c.kid ? 138 : 131) * S);       // a measuring post behind, and a mark at the top of the head
     back += `<path d="M22 8 V180" stroke="#8f98a3" stroke-width="5" stroke-linecap="round"/><path d="${Array.from({ length: 10 }, (_, i) => `M22 ${178 - i * 17} h${i % 2 ? 7 : 11}`).join(" ")}" stroke="#8f98a3" stroke-width="2.4" stroke-linecap="round"/>
       <path d="M22 ${y} H92" stroke="#d8483f" stroke-width="2.6" stroke-dasharray="5 4"/><path d="M22 ${y} l-11 -6 v12z" fill="#d8483f"/>`; }
-  const loop = (attrs, dur, extra) => still ? "" : `<animateTransform attributeName="transform" ${attrs} dur="${dur}s" repeatCount="indefinite"${extra || ""}/>`;
+  const loop = (attrs, dur, extra) => still ? "" : `<animateTransform attributeName="transform" ${attrs} dur="${r2(dur / ACT_SPEED)}s" repeatCount="indefinite"${extra || ""}/>`;
   if (K.chair){
     back += `<ellipse cx="74" cy="181" rx="40" ry="4" fill="#000" opacity=".1"/>
       <path d="M49 161 L44 100 M57 161 L55 100" stroke="#6e5140" stroke-width="5" stroke-linecap="round"/><path d="M41 101 Q49 96 58 100 L57.4 111 Q49 108 42 112 Z" fill="#7f604c" stroke="#5e4535" stroke-width="1.2"/>
@@ -1234,7 +1237,7 @@ function action(act, who, opts){
     front += `<g>` + loop(`type="translate" values="0 0;0 -5;0 0"`, 0.6) + note(24, 62, 1) + `</g><g>` + loop(`type="translate" values="0 -5;0 0;0 -5"`, 0.6) + note(128, 50, 0.85) + `</g>`;
   }
   /* the figure itself; for the movements that are played once (K.fade) it fades out at the end and is back, in its first pose, when the loop begins again */
-  const fig = `<g>` + (K.fade && !still ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${K.dur}s" repeatCount="indefinite"/>` : "") + G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g>`;
+  const fig = `<g>` + (K.fade && !still ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"/>` : "") + G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g>`;
   const g = mk((K.chair ? "" : back) + `<g transform="translate(${80 + (K.ox || 0)} 178) scale(${S}) translate(-80 -178)">` + (K.chair ? back : "") + fig + `</g>` + front);
   spec._head = true;
   const hd = bust(spec, name), slot = k => g.querySelector(`g[data-s="${u}${k}"]`);      // the head from the portrait: its hair behind the trunk, the rest in front

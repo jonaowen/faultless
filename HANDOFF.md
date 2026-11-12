@@ -7,10 +7,10 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.36` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-12.37` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
-  dise5c, dise, flat — must stay byte-identical). Design log §17–§46 has every ruling and change since 11 Nov.
+  dise5c, dise, flat — must stay byte-identical). Design log §17–§47 has every ruling and change since 11 Nov.
 - **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
   the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
   narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
@@ -46,7 +46,13 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.36`: .35 with no exercise over 18 responses (Jon, run 17:53; design log §42). Long exercises
+- **Live version:** `2026-11-12.37`: the rulings of 12 Nov evening (design log §44–§47). Formats are whole again (the split is
+  withdrawn). No scripted delayed tests. Repeats are trimmed to DISE's count, counted strictly with no individual turns
+  (Lesson 1: 123 responses against DISE's 83; the rest of the gap is content, see §47). Corrections: step 3 goes back two
+  tasks; steps 5 and 7 give only the task with the error. No ding, smile or pause after a right answer. Animations are 2×
+  faster, with waits halved. The board shows only on items that use its words. The count turn is "À toi. Compte.".
+  Checks: gate Lessons 1–5 passed; quiet scripted run Lessons 1–2, 249 right, 0 faults (Lesson 1 in 7.9 min, was 13.5);
+  run with an error every 7th answer, 0 faults; smoke clean. Earlier: `2026-11-12.36`: .35 with no exercise over 18 responses (Jon, run 17:53; design log §42). Long exercises
   are split between parts, with the continuations after the next exercise. Lessons 1–10 go from 151 exercises to 290 with
   the same items, checked item for item. A learner's "Un, deux …" is also accepted on a count of feminine things (both are
   French; corpus evidence in the §41 addendum). Checks: quiet scripted run Lessons 1–3, 611 right, 164 taps, 0 faults;
