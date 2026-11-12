@@ -11,7 +11,15 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.26`: .25 plus fixed DISE boards in Lessons 1–2 (from `course_dise6` of 12 Nov 09:59;
+- **Live version:** `2026-11-12.27`: .26 plus the fixes from Jon's run of 12 Nov 10:59: the touch-count MODEL hand
+  moves to and touches each thing at each number's onset (it had depended on the removed per-task text); taps register
+  first time (invisible overlays — the end tick, the hidden model hand, the tap-signal hands — took touches; all are now
+  see-through to touches, tap areas cover the whole card and sit on top, a touch during the cue is kept; every touch is
+  in the trace; harness `taptouch.js` 21/21); the figure narration split in two with "What are you doing?" / "What
+  were you doing?" said as questions; "Un." clips trimmed of a breathy tail heard as /v/ (`dev/voice/trim_tail.py`);
+  Lessons 1–2 without the model before "Répète" of the same words (design log §37); wider board padding. Lessons 3–10
+  are still .25's. Checks: Lessons 1–2 oracle 346/346, gate passed, selfjudge 0 refused.
+  .26 for reference: `2026-11-12.26`: .25 plus fixed DISE boards in Lessons 1–2 (from `course_dise6` of 12 Nov 09:59;
   design log §35–§36): one board per exercise only where DISE has one, blanks where the learner supplies the word,
   outline moving with the voice (`board_point`) and off on the learner's turn except where DISE points to the answer
   (`board_point_learner`); no other print, no written-word taps (the un/une hearing test is on pictures). Lessons 3–10
@@ -245,6 +253,7 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 10 Nov 21:33 | Jon, start of L3 on .20 | no learner error: the phone lay on his chest and a low rumble (heartbeat, breathing; 99 % of the energy under 300 Hz, at full scale) drowned his voice; one "Lève-toi" came out as "trois" and was marked wrong | .22 (low-cut filter, spoken warning) |
 | 11 Nov 08:28 | Jon, L3 on .22 | 174 of 177 right. (1) **Sylvie's model "Une." was unintelligible** (he could not tell un from une; said "un" for the key). (2) Pierre's "Et moi ?" and (3) Marie's "Je m'appelle comment ?" at the start of Ex 13 both answered "Je m'appelle Jon." after 2+ s: a question about the asker answered about himself (only Marie had ever asked it) | .23: clips re-recorded with a release gate; new-asker rule in the generator (design log §16) |
 | 11 Nov 21:12 | the first naive tester, L1 Ex 1–5 on .23 | 134 answers, 15 real errors: 12 own-name answers with the name the model learner had just said (the own-name correction supplies it; she worked out "what is your name?" aloud in English and was right from then on); "Je m'appelle [own name]." ×2 for "Je m'appelle comment ?" (the question opens with her own answer); "Marie." for "Et toi ?" after three corrected "Marie."; one listener error ("trois" heard as "lève-toi" in a count). the run's doctor file in the dev bundle (`dev/qa/`) | next |
+| 12 Nov 10:59 | Jon, L1 on .26 | 62 answers, 0 errors. App faults he reported: the touch-count MODEL hand does not move from thing to thing (the learner's turn does); taps need several touches to register; the narrator's "what you are doing" / "what you were doing" sound alike; "Un." / "un" has a slight /v/ tail; "Un. Répète : un." is two identical models. `dev/qa/doctor_jon_1059.md` | .27 |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.

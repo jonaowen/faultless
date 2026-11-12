@@ -60,8 +60,8 @@
 "dur": 6.73
 },
 "you_do_b": {
-"text": "Later, Marie will ask you what you are doing, and what you were doing, and you'll answer as if you had done it yourself. For example, if she asks 'What are you doing?', you answer 'I am dancing.' If she asks 'What were you doing?', you answer 'I was dancing.'",
-"dur": 13.76
+"text": "Later, Marie will ask you: What are you doing? And: What were you doing? You'll answer as if you had done it yourself.",
+"dur": 6.14
 },
 "words": {
 "text": "What is said is also written. The word with a box round it is the word being said.",
@@ -110,5 +110,9 @@
 "lis_b": {
 "text": "she doesn't say the words. You read the words in the box aloud.",
 "dur": 3.32
+},
+"you_do_c": {
+"text": "For example, if she asks, What are you doing? you answer, I am dancing. If she asks, What were you doing? you answer, I was dancing.",
+"dur": 9.51
 }
 }
