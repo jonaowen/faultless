@@ -11,7 +11,19 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-11.24` (interim, from the first naive tester's run of 11 Nov 21:12): Lessons 1–10 from
+- **Live version:** `2026-11-12.25`: Lessons 1–10 from the revised course `dev/fieldtest/course_dise6` (design log
+  §17–§34): written words with the outline moving with the audio and the RMT marks (blue = silent, straight underline =
+  one sound, wavy = irregular), part by part first; touch-counting; tap responses with their own signal (red border +
+  tapping hand on every tappable picture); commands answered by a tap, then the learner's figure acts; the le/les, la/les,
+  il/elle, des/deux sound formats and ear tests; "Je m'appelle comment ?" from Lesson 3 with its discrimination format;
+  own-name playback model; no leads; one model per correction; narrator lines just in time. Spoken answers on le/les,
+  la/les and deux/des are never marked wrong on the pair word: accepted with `FAULT SOUND UNSURE` and ruled from the
+  recording (the listener cannot separate them for English-accented voices); taps judge hearing. Checks (Jon, 12 Nov:
+  ship when the next lessons pass): Lessons 1–4 oracle 900/900 (incl. 232 taps, 20 touch-counts), Lessons 5–6 780/780;
+  release gate passed for Lessons 1–10 (468 answer clips, 0 fail); selfjudge 0 refused (1 accepted: "Ça." for "Sept.",
+  never in one place); real recordings 323/348 (L4 list), 314/348 (L10 list). **Not yet checked:** quiet oracle for
+  Lessons 7–10, the screen fixes of Lessons 8–10, onemodel/ownfix on Lessons 5–10: fixes go out as .26.
+  .24 for reference: `2026-11-11.24` (interim, from the first naive tester's run of 11 Nov 21:12): Lessons 1–10 from
   `dev/fieldtest/course_dise5c` (= `course_dise5b` with no leads, "do" tasks turned into "figure" tasks, and in
   Lessons 1–2 the own-name units with the lit tag and no "Je m'appelle comment ?" beside own-name tests;
   `reports/dise5c_changes.md`). Own-name errors are never corrected by another person's own-name sentence: the app plays
@@ -105,6 +117,11 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 - **Never stop and wait for Jon on long tasks** unless he says to pause.
 - **The ElevenLabs key was deleted;** never reuse it.
 
+- **Speed of release (Jon, 12 Nov 2026): human testing comes first.** "It doesn't make sense to delay human testing
+  because the development is too slow. Real human testing is the most valuable information we have." Ship as soon as
+  the lessons testers will reach next pass their checks (oracle, selfjudge, release gate for those lessons); the full
+  checks for later lessons run after shipping, and fixes go out in the next version. Keep rounds short; never hold a
+  release for polish, for the artificial learner, or for later lessons.
 - **Rulings of 11 Nov 2026 (design log §17 on; they govern the revision `course_dise6`):**
   - *Priority order.* The content analysis, English speakers' common errors, the big ideas with the single
     interpretation principle, and not confusing the artificial learner all win over emulating DISE. DISE is compared

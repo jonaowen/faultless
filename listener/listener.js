@@ -196,7 +196,7 @@
      sound in 160 ms (a click as the microphone opens is not the start of an answer). Replayed on that run's 123 answers:
      ends more than 1.2 s after the last word went from 14 to 3, with none cut short. */
   function capture(opts={}){
-    const noSpeech=opts.noSpeechMs||7000, endSil=opts.endSilenceMs||800, maxMs=Math.min(opts.maxMs||6000, J? J.frames*10 : 6000);
+    const noSpeech=opts.noSpeechMs||7000, endSil=opts.endSilenceMs||800, maxMs=opts.longMs || Math.min(opts.maxMs||6000, J? J.frames*10 : 6000);      // longMs (.24): a count said at the touches may take longer than an answer
     return new Promise(resolve=>{
       chunks=[]; rawChunks=[]; armed=true;
       const fr=320;                   // 20 ms frames

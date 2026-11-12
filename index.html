@@ -23,6 +23,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1
 #flag.hit{background:#f3d36b;opacity:1}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+@keyframes tapdown{0%,55%,100%{transform:translateY(0)}75%{transform:translateY(7px)}}
+#tapSig .tapHand{animation:tapdown 1.1s ease-in-out infinite;transform-box:fill-box}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
 svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 .limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
@@ -383,7 +385,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-11.24";
+const APP_VERSION="2026-11-12.25";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -518,6 +520,19 @@ const VOCAB = {
   bon: {name:"bon", kind:"word", say:[], accept:["bon","bons","bond","bonds"]},
   francais: {name:"français", kind:"word", say:[], accept:["français","francais"]},
   main: {name:"main", kind:"word", say:[], accept:["main","mains"]},
+  // .24 (the revision of 11 Nov 2026, course_dise6): nouns brought forward, "touche", "nage", "moi", "jusqu'à", "comment"
+  garcon: {name:"garçon", kind:"object", art:"UN", say:["Un","garçon."], accept:["garçon","garçons","garcon"]},
+  fille: {name:"fille", kind:"object", art:"UNE", say:["Une","fille."], accept:["fille","filles"]},
+  ballon: {name:"ballon", kind:"object", art:"UN", say:["Un","ballon."], accept:["ballon","ballons"]},
+  lampe: {name:"lampe", kind:"object", art:"UNE", say:["Une","lampe."], accept:["lampe","lampes"]},
+  chapeau: {name:"chapeau", kind:"object", art:"UN", pl:"chapeaux", say:["Un","chapeau."], accept:["chapeau","chapeaux"]},
+  nombre: {name:"nombre", kind:"object", art:"UN", say:["Un","nombre."], accept:["nombre","nombres"]},
+  touche: {name:"touche", kind:"word", verb:true, tu:"touches", say:[], accept:["touche","touches","touchent"]},
+  nage: {name:"nage", kind:"word", verb:true, tu:"nages", say:[], accept:["nage","nages","nagent"]},
+  chante: {name:"chante", kind:"word", verb:true, tu:"chantes", say:[], accept:["chante","chantes","chantent"]},      // "Il chante." took the place of "Il nage." (11 Nov, afternoon)
+  moi: {name:"moi", kind:"word", say:[], accept:["moi","mois"]},
+  jusqua: {name:"jusqu'à", kind:"word", say:[], accept:["jusqu'à","jusqu'a","jusqua"]},
+  comment: {name:"comment", kind:"word", say:[], accept:["comment"]},
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
 // function-word slots in an expected answer, with the spellings Chrome may give them
@@ -532,9 +547,9 @@ const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener
   // Lessons 5-10 (.20): not, the plural front word, we, and, the / of / to in fixed answers, "it was"
   PAS:["pas","pa"], DES:["des","dès","dés"], ON:["on","ont"], ET:["et","eh","hé"], BIEN:["bien","biens"], LE:["le","la","là"],      /* "le français" came out as "la français" for 8 of 16 English voices; no answer of the course sets le against la for a word (ruling of 11 Nov 2026) */ LA:["la","là"],
   DE:["de","d'"], A:["à","a","ah","un"],     /* "un": "à cinq" came out as "un cinq" for 5 of 16 English voices (10 Nov 2026); no answer is "un cinq" */ CETAIT:["c'était","c'étaient","s'était","c'etait","cétait"],
-  VAIS:["vais"] };          // je vais + verb (Lesson 9). "tu vas" and "il va" are the slot VA above ("vas" and "va" sound the same; phraseOf writes "vas" after "tu")
+  VAIS:["vais"], LES:["les","lès"], A1:["à","a","ah"] };      // A1 (.25): "À." said alone       // .24: "les" (the sound-discrimination format: le livre / les livres)          // je vais + verb (Lesson 9). "tu vas" and "il va" are the slot VA above ("vas" and "va" sound the same; phraseOf writes "vas" after "tu")
 const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu",
-  PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais" };
+  PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais", LES:"les", A1:"à" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 
 /* Script structure (NIFDI part-firming handout):
@@ -601,6 +616,13 @@ function genItem(it){
     answerUnits:ans, questionUnits:tu.filter(u=>!/^avec moi/i.test(u) && !/^vas-y/i.test(u) && !/^écoute/i.test(u)), hold:it.hold};
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
+  // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
+  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag"]) if(it[k]) o[k]=it[k];
+  if(it.mark===false) o.mark=false;
+  if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
+  if(it.kind==="show" && it.act==="tap") return Object.assign(o,{type:"tapshow", kind:"show", act:"tap", tap:it.tap, target:"show tap "+keyOf(it.teacher)+" "+it.tap.at});
+  if(it.kind==="do" && it.act==="tap") return Object.assign(o,{type:"task", kind:"test", cue:"tap", tapTask:true, targets:it.targets, correct:it.correct, tag:"new", expect:[], noEcho:true,
+    target:"tap "+keyOf(it.teacher)+" "+it.correct.join("+")});
   // "say" (Lessons 9+): the teacher says a line that nobody answers (her reply in a conversation; "Arrête." to a pictured person)
   if(it.kind==="say") return Object.assign(o,{type:"say", kind:"say", target:"say "+keyOf(it.teacher)});
   // "figure" (dise5c, .24): what was "do": Marie's command, and the learner's own figure does it (presentAct); nothing is asked
@@ -1010,11 +1032,14 @@ function heardNow(){        // the audio-context time of the sound coming out of
     if(ts && ts.contextTime>0 && ts.performanceTime>0) return {t: ts.contextTime + (performance.now()-ts.performanceTime)/1000, how:"output timestamp"}; }catch(e){}
   return {t: actx.currentTime - (actx.outputLatency||actx.baseLatency||0), how:"reported latency"};
 }
+let SAY_SLOW=false;
 async function playTeacher(text, onStart){
   // a question that has the same words as a statement ("Il mange ?" / "Il mange.", "Ça va ?" / "Ça va.") has its own
   // recording, with the rising tune, under <key>_q; where there is none, the one recording serves both
   let k=clipKey(text);
   if(/\?\s*$/.test(text) && TEACHER.index && TEACHER.index[k+"_q"] && TEACHER.raw[k+"_q"]) k+="_q";
+  // .24: the slow recording of a line (the sound-discrimination format: "Le livre, les livres." said slowly), <key>_slow
+  if(SAY_SLOW){ if(TEACHER.index && TEACHER.index[k+"_slow"] && TEACHER.raw[k+"_slow"]) k+="_slow"; else trace("FAULT no slow recording of \""+text+"\": said at the usual speed"); }
   const meta=TEACHER.index && TEACHER.index[k];
   if(!meta || !TEACHER.raw[k]) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
@@ -1034,6 +1059,7 @@ async function playTeacher(text, onStart){
       setTimeout(()=>{ MOUTH.stop(); res(true); }, left);       // the end of the clip is still on its way to the speaker
     };
     src.start(startAt);
+    textUnit(text, meta, 30+lat);
     MOUTH.startTimeline(meta.phones, clock);
     setTimeout(()=>{ onStart&&onStart(); }, 30+lat);
   });
@@ -1080,12 +1106,17 @@ function preloadLearner(){
     if(it.introOnly) want.add(answerUnits(it).join(" ")); }))));        // the introduction: the model learner says it with the teacher
   want.forEach(t=>learnerClip(t));
 }
+const LEARNER = {index:null};       // .24: audio/learner/index.json {key: {text, dur, w: the onset of each written word}} for the moving outline and the touches
+fetch("audio/learner/index.json").then(r=>r.ok?r.json():null).then(ix=>{ LEARNER.index=ix; }).catch(()=>{});
 async function playLearner(text, delay=0){       // resolves when the clip has finished (false if there is no clip)
   const buf=await learnerClip(text); if(!buf || !actx) return false;
+  { const k=LEARNER_CLIP(text).replace(/^.*\//,"").replace(/\.mp3$/,""), m=LEARNER.index && LEARNER.index[k];
+    textUnit(text.replace(/^(?:julie|man|woman) /,""), m || {dur:buf.duration*1000}, delay+30+((actx.outputLatency||actx.baseLatency||0)*1000)); }
   return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; const g=actx.createGain(); g.gain.value=0.9;
     src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(actx.currentTime+delay/1000); });
 }
 function speakOne(text, opts={}){
+  textUnit(text, null, 0);
   return new Promise(res=>{
     if(!synth){ setTimeout(res, 400); return; }
     const u=new SpeechSynthesisUtterance(text.replace(/…/g,""));
@@ -1310,6 +1341,10 @@ function judge(text, expect, echoes=[], alsoOk=[]){
   if(!raw.length) return {ok:false, reason:"nothing heard"};
   const t=stripEcho(raw.filter((w,i)=> i===0 || w!==raw[i-1]), echoes);
   if(!t.length) return {ok:false, reason:"only the app's own words heard", echoOnly:true};
+  /* (.25) "Deux." said alone and heard as "des": with the word list of Lessons 5-10 (which has "des" for "Des livres."), the real
+     recordings of 9 Nov gave this for a right "deux" 3 times in 348 (replay_end.js, UPTO=10). No answer of the course is "Des."
+     alone, so a lone "des" for "Deux." is taken as "deux". (Not in a phrase: "Des clés." for "Deux clés." stays wrong.) */
+  if(expect.length===1 && expect[0]==="n2" && t.length===1 && t[0]==="des") return {ok:true, reason:"a lone \"deux\" heard as \"des\""};
   const fits = want => { let tt=t;
     if(want[want.length-1]==="REST"){ want=want.slice(0,-1); if(tt.length<want.length) return null; tt=tt.slice(0,want.length); }   // whatever follows is not judged
     if(!tt.length || tt.length%want.length) return null; let near=[];
@@ -1469,7 +1504,7 @@ const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-
    "Bois." The listener's word list is built from these, and its own spelling of what it heard is compared with them. */
 function phraseOf(want){ const ws=want.filter(x=>x!=="REST");
   const w=ws.map((x,i)=>{ const prev=ws[i-1]; if(x==="VA" && prev==="TU") return "vas"; if(SLOT_WORD[x]) return SLOT_WORD[x]; const v=VOCAB[x]; if(!v) return x;
-    if(v.kind==="object" && (prev==="DES" || /^n(?:[2-9]|10)$/.test(prev||""))) return v.pl || v.name+"s";
+    if(v.kind==="object" && (prev==="DES" || prev==="LES" || /^n(?:[2-9]|10)$/.test(prev||""))) return v.pl || v.name+"s";
     if(v.tu && prev==="TU") return v.tu;
     if(v.il && (prev==="IL" || prev==="ELLE" || prev==="ON" || (VOCAB[prev] && VOCAB[prev].kind==="person"))) return v.il;
     if(v.alone && i===0) return v.alone;
@@ -1495,8 +1530,9 @@ function verdictLocal(rec, expect, alsoOk){
 }
 let clipSeq=0, localBroken=false;
 const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||("app/"+(window.LISTENER?LISTENER.version:"")), recPeak:r.recPeak, raw:r.raw} : (r.recNote? {recNote:r.recNote} : {});
+let KEEP_THIS=false;
 async function keepClip(audio){
-  if(!S.settings.keepAudio) return null;
+  if(!S.settings.keepAudio && !KEEP_THIS) return null;       // KEEP_THIS (.24): an answer of a sound-pair task is always kept, so that it can be ruled on from the recording
   const id=USERS.current+"_c"+Date.now().toString(36)+(clipSeq++);      // the user's id first: whose recording it is
   try{ await clipStore("put", id, LISTENER.wav(audio)); SESSION.clips.push(id); return id; }catch(e){ return null; }
 }
@@ -1596,7 +1632,7 @@ async function listenVosk(expect, alsoOk=[]){
   // everything the recogniser has so far, without the speaker's own last sound (spk) if that gave a first word
   const rawAll=()=>{ let r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(spk && (r===spk || r.startsWith(spk+" "))) r=r.slice(spk.length).trim(); return r; };
   const askTimes=()=>new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,500); }).then(()=>{ onFinal=null; });
-  const noteRaw=()=>{ const r=rawAll(); if(r!==rawSeen){ rawSeen=r; rawSince=Date.now(); } };
+  const noteRaw=()=>{ const r=rawAll(); if(r!==rawSeen){ rawSeen=r; rawSince=Date.now(); if(LISTEN.onRaw) try{ LISTEN.onRaw(r); }catch(e){} } };
   /* A longer end of the cue (a speaker that runs later than the browser reports): words that were over within 0.46 s of
      the microphone opening, are not the start of the answer and have nothing after them. Test with the last 0.3 s and
      0.42 s of "C'est quoi ?" played into the open microphone: heard as "trois" from 30 to 300 ms, or "deux trois" up to
@@ -1642,7 +1678,7 @@ async function listenVosk(expect, alsoOk=[]){
     if(st && st.speechStart<0 && !nFinal && !(askedTimes && Date.now()-askedTimes>300)){ if(still>=450 && open>=700 && !askedTimes){ askedTimes=Date.now(); rec.retrieveFinalResult(); } return; }
     if(still>=450 && open>=700 && judge(t, expect, [], alsoOk).ok){ early=true; earlyWhy="the whole answer heard, unchanged for 0.45 s"; return stopNow(); }
     if(st && st.speechStart<0 && open>=1100 && still>=(want.startsWith(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
-  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, ignoreMs:ECHO_MS, onAudio:feed, onStart:(s,snd)=>{ stopNow=s; sound=snd; },
+  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, longMs:LISTEN.longMs||0, ignoreMs:ECHO_MS, onAudio:feed, onStart:(s,snd)=>{ stopNow=s; sound=snd; },
     onSpeechEnd: async (audio, voice)=>{ await sleep(150); let t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
       let rawNow=rawAll();
       // an unexpected first word and no word times yet: was it the end of the teacher's own cue? (see above)
@@ -1928,6 +1964,11 @@ function picKnows(what){
   }catch(e){ ok=false; }
   return (PIC.known[what]=ok);
 }
+// does the picture library draw a pictured stranger doing this (a picture that differs from the same person doing nothing)?
+function picDoes(doing){ const k="does "+doing; if(k in PIC.known) return PIC.known[k]; let ok=false;
+  try{ ok = !!window.PICS && picSig(PICS.person({is:"man", doing, looks:[]})) !== picSig(PICS.person({is:"man", looks:[]})); }catch(e){ ok=false; }
+  if(!ok) trace("PICTURE DRAWN HERE: the picture library has no \""+doing+"\" (a simple drawing of this file is used)");
+  return (PIC.known[k]=ok); }
 function placeholder(what){
   if(!PIC.missing[what]){ PIC.missing[what]=1; trace("FAULT PICTURE MISSING: the picture library cannot draw \""+what+"\" (a plain card is shown)"); }
   const g=document.createElementNS(svgNS,"g");
@@ -1944,6 +1985,13 @@ function cardOf(inner, k=0.74){
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand"};
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
+/* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
+   round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
+function cardLines(t, marks, lines, fs, y0){
+  const chars=charsOf(t, marks); let at=0, out="";
+  lines.forEach((l,i)=>{ const seg=chars.slice(at, at+l.length); at+=l.length+1; out+=charsSvg(seg, 80, y0+i*fs*1.2+fs*0.35, fs, 124, "#22303f").svg; });
+  return out;
+}
 function thingPicture(e){
   const lib = window.PICS && PICS.thing && (!PICS.things || PICS.things.includes(String(e.is).toLowerCase()));
   if(lib){ try{ const g=PICS.thing(e.is==="picture card" ? Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e) : e); if(g) return g; }catch(err){ trace("FAULT picture "+e.is+": "+err.message); } }
@@ -1954,10 +2002,77 @@ function thingPicture(e){
     const brow = L.includes("feeling bad") ? `<path d="M52 72 L70 78 M108 72 L90 78" stroke="#5a4632" stroke-width="4" stroke-linecap="round"/>` : "";
     return mkG(`<circle cx="80" cy="98" r="56" fill="#f6d26b" stroke="#c9a23a" stroke-width="3"/><circle cx="62" cy="88" r="6" fill="#3a2f22"/><circle cx="98" cy="88" r="6" fill="#3a2f22"/>${brow}<path d="${m}" stroke="#3a2f22" stroke-width="5" fill="none" stroke-linecap="round"/>`); }
   if(e.is==="plate") return mkG(`<ellipse cx="80" cy="122" rx="62" ry="24" fill="#000" opacity=".08" transform="translate(2 5)"/><ellipse cx="80" cy="118" rx="62" ry="24" fill="#fbfaf5" stroke="#cfc9bb" stroke-width="2"/><ellipse cx="80" cy="116" rx="40" ry="14" fill="none" stroke="#e0dacb" stroke-width="2"/>`);
+  /* .24, drawn here until the artist draws them. A written number as a THING to be named ("Un nombre.", Lesson 8 on): a digit
+     written by hand in ink on a sheet of lined paper, so that it does not look like the plain numeral cards that stand for
+     the numbers themselves in the counting exercises. Its look is its digit; several together ("Des nombres."): one sheet each. */
+  /* .24: a written word that can be tapped (a hearing test: "deux" / "des", "un" / "une") and a speech card (one written sentence:
+     the picture of "le français"; "en" and "es" cards beside it once). Plain text in a card: it is a picture, so it has no outline
+     and no blue letters (course_schema.md). */
+  if(e.is==="written word" || e.is==="speech card"){ const t=String(e.text==null?"":e.text).replace(/[<&]/g,""), sp=e.is==="speech card";
+    const words=t.split(" "), lines=[]; let cur=""; for(const w of words){ if(cur && (cur+" "+w).length>(sp?11:9)){ lines.push(cur); cur=w; } else cur=cur?cur+" "+w:w; } if(cur) lines.push(cur);
+    const longest=Math.max(1,...lines.map(l=>l.length)), fs=Math.min(sp?24:46, 118/(longest*0.56)), y0=98-(lines.length-1)*fs*0.6;
+    return mkG(`<rect x="14" y="${sp?40:52}" width="132" height="${sp?112:88}" rx="${sp?16:10}" fill="#000" opacity=".08" transform="translate(3 4)"/><rect x="14" y="${sp?40:52}" width="132" height="${sp?112:88}" rx="${sp?16:10}" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/>`
+      +(sp?`<path d="M54 152 L44 172 L74 152 Z" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/><rect x="50" y="148" width="26" height="6" fill="#fffdf8"/>`:"")
+      +cardLines(t, e.marks||[], lines, fs, y0)); }
+  if(e.is==="written number"){ const ds=(L.length?L:[String(e.value==null?"":e.value)]).slice(0, Math.max(1, e.count||1)), n=ds.length, k=n===1?1:n===2?0.6:0.46;
+    const sheet=d=>`<rect x="30" y="34" width="100" height="126" rx="4" fill="#000" opacity=".09" transform="translate(3 4)"/><rect x="30" y="34" width="100" height="126" rx="4" fill="#fffef8" stroke="#cfc8b6" stroke-width="2"/>
+      <path d="M38 62 H122 M38 84 H122 M38 106 H122 M38 128 H122 M38 150 H122" stroke="#b9d0ee" stroke-width="1.6"/><path d="M48 36 V158" stroke="#eab0b0" stroke-width="1.4"/>
+      <text x="86" y="134" text-anchor="middle" font-family="'Comic Sans MS','Segoe Print','Bradley Hand',cursive" font-size="92" font-style="italic" fill="#24408e" transform="rotate(-6 86 100)">${String(d).replace(/[<&]/g,"")}</text>`;
+    return mkG(ds.map((d,i)=>`<g transform="translate(${(80+(i-(n-1)/2)*(n===2?66:50)-80*k).toFixed(1)} ${(97-97*k).toFixed(1)}) scale(${k})">${sheet(d)}</g>`).join("")); }
   return placeholder(e.is+(e.count>1?" ×"+e.count:""));
 }
+/* .24: someone swimming ("Il nage." / "Elle nage.", Lesson 8), drawn here until the picture library has the action: seen from
+   the side in the water, cap and goggles, one arm over in a crawl stroke. The looks tell the two apart: a beard, long hair. */
+/* .24: someone singing ("Il chante." / "Elle chante.", Lesson 8), drawn here until the picture library has the action: head back a
+   little, mouth wide open, a microphone or a song sheet in the hand (the looks say which), notes in the air. Other looks: a
+   beard, long hair, glasses, a cap, the colour of the jumper or the dress. */
+function singer(e){
+  const L=e.looks||[], woman = e.is==="woman" || e.is==="girl", skin="#eabf9c", dk="#c9946e", hairC = woman ? "#3a2a1c" : "#5a3b22";
+  const top = L.includes("red jumper") ? "#c8423a" : L.includes("blue dress") ? "#2f62c4" : woman ? "#7a4fa8" : "#3e7d5a";
+  const hair = woman || L.includes("long hair") ? `<path d="M52 66 C46 40 70 26 88 30 C110 34 116 56 110 74 L112 108 L98 108 L100 70 C92 54 70 52 62 66 L62 108 L48 108 Z" fill="${hairC}"/>` : `<path d="M56 62 C54 40 72 30 88 34 C104 38 108 52 104 64 C96 52 70 50 56 62 Z" fill="${hairC}"/>`;
+  const beard = L.includes("beard") ? `<path d="M60 78 C62 100 98 100 100 78 C96 92 64 92 60 78 Z" fill="${hairC}"/>` : "";
+  const glasses = L.includes("glasses") ? `<circle cx="70" cy="64" r="8" fill="none" stroke="#2b2f36" stroke-width="2.2"/><circle cx="92" cy="64" r="8" fill="none" stroke="#2b2f36" stroke-width="2.2"/><path d="M78 64 H84" stroke="#2b2f36" stroke-width="2.2"/>` : "";
+  const cap = L.includes("cap") ? `<path d="M54 54 C56 34 104 34 106 54 Z" fill="#d07a2c"/><path d="M104 52 L122 56 L104 58 Z" fill="#b5651f"/>` : "";
+  const held = L.includes("song sheet") ? `<rect x="92" y="112" width="40" height="50" rx="3" fill="#fffef8" stroke="#cfc8b6" stroke-width="1.6" transform="rotate(8 112 137)"/><path d="M99 126 h26 M99 134 h26 M99 142 h26 M99 150 h18" stroke="#8a93a5" stroke-width="1.5" transform="rotate(8 112 137)"/><circle cx="106" cy="131" r="2.6" fill="#2b2f36"/><circle cx="118" cy="140" r="2.6" fill="#2b2f36"/>`
+    : `<rect x="100" y="104" width="9" height="34" rx="4" fill="#3a3d44" transform="rotate(-18 104 120)"/><circle cx="98" cy="100" r="9" fill="#8d939e" stroke="#5a5f69" stroke-width="1.5"/>`;
+  return mkG(`<path d="M40 190 C40 138 56 118 80 118 C104 118 120 138 120 190 Z" fill="${top}"/>
+    <rect x="72" y="96" width="16" height="26" rx="6" fill="${skin}"/>${hair}
+    <ellipse cx="80" cy="68" rx="24" ry="28" fill="${skin}" stroke="${dk}" stroke-width="1.5"/>${cap}${beard}
+    <path d="M66 58 q5 -4 10 0 M86 58 q5 -4 10 0" stroke="#3a2a1c" stroke-width="2.4" fill="none" stroke-linecap="round"/>${glasses}
+    <ellipse cx="81" cy="82" rx="8" ry="10" fill="#6b2a2a"/><path d="M74 78 q7 -5 14 0" fill="#fff"/>
+    <path d="M118 150 C112 132 108 124 104 118" stroke="${top}" stroke-width="15" fill="none" stroke-linecap="round"/><circle cx="104" cy="116" r="8" fill="${skin}" stroke="${dk}" stroke-width="1.2"/>${held}
+    <g fill="#6a4bb5" stroke="#6a4bb5" stroke-width="2.6" stroke-linecap="round"><circle cx="124" cy="52" r="5"/><path d="M129 52 V30 l12 4" fill="none"/><circle cx="30" cy="66" r="4.5"/><path d="M34.5 66 V46 l10 -3" fill="none"/><circle cx="138" cy="86" r="4"/><path d="M142 86 V70" fill="none"/></g>`);
+}
+function swimmer(e){
+  const L=e.looks||[], woman = e.is==="woman" || e.is==="girl", cap = woman ? "#d8437a" : "#2f6fd0", skin="#e9b995", dk="#c98f69";
+  const hair = L.includes("long hair") || woman ? `<path d="M64 84 C52 96 50 112 56 124 L70 118 C66 108 68 96 74 88 Z" fill="#5a3b22"/>` : "";
+  const beard = L.includes("beard") ? `<path d="M88 104 C92 116 104 120 112 112 C108 114 98 112 94 102 Z" fill="#5a3b22"/>` : "";
+  return mkG(`<rect x="8" y="16" width="144" height="158" rx="10" fill="#d9eefb"/>
+    <path d="M30 96 C44 60 84 44 120 58 L126 70 C96 60 62 72 48 104 Z" fill="${skin}" stroke="${dk}" stroke-width="1.5"/><ellipse cx="124" cy="64" rx="9" ry="6" fill="${skin}" stroke="${dk}" stroke-width="1.2"/>
+    ${hair}<ellipse cx="84" cy="94" rx="22" ry="20" fill="${skin}" stroke="${dk}" stroke-width="1.5"/>${beard}
+    <path d="M62 92 C62 74 78 68 92 72 C100 75 105 82 106 90 C92 84 76 84 62 92 Z" fill="${cap}"/>
+    <rect x="88" y="86" width="17" height="9" rx="4" fill="#27323f"/><rect x="91" y="88" width="11" height="5" rx="2.5" fill="#9fd4f0"/><path d="M62 90 L88 90" stroke="#27323f" stroke-width="2.4"/>
+    <path d="M97 106 q5 3 9 0" stroke="#8a4a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M30 118 C42 110 62 110 80 116 L120 116 L118 128 L30 130 Z" fill="${woman?"#2a57b8":skin}" opacity=".95"/>
+    <path d="M8 112 q12 -9 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 V174 H8 Z" fill="#4aa3df"/>
+    <path d="M8 128 q12 -8 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 V174 H8 Z" fill="#2f86c8" opacity=".9"/>
+    <path d="M8 148 q12 -7 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 V174 H8 Z" fill="#256fae" opacity=".9"/>
+    <path d="M122 76 l6 -9 M131 80 l10 -5 M116 72 l1 -10" stroke="#8fd0f3" stroke-width="3" stroke-linecap="round"/>
+    <rect x="8" y="16" width="144" height="158" rx="10" fill="none" stroke="#b8cfe0" stroke-width="2"/>`);
+}
 const OWN_THING=["book","apple","pen","shoe"];         // drawn in this file since Lesson 1 (objectPicture)
-function genPicture(e){ try{ return genPicture0(e); }catch(err){ trace("FAULT picture "+(e.person||e.is)+": "+err.message); return placeholder(e.person||e.is); } }
+/* (.25, the eighth round: faces as cards) the hand sign that goes with a face: thumb up (feeling good), the flat hand that rocks
+   (so-so), thumb down (feeling bad). Drawn here, in the corner of the card, until the artist puts the hands into the faces. */
+function handSign(L){
+  const k = L.includes("thumb up") ? "up" : L.includes("thumb down") ? "down" : L.includes("flat hand rocking") ? "rock" : null; if(!k) return null;
+  const sk="#eabf9c", dk="#c48e6a";
+  const fist=`<rect x="-14" y="-6" width="28" height="24" rx="8" fill="${sk}" stroke="${dk}" stroke-width="1.6"/><path d="M-14 2 h26 M-14 9 h26" stroke="${dk}" stroke-width="1" opacity=".6"/><rect x="-14" y="-24" width="10" height="24" rx="5" fill="${sk}" stroke="${dk}" stroke-width="1.6"/><rect x="-12" y="18" width="24" height="10" rx="3" fill="#3e6fa8"/>`;
+  const body = k==="rock" ? `<g><animateTransform attributeName="transform" type="rotate" values="-14;14;-14" dur="1.1s" repeatCount="indefinite"/><rect x="-24" y="-6" width="48" height="13" rx="6" fill="${sk}" stroke="${dk}" stroke-width="1.6"/><path d="M-6 -6 v13 M4 -6 v13 M13 -6 v13" stroke="${dk}" stroke-width="1" opacity=".6"/></g><path d="M-26 -14 q-6 8 0 16 M26 -14 q6 8 0 16" stroke="#5a6f8a" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+    : `<g transform="rotate(${k==="down"?180:0})">${fist}</g>`;
+  const g=document.createElementNS(svgNS,"g"); g.innerHTML=`<g transform="translate(128 156)"><circle r="27" fill="#fffdf6" stroke="#cfc8b6" stroke-width="2"/>${body}</g>`; return g;
+}
+function genPicture(e){ if(e && e.is==="face"){ const g=document.createElementNS(svgNS,"g"); try{ g.appendChild(genPicture0(e)); const h=handSign(e.looks||[]); if(h) g.appendChild(h); }catch(err){ trace("FAULT picture face: "+err.message); } return g; }
+  try{ return genPicture0(e); }catch(err){ trace("FAULT picture "+(e.person||e.is)+": "+err.message); return placeholder(e.person||e.is); } }
 function genPicture0(e){
   const blank=()=>document.createElementNS(svgNS,"g");
   if(e.person==="you") return learnerCard();                // the learner's own card and name tag (.24, markOwn)
@@ -1969,6 +2084,8 @@ function genPicture0(e){
       const g=document.createElementNS(svgNS,"g"), c=document.createElementNS(svgNS,"g"); g.appendChild((e.looks && e.looks.length) ? PICS.person(Object.assign({}, e, {card:undefined}), VOCAB[e.person].name) : portrait(e.person));
       c.setAttribute("transform","translate(94 2) scale(.42)"); c.appendChild(thingPicture({is:"picture card", doing:e.card, count:1})); g.appendChild(c); return g; }
     return (e.doing || e.holding || e.card || (e.looks && e.looks.length)) ? PICS.person(e, VOCAB[e.person].name) : portrait(e.person); }
+  if(PEOPLE_KIND.includes(e.is) && e.doing==="swimming" && !picDoes("swimming")) return swimmer(e);
+  if(PEOPLE_KIND.includes(e.is) && e.doing==="singing" && !picDoes("singing")) return singer(e);
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
@@ -1978,8 +2095,9 @@ function genPicture0(e){
   if(!OWN_THING.includes(e.is)) return thingPicture(e);
   const n=e.count||1; if(n===1) return onePicture(e);
   if(n>4 && window.PICS) return PICS.group(n, ()=>onePicture(e));
-  const g=document.createElementNS(svgNS,"g"), k = n===2 ? 0.58 : 0.5;
-  const pos = n===2 ? [[-34,0],[34,0]] : n===3 ? [[-36,24],[36,24],[0,-30]] : [[-36,24],[36,24],[-36,-30],[36,-30]];
+  const g=document.createElementNS(svgNS,"g"), k = n===2 ? 0.5 : 0.5;
+  // (.25) two pictures a step apart, so that two wide pictures (open books) never run together into one
+  const pos = n===2 ? [[-38,18],[38,-18]] : n===3 ? [[-36,24],[36,24],[0,-30]] : [[-36,24],[36,24],[-36,-30],[36,-30]];
   pos.slice(0,n).forEach(([dx,dy])=>{ const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80+dx-80*k} ${100+dy-100*k}) scale(${k})`); c.appendChild(onePicture(e)); g.appendChild(c); });
   return g;
 }
@@ -1999,12 +2117,15 @@ function numberCard(id){
    left half with her right hand and to the right half with her left. */
 const TARGET={L:{x:108,y:150}, R:{x:292,y:150}};
 const frameRow=document.getElementById("frameRow"), fL=document.getElementById("frameL"), fR=document.getElementById("frameR");
-function buildRow(items){
+function buildRow(items, area={y:24, h:190}){
   // one row up to five pictures; six to ten (Lesson 10: ten numerals) in two rows, read left to right, top row first
-  const N=items.length, rows=N>5?2:1, n=Math.ceil(N/rows), gap=n>2?10:24, w=Math.min(160,(344-gap*(n-1))/n), h=w*190/160, vg=8, y0=24+(190-(rows*h+(rows-1)*vg))/2, k=w/160;
+  // area (.24): the row stands lower and smaller when a line of things to count is above it (counting silently, then the numerals)
+  const N=items.length, rows=N>5?2:1, n=Math.ceil(N/rows)||1, gap=n>2?10:24, vg=8, w=Math.min(160,(344-gap*(n-1))/n, ((area.h-(rows-1)*vg)/rows)*160/190), h=w*190/160, y0=area.y+(area.h-(rows*h+(rows-1)*vg))/2, k=w/160;
   frameRow.replaceChildren();
   items.forEach((spec,i)=>{ const r=Math.floor(i/n), inRow=Math.min(n, N-r*n), x0=200-(inRow*w+(inRow-1)*gap)/2, x=x0+(i-r*n)*(w+gap), y=y0+r*(h+vg);
+    if(spec===null){ delete TARGET["s"+i]; delete BOUNDS["s"+i]; return; }       // .24: the place of a card that has not come yet (cards brought in one at a time keep their places)
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+    if(spec && spec.appears){ try{ g.animate([{opacity:0},{opacity:1}], {duration:550, easing:"ease-out"}); }catch(e){} }      // the card that is new in this task comes in
     g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
     const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
     frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62}; BOUNDS["s"+i]={x,y,w,h,r:10};
@@ -2033,10 +2154,13 @@ function badgeLit(who, on){ const r=document.querySelector("#badge_"+who+" .ring
    "On danse."), either of them having just stopped (Lesson 9: the past, shown by do-then-stop: the same figure, now still),
    or the learner's own state (Lesson 9: a face, the answer to "Ça va ?"). */
 const BOX_KEYS=["teacherDoing","learnerDoing","bothDoing","teacherDid","learnerDid","teacherWill","learnerWill","learnerFace"];
-function boxOf(sc){ return !sc ? null : sc.bothDoing ? ["both", sc.bothDoing, {}] : sc.teacherDoing ? ["marie", sc.teacherDoing, {}] : sc.learnerDoing ? ["you", sc.learnerDoing, {}]
+function boxOf(sc){ return !sc ? null : sc.bothDoing ? ["both", sc.bothDoing, {}]
+  : sc.teacherDoing && sc.learnerDoing ? ["pair", sc.teacherDoing, {you:sc.learnerDoing}]          // (.25) Marie doing one thing, the learner's figure another: two boxes
+  : sc.teacherDoing && sc.teacherWill ? ["marie", sc.teacherDoing, {alsoWill:sc.teacherWill}]      // (.25) Marie doing one thing and holding the card of another
+  : sc.teacherDoing ? ["marie", sc.teacherDoing, {}] : sc.learnerDoing ? ["you", sc.learnerDoing, {}]
   : sc.teacherWill ? ["marie", sc.teacherWill, {will:true}] : sc.learnerWill ? ["you", sc.learnerWill, {will:true}]      // going to do it: standing, holding the picture card of the action
   : sc.teacherDid ? ["marie", sc.teacherDid, {stopped:true}] : sc.learnerDid ? ["you", sc.learnerDid, {stopped:true}] : sc.learnerFace ? ["you", "face", {face:sc.learnerFace}] : null; }
-const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.claireTag===false?"|notag":"")+BOX_KEYS.map(k=>sc[k]?"|"+k+":"+sc[k]:"").join("");
+const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.strip?"|strip:"+JSON.stringify(sc.strip):"")+(sc.claireTag===false?"|notag":"")+BOX_KEYS.map(k=>sc[k]?"|"+k+":"+sc[k]:"").join("");
 async function setPortraits(sc){
   sc=sceneOf(sc); if(!sc) return; const key=sceneKey(sc);
   if(key===curSceneKey) return;
@@ -2047,17 +2171,22 @@ async function setPortraits(sc){
     if(sc.row.every(x=>x && typeof x==="object" && x.person && !x.doing && !x.did && !x.card && !(x.looks && x.looks.length))){
       const alias={}, side=Object.assign({}, sc.side||{}); sc.row.forEach((x,i)=>{ side[x.person]=true; alias["s"+i] = x.person==="paul" ? "pL" : "pR"; });
       sc=Object.assign({}, sc, {row:[], side, alias}); }
+    /* (.25) one person who is doing something or holds a card ("Je vais danser, tu vas danser.": Marie holds the card, so does
+       Pierre): the box goes to the left half and the person's picture to the right half */
+    else if(sc.row.length===1 && sc.row[0] && sc.row[0].person){ sc=Object.assign({}, sc, {row:[null, sc.row[0]], boxLeft:true, alias:Object.assign({}, sc.alias||{}, {s0:"s1"})}); }
     else trace("FAULT LAYOUT: the action box and "+sc.row.length+" picture(s) are on the screen together"); }
   const first = curSceneKey===null;
   goldOff(); tagLit(null); lastPoint=null;
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
-  if(sc.row){ buildRow(sc.row); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
+  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
   { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
-  { const b=boxOf(sc); if(b) actBox(b[0], b[1], b[2]); else actBox(null); }
+  { const b=boxOf(sc); if(b) actBox(b[0], b[1], Object.assign({}, b[2], sc.boxLeft ? {left:true} : {})); else actBox(null); }
   curScene=sc; curSceneKey=key;
+  if(sc.row && sc.row.some(x=>x && x.appears)){ trace("a card comes in"); await sleep(650); }      // before the line is said
+  if(TXT.g.firstChild) TXT.g.setAttribute("opacity", 0.3);       // writing left by the task before, under new pictures: faint until the next thing is said
 
 }
 /* ============================================================
@@ -2155,9 +2284,11 @@ function thumb(){}
 let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
 // Jon 9 Nov 10:27: no pointing at the pictures; the gold border alone shows what the teacher means. Her hand still goes
 // to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
-const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||/^s\d+$/.test(s);
+const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||s==="strip"||/^s\d+$/.test(s);
 async function pointAt(who){
   askMark(null);
+  // mark:false (the review of 11 Nov, F9): the question is about this picture, but a border on it would give the answer ("Qui danse ?"): nothing is marked
+  if(who && typeof who==="object" && who.mark===false && who.kind==="test"){ goldOff(); if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; } return; }
   const side = sideOf(who); if(side==="none") return;
   if(ON_SCREEN(side)){ goldOn(side);
     if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
@@ -2214,7 +2345,7 @@ let offering=false;
 const sideOf = t => { if(t && typeof t==="object") t = t.at || t.target;
   if(curScene && curScene.alias && curScene.alias[t]) return curScene.alias[t];      // a picture shown as a small badge (see setPortraits)
   if(t==="you"){ const s=slotOfPerson("you"); if(s) return s; }                     // the learner's own card is on the screen (own-name items, .24): she means it
-  if(t==="L"||t==="R"||t==="self"||t==="you"||t==="none"||t==="pL"||t==="pR"||/^s\d+$/.test(t||"")) return t;
+  if(t==="L"||t==="R"||t==="self"||t==="you"||t==="none"||t==="pL"||t==="pR"||t==="strip"||/^s\d+$/.test(t||"")) return t;
   if(t==="claire"||t==="jmclaire") return "self";
   if(!curScene || !t) return "R";
   if(curScene.row){ const i=curScene.row.findIndex(x=>x.split(":")[0]===t); return "s"+Math.max(0,i); }
@@ -2270,6 +2401,7 @@ function answerUnits(t){ return isSlowed(t.target) ? t.answerUnits : [t.answerUn
 async function sayAnswer(t, who="tutor"){ await say(answerUnits(t), who); }
 // several models (Zig: "say the word many times before you have them say it")
 async function multipleModels(t, n=3, close=false){
+  if(t.tapTask){ for(let k=0;k<n;k++){ await tapModel(t, "teacher", t.correct[k%t.correct.length]); await sleep(300); } return; }
   for(let k=0;k<n;k++){
     if(close && k===1){ rest(); faceZoom(true); await sleep(750); }      // after the first model: close-up on the mouth
     await say(answerUnits(t)); if(k<n-1) await sleep(450);
@@ -2307,22 +2439,22 @@ async function askAndListen(task, expect, think=0, alsoOk=[]){
     await sleep(think);                   // think time
     await pointAt(task);           // cue
     lastSpeechEnd = Date.now();           // the signal is timed from the moment the pointing lands
-    return listen(expect, alsoOk);
+    return listenT(task, expect, alsoOk);
   }
   if(task.cue==="you"){                   // about the learner: the open palm to them, then "Vas-y" (or "Et toi ?") is the cue
     // own name (.24): the learner's card and name tag lit
     offering=true; pointAt("you"); if(task.ownName) tagLit(learnerSlot()); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
-    return listen(expect, alsoOk);
+    return listenT(task, expect, alsoOk);
   }
   if(task.cueVoice){                      // a model learner says the cue: the gold border on them (who it is about), the green ring while they speak
     pointAt(task.cueAt); if(think) await sleep(think);
     await cueAs(task.cueVoice, task.questionUnits, task.cueAt, task);
-    return listen(expect, alsoOk);
+    return listenT(task, expect, alsoOk);
   }
   pointAt(task);                          // focus: the gold border comes on as she speaks
   if(think) await sleep(think);
-  await say(task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
-  return listen(expect, alsoOk);          // signal at 0.5 s, then the learner responds
+  await say(task.w1 ? w1Units(task) : task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
+  return listenT(task, expect, alsoOk);          // signal at 0.5 s, then the learner responds
 }
 // "Vas-y" with the open palm and the pointing (questions); for touch-and-name, "Vas-y" alone, since the pointing is the cue
 async function announce(t){
@@ -2387,6 +2519,300 @@ async function cueAs(voice, units, at, item){
   if(!(await playLearner(voiceLine(who, units)))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
   speakLit(who, false); askMark("said"); lastSpeechEnd=Date.now();
 }
+/* ============================================================
+   WRITTEN WORDS, TOUCH-COUNTING, TAPS (.24; the revision of 11 Nov 2026, course_schema.md "What the Lessons 1-10 revision adds")
+   Jon, 11 Nov: "Whenever the teacher says one of the words, or whenever a student is expected to say the word, the word needs
+   to be highlighted with an outline around the letters of the word … so the model matches up with the written word."
+   Silent letters are blue, per occurrence (the course file carries the ranges).
+   One line of writing, between the pictures and the teacher: what is being said now. Each item brings its strings cut into
+   parts (item.text: T / t = the teacher's line and its parts, A / a = the answer, S / p / focus = the sentence of a part-by-part
+   task). Whatever voice says a unit (the teacher's clip, a model learner's clip, the phone's voice), textUnit finds the unit in
+   the item's strings, shows that string and moves the outline from part to part at the word onsets of the clip (index.json: w).
+     W1  part by part: the whole sentence stays; the outline is on the part being said (by her, then by the learner); when the
+         whole sentence is said after its parts the outline moves with her voice and is round all of it for the learner.
+     W2  the whole sentence with the voice (models, leads, whole repeats): shown as it is said, the outline moving.
+     W3  the teacher's line as she says it; the ANSWER only after the learner has responded (a test is never reading aloud).
+     R   reading unaided: "Lis." as she says it, then the written answer, outlined, before the response; nobody says it.
+   ============================================================ */
+const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
+const TXT_Y = 244, TXT_SIZE = 24, TXT_BLUE = "#1f6fd6";
+const mkLayer = (id, parent) => { const g=document.createElementNS(svgNS,"g"); g.id=id; document.getElementById(parent).appendChild(g); return g; };
+TXT.g = mkLayer("textBand", "frames");
+const lettersOf = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9\[\]]/g,"");
+const escX = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+function textHide(){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; TXT.g.replaceChildren(); TXT.cur=null; TXT.shownCtx=null; }
+/* Written letters with the three RMT prompts (.25; course_schema.md "The other two RMT prompts"): blue = a letter not said;
+   a straight line under letters that make ONE sound; a wavy line under letters that do not say what the rules give them.
+   A part is [s, e, blue ranges, underline ranges, wavy ranges, 1 = the learner's own name]. Every character is placed at an
+   x of its own (measured once with the same font), so the lines and the outline sit exactly under and round the letters. */
+const TXT_FONT = "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+const MEAS = (()=>{ let c=null; return (s, fs)=>{ try{ c=c||document.createElement("canvas").getContext("2d"); c.font=`600 ${fs}px ${TXT_FONT}`; return c.measureText(s).width; }catch(e){ return s.length*fs*0.55; } }; })();
+function charsOf(str, parts){
+  const chars=[], partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(b=>i>=b[0] && i<b[1]);
+  for(let i=0;i<str.length;i++){ const pi=partOf(i), p=pi>=0?parts[pi]:null;
+    if(p && (p[5]===1 || p[3]==="name")){ if(i===p[0]) for(const c of (learnerTagName()||"…")) chars.push({c, blue:false, under:-1, wavy:-1, part:pi}); continue; }
+    chars.push({c:str[i], blue:!!(p && inR(p[2],i)>=0), under:p && inR(p[3],i)>=0 ? pi*100+inR(p[3],i) : -1, wavy:p && inR(p[4],i)>=0 ? pi*100+inR(p[4],i) : -1, part:pi}); }
+  return chars;
+}
+// the letters as SVG (each at its own x), with their lines; returns {svg, xs (start of each char, and the end), fs}
+function charsSvg(chars, cx, y, fs, maxW, color){
+  const str=chars.map(c=>c.c).join(""); let W=MEAS(str, fs); if(maxW && W>maxW){ fs=Math.max(11, fs*maxW/W); W=MEAS(str, fs); }
+  const x0=cx-W/2, xs=[]; for(let i=0;i<=chars.length;i++) xs.push(x0+MEAS(str.slice(0,i), fs));
+  let ts=""; chars.forEach((ch,i)=>{ if(ch.c===" ") return; ts+=`<tspan x="${xs[i].toFixed(1)}"${ch.blue?` fill="${TXT_BLUE}"`:""}>${escX(ch.c)}</tspan>`; });
+  let marks=""; const runs=key=>{ const out=[]; let a=-1; for(let i=0;i<=chars.length;i++){ const k=i<chars.length?chars[i][key]:-1; if(a>=0 && (k!==chars[a][key])){ out.push([a,i]); a=-1; } if(a<0 && k>=0) a=i; } return out; };
+  const uy=y+fs*0.2, lw=Math.max(1.6, fs*0.075);
+  for(const [a,b] of runs("under")) marks+=`<path d="M${(xs[a]+1).toFixed(1)} ${uy.toFixed(1)} H${(xs[b]-1).toFixed(1)}" stroke="${color}" stroke-width="${lw.toFixed(2)}" stroke-linecap="round" fill="none"/>`;
+  for(const [a,b] of runs("wavy")){ const x1=xs[a]+1, x2=xs[b]-1, n=Math.max(2, Math.round((x2-x1)/(fs*0.22))), st=(x2-x1)/n, amp=fs*0.07; let d=`M${x1.toFixed(1)} ${(uy+amp).toFixed(1)}`;
+    for(let k=0;k<n;k++) d+=` Q${(x1+st*(k+0.5)).toFixed(1)} ${(uy+(k%2?amp*3:-amp)).toFixed(1)} ${(x1+st*(k+1)).toFixed(1)} ${(uy+amp).toFixed(1)}`;
+    marks+=`<path d="${d}" stroke="${color}" stroke-width="${lw.toFixed(2)}" stroke-linecap="round" fill="none"/>`; }
+  return {svg:`<text y="${y.toFixed(1)}" style="white-space:pre" font-family="${TXT_FONT}" font-size="${fs.toFixed(1)}" font-weight="600" fill="${color}">${ts}</text>${marks}`, xs, fs};
+}
+function textShow(str, parts, hi){
+  if(!str){ textHide(); return; }
+  parts = parts||[];
+  const key=str+"|"+JSON.stringify(parts)+"|"+(learnerTagName()||"");
+  if(TXT.cur!==key){
+    // every character with its part, its colour and its lines; the learner's own name stands where the file has [prénom]
+    const chars=charsOf(str, parts), r=charsSvg(chars, 200, TXT_Y, TXT_SIZE, 356, "#22303f");
+    TXT.g.innerHTML=`<g id="txtBoxes"></g><g id="txtLine">${r.svg}</g>`;
+    TXT.cur=key; TXT.chars=chars; TXT.xs=r.xs; TXT.fs=r.fs; }
+  TXT.g.setAttribute("opacity",1); TXT.shownCtx=TXT.ctx;
+  textHi(hi);
+}
+// the outline: round one part, several, or the whole sentence ("all"); null takes it away
+function textHi(hi){
+  const box=TXT.g.querySelector("#txtBoxes"); if(!box) return; box.replaceChildren();
+  if(hi==null) return; const chars=TXT.chars, xs=TXT.xs, fs=TXT.fs;
+  const span=f=>{ const a=chars.findIndex(f); let b=-1; chars.forEach((c,i)=>{ if(f(c)) b=i; }); return a<0?null:[a,b]; };
+  const groups = hi==="all" ? [span(c=>c.part>=0)] : hi.map(pi=>span(c=>c.part===pi));
+  for(const gr of groups){ if(!gr) continue;
+    let b=gr[1]; while(b>gr[0] && /[\s.,?!:;…]/.test(chars[b].c)) b--;        // round the letters, not the full stop after them
+    const r=document.createElementNS(svgNS,"rect");
+    r.setAttribute("x",(xs[gr[0]]-5).toFixed(1)); r.setAttribute("y",(TXT_Y-fs*0.98).toFixed(1)); r.setAttribute("width",(xs[b+1]-xs[gr[0]]+10).toFixed(1)); r.setAttribute("height",(fs*1.42).toFixed(1));
+    r.setAttribute("rx",6); r.setAttribute("fill","#fffdf2"); r.setAttribute("stroke","#22303f"); r.setAttribute("stroke-width",2.2); box.appendChild(r); }
+}
+// where a unit that is being said stands in a string: the same letters, at word edges, from a place on (or anywhere)
+function findUnit(str, unit, from, fwdOnly){
+  const want=lettersOf(String(unit).replace(/…/g,"")); if(!want || !str) return null;
+  const idx=[]; let L=""; for(let i=0;i<str.length;i++){ for(const x of lettersOf(str[i])){ L+=x; idx.push(i); } }
+  const isL=ch=>!!ch && (lettersOf(ch).length>0 || ch==="'" || ch==="’" || ch==="-");
+  let start=idx.findIndex(i=>i>=(from||0)); if(start<0) start=L.length;
+  for(let q=L.indexOf(want, start); q>=0; q=L.indexOf(want, q+1)){ const a=idx[q], b=idx[q+want.length-1]+1; if(!isL(str[a-1]) && !isL(str[b])) return [a,b]; }
+  return (!fwdOnly && start>0) ? findUnit(str, unit, 0, true) : null;
+}
+const wordsIn = s => (s.match(/[^\s:?!.,;…«»]+/g)||[]).length;
+/* A unit starts to be said (meta: its clip's {dur, w: the onset in ms of each written word}; lag: ms until the sound is out). */
+function textUnit(unit, meta, lag){
+  const c=TXT.ctx; if(!c) return; const w=c.w; let str=null, parts=null, r=null;
+  if(w.reveal==="after" && !c.revealed) return;       // a test of hearing (text.reveal "after"): nothing is written while it is said and answered
+  if(w.stage==="W1"){ if(w.focus!=null) return; r=findUnit(w.S, unit, 0); if(!r) return; str=w.S; parts=w.p; }
+  else {
+    const whole = w.a && lettersOf(w.A)===lettersOf(unit);
+    if(!whole && w.t){ r=findUnit(w.T, unit, c.tc, true); if(r){ str=w.T; parts=w.t; c.tc=r[1]; } }
+    if(!r && w.a){ r=findUnit(w.A, unit, 0); if(r){ str=w.A; parts=w.a; } }
+    if(!r && w.t){ r=findUnit(w.T, unit, 0); if(r){ str=w.T; parts=w.t; } }
+    if(!r) return; }
+  const P=parts.map((p,i)=>i).filter(i=>parts[i][0]>=r[0] && parts[i][1]<=r[1]), isAnswer = str===w.A, dur=(meta && meta.dur)||0;
+  TXT.timers.forEach(clearTimeout); TXT.timers=[];
+  textShow(str, parts, null);
+  P.forEach((pi,k)=>{ const wi=wordsIn(str.slice(r[0], parts[pi][0]));
+    const at = k===0 ? 0 : (meta && meta.w && meta.w[wi]!=null) ? meta.w[wi] : dur ? dur*0.9*(parts[pi][0]-r[0])/Math.max(1, r[1]-r[0]) : 0;
+    TXT.timers.push(setTimeout(()=>{ textHi([pi]); if(TXT.onPart) try{ TXT.onPart(pi, isAnswer, str.slice(parts[pi][0], parts[pi][1])); }catch(e){} }, Math.max(0,(lag||0)+at))); });
+  if(dur) TXT.timers.push(setTimeout(()=>textHi(null), (lag||0)+dur+150));      // said: the outline goes (the learner's turn puts its own, textAtResponse)
+}
+function textCtx(it){
+  const w = it && it.text; TXT.timers.forEach(clearTimeout); TXT.timers=[];
+  TXT.ctx = w ? {w, tc:0} : null;
+  if(!w || w.reveal==="after"){ textHide(); return; }
+  if(w.stage==="W1") textShow(w.S, w.p, w.focus==null ? null : [w.focus]);
+}
+// the learner's turn opens: what is written while the learner responds
+function textAtResponse(task){
+  const w=task.text; if(!w) return; TXT.timers.forEach(clearTimeout); TXT.timers=[];
+  if(w.reveal==="after"){ textHide(); return; }
+  if(w.stage==="W1") textShow(w.S, w.p, w.focus==null ? "all" : [w.focus]);
+  else if((w.stage==="R" || w.stage==="W2") && w.a) textShow(w.A, w.a, "all");
+  else if(TXT.shownCtx!==TXT.ctx) textHide();      // W3: her question stays (no outline); what an earlier task left is taken away; the answer is not shown
+  else textHi(null);
+}
+/* text.reveal "after" (the review of 11 Nov, F1: a test of hearing must not be passable by reading): the line was hidden while it
+   was said and answered; now it is shown, outlined, with its blue letters, as the confirmation. */
+function textReveal(it){ const w=it && it.text, c=TXT.ctx; if(!w || w.reveal!=="after" || !c) return; c.revealed=true;
+  if(it.tapTask || !w.a){ if(w.t) textShow(w.T, w.t, "all"); } else textShow(w.A, w.a, "all"); }
+// W1: "Répète :" is said for the first task of a run of part-by-part tasks, then the bare part alone (course_schema.md)
+let w1Run=false;
+const w1Units = t => (w1Run ? [] : ["Répète :"]).concat(t.bareUnits);
+
+/* ---- things in a line, the hand, taps ---- */
+const STRIP = {g:null, pts:[]};
+STRIP.g = mkLayer("stripG", "frames");
+const TAPL = mkLayer("tapLayer", "room"), HANDL = mkLayer("handLayer", "room");
+HANDL.innerHTML=`<circle id="touchPulse" cx="0" cy="0" r="0" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0"/>
+  <rect id="tapRing" x="0" y="0" width="10" height="10" rx="12" fill="none" stroke="#3fae5a" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
+  <g id="theHand" opacity="0" style="transition:transform .2s ease-out, opacity .15s"><g transform="rotate(180) scale(0.88)"><use href="#hs_point"/></g>
+    <rect x="-10" y="-3" width="20" height="20" rx="4" fill="#3d5a7a"/><g id="handTag"></g></g>`;
+const HAND_LEN = 56*0.88, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
+const boundsOf = slot => slot==="self" ? SELF_BOUNDS : BOUNDS[slot==="strip" ? "strip" : sideOf(slot)] || BOUNDS[slot];
+const handName = by => by==="teacher"||by==="both" ? VOCAB.claire.name : by==="paul"||by==="julie" ? VOCAB[by].name : by==="you" ? "You" : "";
+function handTo(x, y, by){
+  const h=document.getElementById("theHand"), tag=document.getElementById("handTag"), name=handName(by);
+  if(by!==undefined) tag.innerHTML = name ? `<rect x="${-name.length*3.4-5}" y="15" width="${name.length*6.8+10}" height="15" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.2"/><text x="0" y="26.5" text-anchor="middle" font-size="11.5" font-weight="700" font-family="system-ui,sans-serif" fill="#2b2f36">${escX(name)}</text>` : "";
+  h.setAttribute("transform",`translate(${x.toFixed(1)},${(y+HAND_LEN).toFixed(1)})`); h.setAttribute("opacity",1);
+}
+function handHide(){ const h=document.getElementById("theHand"); if(h) h.setAttribute("opacity",0); document.getElementById("tapRing").setAttribute("opacity",0); HAND.at=null; }
+const HAND = {at:null};
+function pulse(x, y){ const c=document.getElementById("touchPulse"); c.setAttribute("cx",x); c.setAttribute("cy",y);
+  try{ c.animate([{r:3, opacity:.95},{r:20, opacity:0}], {duration:420, easing:"ease-out"}); }catch(e){} }
+// the hand touches thing i of the line (a short press and a ring at the fingertip)
+function handTouch(i, by){ const p=STRIP.pts[i]; if(!p) return; handTo(p.x, p.y, by); setTimeout(()=>pulse(p.x, p.y), 170); trace("touch "+(i+1)); }
+function handHover(by){ const p=STRIP.pts[0]; if(!p) return; handTo(p.x-18, p.y+34, by); }
+const tipOf = slot => { const b=boundsOf(slot); return slot==="self" ? {x:200, y:430} : {x:b.x+b.w/2, y:b.y+b.h*0.46}; };
+function ringSlot(slot, on){ const g=document.getElementById("tapRing"), b=on && boundsOf(slot); if(!b){ g.setAttribute("opacity",0); return; }
+  const m=6; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",(b.r||10)+m); g.setAttribute("opacity",1); }
+// a hand resting on a picture (scene.touching), or a tap being shown: the labelled hand with its finger on the picture
+function handAt(by, slot){ const p=tipOf(slot); if(!boundsOf(slot)) return; handTo(p.x, p.y, by); HAND.at=slot; }
+async function handTap(by, slot){ const p=tipOf(slot), b=boundsOf(slot); if(!b){ trace("FAULT TAP: no picture at "+slot); return; }
+  handTo(p.x+26, p.y+46, by); await sleep(260); handTo(p.x, p.y, by); await sleep(210); pulse(p.x, p.y); ringSlot(slot, true); HAND.at=slot;
+  trace("tap shown: "+(handName(by)||"the hand")+" on "+slot); await sleep(650); ringSlot(slot, false); }
+// counting silently ("Compte dans ta tête."): the hand touches each thing in turn, 0.8 s apart, and nobody speaks
+async function silentTouches(n){ handHover(""); await sleep(350); for(let i=0;i<n;i++){ handTouch(i, ""); await sleep(800); } handHide(); }
+function buildStrip(spec, above){
+  STRIP.g.replaceChildren(); STRIP.pts=[]; delete BOUNDS.strip; delete TARGET.strip; if(!spec) return;
+  /* One line, however many (Jon: "the things in a row"; ten is the most the course counts): the things stand in the upper part
+     of the frame and the hand comes up from below, inside the frame, so that it never covers the writing under the pictures.
+     above: the row of numerals stands under the line (counting silently). */
+  const n=spec.count||1, x0=28, W=344, y0=above?24:30, H=above?86:180, cw=Math.min((W-16)/n, 104), ch=above?H*0.9:H*0.5, k=Math.min(cw/160, ch/190)*0.98;
+  const f=document.createElementNS(svgNS,"rect"); f.setAttribute("x",x0); f.setAttribute("y",y0); f.setAttribute("width",W); f.setAttribute("height",H); f.setAttribute("rx",12); f.setAttribute("fill","var(--frame)"); f.setAttribute("stroke","var(--frame-line)"); f.setAttribute("stroke-width",2); STRIP.g.appendChild(f);
+  for(let i=0;i<n;i++){ const cx=200-(n*cw)/2+(i+0.5)*cw, cy=y0+(above?H*0.5:H*0.3);
+    const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${(cx-80*k).toFixed(1)},${(cy-97*k).toFixed(1)}) scale(${k.toFixed(4)})`);
+    g.appendChild(picture({is:spec.is, looks:spec.looks||[], count:1})); STRIP.g.appendChild(g); STRIP.pts.push({x:cx, y:cy+30*k}); }
+  BOUNDS.strip={x:x0, y:y0, w:W, h:H, r:12}; TARGET.strip={x:200, y:y0+H*0.7};
+}
+/* The tap signal (.25; Jon's ruling of 11 Nov: speaking and tapping have different signals). A tap turn has NO green border and
+   no microphone (green means "speak", and only that): a hand over the pictures that can be tapped, its finger going down and up
+   as if tapping, and a dashed outline round each of those pictures. It goes when the learner taps or the time is up. */
+const TAPSIG = mkLayer("tapSig", "room");
+function tapSignal(slots){
+  TAPSIG.replaceChildren(); if(!slots || !slots.length) return;
+  const bs=slots.map(boundsOf).filter(Boolean); if(!bs.length) return;
+  let h=""; for(const b of bs) h+=`<rect x="${(b.x-4).toFixed(1)}" y="${(b.y-4).toFixed(1)}" width="${(b.w+8).toFixed(1)}" height="${(b.h+8).toFixed(1)}" rx="${(b.r||10)+4}" fill="none" stroke="#5a6f8a" stroke-width="2.5" stroke-dasharray="7 6" opacity=".85"/>`;
+  /* the same small hand on EVERY picture that can be tapped (one hand in one place would seem to point at one of them) */
+  const r=Math.max(12, Math.min(19, Math.min(...bs.map(b=>b.w))*0.16));
+  for(const b of bs){ const cx=b.x+b.w-r*0.55, cy=b.y+r*0.55;
+    h+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><circle r="${r.toFixed(1)}" fill="#fffdf6" stroke="#5a6f8a" stroke-width="2"/>
+      <clipPath id="tsc${Math.round(cx)}"><circle r="${(r-1.5).toFixed(1)}"/></clipPath><g clip-path="url(#tsc${Math.round(cx)})"><g class="tapHand"><g transform="translate(${(-1.5*r*1.7/57).toFixed(1)},${(-28*r*1.7/57).toFixed(1)}) scale(${(r*1.7/57).toFixed(3)})"><use href="#hs_point"/></g></g></g></g>`; }
+  TAPSIG.innerHTML=h;
+}
+/* The tap response. The pictures named in targets can be tapped; the first tap on one of them is the response; a tap anywhere
+   else is ignored. TAP_WINDOW: the usual wait for a first word (7 s) plus two seconds; no tap in it is a wrong response. */
+const TAP_WINDOW = 9000;
+let tapResolver=null;
+function tapWait(targets, ms){
+  return new Promise(res=>{ const t0=performance.now(); TAPL.replaceChildren();
+    const done=v=>{ if(!tapResolver) return; tapResolver=null; clearTimeout(timer); TAPL.replaceChildren(); res(v); };
+    const timer=setTimeout(()=>done(null), ms); tapResolver=slot=>done({slot, ms:Math.round(performance.now()-t0)});
+    for(const slot of targets){ const b=boundsOf(slot); if(!b) continue; const r=document.createElementNS(svgNS,"rect");
+      r.setAttribute("x",b.x); r.setAttribute("y",b.y); r.setAttribute("width",b.w); r.setAttribute("height",b.h); r.setAttribute("rx",b.r||10); r.setAttribute("fill","#fff"); r.setAttribute("fill-opacity","0.001");
+      r.dataset.slot=slot; r.style.cursor="pointer"; r.style.pointerEvents="all"; r.addEventListener("pointerdown", e=>{ e.preventDefault(); if(tapResolver) tapResolver(slot); }); TAPL.appendChild(r); } });
+}
+const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; const m=/^s(\d+)$/.exec(slot), x=m && sc && sc.row && sc.row[+m[1]];
+  return !x ? slot : x.person ? VOCAB[x.person].name : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "")+(x.value!=null && x.is==="numeral" ? " "+x.value : ""); };
+// the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
+async function tapModel(t, by, slot){
+  await setPortraits(t.scene); gestureEar();
+  if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); await handTap(by, slot); }
+  else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); await handTap(by, slot); })()]);
+  await sleep(250); handHide(); rest();
+}
+async function presentTapShow(a){
+  curTask=a.id; ph("model (tap): "+(handName(a.tap.by)||"the hand")); await setPortraits(a.scene); itemStart(a); await convIntro(a);
+  const lit = a.tap.by==="paul" || a.tap.by==="julie";
+  if(a.teacherUnits.length){ gestureEar(); await say(a.teacherUnits); await sleep(250); }
+  if(a.touch && a.touch.silent) await silentTouches(a.touch.count);
+  if(lit) speakLit(a.tap.by, true);
+  await handTap(a.tap.by, a.tap.at); if(lit) speakLit(a.tap.by, false);
+  if(!holdHand) handHide();
+  rest();
+}
+let holdHand=false;
+async function presentTap(t, {retest=false, firstSeen=null}={}){
+  ph(retest ? "retest (tap)" : "test (tap)"); rest();
+  await say(t.questionUnits, "tutor", undefined, 0);
+  if(t.touch && t.touch.silent) await silentTouches(t.touch.count);
+  textAtResponse(t); signal(false); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal; no green border, no microphone)");
+  window.__tapTask = t;                     // for the automatic test harness (an oracle learner taps what is asked for)
+  const r = await tapWait(t.targets, TAP_WINDOW); tapSignal(null);
+  const ok = !!r && t.correct.includes(r.slot);
+  const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
+  if(isFirst){ firstSeen.add(t.id); const f=(S.ftc[ctx.exKey]=S.ftc[ctx.exKey]||{new:{c:0,n:0}, review:{c:0,n:0}}); f[t.tag].n++; if(ok) f[t.tag].c++; }
+  ctx.firm=ctx.firm||{}; ctx.slow=ctx.slow||{};
+  if(ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1; if(!ok){ ctx.firm[t.target]=0; }
+  logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:"tap", said:t.questionUnits.join(" "), expected:t.correct.map(s=>slotName(t.scene, s)).join(" or "), heard:[],
+            tapped: r ? slotName(t.scene, r.slot) : null, tappedSlot: r ? r.slot : null, latencyMs: r ? r.ms : null,
+            result: ok ? "correct" : "ERROR", reason: ok ? "" : r ? "tapped the wrong picture" : "no tap in "+(TAP_WINDOW/1000)+" s", first:!!isFirst, retest, delayed:!!ctx.delayedRec,
+            ...(t.ear ? {ear:true} : {}), ...(t.tapInfo ? {discriminates:t.tapInfo.discriminates, heardOnly:t.tapInfo.heardOnly, chance:t.tapInfo.chance} : {})});
+  save();
+  LAST_TEST={id:t.id, ok, retest};
+  if(ok){ textReveal(t); ringSlot(r.slot, true); handAt("you", r.slot); smile(true); await ding(); await sleep(t.text && t.text.reveal==="after" ? 900 : 250); ringSlot(r.slot, false); if(!holdHand) handHide(); }
+  return ok;
+}
+// counting aloud at the touches: ONE response, the N number words in order. The hand is on the first thing when the turn
+// opens and goes to the next as each number is heard (the learner sets the pace; numbers said faster than the hand moves
+// are all heard, the hand catches up). A wrong or a missing number makes the response wrong, as in any answer.
+async function touchListen(task, expect, alsoOk){
+  const N=task.touch.count; let k=0; handTouch(0, "");
+  const nums=expect.map(e=>VOCAB[e] ? VOCAB[e].accept.concat(SLOT[VOCAB[e].art]||[]) : (SLOT[e]||[e]));
+  LISTEN.onRaw = raw => { const ws=normSaid(raw).split(" ").filter(Boolean); let j=0; for(const x of ws){ if(j<N && nums[j].includes(x)) j++; } while(k<j){ k++; if(k<N) handTouch(k, ""); } };
+  LISTEN.longMs = 3000 + 1700*N;                         // room for a slow count (the ordinary limit of an answer is 6 s)
+  const follows = !S.settings.manual && !recogBroken && S.settings.engine!=="google" && VOSK.model;
+  const timer = follows ? null : setInterval(()=>{ if(k<N-1){ k++; handTouch(k, ""); } }, 900);     // a listener that reports no words on the way: a steady hand
+  try{ return await listen(expect, alsoOk); } finally{ LISTEN.onRaw=null; LISTEN.longMs=0; clearInterval(timer); handHide(); }
+}
+function listenT(task, expect, alsoOk){
+  textAtResponse(task);
+  // (.25) a count the learner says at the touches: "À toi." (by "you"), and "Répète : un, deux." after Marie's count (by "both": no leads, so the learner says it after her)
+  if(task.touch && !task.touch.silent && (task.touch.by==="you" || task.touch.by==="both")) return touchListen(task, expect, alsoOk);
+  return listen(expect, alsoOk);
+}
+/* The conventions, each introduced once by the narrator just before the first task that uses it (.25; the wording was agreed
+   with the coordinator on 12 Nov 2026; audio/narrator, dev/voice/make_narrator.py). S.conv remembers, per user, which have
+   been said. */
+const CONV_LINES = {words:"words", blue:"blue", underline:"underline", wavy:"wavy", lis:"lis", tapmodel:"tapmodel", tap:"tap", count:"count", count_you:"count_you", asker:"asker"};
+async function convOnce(key){ S.conv=S.conv||{}; if(S.conv[key]) return false; S.conv[key]=true; save(); ph("introduction: "+key); trace("narrator: the convention \""+key+"\"");
+  if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
+  await narrate(CONV_LINES[key]||key); return true; }
+const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
+async function convIntro(it){
+  if(!it || S.settings.manual && S.settings.noConv) return;
+  const w=it.text, said=[];
+  if(w && w.reveal!=="after" && (w.stage==="W1" || w.stage==="W2" || w.stage==="R" || (w.T && w.t))){
+    if(await convOnce("words")) said.push("words");
+    if(partsHave(w,2)) await convOnce("blue");
+    if(partsHave(w,3)) await convOnce("underline");
+    if(partsHave(w,4)) await convOnce("wavy"); }
+  if(it.read) await convOnce("lis");
+  if(it.type==="tapshow") await convOnce("tapmodel");
+  if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("tap"); }
+  if(it.touch && !it.touch.silent){ if(it.touch.by==="you") await convOnce("count_you"); else await convOnce("count"); }
+  if(it.cueVoice && it.type!=="model") await convOnce("asker");
+  else if(it.cueVoice && it.type==="model" && it.voice!=="teacher") await convOnce("asker");
+}
+// a command answered by a tap ("Danse." with picture cards of actions): the learner's figure then does it
+const isCommandTap = t => !!(t.scene && t.scene.row && t.targets.some(s=>{ const m=/^s(\d+)$/.exec(s), x=m && t.scene.row[+m[1]]; return x && x.is==="picture card"; }));
+const NUM_WORDS = new Set(["un","une","deux","trois","quatre","cinq","six","sept","huit","neuf","dix"]);
+// every item, once its pictures are on the screen: its writing, and the hand
+function itemStart(it){
+  textCtx(it);
+  const counting = it.touch && !it.touch.silent;
+  // counting at the touches: the hand touches the next thing at the onset of each number word said (Marie's, Pierre's, Sylvie's;
+  // and in Marie's "Répète : un, deux." before the learner's count)
+  let nTouch=0;
+  TXT.onPart = counting && it.touch.by!=="you" ? (pi, isAnswer, txt)=>{ if(NUM_WORDS.has(lettersOf(txt||""))){ handTouch(nTouch % it.touch.count, it.touch.by==="both" ? "teacher" : it.touch.by); nTouch++; } }
+    : it.sweep ? (pi, isAnswer)=>{ if(isAnswer && it.sweep[pi]) pointAt(it.sweep[pi]); } : null;      // sweep: the gold border is on card i while phrase i is said
+  if(it.hand) handAt(it.hand.by, it.hand.at);
+  else if(counting && it.touch.by!=="you") handHover(it.touch.by);
+  else handHide();
+}
 async function presentGenModel(m){
   ph("model");
   // the script's "Écoute." is not said (Jon 9 Nov 14:21: adults who chose the app know to listen; it costs time)
@@ -2399,7 +2825,19 @@ async function presentGenModel(m){
   if(m.ownModel){ const sl=slotOfPerson(m.voice); if(sl){ askMark(sl, true, null); tagLit(sl); } }
   // Marie's held "Je m'appelle…" for the learner (dise5c): the learner's card and tag lit, a hand on the tag
   if(m.ownHeld){ const sl=learnerSlot(); if(sl){ askMark(sl, true, null); tagLit(sl); } }
+  /* model_from "own_recording" (.25, course_schema.md ninth round): the learner's own last right answer to an own-name test, in
+     their own voice, is the model (DISE: the teacher says the student's name with the student); until there is one, Marie's held
+     "Je m'appelle…" with the learner's tag lit (fallback "held"). */
+  if(m.modelFrom==="own_recording"){
+    const own = S.settings.manual ? null : await ownRecording(), sl=learnerSlot();
+    if(own){ if(sl){ goldOn(sl); tagLit(sl); speakLit("you", true, sl); } trace("own-name model: the learner's own recording "+own.id);
+      await playOwn(own); speakLit("you", false); if(!SESSION.clips.includes(own.id)) SESSION.clips.push(own.id);
+      logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:m.id, phase, result:"own-name model: the learner's own right answer played", modelClip:own.id, heard:[]}); return; }
+    trace("own-name model: no recording of the learner's own name yet; Marie's held \"Je m'appelle…\" with the tag lit (fallback)"); }
+  if(m.slow && m.voice==="teacher"){ SAY_SLOW=true; try{ await sayAs(m.voice, [m.answerUnits.join(" ")]); } finally{ SAY_SLOW=false; } if(m.text && m.text.reveal==="after"){ textReveal(m); await sleep(700); } return; }      // the slow recording, the border moving over the cards
+  if(m.read && m.text && m.text.a){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; textShow(m.text.A, m.text.a, "all"); await sleep(600); }      // reading unaided, modelled: the word is there before Pierre or Sylvie reads it
   await sayAs(m.voice, m.answerUnits);
+  if(m.text && m.text.reveal==="after"){ textReveal(m); await sleep(700); }
 }
 /* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
    for, a box could come up showing an animation of the user doing the action with the label 'You:' above it. The user will
@@ -2414,7 +2852,7 @@ const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
 const ACTBOX={key:null};
 function actPicture(who, act, opt){
-  if(opt.face) return thingPicture({is:"face", looks:[opt.face], count:1, sex:S.learnerGender==="f"?"f":"m"});
+  if(opt.face) return genPicture({is:"face", looks:[opt.face, {"feeling good":"thumb up", "feeling so-so":"flat hand rocking", "feeling bad":"thumb down"}[opt.face]||""], count:1, sex:S.learnerGender==="f"?"f":"m"});      // with its hand sign (.25)
   if(!window.PICS || !PICS.action) return placeholder(act);
   const sex = S.learnerGender==="f" ? "f" : "m";            // the learner's own figure ("you") is a woman or a man, as chosen at the start
   if(who==="both"){
@@ -2427,6 +2865,9 @@ function actPicture(who, act, opt){
     const g=document.createElementNS(svgNS,"g"), a=ACT_NAME[act]||act;        // an older library: the standing figure, and the card beside it
     [[picKnows("stop") ? PICS.action("stop", who, {still:true}) : placeholder("stop"), -14, 30, .68], [thingPicture({is:"picture card", doing:act, count:1}), 76, 58, .52]].forEach(([pic,x,y,k])=>{ const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${x} ${y}) scale(${k})`); c.appendChild(pic); g.appendChild(c); });
     return g; }
+  if(opt.alsoWill){      // (.25) doing act and holding the card of another action: the card in the corner of the box, held up
+    const g=document.createElementNS(svgNS,"g"); g.appendChild(picKnows(act) ? PICS.action(act, who, {still:!!opt.still, sex}) : placeholder(act));
+    const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform","translate(98 4) scale(.38)"); c.appendChild(thingPicture({is:"picture card", doing:opt.alsoWill, count:1})); g.appendChild(c); return g; }
   if(opt.stopped) return picKnows("stop") ? PICS.action("stop", who, {still:true, after:act, sex}) : picKnows(act) ? PICS.action(act, who, {still:true, sex}) : placeholder(act);
   return picKnows(act) ? PICS.action(act, who, {still:!!opt.still, sex}) : placeholder(act);
 }
@@ -2434,20 +2875,32 @@ function actBox(who, act, opt){
   const g=document.getElementById("actBox"); if(!g) return;
   if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); ACTBOX.key=null; return; }
   opt = opt===true ? {still:true} : (opt||{});
-  const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||""].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
+  if(who==="pair"){      // (.25) two boxes side by side: "Marie:" doing act, "You:" doing opt.you (with the learner's name tag)
+    const key=["pair", act, opt.you].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
+    g.innerHTML=[["marie", act, 30, VOCAB.claire.name+":"], ["you", opt.you, 210, "You:"]].map(([w,a,x,lab],i)=>`<text x="${x+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${lab}</text><g transform="translate(${x},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic${i}"></g></g>`).join("");
+    [["marie", act], ["you", opt.you]].forEach(([w,a],i)=>{ try{ document.getElementById("actPic"+i).appendChild(actPicture(w, a, {})); }catch(e){ trace("FAULT action picture "+a+": "+e.message); } });
+    const t=learnerCard().querySelector(".nametag"); if(t){ const k=1; t.setAttribute("transform",`translate(${(290-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); }
+    g.setAttribute("opacity",1); return; }
+  const BX = opt.left ? 28 : 120;      // (.25) opt.left: the box stands at the left, a picture of one person beside it (setPortraits)
+  const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||"", opt.alsoWill||"", BX].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
   const mine = who!=="marie", label = who==="you" ? "You:" : who==="both" ? VOCAB.claire.name+" and you:" : VOCAB.claire.name+":";
-  g.innerHTML=`<text x="200" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
-    <g transform="translate(120,24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
+  g.innerHTML=`<text x="${BX+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
+    <g transform="translate(${BX},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
   try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
   /* the learner's own name tag under their figure (.24), as on their card in own-name tasks: the figure is the learner */
-  if(mine && !opt.face){ const t=learnerCard().querySelector(".nametag"); if(t){ const k=1.1, x=(who==="both" ? 160 : 200);      // PICS.together puts the learner on the left
-    t.setAttribute("transform",`translate(${(x-80*k).toFixed(1)} ${(222-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); } }
+  if(mine && !opt.face){ const t=learnerCard().querySelector(".nametag"); if(t){ const k=1.1, x=(who==="both" ? 160 : 200)+(BX-120);      // PICS.together puts the learner on the left
+    t.setAttribute("transform",`translate(${(x-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); } }
   g.setAttribute("opacity",1);
 }
 async function presentAct(a){
-  curTask=a.kind+" "+a.act; ph("action: "+(a.kind==="show"?"the teacher does it":"the learner does it")+" ("+a.act+")");
+  curTask=a.kind+" "+a.act; itemStart(a); ph("action: "+(a.kind==="show"?"the teacher does it":"the learner does it")+" ("+a.act+")");
   const sc=sceneOf(a.scene)||{}, cmd=a.teacherUnits||[], own=boxOf(sc);       // own: the scene itself says what the box shows (Lessons 5+)
   const bare=Object.assign({}, sc); BOX_KEYS.forEach(k=>delete bare[k]);
+  /* (.25) kind "figure" with point on Pierre or Sylvie: it is THEIR figure that does it (they have just tapped the picture of the
+     command); their picture in the row carries the action. Nothing is said or asked. */
+  if(a.kind==="figure" && a.at && a.at!=="you" && a.at!=="none" && a.at!=="self"){
+    await setPortraits(sc); rest(); if(cmd.length) await say(cmd);
+    trace("a model learner's figure does it: "+a.act+" ("+a.at+")"); await sleep(ACT_TIME[a.act]||3000); rest(); return; }
   if(a.act==="stop"){
     /* The past is shown by do-then-stop (Lesson 9). The figure is moving: still on the screen from the task before, or put
        back for a moment when the stop comes on its own (a part gone through again as its tests). Then it stands still. */
@@ -2486,7 +2939,10 @@ async function presentAct(a){
 async function youDoIntro(){
   if(S.youDoSeen) return;
   ph("introduction: the learner's figure"); rest();
-  actBox("you", "stop", {still:true}); await narrate("you_do"); await narrate("you_do_b"); actBox(null);      // "This is you. … you'll answer as if you had done it yourself …"
+  // (.25: said before the first command the learner answers by a tap; the pictures make way for the figure while it is said)
+  const fr=document.getElementById("frameRow"), op=fr.style.opacity, tg=TXT.g.getAttribute("opacity"); fr.style.opacity=0; TXT.g.setAttribute("opacity",0); const kept=ACTBOX.key;
+  actBox("you", "stop", {still:true}); await narrate("you_do"); await narrate("you_do_b"); actBox(null);      // "This is you. When Marie tells you to do something, tap the picture of it … 'I was dancing.'"
+  fr.style.opacity=op; TXT.g.setAttribute("opacity", tg==null?1:tg);
   S.youDoSeen=true; save();
 }
 /* "say" (Lessons 9+): the teacher says a line and nobody answers (red border, like a model). Two uses. Her reply in a
@@ -2495,7 +2951,7 @@ async function youDoIntro(){
    in the task before), she says it, and then they stand still: the change is what shows the past. */
 const stopsSomeone = sc => !!(sc && sc.row && sc.row.some(x=>x && typeof x==="object" && x.did));
 async function presentSay(a){
-  curTask=a.id; ph("the teacher speaks (no answer)");
+  curTask=a.id; itemStart(a); ph("the teacher speaks (no answer)");
   const sc=sceneOf(a.scene)||{}, stop=stopsSomeone(sc);
   if(stop){ const moving=Object.assign({}, sc, {row: sc.row.map(x=> x && x.did ? Object.assign({}, x, {doing:x.did, did:undefined}) : x)});
     if(sceneKey(moving)!==curSceneKey){ await setPortraits(moving); await sleep(1500); } }
@@ -2516,7 +2972,7 @@ async function presentSay(a){
 async function presentModel(m){
   curTask="model "+m.target;
   if(m.introOnly && S.introSeen) return;
-  await setPortraits(m.scene);
+  await setPortraits(m.scene); itemStart(m); await convIntro(m);
   if(m.gen){ if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m); if(holdEar) goldOff(); else rest(); return; }
   if(m.set){                                   // "Un livre… un livre." — pointing to each in turn, no question
     ph("model: several of a kind");
@@ -2560,11 +3016,7 @@ async function presentIntro(m){
   await gesturePalm(m); await pointAt(m); await sleep(300); await say(repeatCue(m.target));
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
   smile(true); rest(); await ding(); await sleep(500);
-  await narrate("avec_a"); await say(PHR.atoi); await sleep(200); await narrate("point_b");
-  ph("introduction: point");
-  await say(PHR.atoi); await sleep(500); await pointAt(m); lastSpeechEnd=Date.now();
-  await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-  smile(true); rest(); await ding(); await sleep(500);
+  /* (.25) the "Vas-y" and pointing demonstration (point_b) is no longer played: no task of course_dise6 uses "Vas-y" */
   await narrate("only");
   await setScene("one");
   S.introSeen=true; save();
@@ -2602,14 +3054,15 @@ async function leadSteps(t, who){
 }
 // Lead task: green border, the teacher says it with the learner; microphone closed, not scored
 async function presentLead(t){
-  curTask=t.id; await setPortraits(t.scene); ph("lead");
+  curTask=t.id; await setPortraits(t.scene); itemStart(t); ph("lead");
   await leadSteps(t, "tutor"); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
 async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0, quiet=false, afterAtoi=false}={}){
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
-  curTask=t.id; await setPortraits(t.scene);
+  curTask=t.id; await setPortraits(t.scene); itemStart(t); await convIntro(t);
+  if(t.tapTask) return presentTap(t, {retest, firstSeen});
   if(t.gen){ if(t.cue==="repeat") await gesturePalm(t);       // the field-tested script says when "Vas-y" is said
     else if(t.vasy && !afterAtoi){ await announce(t); think = t.cue==="point" ? Math.max(think, 300) : AFTER_ATOI; }
     else if(t.cue!=="you") offering = t.cue!=="point" || offering; }
@@ -2619,12 +3072,12 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   else offering = t.cue!=="point" || offering;                    // the "your turn" hand goes out with every question
   ph(retest? "retest" : "test");
   const expect = t.expect || expectOf(t.target);
-  curCue = (t.questionUnits||[]).join(" ");
-  let r = await askAndListen(t, expect, think);
+  curCue = (t.questionUnits||[]).join(" "); KEEP_THIS = Array.isArray(t.soundPair) && ["le|les","la|les","des|deux"].includes(t.soundPair.map(x=>String(x).toLowerCase()).sort().join("|"));      // the recording of a le / les, la / les, deux / des answer is always kept (ruled on by ear)
+  let r = await askAndListen(t, expect, think, t.alsoOk||[]);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
     if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; rest(); await narrate("swamped"); }      // before asking again: the learner can put the phone down
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
-    r = await askAndListen(t, expect, think);
+    r = await askAndListen(t, expect, think, t.alsoOk||[]);
   }
   rest();
   // whichever recogniser listened: the question said back is that error by name, never a right answer
@@ -2632,6 +3085,38 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   // The item has by now been asked twice, and the same words came back both times.)
   if(r && (r.status==="heard" || r.status==="echo") && !r.repeatedCue && (r.heard||[]).some(h=>repeatedCue(h, curCue))) r={...r, status:"heard", ok:false, reason:"repeated the question", repeatedCue:true};
   lastRepeatedCue = !!(r && r.repeatedCue);
+  /* .24. A part said after Marie that is ONE small word ("Je.", "Tu.", "De.", "On.", "Et.", "Pas.", "Lit.": the part-by-part stage
+     of a new written word). This listener cannot hear such a word said alone: of 10 French synthetic voices it heard "De." in 0,
+     "On." in 1, "Et." in 4, "Pas." in 4, "Lit." in 4, "Il.", "Elle." and "Je." in 5, "Tu." in 6 (11 Nov 2026, test20.js on the 55 new
+     answers; the usual mishearings are "un" and "deux"). As for the sound pieces (VOCAB kind "frag"), such a part is accepted
+     when something was said, and the run file says it was not judged on the word. Names, numbers and nouns with their front
+     word, and every part of more than one word, are judged as always. W1_LENIENT=false judges these parts strictly too. */
+  /* .24, PROPOSED (to be ruled on). A spoken answer of a sound-pair task (course field sound_pair: le / les, la / les, un / une …).
+     Measured 11 Nov 2026 (sptest.js): on the three course voices the listener tells the two forms apart in a phrase (6 of 6 for
+     nearly every line, with only the pair to choose from and with the whole word list of the part); on English-accented
+     synthetic voices it does not ("lay pom" was heard as "la pomme" in 9 of 16 and as "les pommes" in 2; "lay clay" as "la clé" in
+     8 of 16; "luh leevr" as neither in 16 of 16; "oon" as "un" in 12 of 16). So the listener cannot say whether an English
+     learner said the right form. A right answer must never be marked wrong: when the rest of the answer is right and the pair
+     word was heard as the OTHER form, or not heard, the answer is accepted and the run file says FAULT SOUND UNSURE with what was
+     heard; the recording is always kept (KEEP_THIS), to be ruled on by ear. Taps are the measure of hearing.
+     SOUND_PAIR_UNSURE=false judges these answers like any other. */
+  /* (.25) Which pairs: le / les, la / les, deux / des only. Measured on 12 Nov 2026 (sptest.js, 16 English-accented synthetic voices
+     a line, two speeds; with only the two lines to choose from): "Les pommes." heard as "la pomme" 11 of 16, "Les clés." as "la
+     clé" 8, "Le livre." right 0 of 16, "Deux clés." right 3 of 16; the three course voices right in nearly every case. un / une and
+     il / elle stay judged as before: real recordings (Jon's un / une errors of 10 Nov) show that the listener tells un from une
+     in real voices, and il / elle came out right 16 and 12 of 16 even for the synthetic English voices. */
+  const UNSURE_PAIR = Array.isArray(t.soundPair) && t.soundPair.length===2 && ["le|les","la|les","des|deux"].includes(t.soundPair.map(x=>String(x).toLowerCase()).sort().join("|"));
+  if(UNSURE_PAIR && r && r.status==="heard"){
+    if(r.ok) r={...r, soundJudged:"the expected form was heard"};
+    else if(SOUND_PAIR_UNSURE && !r.repeatedCue){ const TOK={le:"LE", la:"LA", les:"LES", un:"UN", une:"UNE", des:"DES", deux:"n2", il:"IL", elle:"ELLE"}, pair=t.soundPair.map(x=>TOK[String(x).toLowerCase()]), ex=t.expect||[];
+      const i=ex.findIndex(e=>pair.includes(e) || (e==="n1" && pair.includes("UN"))), heardText=(r.heard||[])[0]||"";
+      if(i>=0){ const mine = ex[i]==="n1" ? "UN" : ex[i], other=pair.find(x=>x!==mine), swapped=ex.map((e,k)=>k===i?other:e), without=ex.filter((e,k)=>k!==i);
+        const how = other && judge(heardText, swapped, [], []).ok ? "the OTHER form was heard" : (without.length ? judge(heardText, without, [], []).ok : !!heardText.trim()) ? "the pair word was not heard" : null;
+        if(how){ trace("FAULT SOUND UNSURE: "+how+" (heard \""+heardText+"\", expected \""+t.answerUnits.join(" ")+"\", pair "+t.soundPair.join(" / ")+"); accepted, not judged on the form; the recording is kept");
+          r={...r, ok:true, unsure:true, soundJudged:how+"; accepted, not judged on the form", reason:"sound pair: "+how}; } } } }
+  if(W1_LENIENT && r && r.status==="heard" && !r.ok && !r.repeatedCue && t.w1 && (t.expect||[]).length===1 && !(VOCAB[t.expect[0]] && ["person","number","object","frag"].includes(VOCAB[t.expect[0]].kind))){
+    trace("FAULT PART UNSURE: heard \""+((r.heard||[])[0]||"")+"\" where the part \""+t.answerUnits.join(" ")+"\" was said after the teacher; accepted, not judged on the word");
+    r={...r, ok:true, unsure:true, reason:"a part said after the teacher: something was said; not judged on the word"}; }
   /* Own name: the same course name heard three times running, from a learner whose typed name is nothing like it. The app
      stops trusting its ears: the third is counted right, that name is never again an error for this learner, and the run
      file carries a fault line (either the listener hears this learner's name as that word, or the learner really does
@@ -2670,11 +3155,19 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(!r.ok){ ctx.firm[t.target]=0; ctx.slow[t.target]=true; }      // a mistake: the pause comes in (Zig)
   if(isFirm(t.target)) delete ctx.slow[t.target];                  // the learner has it again: the pause goes
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:r.heard.slice(0,6), ...lx(r),
-            result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec, ...(r.selfCorrected?{selfCorrected:true}:{})});
+            result:r.ok?"correct":"ERROR", reason:r.reason, first:!!isFirst, retest, delayed:!!ctx.delayedRec, ...(r.selfCorrected?{selfCorrected:true}:{}),
+            ...(t.soundPair?{soundPair:t.soundPair, soundJudged:r.soundJudged||"as any answer"}:{}), ...(r.unsure?{unsure:true}:{})});
   save();
+  if(r.ok && t.text && t.text.reveal==="after"){ textReveal(t); }
+  else if(r.ok && t.text && t.text.stage==="W3" && t.text.a) textShow(t.text.A, t.text.a, null);       // the looser stage: the written answer comes only now, after the response
+  LAST_TEST={id:t.id, ok:!!r.ok, retest};
   if(r.ok){ smile(true); rest(); await ding(); }        // Jon 9 Nov: right = the teacher just smiles (no nod, no pointing, no echo)
   return r.ok;
 }
+let LAST_TEST={id:null, ok:false, retest:false};      // (.25) the confirmation line ("Oui, trois.") follows only a test answered right first time
+const W1_LENIENT = true;
+const SOUND_PAIR_UNSURE = true;
+const NO_LEADS = true;      // Jon, 11 Nov 2026 (evening): no lead steps; a lead task of a course is not presented
 /* Own-name corrections (.24). Until .23 an own-name error was corrected by "Et toi ?", a model learner's "Je m'appelle Pierre."
    (or Sylvie), then "Et toi ?" again: the last thing heard before every retest was another person's name in the same frame,
    and the learner's own name had never been heard from anyone. tester H (11 Nov 21:12) said exactly the name just heard in 12
@@ -2760,6 +3253,15 @@ async function ownNameCorrection(task, o={}){
 async function correction(task, nth, how=""){
   ph("correction "+nth+(how?" ("+how+")":""));
   if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : ""}); return; }      // then the question again
+  if(task.tapTask){ await gestureEar(); await tapModel(task, "teacher", task.correct[0]); return; }      // a tap: her hand taps the right picture while she says the cue again; then the task again
+  /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
+     the border on the single card and then on the card asked about; then the task again (course field correction). */
+  if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart; await gestureEar();
+    if(c.a) TXT.ctx={w:{stage:"W2", A:c.answer, a:c.a}, tc:0};
+    TXT.onPart=(pi, isAnswer)=>{ if(c.sweep[pi]) goldOn(sideOf(c.sweep[pi])); };
+    if(c.sweep[0]) goldOn(sideOf(c.sweep[0]));
+    SAY_SLOW=!!c.slow; try{ await say([c.answer]); } finally{ SAY_SLOW=false; TXT.onPart=on; TXT.ctx=keep; }
+    await sleep(300); await pointAt(task); return; }
   if(task.cue==="repeat") return;                                 // the cue "Répète : X." is the one model
   await gestureEar();                                             // give the answer at once (DISE: "say the correct word as soon as students make a mistake")
   await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));
@@ -2784,8 +3286,10 @@ const isActBefore = (it, next) => it && it.type==="act" && (it.kind==="do" || it
 // a stop (Lesson 9: "Arrête." to the learner, to a pictured person, or the teacher stopping): what shows the past of the question after it
 const isStop = it => it && ((it.type==="act" && it.act==="stop") || (it.type==="say" && stopsSomeone(it.scene)));
 // what the teacher says or does in answer to the learner: her reply ("Ça va bien, merci."), or doing what she was told ("Danse.")
-const isReply = (it, prev) => it && prev && prev.type==="task" && prev.kind==="test" && (it.type==="say" || (it.type==="act" && it.kind==="show" && !(it.teacherUnits||[]).length));
-const goesWith = (it, i, a) => isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]);
+const isReply = (it, prev) => it && prev && prev.type==="task" && prev.kind==="test" && (it.type==="say" || ((it.type==="act" || it.type==="tapshow") && it.kind==="show" && !(it.teacherUnits||[]).length));
+// (.25) the learner's figure doing what was just commanded and tapped ("Danse." tap, then the figure dances) goes with that tap
+const isFigureAfterTap = (it, prev) => it && it.type==="act" && it.kind==="figure" && prev && prev.tapTask;
+const goesWith = (it, i, a) => isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]);
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
@@ -2828,6 +3332,10 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
     while(i<items.length){
       const it=items[i];
       if(prevItem) await sleep(pace());                       // a moment between one direction and the next (early lessons)
+      w1Run = !!(it.w1 && prevItem && prevItem.w1); holdHand = !!(items[i+1] && items[i+1].hand);
+      if(it.type==="tapshow"){ await presentTapShow(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
+      // the confirmation line ("Oui, trois."): only after a right answer to the test straight before it (after a wrong one the correction has run, and the part is gone through again)
+      if(it.type==="say" && it.confirm && !(prevItem && prevItem.type==="task" && prevItem.kind==="test" && LAST_TEST.id===prevItem.id && LAST_TEST.ok && !LAST_TEST.retest)){ trace("confirmation skipped (the test before it was not right first time): "+it.id); shown.add(it); i++; continue; }
       if(it.type==="act"){ await presentAct(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       if(it.type==="say"){ await presentSay(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
       /* A string of models by the teacher ("Un. Un. Un. Un."): her listening hand stays at her ear from the first to the last
@@ -2835,8 +3343,11 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
          distracting … she puts her hand down when the string of models is complete"). */
       if(it.type==="model"){ const nx=items[i+1]; holdEar = !!(it.gen && it.voice==="teacher" && nx && nx.type==="model" && nx.gen && nx.voice==="teacher" && !nx.qIntro);
         await presentModel(it); holdEar=false; shown.add(it); prevTest=false; prevItem=it; i++; continue; }
-      if(it.kind==="lead"){ await presentLead(it); prevTest=false; prevItem=it; i++; continue; }
-      const firstOfItem = run==="first" && prevItem && prevItem.kind==="lead" && prevItem.target===it.target;
+      /* Jon, 11 Nov 2026 (evening): "No lead steps anywhere … It doesn't really work in an app environment. The person always
+         responds late or not at all." A lead task of the course is not presented (the revised course has none); nothing is said
+         together with the teacher or a model learner. NO_LEADS=false brings them back. */
+      if(it.kind==="lead"){ if(NO_LEADS){ trace("lead not presented (no lead steps): "+it.id); i++; continue; } await presentLead(it); prevTest=false; prevItem=it; i++; continue; }
+      const firstOfItem = !NO_LEADS && run==="first" && prevItem && prevItem.kind==="lead" && prevItem.target===it.target;
       const ok=await presentTest(it,{firstSeen, atoi:!prevTest, think:thinkTime(it,{prevTarget, firstOfItem})});
       prevTest=true; prevTarget=it.target; prevItem=it;
       if(ok){ i++; continue; }
