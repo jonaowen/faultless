@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.31";
+const APP_VERSION="2026-11-12.32";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -3138,6 +3138,9 @@ async function presentSay(a){
     await setPortraits(sc); }
   if(a.at && a.at!=="none") await pointAt(a);
   await say(a.teacherUnits);
+  /* (.32) counting silently ("Compte dans ta tête.", course_dise6 of 12 Nov): a `say` with touch {silent}: the hand touches each
+     thing at a steady pace, nobody speaks, nothing is tapped; the spoken "Il y en a combien ?" follows as its own test */
+  if(a.touch && a.touch.silent){ await sleep(250); await silentTouches(a.touch.count); }
   if(stop){ await setPortraits(sc); if(a.at && a.at!=="none") await pointAt(a); trace("stop shown: the pictured people now stand still"); await sleep(1300); }
   else await sleep(350);
   rest();
@@ -3462,7 +3465,9 @@ const isStop = it => it && ((it.type==="act" && it.act==="stop") || (it.type==="
 const isReply = (it, prev) => it && prev && prev.type==="task" && prev.kind==="test" && (it.type==="say" || ((it.type==="act" || it.type==="tapshow") && it.kind==="show" && !(it.teacherUnits||[]).length));
 // (.25) the learner's figure doing what was just commanded and tapped ("Danse." tap, then the figure dances) goes with that tap
 const isFigureAfterTap = (it, prev) => it && it.type==="act" && it.kind==="figure" && prev && prev.tapTask;
-const goesWith = (it, i, a) => isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]);
+// (.32) a silent count goes with the question about it ("Il y en a combien ?") whenever that question is asked again
+const isCountBefore = (it, next) => it && it.type==="say" && it.touch && it.touch.silent && next && next.type==="task";
+const goesWith = (it, i, a) => isCountBefore(it, a[i+1]) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]);
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){

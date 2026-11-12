@@ -7,8 +7,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.31` (https://jonaowen.github.io/faultless). Lessons 1–5 have DISE boards and Jon's latest fixes;
-  Lessons 6–10 are still from .25. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-12.32` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
   dise5c, dise, flat — must stay byte-identical). Design log §17–§40 has every ruling and change since 11 Nov.
@@ -26,7 +25,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 **Next steps, in order**
 1. Read the DISE test forms from Drive into `dev/source/dise_tests/` (private; never into the public repo) and check
    the first mastery test against them; report to Jon.
-2. .28 and .29 (Lesson 1 fix) shipped; next .30 =
+2. Shipped through .32 (Lessons 6–10 with boards); was .30 =
    Lessons 6–10 with boards (silent count as `say`; des/deux picture test). Ship lesson batches as soon as they pass
    (Jon, 12 Nov: never hold a release; human testing comes first).
 3. App support for the mastery test before any tester reaches Lesson 13.
@@ -47,7 +46,10 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.31`: .30 plus L2E6 "one thing's number is its front word" shown in the cue (Marie names
+- **Live version:** `2026-11-12.32`: .31 plus Lessons 6–10 with DISE boards (from course_dise6); the silent count ("Compte
+  dans ta tête.": the hand touches each thing at a steady pace, nobody speaks) and the des/deux picture test. Checks:
+  quiet whole-lesson runs L6–7 885/885, L8 502/502, L9–10 1039/1039 (one 648 ms frame stall, no wrong answer); gate
+  Lessons 6–10 passed; selfjudge 0 refused; tapcards 0 failures over 322 taps; smoke clean. Earlier: `2026-11-12.31`: .30 plus L2E6 "one thing's number is its front word" shown in the cue (Marie names
   the thing, "Une pomme.", then asks how many; design log §40); L3E6 reviews regenerated from it. Checks: gate
   Lessons 1–3 passed; smoke clean; the new items played in a browser. Earlier: `2026-11-12.30`: .29 plus audio-stall recovery (Jon's run of 12 Nov 16:01: the phone's sound output
   once fell 6.5 s behind, and Marie's "Un ou une ?" came 6 s late. Before every clip the app reads the browser's
