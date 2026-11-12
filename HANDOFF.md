@@ -11,7 +11,14 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.25`: Lessons 1–10 from the revised course `dev/fieldtest/course_dise6` (design log
+- **Live version:** `2026-11-12.26`: .25 plus fixed DISE boards in Lessons 1–2 (from `course_dise6` of 12 Nov 09:59;
+  design log §35–§36): one board per exercise only where DISE has one, blanks where the learner supplies the word,
+  outline moving with the voice (`board_point`) and off on the learner's turn except where DISE points to the answer
+  (`board_point_learner`); no other print, no written-word taps (the un/une hearing test is on pictures). Lessons 3–10
+  are still .25's and follow in batches (3–5, then 6–10). Checks: Lessons 1–2 oracle 346/346, selfjudge 0 refused,
+  gate passed (Lessons 1–2). New clips: teacher "Répète : je.", narrator "underline" re-recorded. Known cosmetic: the
+  board text sits tight against the board's left edge.
+  .25 for reference: `2026-11-12.25`: Lessons 1–10 from the revised course `dev/fieldtest/course_dise6` (design log
   §17–§34): written words with the outline moving with the audio and the RMT marks (blue = silent, straight underline =
   one sound, wavy = irregular), part by part first; touch-counting; tap responses with their own signal (red border +
   tapping hand on every tappable picture); commands answered by a tap, then the learner's figure acts; the le/les, la/les,
@@ -130,8 +137,19 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
   - *Nothing assumed.* Every French complication (no article, gendered form, elision, liaison…) is taught explicitly
     with plenty of practice before it is relied on (`fieldtest/complications.md`).
   - *Responses.* At or above DISE's count per lesson and track; lessons may be as long as needed.
-  - *Written words* are shown: the word being said is outlined, silent letters are blue, a new written word goes part
-    by part first (teacher says the part, learner says it), then whole sentence, then looser formats.
+  - *Written words follow DISE closely* (Jon, 12 Nov; replaces the 11 Nov "whenever a word is said" wording). Print
+    only in exercises where DISE has a board (a new word or sentence frame; none in review and mixed tests; none by
+    Lesson 10). The board is FIXED for the exercise, with blanks where DISE has blanks ("Je m'appelle ____"): the
+    learner chooses what to say; print that changes with each answer is spoon-feeding. The outline moves over a board
+    word only as Marie or a model learner says it, never onto the answer on the learner's turn. RMT marks stay on board
+    words.
+  - *Copy DISE's support exactly where DISE gives it* (Jon, 12 Nov): where DISE's teacher points to the answer on the
+    students' turn (a sentence repeated straight after her model; the greeting bubbles in Lessons 8–9), the app does
+    the same (a paced outline over the answer, `board_point_learner`), because DISE has a reason, such as a task
+    learners usually fail without it. Only there: never generalised.
+  - *Speaking and listening only* (Jon, 12 Nov): no test where the learner hears French and taps a written word, and no
+    written cards as tap targets or picture content. The DISE boards are the one exception, as a support. "Once the
+    student is fluent at speaking French, learning to read and write French will be easy."
   - *Natural French in what is only heard.* Teacher speech uses the natural wording even with a form not yet taught
     ("Touche le livre."), where the response does not depend on it. It builds receptive French.
   - *Receptive before expressive,* programmed deliberately, as DISE does: a stage of hearing and showing understanding

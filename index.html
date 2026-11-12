@@ -385,7 +385,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.25";
+const APP_VERSION="2026-11-12.26";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -617,7 +617,7 @@ function genItem(it){
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
-  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag"]) if(it[k]) o[k]=it[k];
+  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner"]) if(it[k]) o[k]=it[k];
   if(it.mark===false) o.mark=false;
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
   if(it.kind==="show" && it.act==="tap") return Object.assign(o,{type:"tapshow", kind:"show", act:"tap", tap:it.tap, target:"show tap "+keyOf(it.teacher)+" "+it.tap.at});
@@ -2535,12 +2535,13 @@ async function cueAs(voice, units, at, item){
      R   reading unaided: "Lis." as she says it, then the written answer, outlined, before the response; nobody says it.
    ============================================================ */
 const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
+const BOARD = {key:null, b:null, boxes:[]};      // (.26) the DISE-style board shown now (boardShow)
 const TXT_Y = 244, TXT_SIZE = 24, TXT_BLUE = "#1f6fd6";
 const mkLayer = (id, parent) => { const g=document.createElementNS(svgNS,"g"); g.id=id; document.getElementById(parent).appendChild(g); return g; };
 TXT.g = mkLayer("textBand", "frames");
 const lettersOf = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9\[\]]/g,"");
 const escX = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
-function textHide(){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; TXT.g.replaceChildren(); TXT.cur=null; TXT.shownCtx=null; }
+function textHide(){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; TXT.g.replaceChildren(); TXT.cur=null; TXT.shownCtx=null; BOARD.key=null; }
 /* Written letters with the three RMT prompts (.25; course_schema.md "The other two RMT prompts"): blue = a letter not said;
    a straight line under letters that make ONE sound; a wavy line under letters that do not say what the rules give them.
    A part is [s, e, blue ranges, underline ranges, wavy ranges, 1 = the learner's own name]. Every character is placed at an
@@ -2603,7 +2604,7 @@ function findUnit(str, unit, from, fwdOnly){
 const wordsIn = s => (s.match(/[^\s:?!.,;…«»]+/g)||[]).length;
 /* A unit starts to be said (meta: its clip's {dur, w: the onset in ms of each written word}; lag: ms until the sound is out). */
 function textUnit(unit, meta, lag){
-  const c=TXT.ctx; if(!c) return; const w=c.w; let str=null, parts=null, r=null;
+  const c=TXT.ctx; if(!c) return; if(c.board) return boardUnit(unit, meta, lag); const w=c.w; let str=null, parts=null, r=null;
   if(w.reveal==="after" && !c.revealed) return;       // a test of hearing (text.reveal "after"): nothing is written while it is said and answered
   if(w.stage==="W1"){ if(w.focus!=null) return; r=findUnit(w.S, unit, 0); if(!r) return; str=w.S; parts=w.p; }
   else {
@@ -2620,7 +2621,78 @@ function textUnit(unit, meta, lag){
     TXT.timers.push(setTimeout(()=>{ textHi([pi]); if(TXT.onPart) try{ TXT.onPart(pi, isAnswer, str.slice(parts[pi][0], parts[pi][1])); }catch(e){} }, Math.max(0,(lag||0)+at))); });
   if(dur) TXT.timers.push(setTimeout(()=>textHi(null), (lag||0)+dur+150));      // said: the outline goes (the learner's turn puts its own, textAtResponse)
 }
+/* ============================================================
+   DISE-STYLE BOARDS (.26; the owner's ruling of 12 Nov 2026: written words follow DISE; course_schema.md "The board").
+   The board belongs to the EXERCISE: shown from its first item to its last and never changed inside it. Lines ("\n") one under
+   another, left-aligned, on a pale board between the pictures and Marie; the RMT marks as before; a blank is a line with
+   nothing on it (the learner supplies the filler). The outline goes round the parts the task names (boardPoint), one after
+   another in time with the voice of Marie or of a model learner (the clip's word onsets, "w"); a blank part is outlined at the
+   onset of the word said in its place. On the learner's turn nothing is outlined. An exercise without a board shows no print.
+   ============================================================ */
+function boardShow(b){
+  const key=JSON.stringify(b)+"|"+(learnerTagName()||"");
+  if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
+  const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
+  let fs = n>=3 ? 19 : n===2 ? 21 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
+  const lh=fs*1.3, y0=TXT_Y - (n-1)*lh/2 - (n>1?6:0);
+  const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
+  const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
+  let at=0, svg="", boxes=[]; const widths=lines.map(l=>MEAS(l, fs)), W=Math.max(...widths), X0=200-W/2;
+  lines.forEach((ln,li)=>{ const y=y0+li*lh, chars=[];
+    for(let j=0;j<ln.length;j++){ const i=at+j, pi=partOf(i), p=pi>=0?parts[pi]:null;
+      chars.push({c:ln[j], i, part:pi, blank:isBlank(i), blue:!!(p && inR(p[2],i)>=0), under:p && inR(p[3],i)>=0 ? pi*100+inR(p[3],i) : -1, wavy:p && inR(p[4],i)>=0 ? pi*100+inR(p[4],i) : -1}); }
+    const shown=chars.map(ch=>ch.blank ? Object.assign({}, ch, {c:"_", hide:true}) : ch);
+    const r=charsSvg(shown.map(ch=>ch.hide ? Object.assign({}, ch, {c:"\u2007"}) : ch), X0+widths[li]/2, y, fs, 0, "#22303f");
+    svg+=r.svg;
+    for(let a=0;a<shown.length;){ if(!shown[a].hide){ a++; continue; } let e=a; while(e<shown.length && shown[e].hide) e++;
+      svg+=`<path d="M${(r.xs[a]+1).toFixed(1)} ${(y+fs*0.12).toFixed(1)} H${(r.xs[e]-1).toFixed(1)}" stroke="#22303f" stroke-width="2.4" stroke-linecap="round"/>`; a=e; }
+    chars.forEach((ch,j)=>boxes.push({i:ch.i, part:ch.part, x:r.xs[j], x2:r.xs[j+1], y, fs, c:ch.c}));
+    at+=ln.length+1; });
+  const x0=X0-14, x1=X0+W+14, top=y0-fs*1.15, bot=y0+(n-1)*lh+fs*0.6;
+  TXT.g.innerHTML=`<rect x="${x0.toFixed(1)}" y="${top.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="8" fill="#f2f6f1" stroke="#9fb3a3" stroke-width="1.6"/><g id="txtBoxes"></g><g id="txtLine">${svg}</g>`;
+  TXT.cur="board"; BOARD.key=key; BOARD.b=b; BOARD.boxes=boxes; TXT.g.setAttribute("opacity",1);
+}
+// the outline round board parts (a list of indices), or none
+function boardHi(list){
+  const box=TXT.g.querySelector("#txtBoxes"); if(!box) return; box.replaceChildren(); if(!list || !list.length) return;
+  for(const pi of list){ const bs=BOARD.boxes.filter(x=>x.part===pi && !/[\s.,?!:;…\/-]/.test(x.c)); if(!bs.length) continue;
+    const byLine={}; bs.forEach(x=>(byLine[x.y]=byLine[x.y]||[]).push(x));
+    for(const y in byLine){ const L=byLine[y], fs=L[0].fs, xa=Math.min(...L.map(x=>x.x)), xb=Math.max(...L.map(x=>x.x2)), r=document.createElementNS(svgNS,"rect");
+      r.setAttribute("x",(xa-4).toFixed(1)); r.setAttribute("y",(+y-fs*0.98).toFixed(1)); r.setAttribute("width",(xb-xa+8).toFixed(1)); r.setAttribute("height",(fs*1.36).toFixed(1));
+      r.setAttribute("rx",6); r.setAttribute("fill","#fffdf2"); r.setAttribute("stroke","#22303f"); r.setAttribute("stroke-width",2.2); box.appendChild(r); } }
+}
+/* A unit said by Marie or a model learner. The task's points not yet outlined are matched in it, in order: a word part by its
+   letters (whole words only, so "toi" alone is not found inside "assieds-toi"), a blank by the next word of the unit. Each is
+   outlined from its word's onset; the outline goes when the unit has been said. Points not found wait for the next unit. */
+const BOARD_WORD_RE = /[^\s:?!.,;…«»]+/g;
+function boardUnit(unit, meta, lag){
+  const c=TXT.ctx, b=BOARD.b; if(!b || c.k>=c.points.length) return;
+  const u=String(unit), words=[...u.matchAll(BOARD_WORD_RE)].map(m=>({s:m.index, e:m.index+m[0].length})), dur=(meta && meta.dur)||0;
+  let pos=0; const plan=[];
+  while(c.k<c.points.length){ const pi=c.points[c.k], p=b.parts[pi]; if(!p) { c.k++; continue; }
+    let wi=-1;
+    if(p[6]===1){ wi=words.findIndex(w=>w.s>=pos); }
+    else { const word=b.text.slice(p[0],p[1]), r=findUnitWhole(u, word, pos); if(r) wi=words.findIndex(w=>w.s<=r[0] && w.e>r[0]); if(wi<0 && r) wi=words.findIndex(w=>w.s>=r[0]); }
+    if(wi<0) break;
+    const at = (meta && meta.w && meta.w[wi]!=null) ? meta.w[wi] : dur ? dur*0.9*words[wi].s/Math.max(1,u.length) : 0;
+    plan.push([pi, at]); pos=words[wi].e; c.k++; }
+  if(!plan.length) return;
+  TXT.timers.forEach(clearTimeout); TXT.timers=[];
+  plan.forEach(([pi,at])=>TXT.timers.push(setTimeout(()=>boardHi([pi]), Math.max(0,(lag||0)+at))));
+  if(dur) TXT.timers.push(setTimeout(()=>boardHi(null), (lag||0)+dur+150));
+}
+// where a written word stands in what is said, as a whole word: a hyphen counts as part of the word ("toi" is not in "assieds-toi")
+function findUnitWhole(str, word, from){
+  const want=lettersOf(word); if(!want) return null; const idx=[]; let L="";
+  for(let i=0;i<str.length;i++){ for(const x of lettersOf(str[i])){ L+=x; idx.push(i); } }
+  const isL=ch=>!!ch && (lettersOf(ch).length>0 || ch==="'" || ch==="’" || ch==="-");
+  const st=idx.findIndex(i=>i>=from); for(let q=L.indexOf(want, st<0?L.length:st); q>=0; q=L.indexOf(want, q+1)){ const a=idx[q], e=idx[q+want.length-1]+1;
+    if(!isL(str[a-1]) && !isL(str[e])) return [a,e]; }
+  return null;
+}
 function textCtx(it){
+  if(it && it.board){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; boardShow(it.board); TXT.ctx={board:true, points:(it.boardPoint||[]).slice(), k:0}; return; }
+  if(it && !it.text){ TXT.ctx=null; textHide(); return; }      // (.26) an exercise DISE does without print shows nothing
   const w = it && it.text; TXT.timers.forEach(clearTimeout); TXT.timers=[];
   TXT.ctx = w ? {w, tc:0} : null;
   if(!w || w.reveal==="after"){ textHide(); return; }
@@ -2628,6 +2700,14 @@ function textCtx(it){
 }
 // the learner's turn opens: what is written while the learner responds
 function textAtResponse(task){
+  if(task.board){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; boardHi(null);      // (.26) the learner's turn: nothing outlined; the board stays
+    /* board_point_learner (where DISE's teacher points to the answer on the students' turn): a paced pointer over those parts,
+       at the pace of the model's word timings (Marie's clip of the answer), else 0.4 s a part. An entry that is a list is
+       outlined all at once (a bubble line). */
+    const L=task.boardPointLearner; if(L && L.length){ const k=clipKey((task.answerUnits||[]).join(" ")), m=TEACHER.index && TEACHER.index[k], w=(m && m.w)||[];
+      L.forEach((e,i)=>{ const at=(w[i]!=null ? w[i] : i*400); TXT.timers.push(setTimeout(()=>boardHi(Array.isArray(e)?e:[e]), at)); });
+      const end=(m && m.dur ? m.dur : L.length*400)+400; TXT.timers.push(setTimeout(()=>boardHi(null), end)); }
+    return; }
   const w=task.text; if(!w) return; TXT.timers.forEach(clearTimeout); TXT.timers=[];
   if(w.reveal==="after"){ textHide(); return; }
   if(w.stage==="W1") textShow(w.S, w.p, w.focus==null ? "all" : [w.focus]);
@@ -2785,6 +2865,8 @@ const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).
 async function convIntro(it){
   if(!it || S.settings.manual && S.settings.noConv) return;
   const w=it.text, said=[];
+  if(it.board){ const P=it.board.parts||[], has=k=>P.some(q=>(q[k]||[]).length);      // (.26) the board's conventions, the first time a board is shown
+    if(await convOnce("words")) said.push("words"); if(has(2)) await convOnce("blue"); if(has(3)) await convOnce("underline"); if(has(4)) await convOnce("wavy"); }
   if(w && w.reveal!=="after" && (w.stage==="W1" || w.stage==="W2" || w.stage==="R" || (w.T && w.t))){
     if(await convOnce("words")) said.push("words");
     if(partsHave(w,2)) await convOnce("blue");
@@ -2831,7 +2913,8 @@ async function presentGenModel(m){
   if(m.modelFrom==="own_recording"){
     const own = S.settings.manual ? null : await ownRecording(), sl=learnerSlot();
     if(own){ if(sl){ goldOn(sl); tagLit(sl); speakLit("you", true, sl); } trace("own-name model: the learner's own recording "+own.id);
-      await playOwn(own); speakLit("you", false); if(!SESSION.clips.includes(own.id)) SESSION.clips.push(own.id);
+      const bc=TXT.ctx && TXT.ctx.board ? TXT.ctx.points.slice(TXT.ctx.k) : null; if(bc && bc.length) boardHi(bc);      // (.26) the board words of the sentence, while it is heard
+      await playOwn(own); speakLit("you", false); if(bc) boardHi(null); if(!SESSION.clips.includes(own.id)) SESSION.clips.push(own.id);
       logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:m.id, phase, result:"own-name model: the learner's own right answer played", modelClip:own.id, heard:[]}); return; }
     trace("own-name model: no recording of the learner's own name yet; Marie's held \"Je m'appelle…\" with the tag lit (fallback)"); }
   if(m.slow && m.voice==="teacher"){ SAY_SLOW=true; try{ await sayAs(m.voice, [m.answerUnits.join(" ")]); } finally{ SAY_SLOW=false; } if(m.text && m.text.reveal==="after"){ textReveal(m); await sleep(700); } return; }      // the slow recording, the border moving over the cards
