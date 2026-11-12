@@ -10,7 +10,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 - **Live:** `2026-11-12.36` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
-  dise5c, dise, flat — must stay byte-identical). Design log §17–§42 has every ruling and change since 11 Nov.
+  dise5c, dise, flat — must stay byte-identical). Design log §17–§45 has every ruling and change since 11 Nov.
 - **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
   the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
   narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
@@ -153,6 +153,11 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 ## 2. Jon's standing rules (keep all of them)
 
 **Teaching design**
+- **Formats whole, in line with DISE; corrections repeat only the task (Jon, 12 Nov 2026 20:00).** Never split an exercise
+  into pieces placed elsewhere. No lesson or track has more responses than DISE's (`v6.trim_to_dise`); fewer is fine (Jon, 21:00: "deliberately design the programme to be leaner than we think is needed"; no refill to DISE's count; what is taught, the progression, the variety and the repeats per lesson stay like DISE's). No scripted
+  delayed tests: the app gives a delayed test of only the task that had an error. Correction steps 5 and 7 repeat only
+  that task, not the exercise or the part. Long, uniform lessons tire the learner: Lesson 1 must be about as short as
+  DISE's (about 7 minutes, perfect learner).
 - **No English about French, ever (Jon, 12 Nov 2026 16:45).** English may explain how the app works, never a French
   rule: that breaks teaching wholly in the target language and invites translating into and out of English. The
   programme begins inductively, from examples only. Once learners have enough French to follow a rule stated in
