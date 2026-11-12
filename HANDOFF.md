@@ -1,8 +1,44 @@
-# Faultless French: handoff (11 Nov 2026)
+# Faultless French: handoff (12 Nov 2026)
 
 For the next Claude session working with Jon Owen. (The copy in the dev bundle, `faultless-dev/HANDOFF.md`, is the
 master: if the two differ, that one is right.) Read this first, then `dev/fieldtest/formats.md` (every teaching
 rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_eval/README.md` (the learner loop).
+
+## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
+
+**Where things stand**
+- **Live:** `2026-11-12.27` (https://jonaowen.github.io/faultless). Lessons 1–2 have DISE boards and Jon's latest fixes;
+  Lessons 3–10 are still from .25. Read "Live version" in §1 for each version's contents and checks.
+- **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
+  `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
+  dise5c, dise, flat — must stay byte-identical). Design log §17–§38 has every ruling and change since 11 Nov.
+- **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
+  the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
+  narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
+  three actions; the model learner's figure acted off screen after Pierre's tap; the board stayed into the next
+  exercise; "un" still has a slight /v/ (all clips with "un", inside phrases too); Pierre's "m'appelle" has a final
+  schwa. Rebuild the working copy from live (`/home/user/faultless` = public repo checkout) plus `wip28`.
+- **First mastery test** designed: gate after Lesson 13 (exercise L13E18), threshold and reasons in
+  `dev/docs/Mastery tests.md` and design log §38. The app does not play a mastery test yet; the artificial learner
+  has not been run on it. **Jon is providing DISE's test forms on Google Drive** (that is why this session ended):
+  read them first and check the gate, the threshold and the test items against DISE's real tests.
+
+**Next steps, in order**
+1. Read the DISE test forms from Drive into `dev/source/dise_tests/` (private; never into the public repo) and check
+   the first mastery test against them; report to Jon.
+2. Finish and ship .28 (fixes first; ship as soon as the lessons testers reach pass their checks), then .29 =
+   Lessons 6–10 with boards (silent count as `say`; des/deux picture test). Ship lesson batches as soon as they pass
+   (Jon, 12 Nov: never hold a release; human testing comes first).
+3. App support for the mastery test before any tester reaches Lesson 13.
+4. Then: Lessons 11–20 revision under all the rulings (DISE pages for L20 and L30 are in `dev/source/`; design log
+   notes at its end), and the next gate.
+
+**How the previous session worked** (keep it): one coordinating session; course work by a generator agent, app work
+by an app agent, the artificial learner by its own agent; each lesson batch shipped by PR → merge → check
+`version.json` on Pages → restart `handoff-wip` from `main`. Every run Jon sends: save it under
+`dev/real_audio/runs_<date>/`, run `dev/qa/run_doctor.py`, rule the errors from the recordings (Whisper), add a row
+to the §4 table, fix. A `QUIET` flag file in the scratchpad pauses heavy jobs during timing-sensitive checks; never
+leave it up for long. The public HANDOFF is this file with tester names removed.
 
 ## 1. What this is
 
@@ -11,7 +47,15 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.27`: .26 plus the fixes from Jon's run of 12 Nov 10:59: the touch-count MODEL hand
+- **Live version:** `2026-11-12.28`: .27 plus the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (L1E7 f men drawn
+  doing their actions; the model learner's figure acts on screen after a model tap; board cleared at each exercise;
+  figure animation halved; both counting narration lines before the first "À toi." of the course, models included;
+  "asker" narration on models too; Pierre's "Je m'appelle, Pierre." without the schwa) and Lessons 3–5 with DISE
+  boards. Checks: Lessons 1–2 oracle clean; Lessons 3–5 quiet oracle 730/730 to L5 Ex 8 at ship time (shipped then,
+  per Jon: never hold Lesson 1 fixes for later lessons); gate Lessons 1–5 passed; selfjudge 0 refused; taptouch
+  21/21; tapcards 0 failures (live .27 had 91). Not fixed: a /v/ Jon hears after "un" inside phrases — the spectrum
+  shows nothing to cut; needs the exact lines from him. App state: `dev/appwork/wip28/STATUS.md`.
+  .27 for reference: `2026-11-12.27`: .26 plus the fixes from Jon's run of 12 Nov 10:59: the touch-count MODEL hand
   moves to and touches each thing at each number's onset (it had depended on the removed per-task text); taps register
   first time (invisible overlays — the end tick, the hidden model hand, the tap-signal hands — took touches; all are now
   see-through to touches, tap areas cover the whole card and sit on top, a touch during the cue is kept; every touch is
@@ -155,6 +199,11 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
     students' turn (a sentence repeated straight after her model; the greeting bubbles in Lessons 8–9), the app does
     the same (a paced outline over the answer, `board_point_learner`), because DISE has a reason, such as a task
     learners usually fail without it. Only there: never generalised.
+  - *Mastery tests are gates* (Jon, 12 Nov): placed where a core set of skills is mastered and the next lessons
+    integrate or move up, not at a fixed lesson (DISE's 15 / 30 / 60 / 100 are DISE's gates, not ours). Each item's
+    skills must have had the teaching and practice DISE gives its own test items before the test. The LEARNER's
+    pass mark and remedy follow DISE exactly; separately, every wrong item, even in a pass, is a design fault to
+    diagnose, because in an app every aspect of the presentation is controlled (Jon, 12 Nov).
   - *Speaking and listening only* (Jon, 12 Nov): no test where the learner hears French and taps a written word, and no
     written cards as tap targets or picture content. The DISE boards are the one exception, as a support. "Once the
     student is fluent at speaking French, learning to read and write French will be easy."
@@ -254,6 +303,8 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 11 Nov 08:28 | Jon, L3 on .22 | 174 of 177 right. (1) **Sylvie's model "Une." was unintelligible** (he could not tell un from une; said "un" for the key). (2) Pierre's "Et moi ?" and (3) Marie's "Je m'appelle comment ?" at the start of Ex 13 both answered "Je m'appelle Jon." after 2+ s: a question about the asker answered about himself (only Marie had ever asked it) | .23: clips re-recorded with a release gate; new-asker rule in the generator (design log §16) |
 | 11 Nov 21:12 | the first naive tester, L1 Ex 1–5 on .23 | 134 answers, 15 real errors: 12 own-name answers with the name the model learner had just said (the own-name correction supplies it; she worked out "what is your name?" aloud in English and was right from then on); "Je m'appelle [own name]." ×2 for "Je m'appelle comment ?" (the question opens with her own answer); "Marie." for "Et toi ?" after three corrected "Marie."; one listener error ("trois" heard as "lève-toi" in a count). the run's doctor file in the dev bundle (`dev/qa/`) | next |
 | 12 Nov 10:59 | Jon, L1 on .26 | 62 answers, 0 errors. App faults he reported: the touch-count MODEL hand does not move from thing to thing (the learner's turn does); taps need several touches to register; the narrator's "what you are doing" / "what you were doing" sound alike; "Un." / "un" has a slight /v/ tail; "Un. Répète : un." is two identical models. `dev/qa/doctor_jon_1059.md` | .27 |
+| 12 Nov 11:40 | Jon, L1 on .26 | the learner's figure animation is too long (halve it); the counting narration played after the learner had already heard "À toi." in the counting models: every narrator line must play before the first task of any kind that uses its convention | .28 |
+| 12 Nov 11:50 | Jon, L1 on .27 | L1E7 f: the three men the course gives as smiling / jumping / dancing were drawn identical, so "Danse." was unanswerable; after Pierre's model tap his figure acted in a slot not on screen (nothing visible); a board stayed on screen into the next exercise; "un" still has a slight /v/ (determiner and number); Pierre says "m'appelle" with a final schwa | .28 |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.

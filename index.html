@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.27";
+const APP_VERSION="2026-11-12.28";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -2089,6 +2089,10 @@ function genPicture0(e){
     return (e.doing || e.holding || e.card || (e.looks && e.looks.length)) ? PICS.person(e, VOCAB[e.person].name) : portrait(e.person); }
   if(PEOPLE_KIND.includes(e.is) && e.doing==="swimming" && !picDoes("swimming")) return swimmer(e);
   if(PEOPLE_KIND.includes(e.is) && e.doing==="singing" && !picDoes("singing")) return singer(e);
+  /* (.28; Jon, 12 Nov 11:50: "one man in three pictures" was three identical standing men, so "Danse." could not be answered) an
+     unnamed person doing an action of the library is drawn doing it (PICS.action with that person), not as a bust */
+  if(PEOPLE_KIND.includes(e.is) && e.doing && ACT_NAME[e.doing] && !["eating","drinking","walking"].includes(e.doing) && window.PICS && PICS.action)
+    return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:false});
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
@@ -2189,7 +2193,7 @@ async function setPortraits(sc){
   { const b=boxOf(sc); if(b) actBox(b[0], b[1], Object.assign({}, b[2], sc.boxLeft ? {left:true} : {})); else actBox(null); }
   curScene=sc; curSceneKey=key;
   if(sc.row && sc.row.some(x=>x && x.appears)){ trace("a card comes in"); await sleep(650); }      // before the line is said
-  if(TXT.g.firstChild) TXT.g.setAttribute("opacity", 0.3);       // writing left by the task before, under new pictures: faint until the next thing is said
+  if(TXT.g.firstChild && TXT.cur!=="board") TXT.g.setAttribute("opacity", 0.3);      // (.28) not the exercise's board: it stays as it is       // writing left by the task before, under new pictures: faint until the next thing is said
 
 }
 /* ============================================================
@@ -2538,7 +2542,8 @@ async function cueAs(voice, units, at, item){
      R   reading unaided: "Lis." as she says it, then the written answer, outlined, before the response; nobody says it.
    ============================================================ */
 const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
-const BOARD = {key:null, b:null, boxes:[]};      // (.26) the DISE-style board shown now (boardShow)
+const BOARD = {key:null, b:null, boxes:[]};
+let BOARD_EX = null;      // (.28) the id of the exercise being run (null: no lesson running, as in the screen tools): a board shows only on its own items      // (.26) the DISE-style board shown now (boardShow)
 const TXT_Y = 244, TXT_SIZE = 24, TXT_BLUE = "#1f6fd6";
 const mkLayer = (id, parent) => { const g=document.createElementNS(svgNS,"g"); g.id=id; document.getElementById(parent).appendChild(g); return g; };
 TXT.g = mkLayer("textBand", "frames");
@@ -2637,8 +2642,10 @@ function boardShow(b){
   const key=JSON.stringify(b)+"|"+(learnerTagName()||"");
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
-  let fs = n>=3 ? 19 : n===2 ? 21 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
-  const lh=fs*1.3, y0=TXT_Y - (n-1)*lh/2 - (n>1?6:0);
+  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
+  /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
+     overlapped the bottom of the cards and the learner's name tag in the action box */
+  const lh=fs*1.25, y0 = n===1 ? TXT_Y : 218 + fs*1.15;
   const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
   const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
   let at=0, svg="", boxes=[]; const widths=lines.map(l=>MEAS(l, fs)), W=Math.max(...widths), X0=200-W/2;
@@ -2696,6 +2703,7 @@ function findUnitWhole(str, word, from){
   return null;
 }
 function textCtx(it){
+  if(it && it.board && BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-")){ TXT.ctx=null; textHide(); trace("board not shown: "+(it.id||"")+" is not of the exercise being run ("+BOARD_EX+")"); return; }
   if(it && it.board){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; boardShow(it.board); TXT.ctx={board:true, points:(it.boardPoint||[]).slice(), k:0}; return; }
   if(it && !it.text){ TXT.ctx=null; textHide(); return; }      // (.26) an exercise DISE does without print shows nothing
   const w = it && it.text; TXT.timers.forEach(clearTimeout); TXT.timers=[];
@@ -2889,6 +2897,7 @@ function listenT(task, expect, alsoOk){
    been said. */
 const CONV_LINES = {words:"words", blue:"blue", underline:"underline", wavy:"wavy", lis:"lis", tapmodel:"tapmodel", tap:"tap", count:"count", count_you:"count_you", asker:"asker"};
 async function convOnce(key){ S.conv=S.conv||{}; if(S.conv[key]) return false; S.conv[key]=true; save(); ph("introduction: "+key); trace("narrator: the convention \""+key+"\"");
+  if(key==="count_you"){ await narrate("count_you_a"); await say(["À toi."]); await sleep(150); await narrate("count_you_b"); return true; }      // (.28) Marie's "À toi." between the narrator's two clips
   if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
   await narrate(CONV_LINES[key]||key); return true; }
 const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
@@ -2905,10 +2914,20 @@ async function convIntro(it){
   if(it.read) await convOnce("lis");
   if(it.type==="tapshow") await convOnce("tapmodel");
   if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("tap"); }
-  if(it.touch && !it.touch.silent){ if(it.touch.by==="you") await convOnce("count_you"); else await convOnce("count"); }
-  if(it.cueVoice && it.type!=="model") await convOnce("asker");
-  else if(it.cueVoice && it.type==="model" && it.voice!=="teacher") await convOnce("asker");
+  /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
+     before the FIRST task that uses its convention, models included: the two counting lines together before the first count of
+     any kind ("À toi." is first said to Pierre in a model); "asker" before the first item in which Pierre or Sylvie asks */
+  if(it.touch && !it.touch.silent){ await convOnce("count"); await convOnce("count_you"); }
+  if(it.cueVoice) await convOnce("asker");
+  // (.28) the audit: a convention this item uses whose line has not been said is a fault in the run file (oracle10.js lists it)
+  const late=convUsed(it).filter(k=>!(S.conv||{})[k]); if(late.length) trace("FAULT CONVENTION LATE: "+late.join(", ")+" used at "+(it.id||it.target)+" before its narration");
 }
+// the conventions an item uses (what convIntro must have introduced before it), defined apart from the triggers above
+function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
+  if(it.board){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
+  if(it.type==="tapshow") u.push("tapmodel"); if(it.tapTask) u.push("tap");
+  if(it.touch && !it.touch.silent) u.push("count","count_you"); if(it.cueVoice) u.push("asker");
+  return u; }
 // a command answered by a tap ("Danse." with picture cards of actions): the learner's figure then does it
 const isCommandTap = t => !!(t.scene && t.scene.row && t.targets.some(s=>{ const m=/^s(\d+)$/.exec(s), x=m && t.scene.row[+m[1]]; return x && x.is==="picture card"; }));
 /* (.27; Jon's run of 12 Nov 10:59: "in the model [the hand] doesn't [move]") The counting hand of a model was moved by the written
@@ -2970,6 +2989,9 @@ async function presentGenModel(m){
    show: the teacher says the command and does it (box "Marie:"). do: she says it, the border goes green, the "You:" box
    comes up (animated the first ACT_SHOWN times each action is asked for, then a still picture), the app waits ACT_TIME and
    goes on with the ding of a right answer. Nothing is listened for. */
+/* (.28; Jon, run of 12 Nov 11:40: the figure's action "is too long and wastes time") the learner's figure, and a model learner's,
+   act for half the time Marie's own actions take: long enough to see which action it is */
+const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5);
 const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:2600, "raise hand":3600, eat:3600, drink:3600, stop:2200};
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
@@ -3007,7 +3029,7 @@ function actBox(who, act, opt){
     g.setAttribute("opacity",1); return; }
   const BX = opt.left ? 28 : 120;      // (.25) opt.left: the box stands at the left, a picture of one person beside it (setPortraits)
   const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||"", opt.alsoWill||"", BX].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
-  const mine = who!=="marie", label = who==="you" ? "You:" : who==="both" ? VOCAB.claire.name+" and you:" : VOCAB.claire.name+":";
+  const mine = who==="you" || who==="both", label = who==="you" ? "You:" : who==="both" ? VOCAB.claire.name+" and you:" : (who==="paul" || who==="julie") ? VOCAB[who].name+":" : VOCAB.claire.name+":";
   g.innerHTML=`<text x="${BX+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
     <g transform="translate(${BX},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
   try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
@@ -3022,9 +3044,15 @@ async function presentAct(a){
   const bare=Object.assign({}, sc); BOX_KEYS.forEach(k=>delete bare[k]);
   /* (.25) kind "figure" with point on Pierre or Sylvie: it is THEIR figure that does it (they have just tapped the picture of the
      command); their picture in the row carries the action. Nothing is said or asked. */
+  /* (.28; Jon, 12 Nov 11:50: "a task for Pierre … but nothing happened") the model learner's own figure does it in the action box,
+     big and labelled with his or her name, as the learner's figure does: a small face in the fourth place of a row (smiling) was
+     not seen at all */
   if(a.kind==="figure" && a.at && a.at!=="you" && a.at!=="none" && a.at!=="self"){
+    const m=/^s(\d+)$/.exec(a.at), x=m && sc.row && sc.row[+m[1]], who=x && x.person;
+    if(who==="paul" || who==="julie"){ await setPortraits(Object.assign({}, bare, {row:[], side:{}})); rest(); if(cmd.length) await say(cmd);
+      actBox(who, a.act, {}); trace("a model learner's figure does it: "+a.act+" ("+who+", in the action box)"); await sleep(FIGURE_TIME(a.act)); actBox(null); rest(); return; }
     await setPortraits(sc); rest(); if(cmd.length) await say(cmd);
-    trace("a model learner's figure does it: "+a.act+" ("+a.at+")"); await sleep(ACT_TIME[a.act]||3000); rest(); return; }
+    trace("a model learner's figure does it: "+a.act+" ("+a.at+")"); await sleep(FIGURE_TIME(a.act)); rest(); return; }
   if(a.act==="stop"){
     /* The past is shown by do-then-stop (Lesson 9). The figure is moving: still on the screen from the task before, or put
        back for a moment when the stop comes on its own (a part gone through again as its tests). Then it stands still. */
@@ -3053,7 +3081,7 @@ async function presentAct(a){
   S.actSeen=S.actSeen||{}; const seen=S.actSeen[a.act]||0;
   trace("the learner's figure does it: "+a.act+(sc.bothDoing?" (with the teacher)":"")+" (nothing asked of the learner)");
   actBox(sc.bothDoing ? "both" : "you", a.act, {});
-  await sleep(ACT_TIME[a.act]||3000);
+  await sleep(a.kind==="figure" ? FIGURE_TIME(a.act) : (ACT_TIME[a.act]||3000));
   S.actSeen[a.act]=seen+1;
   if(own) await setPortraits(sc); else actBox(null);
   rest();
@@ -3075,7 +3103,7 @@ async function youDoIntro(){
    in the task before), she says it, and then they stand still: the change is what shows the past. */
 const stopsSomeone = sc => !!(sc && sc.row && sc.row.some(x=>x && typeof x==="object" && x.did));
 async function presentSay(a){
-  curTask=a.id; itemStart(a); ph("the teacher speaks (no answer)");
+  curTask=a.id; itemStart(a); await convIntro(a); ph("the teacher speaks (no answer)");
   const sc=sceneOf(a.scene)||{}, stop=stopsSomeone(sc);
   if(stop){ const moving=Object.assign({}, sc, {row: sc.row.map(x=> x && x.did ? Object.assign({}, x, {doing:x.did, did:undefined}) : x)});
     if(sceneKey(moving)!==curSceneKey){ await setPortraits(moving); await sleep(1500); } }
@@ -3527,6 +3555,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
 async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
   ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
+  BOARD_EX=ex.id; textHide();      // (.28) a new exercise: whatever was written goes; only this exercise's board can come up
   S.lesson=li; S.ex=ei; save();
   curSceneKey=null;
   const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};
@@ -3546,6 +3575,9 @@ async function runDelayed(d, anchor){
   const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson && lesson.exercises.find(e=>e.id===d.ex);
   const part=ex && ex.parts.find(p=>p.id===d.part); if(!part){ S.delayed=S.delayed.filter(x=>x!==d); save(); return; }
   ctx={lesson:d.lesson, ex:d.ex, exKey:d.ex+" (delayed)", delayedRec:d, part:part.id};
+  /* (.28; Jon, 12 Nov 11:50: "un / une" stayed on the screen when the next exercise began) a delayed test of an earlier exercise,
+     run at the start of another, shows no board: the board on the screen always belongs to the exercise being taught */
+  BOARD_EX="(a delayed test)"; textHide();
   curSceneKey=null;
   await flashIcon("bookmark");
   trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
