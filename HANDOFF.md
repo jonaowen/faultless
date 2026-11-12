@@ -140,6 +140,11 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 ## 2. Jon's standing rules (keep all of them)
 
 **Teaching design**
+- **No English about French, ever (Jon, 12 Nov 2026 16:45).** English may explain how the app works, never a French
+  rule: that breaks teaching wholly in the target language and invites translating into and out of English. The
+  programme begins inductively, from examples only. Once learners have enough French to follow a rule stated in
+  French, rules may be taught deductively, in French. (The proposed English line "for one thing, the number is its
+  front word" is withdrawn.)
 - **DI must be gapless and efficient.** Exercises are made of parts, each a small expansion of the last. No long
   chains of one task form (build.py flags 6+). Follow the rubric (`dev/rubric.txt`).
 - **Formats come from DISE; content and sequence come from the analysis of spoken French.** Read the DISE Teacher's
