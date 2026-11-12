@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.36";
+const APP_VERSION="2026-11-12.37";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -2450,7 +2450,7 @@ function thinkTime(){ return 0; }
    Her speech itself is not slowed and no pause is put inside a sentence. An extra pause comes before every direction (a
    model, a lead, a question, an action) and between a question and its answer in a model; it shrinks lesson by lesson
    and is gone from Lesson 9. */
-const PACE_MS=[600,600,450,450,300,300,150,150];
+const PACE_MS=[0,0,0,0,0,0,0,0];      // (.37, Jon 12 Nov 21:00: "get rid of the ding and the pause") no pause between one task and the next (was 600,600,450,450,300,300,150,150)
 const pace=()=> PACE_MS[S.lesson]||0;
 // AFTER_ATOI: the gap after "Vas-y" — no longer than the gaps elsewhere, so it never sounds like the learner's turn
 // (Jon, 8 November 2026). "Vas-y" itself gives the thinking time.
@@ -2727,8 +2727,19 @@ function findUnitWhole(str, word, from){
     if(!isL(str[a-1]) && !isL(str[e])) return [a,e]; }
   return null;
 }
+function boardUsed(it){
+  if((it.boardPoint||[]).length || (it.boardPointLearner||[]).length) return true;
+  const words=t=>String(t||"").toLowerCase().replace(/[’]/g,"'").split(/[^a-zà-ÿ']+/).filter(w=>w.length>1);
+  const bw=new Set(words(it.board.text).flatMap(w=>[w, w.replace(/^[a-z]'/,"")]));
+  const said=words([it.teacher, it.answer, (it.questionUnits||[]).join(" "), (it.answerUnits||[]).join(" ")].join(" ")).flatMap(w=>[w, w.replace(/^[a-z]'/,"")]);
+  return said.some(w=>bw.has(w));
+}
 function textCtx(it){
   if(it && it.board && BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-")){ TXT.ctx=null; textHide(); trace("board not shown: "+(it.id||"")+" is not of the exercise being run ("+BOARD_EX+")"); return; }
+  /* (.37; Jon on the run of 12 Nov 20:00: "the written words for je m'appelle were still on the screen when she was expected to do a
+     different task") the board shows only on an item that uses it: one pointed at on the board, or one whose words (the cue or the
+     answer) include a word written on it. "C'est qui ?" -> "Sylvie." in the exercise of "je m'appelle ____" shows nothing. */
+  if(it && it.board && !boardUsed(it)){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; TXT.ctx=null; textHide(); trace("board not shown: "+(it.id||"")+" does not use its words"); return; }
   if(it && it.board){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; boardShow(it.board); TXT.ctx={board:true, points:(it.boardPoint||[]).slice(), k:0}; return; }
   if(it && !it.text){ TXT.ctx=null; textHide(); return; }      // (.26) an exercise DISE does without print shows nothing
   const w = it && it.text; TXT.timers.forEach(clearTimeout); TXT.timers=[];
@@ -2896,7 +2907,9 @@ async function presentTap(t, {retest=false, firstSeen=null}={}){
             ...(t.ear ? {ear:true} : {}), ...(t.tapInfo ? {discriminates:t.tapInfo.discriminates, heardOnly:t.tapInfo.heardOnly, chance:t.tapInfo.chance} : {})});
   save();
   LAST_TEST={id:t.id, ok, retest};
-  if(ok){ textReveal(t); ringSlot(r.slot, true); handAt("you", r.slot); smile(true); await ding(); await sleep(t.text && t.text.reveal==="after" ? 900 : 250); ringSlot(r.slot, false); if(!holdHand) handHide(); }
+  /* (.37, Jon 12 Nov 21:00: "Let's get rid of the ding and the pause. The learner gets no feedback for getting individual tasks right;
+     if they get it wrong, then there's the normal sequence ... Saving 15% of the time is crucial.") no ding, no smile, no wait */
+  if(ok){ textReveal(t); ringSlot(r.slot, true); handAt("you", r.slot); if(t.text && t.text.reveal==="after") await sleep(900); ringSlot(r.slot, false); if(!holdHand) handHide(); }
   return ok;
 }
 // counting aloud at the touches: ONE response, the N number words in order. The hand is on the first thing when the turn
@@ -2922,7 +2935,7 @@ function listenT(task, expect, alsoOk){
    been said. */
 const CONV_LINES = {words:"words", blue:"blue", underline:"underline", wavy:"wavy", lis:"lis", tapmodel:"tapmodel", tap:"tap", count:"count", count_you:"count_you", asker:"asker"};
 async function convOnce(key){ S.conv=S.conv||{}; if(S.conv[key]) return false; S.conv[key]=true; save(); ph("introduction: "+key); trace("narrator: the convention \""+key+"\"");
-  if(key==="count_you"){ await narrate("count_you_a"); await say(["À toi."]); await sleep(150); await narrate("count_you_b"); return true; }      // (.28) Marie's "À toi." between the narrator's two clips
+  if(key==="count_you"){ await narrate("count_you_a"); await say(["À toi.", "Compte."]); await sleep(150); await narrate("count_you_b"); return true; }      // (.37) the cue is "À toi. Compte." (DISE: "Your turn: Count.")      // (.28) Marie's "À toi." between the narrator's two clips
   if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
   await narrate(CONV_LINES[key]||key); return true; }
 const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
@@ -3021,7 +3034,9 @@ async function presentGenModel(m){
    goes on with the ding of a right answer. Nothing is listened for. */
 /* (.28; Jon, run of 12 Nov 11:40: the figure's action "is too long and wastes time") the learner's figure, and a model learner's,
    act for half the time Marie's own actions take: long enough to see which action it is */
-const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5);
+/* (.37, Jon 12 Nov 20:00) the animations play twice as fast (people.js ACT_SPEED): every wait for one is half what it was */
+const ACT_HALF = 0.5;
+const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
 const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:2600, "raise hand":3600, eat:3600, drink:3600, stop:2200};
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
@@ -3091,7 +3106,7 @@ async function presentAct(a){
     if(show){ await pointAt("self"); if(cmd.length) await say(cmd); }
     else { await youDoIntro(); rest(); if(cmd.length) await say(cmd); trace("the learner's figure does it: stop (nothing asked of the learner)"); }
     await setPortraits(sc); trace("stop shown: "+(show?"the teacher":"the learner")+" was doing \""+was+"\" and now stands still");
-    await sleep(ACT_TIME.stop);
+    await sleep(Math.round(ACT_TIME.stop*ACT_HALF));
     rest(); return;
   }
   await setPortraits(bare);
@@ -3099,7 +3114,7 @@ async function presentAct(a){
     // she says the command and does it; or says nothing and does what she has just been told ("Danse."); or says what she
     // is going to do ("Je vais marcher."), THEN does it: the box comes up only when she has finished speaking
     gestureEar(); await pointAt("self"); if(cmd.length) await say(cmd);
-    actBox("marie", a.act); await sleep(ACT_TIME[a.act]||3000);
+    actBox("marie", a.act); await sleep(Math.round((ACT_TIME[a.act]||3000)*ACT_HALF));
     if(own) await setPortraits(sc); else actBox(null);        // she goes on doing it into the question that follows ("Je fais quoi ?")
     rest(); return;
   }
@@ -3111,7 +3126,7 @@ async function presentAct(a){
   S.actSeen=S.actSeen||{}; const seen=S.actSeen[a.act]||0;
   trace("the learner's figure does it: "+a.act+(sc.bothDoing?" (with the teacher)":"")+" (nothing asked of the learner)");
   actBox(sc.bothDoing ? "both" : "you", a.act, {});
-  await sleep(a.kind==="figure" ? FIGURE_TIME(a.act) : (ACT_TIME[a.act]||3000));
+  await sleep(a.kind==="figure" ? FIGURE_TIME(a.act) : Math.round((ACT_TIME[a.act]||3000)*ACT_HALF));
   S.actSeen[a.act]=seen+1;
   if(own) await setPortraits(sc); else actBox(null);
   rest();
@@ -3202,7 +3217,7 @@ async function presentIntro(m){
   ph("introduction: repeat");
   await gesturePalm(m); await pointAt(m); await sleep(300); await say(repeatCue(m.target));
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-  smile(true); rest(); await ding(); await sleep(500);
+  rest(); await sleep(300);      // (.37) no ding for a right answer, in the demonstration too
   /* (.25) the "Vas-y" and pointing demonstration (point_b) is no longer played: no task of course_dise6 uses "Vas-y" */
   await narrate("only");
   await setScene("one");
@@ -3219,7 +3234,7 @@ async function presentQIntro(m){
   await narrate("q_b");
   await announce({cue:"question", target:m.target, at:m.at}); await sleep(AFTER_ATOI); await say(m.questionUnits);
   await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
-  smile(true); rest(); await ding(); await sleep(400);
+  rest(); await sleep(300);      // (.37) no ding for a right answer, in the demonstration too
   await setScene("one");
   S.qIntroSeen=true; save();
   await narrate("q_turn");
@@ -3348,7 +3363,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(r.ok && t.text && t.text.reveal==="after"){ textReveal(t); }
   else if(r.ok && t.text && t.text.stage==="W3" && t.text.a) textShow(t.text.A, t.text.a, null);       // the looser stage: the written answer comes only now, after the response
   LAST_TEST={id:t.id, ok:!!r.ok, retest};
-  if(r.ok){ smile(true); rest(); await ding(); }        // Jon 9 Nov: right = the teacher just smiles (no nod, no pointing, no echo)
+  if(r.ok){ rest(); }        // (.37, Jon 12 Nov 21:00) a right answer gets nothing: no ding, no smile, no pause; the next task follows
   return r.ok;
 }
 let LAST_TEST={id:null, ok:false, retest:false};      // (.25) the confirmation line ("Oui, trois.") follows only a test answered right first time
@@ -3457,10 +3472,11 @@ async function correction(task, nth, how=""){
   await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task); })()]);
 }
 // A part's error is recorded for its delayed tests: first at the end of the next exercise, then at the start of the next lesson.
-function scheduleDelayed(part, anchor){
+function scheduleDelayed(part, anchor, taskId){
   const key=ctx.exKey.replace(" (delayed)","")+"/"+part.id;
   let d=S.delayed.find(x=>x.key===key);
   if(!d){ d={key, lesson:ctx.lesson, ex:ctx.ex, part:part.id, passed:0}; S.delayed.push(d); }
+  if(taskId){ d.tasks=d.tasks||[]; if(!d.tasks.includes(taskId)) d.tasks.push(taskId); }      // (.37) step 7: only the tasks that had an error
   d.passed=0;                                   // a failed delayed test starts the count again
   d.dueAfterEx = anchor.afterEx;                // run when this exercise has finished
   d.dueLessonStart = anchor.lessonStart;        // and when this lesson starts
@@ -3482,6 +3498,15 @@ const goesWith = (it, i, a) => isCountBefore(it, a[i+1]) || isNameModel(it, a[i+
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
+  /* (.37; Jon, 12 Nov 20:00: "to make the correction procedure less punishing, change steps 5 and 7 of the procedure so only the
+     task where the error occurred is repeated, not the whole part") run {only: Set of task ids}: step 5 (the exercise again) and
+     step 7 (the delayed tests) give only the tasks that had an error, each with what goes with it (the action before "Tu fais quoi ?",
+     a model learner's own answer before "Et toi ?", the figure after a tap). */
+  if(run && run.only){ const keep=new Set(), a=part.items;
+    a.forEach((it,i)=>{ if(it.type!=="task" || !run.only.has(it.id)) return; keep.add(it);
+      for(let j=i-1; j>=0 && goesWith(a[j], j, a); j--) keep.add(a[j]);
+      for(let j=i+1; j<a.length && goesWith(a[j], j, a); j++) keep.add(a[j]); });
+    return a.filter(x=>keep.has(x)); }
   if(run==="first")  return part.items;                                            // models, leads and tests
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
   if(run==="repeat") return part.items.filter((it,i,a)=>it.type==="task" || !shown.has(it) || goesWith(it, i, a));
@@ -3502,7 +3527,7 @@ async function trialLimit(it, part, anchor){
   else { await gestureEar(); await pointAt(it.cueVoice ? it.cueAt : it); await say(answerUnits(it)); }
   rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
-  scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null});
+  scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null}, it.id);
 }
 async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={}, anchor}={}){
   let hadError=false; const shown=new Set(); const partRepeats={};
@@ -3515,11 +3540,12 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
     if(limitedParts.has(part.id)){ trace("part "+part.id+" ("+run+"): left at an own-name task's seven-trial limit, not run again in this exercise"); continue; }
     let items=ask(itemsFor(part, run, shown));
     if(!items.length) continue;
-    ctx.part=part.id; trace("part "+part.id+" ("+run+"): "+part.label);
+    ctx.part=part.id; trace("part "+part.id+" ("+(run && run.only ? "only the tasks with an error: "+items.filter(x=>x.type==="task").map(x=>x.id).join(", ") : run)+"): "+part.label);
     judgePart = {on: part.items.some(x=>(x.expect||[])[0]==="ON"), elle: part.items.some(x=>(x.expect||[])[0]==="ELLE")};
-    let i=0, prevTest=false, prevTarget=null, prevItem=null;
+    let i=0, prevTest=false, prevTarget=null, prevItem=null, rewound=false;
     while(i<items.length){
       const it=items[i];
+      if(rewound && it.type==="model" && shown.has(it)){ i++; continue; }      // (.37) going back two tasks: models already seen are not said again
       if(prevItem) await sleep(pace());                       // a moment between one direction and the next (early lessons)
       w1Run = !!(it.w1 && prevItem && prevItem.w1); holdHand = !!(items[i+1] && items[i+1].hand);
       if(it.type==="tapshow"){ await presentTapShow(it); shown.add(it); prevTest=false; prevItem=it; i++; continue; }
@@ -3540,7 +3566,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       const ok=await presentTest(it,{firstSeen, atoi:!prevTest, think:thinkTime(it,{prevTarget, firstOfItem})});
       prevTest=true; prevTarget=it.target; prevItem=it;
       if(ok){ i++; continue; }
-      hadError=true; scheduleDelayed(part, anchor);
+      hadError=true; scheduleDelayed(part, anchor, it.id);
       /* The learner said the question back: that is not a wrong French answer but not knowing what is asked for. The
          narrator (English, as in the introduction) says so once, then the usual correction follows. */
       if(lastRepeatedCue){ lastRepeatedCue=false; rest(); await narrate("onlyanswer"); }
@@ -3584,7 +3610,13 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"PART NOT FIRM after "+PART_REPEATS+" repeats: moved on; it comes back as a delayed test", heard:[]});
         trace("part "+part.id+" not firm after "+PART_REPEATS+" repeats: moved on"); break; }
       await flashIcon("restart");
-      items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; prevTest=false; prevTarget=null; prevItem=null;
+      /* (.37, Jon 12 Nov 21:00: "for step 3 it should go back two 'things': two problems, sounds, pictures, etc. Where it is closer to the
+         start of the part it should go back to the start of the part. This is a time saving device.") back two tasks from the one with
+         the error, with what goes with the first of them; within the first two tasks of the part, back to its start */
+      { let j=i, back=0; while(j>0 && back<2){ j--; if(items[j].type==="task") back++; }
+        if(back<2){ items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; trace("step 3: back to the start of the part"); }
+        else { while(j>0 && goesWith(items[j-1], j-1, items)) j--; i=j; rewound=true; trace("step 3: back two tasks, to "+(items[j].id||items[j].type)); } }
+      prevTest=false; prevTarget=null; prevItem=null;
     }
   }
   return hadError;
@@ -3599,10 +3631,11 @@ async function runExercise(li, ei){
   const firstSeen=new Set(), errorsByTask={};
   let hadError = await runParts(ex.parts, {firstSeen, errorsByTask, anchor});
   if(hadError){
-    // NIFDI step 5: a short exercise with an error is gone through again from the beginning, as its test tasks (no models)
-    ph("exercise again (step 5)"); trace("step 5: exercise again from the beginning");
-    await flashIcon("restart");
-    await runParts(ex.parts, {run:"test", firstSeen, errorsByTask, anchor});
+    // NIFDI step 5 (.37, Jon 12 Nov 20:00): only the tasks that had an error in this exercise are asked again, not the whole exercise
+    const only=new Set(Object.keys(errorsByTask).filter(k=>!k.startsWith("__") && !(errorsByTask.__limited||new Set()).has(k)));
+    if(only.size){ ph("the tasks with an error again (step 5)"); trace("step 5: the tasks with an error again: "+[...only].join(", "));
+      await flashIcon("restart");
+      await runParts(ex.parts, {run:{only}, firstSeen, errorsByTask, anchor}); }
   }
   S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
 }
@@ -3618,7 +3651,7 @@ async function runDelayed(d, anchor){
   curSceneKey=null;
   await flashIcon("bookmark");
   trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
-  const hadError = await runParts([part], {run:"test", anchor});
+  const hadError = await runParts([part], {run: (d.tasks && d.tasks.length) ? {only:new Set(d.tasks)} : "test", anchor});
   if(!hadError){ d.passed=(d.passed||0)+1; if(d.passed>=2) S.delayed=S.delayed.filter(x=>x!==d); }
   save();
 }

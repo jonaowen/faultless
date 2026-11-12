@@ -7,10 +7,10 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.36` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-12.37` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
-  dise5c, dise, flat — must stay byte-identical). Design log §17–§42 has every ruling and change since 11 Nov.
+  dise5c, dise, flat — must stay byte-identical). Design log §17–§47 has every ruling and change since 11 Nov.
 - **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
   the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
   narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
@@ -46,7 +46,13 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.36`: .35 with no exercise over 18 responses (Jon, run 17:53; design log §42). Long exercises
+- **Live version:** `2026-11-12.37`: the rulings of 12 Nov evening (design log §44–§47). Formats are whole again (the split is
+  withdrawn). No scripted delayed tests. Repeats are trimmed to DISE's count, counted strictly with no individual turns
+  (Lesson 1: 123 responses against DISE's 83; the rest of the gap is content, see §47). Corrections: step 3 goes back two
+  tasks; steps 5 and 7 give only the task with the error. No ding, smile or pause after a right answer. Animations are 2×
+  faster, with waits halved. The board shows only on items that use its words. The count turn is "À toi. Compte.".
+  Checks: gate Lessons 1–5 passed; quiet scripted run Lessons 1–2, 249 right, 0 faults (Lesson 1 in 7.9 min, was 13.5);
+  run with an error every 7th answer, 0 faults; smoke clean. Earlier: `2026-11-12.36`: .35 with no exercise over 18 responses (Jon, run 17:53; design log §42). Long exercises
   are split between parts, with the continuations after the next exercise. Lessons 1–10 go from 151 exercises to 290 with
   the same items, checked item for item. A learner's "Un, deux …" is also accepted on a count of feminine things (both are
   French; corpus evidence in the §41 addendum). Checks: quiet scripted run Lessons 1–3, 611 right, 164 taps, 0 faults;
@@ -153,6 +159,14 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 ## 2. Jon's standing rules (keep all of them)
 
 **Teaching design**
+- **No feedback for a right answer; step 3 goes back two tasks (Jon, 12 Nov 21:00).** No ding, no smile, no pause after a
+  right answer: the absence of a correction is the feedback. After a correction the app goes back two tasks (to the
+  part's start when the error was in its first two). The board stays while parts of its sentences are said.
+- **Formats whole, in line with DISE; corrections repeat only the task (Jon, 12 Nov 2026 20:00).** Never split an exercise
+  into pieces placed elsewhere. No lesson or track has more responses than DISE's (`v6.trim_to_dise`); fewer is fine (Jon, 21:00: "deliberately design the programme to be leaner than we think is needed"; no refill to DISE's count; what is taught, the progression, the variety and the repeats per lesson stay like DISE's). No scripted
+  delayed tests: the app gives a delayed test of only the task that had an error. Correction steps 5 and 7 repeat only
+  that task, not the exercise or the part. Long, uniform lessons tire the learner: Lesson 1 must be about as short as
+  DISE's (about 7 minutes, perfect learner).
 - **No English about French, ever (Jon, 12 Nov 2026 16:45).** English may explain how the app works, never a French
   rule: that breaks teaching wholly in the target language and invites translating into and out of English. The
   programme begins inductively, from examples only. Once learners have enough French to follow a rule stated in
