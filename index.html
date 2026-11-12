@@ -23,6 +23,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1
 #flag.hit{background:#f3d36b;opacity:1}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+/* (.27) icons that fade in and out over the pictures (the end-of-exercise tick, the bookmark …) take no touch: at opacity 0 the tick
+   still lay over the middle picture and swallowed taps meant for it (taptouch.js) */
+#scene .fade, #actBox{pointer-events:none}
 @keyframes tapdown{0%,55%,100%{transform:translateY(0)}75%{transform:translateY(7px)}}
 #tapSig .tapHand{animation:tapdown 1.1s ease-in-out infinite;transform-box:fill-box}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
@@ -385,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.26";
+const APP_VERSION="2026-11-12.27";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -2604,6 +2607,7 @@ function findUnit(str, unit, from, fwdOnly){
 const wordsIn = s => (s.match(/[^\s:?!.,;…«»]+/g)||[]).length;
 /* A unit starts to be said (meta: its clip's {dur, w: the onset in ms of each written word}; lag: ms until the sound is out). */
 function textUnit(unit, meta, lag){
+  countUnit(unit, meta, lag);
   const c=TXT.ctx; if(!c) return; if(c.board) return boardUnit(unit, meta, lag); const w=c.w; let str=null, parts=null, r=null;
   if(w.reveal==="after" && !c.revealed) return;       // a test of hearing (text.reveal "after"): nothing is written while it is said and answered
   if(w.stage==="W1"){ if(w.focus!=null) return; r=findUnit(w.S, unit, 0); if(!r) return; str=w.S; parts=w.p; }
@@ -2648,7 +2652,8 @@ function boardShow(b){
       svg+=`<path d="M${(r.xs[a]+1).toFixed(1)} ${(y+fs*0.12).toFixed(1)} H${(r.xs[e]-1).toFixed(1)}" stroke="#22303f" stroke-width="2.4" stroke-linecap="round"/>`; a=e; }
     chars.forEach((ch,j)=>boxes.push({i:ch.i, part:ch.part, x:r.xs[j], x2:r.xs[j+1], y, fs, c:ch.c}));
     at+=ln.length+1; });
-  const x0=X0-14, x1=X0+W+14, top=y0-fs*1.15, bot=y0+(n-1)*lh+fs*0.6;
+  const x0=X0-24, x1=X0+W+24,      // (.27) more room at the sides: the outline (4 px out) and the first letter must not touch the frame
+  top=y0-fs*1.15, bot=y0+(n-1)*lh+fs*0.6;
   TXT.g.innerHTML=`<rect x="${x0.toFixed(1)}" y="${top.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="8" fill="#f2f6f1" stroke="#9fb3a3" stroke-width="1.6"/><g id="txtBoxes"></g><g id="txtLine">${svg}</g>`;
   TXT.cur="board"; BOARD.key=key; BOARD.b=b; BOARD.boxes=boxes; TXT.g.setAttribute("opacity",1);
 }
@@ -2772,6 +2777,11 @@ function buildStrip(spec, above){
    no microphone (green means "speak", and only that): a hand over the pictures that can be tapped, its finger going down and up
    as if tapping, and a dashed outline round each of those pictures. It goes when the learner taps or the time is up. */
 const TAPSIG = mkLayer("tapSig", "room");
+/* (.27; Jon's run of 12 Nov 10:59: "I have to touch several times for it to actually react") Found with real touch events
+   (taptouch.js): the model's hand, hidden with opacity 0 but still there over the card it had tapped, and the small hands of
+   the tap signal took the touches meant for the card under them. Everything drawn over the pictures is now see-through to
+   touches, and the tap areas (the whole card) are always the top layer. */
+[TAPSIG, HANDL, TXT.g, STRIP.g].forEach(g=>{ g.style.pointerEvents="none"; });
 function tapSignal(slots){
   TAPSIG.replaceChildren(); if(!slots || !slots.length) return;
   const bs=slots.map(boundsOf).filter(Boolean); if(!bs.length) return;
@@ -2787,14 +2797,33 @@ function tapSignal(slots){
    else is ignored. TAP_WINDOW: the usual wait for a first word (7 s) plus two seconds; no tap in it is a wrong response. */
 const TAP_WINDOW = 9000;
 let tapResolver=null;
-function tapWait(targets, ms){
-  return new Promise(res=>{ const t0=performance.now(); TAPL.replaceChildren();
-    const done=v=>{ if(!tapResolver) return; tapResolver=null; clearTimeout(timer); TAPL.replaceChildren(); res(v); };
-    const timer=setTimeout(()=>done(null), ms); tapResolver=slot=>done({slot, ms:Math.round(performance.now()-t0)});
-    for(const slot of targets){ const b=boundsOf(slot); if(!b) continue; const r=document.createElementNS(svgNS,"rect");
-      r.setAttribute("x",b.x); r.setAttribute("y",b.y); r.setAttribute("width",b.w); r.setAttribute("height",b.h); r.setAttribute("rx",b.r||10); r.setAttribute("fill","#fff"); r.setAttribute("fill-opacity","0.001");
-      r.dataset.slot=slot; r.style.cursor="pointer"; r.style.pointerEvents="all"; r.addEventListener("pointerdown", e=>{ e.preventDefault(); if(tapResolver) tapResolver(slot); }); TAPL.appendChild(r); } });
+/* The tap areas (.27): armed as soon as the cue starts (tapArm), so that a touch while Marie is still speaking is not lost: it
+   is kept and becomes the response the instant the turn opens (logged "during the cue"). The whole card is the area. */
+const TAPARM = {targets:null, early:null, t0:0};
+function tapArm(targets){
+  TAPL.replaceChildren(); TAPL.parentNode.appendChild(TAPL); TAPARM.targets=targets; TAPARM.early=null; TAPARM.t0=performance.now();
+  for(const slot of targets){ const b=boundsOf(slot); if(!b) continue; const r=document.createElementNS(svgNS,"rect");
+    r.setAttribute("x",b.x-4); r.setAttribute("y",b.y-4); r.setAttribute("width",b.w+8); r.setAttribute("height",b.h+8); r.setAttribute("rx",b.r||10); r.setAttribute("fill","#fff"); r.setAttribute("fill-opacity","0.001");
+    r.dataset.slot=slot; r.style.cursor="pointer"; r.style.pointerEvents="all"; r.style.touchAction="manipulation";
+    r.addEventListener("pointerdown", e=>{ e.preventDefault(); e.stopPropagation(); tapTouched(slot, e); }); TAPL.appendChild(r); }
 }
+function tapTouched(slot, e){
+  if(tapResolver){ touchLog(e, slot, "accepted"); tapResolver(slot); }
+  else if(TAPARM.targets && !TAPARM.early){ TAPARM.early={slot, at:Math.round(performance.now()-TAPARM.t0)}; touchLog(e, slot, "kept: during the cue"); }
+  else touchLog(e, slot, "ignored: a tap was already taken");
+}
+function tapWait(targets, ms){
+  if(!TAPARM.targets) tapArm(targets);
+  return new Promise(res=>{ const t0=performance.now();
+    const done=v=>{ if(!tapResolver) return; tapResolver=null; clearTimeout(timer); TAPL.replaceChildren(); TAPARM.targets=null; res(v); };
+    const timer=setTimeout(()=>done(null), ms); tapResolver=slot=>done({slot, ms:Math.round(performance.now()-t0)});
+    if(TAPARM.early){ const e=TAPARM.early; trace("tap during the cue taken as the response: "+e.slot+" ("+e.at+" ms after the cue began)"); done({slot:e.slot, ms:0, early:true}); } });
+}
+// every touch on the screen goes into the trace: when, where, what it hit, and whether a tap task took it
+function touchLog(e, slot, what){ try{ trace("touch event: "+what+" "+(slot||"")+" at "+Math.round(e.clientX)+","+Math.round(e.clientY)+" ("+(e.pointerType||"?")+")"); }catch(_){} }
+document.addEventListener("pointerdown", e=>{ if(e.target && e.target.closest && e.target.closest("#tapLayer")) return;
+  const el=e.target, what=el ? (el.id || (el.closest && el.closest("[id]") && el.closest("[id]").id) || el.tagName) : "?";
+  touchLog(e, "", tapResolver ? "not on a picture that can be tapped (hit "+what+")" : "no tap asked for (hit "+what+")"); }, true);
 const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; const m=/^s(\d+)$/.exec(slot), x=m && sc && sc.row && sc.row[+m[1]];
   return !x ? slot : x.person ? VOCAB[x.person].name : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "")+(x.value!=null && x.is==="numeral" ? " "+x.value : ""); };
 // the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
@@ -2817,6 +2846,7 @@ async function presentTapShow(a){
 let holdHand=false;
 async function presentTap(t, {retest=false, firstSeen=null}={}){
   ph(retest ? "retest (tap)" : "test (tap)"); rest();
+  tapArm(t.targets);                     // (.27) a touch while the cue is said counts
   await say(t.questionUnits, "tutor", undefined, 0);
   if(t.touch && t.touch.silent) await silentTouches(t.touch.count);
   textAtResponse(t); signal(false); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal; no green border, no microphone)");
@@ -2849,7 +2879,7 @@ async function touchListen(task, expect, alsoOk){
   try{ return await listen(expect, alsoOk); } finally{ LISTEN.onRaw=null; LISTEN.longMs=0; clearInterval(timer); handHide(); }
 }
 function listenT(task, expect, alsoOk){
-  textAtResponse(task);
+  COUNT.on=false; textAtResponse(task);
   // (.25) a count the learner says at the touches: "À toi." (by "you"), and "Répète : un, deux." after Marie's count (by "both": no leads, so the learner says it after her)
   if(task.touch && !task.touch.silent && (task.touch.by==="you" || task.touch.by==="both")) return touchListen(task, expect, alsoOk);
   return listen(expect, alsoOk);
@@ -2881,6 +2911,17 @@ async function convIntro(it){
 }
 // a command answered by a tap ("Danse." with picture cards of actions): the learner's figure then does it
 const isCommandTap = t => !!(t.scene && t.scene.row && t.targets.some(s=>{ const m=/^s(\d+)$/.exec(s), x=m && t.scene.row[+m[1]]; return x && x.is==="picture card"; }));
+/* (.27; Jon's run of 12 Nov 10:59: "in the model [the hand] doesn't [move]") The counting hand of a model was moved by the written
+   line's outline (textUnit -> onPart); with the written lines gone (.26: boards) nothing moved it. Now every number word said by
+   Marie or a model learner moves the hand to the next thing and touches it, at the word's onset in the clip ("w"), whether or
+   not anything is written. */
+const COUNT = {on:false, n:0, k:0, by:"", timers:[]};
+function countUnit(unit, meta, lag){
+  if(!COUNT.on) return; const u=String(unit), dur=(meta && meta.dur)||0, words=[...u.matchAll(/[^\s:?!.,;…«»]+/g)];
+  words.forEach((m,wi)=>{ if(!NUM_WORDS.has(lettersOf(m[0]))) return; const k=COUNT.k++; if(k>=COUNT.n) return;
+    const at=(meta && meta.w && meta.w[wi]!=null) ? meta.w[wi] : dur ? dur*0.9*m.index/Math.max(1,u.length) : 0;
+    COUNT.timers.push(setTimeout(()=>handTouch(k, COUNT.by), Math.max(0,(lag||0)+at))); });
+}
 const NUM_WORDS = new Set(["un","une","deux","trois","quatre","cinq","six","sept","huit","neuf","dix"]);
 // every item, once its pictures are on the screen: its writing, and the hand
 function itemStart(it){
@@ -2888,9 +2929,9 @@ function itemStart(it){
   const counting = it.touch && !it.touch.silent;
   // counting at the touches: the hand touches the next thing at the onset of each number word said (Marie's, Pierre's, Sylvie's;
   // and in Marie's "Répète : un, deux." before the learner's count)
-  let nTouch=0;
-  TXT.onPart = counting && it.touch.by!=="you" ? (pi, isAnswer, txt)=>{ if(NUM_WORDS.has(lettersOf(txt||""))){ handTouch(nTouch % it.touch.count, it.touch.by==="both" ? "teacher" : it.touch.by); nTouch++; } }
-    : it.sweep ? (pi, isAnswer)=>{ if(isAnswer && it.sweep[pi]) pointAt(it.sweep[pi]); } : null;      // sweep: the gold border is on card i while phrase i is said
+  COUNT.on = !!(counting && it.touch.by!=="you"); COUNT.n = counting ? it.touch.count : 0; COUNT.k = 0; COUNT.by = counting && it.touch.by==="both" ? "teacher" : counting ? it.touch.by : "";
+  COUNT.timers.forEach(clearTimeout); COUNT.timers=[];
+  TXT.onPart = it.sweep ? (pi, isAnswer)=>{ if(isAnswer && it.sweep[pi]) pointAt(it.sweep[pi]); } : null;      // sweep: the gold border is on card i while phrase i is said
   if(it.hand) handAt(it.hand.by, it.hand.at);
   else if(counting && it.touch.by!=="you") handHover(it.touch.by);
   else handHide();
@@ -3024,7 +3065,7 @@ async function youDoIntro(){
   ph("introduction: the learner's figure"); rest();
   // (.25: said before the first command the learner answers by a tap; the pictures make way for the figure while it is said)
   const fr=document.getElementById("frameRow"), op=fr.style.opacity, tg=TXT.g.getAttribute("opacity"); fr.style.opacity=0; TXT.g.setAttribute("opacity",0); const kept=ACTBOX.key;
-  actBox("you", "stop", {still:true}); await narrate("you_do"); await narrate("you_do_b"); actBox(null);      // "This is you. When Marie tells you to do something, tap the picture of it … 'I was dancing.'"
+  actBox("you", "stop", {still:true}); await narrate("you_do"); await sleep(300); await narrate("you_do_b"); await sleep(400); await narrate("you_do_c"); actBox(null);      // (.27) the two questions said as questions, "are" / "were" stressed      // "This is you. When Marie tells you to do something, tap the picture of it … 'I was dancing.'"
   fr.style.opacity=op; TXT.g.setAttribute("opacity", tg==null?1:tg);
   S.youDoSeen=true; save();
 }
