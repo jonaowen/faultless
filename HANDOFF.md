@@ -10,7 +10,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 - **Live:** `2026-11-12.36` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
-  dise5c, dise, flat — must stay byte-identical). Design log §17–§45 has every ruling and change since 11 Nov.
+  dise5c, dise, flat — must stay byte-identical). Design log §17–§46 has every ruling and change since 11 Nov.
 - **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
   the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
   narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
@@ -153,6 +153,9 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 ## 2. Jon's standing rules (keep all of them)
 
 **Teaching design**
+- **No feedback for a right answer; step 3 goes back two tasks (Jon, 12 Nov 21:00).** No ding, no smile, no pause after a
+  right answer: the absence of a correction is the feedback. After a correction the app goes back two tasks (to the
+  part's start when the error was in its first two). The board stays while parts of its sentences are said.
 - **Formats whole, in line with DISE; corrections repeat only the task (Jon, 12 Nov 2026 20:00).** Never split an exercise
   into pieces placed elsewhere. No lesson or track has more responses than DISE's (`v6.trim_to_dise`); fewer is fine (Jon, 21:00: "deliberately design the programme to be leaner than we think is needed"; no refill to DISE's count; what is taught, the progression, the variety and the repeats per lesson stay like DISE's). No scripted
   delayed tests: the app gives a delayed test of only the task that had an error. Correction steps 5 and 7 repeat only
