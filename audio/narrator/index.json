@@ -56,11 +56,59 @@
 "dur": 4.28
 },
 "you_do": {
-"text": "This is you. When Marie tells you to do something, you'll see yourself do it. Imagine it's really you.",
-"dur": 5.92
+"text": "This is you. When Marie tells you to do something, tap the picture of it, and you'll see yourself do it. Imagine it's really you.",
+"dur": 6.73
 },
 "you_do_b": {
 "text": "Later, Marie will ask you what you are doing, and what you were doing, and you'll answer as if you had done it yourself. For example, if she asks 'What are you doing?', you answer 'I am dancing.' If she asks 'What were you doing?', you answer 'I was dancing.'",
 "dur": 13.76
+},
+"words": {
+"text": "What is said is also written. The word with a box round it is the word being said.",
+"dur": 4.66
+},
+"blue": {
+"text": "Blue letters are not said.",
+"dur": 1.44
+},
+"underline": {
+"text": "Letters with a straight line under them make one sound together.",
+"dur": 3.06
+},
+"wavy": {
+"text": "A wavy line under letters means they don't sound the way you'd expect. Listen to how Marie says them.",
+"dur": 4.91
+},
+"lis": {
+"text": "When Marie says 'Lis', she doesn't say the words. You read the words in the box aloud.",
+"dur": 4.85
+},
+"tapmodel": {
+"text": "Sometimes Marie asks for a picture to be touched. Watch the hand tap it.",
+"dur": 3.85
+},
+"tap": {
+"text": "When this hand appears over the pictures, don't speak. Tap the picture Marie asks for.",
+"dur": 4.79
+},
+"count": {
+"text": "A hand touches each thing in turn, and Marie says a number at each touch.",
+"dur": 4.56
+},
+"count_you": {
+"text": "Now it's your turn to count. Say one number each time the hand touches a thing.",
+"dur": 4.08
+},
+"asker": {
+"text": "Sometimes Pierre or Sylvie asks the question. The green ring shows who is asking, and its tail points to the one who must answer. A hand on their own name tag means the question is about them.",
+"dur": 10.72
+},
+"lis_a": {
+"text": "When Marie says,",
+"dur": 0.92
+},
+"lis_b": {
+"text": "she doesn't say the words. You read the words in the box aloud.",
+"dur": 3.32
 }
 }
