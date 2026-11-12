@@ -54,5 +54,13 @@
 "swamped": {
 "text": "Put your phone on a flat surface. The microphone is picking up a loud noise.",
 "dur": 4.28
+},
+"you_do": {
+"text": "This is you. When Marie tells you to do something, you'll see yourself do it. Imagine it's really you.",
+"dur": 5.92
+},
+"you_do_b": {
+"text": "Later, Marie will ask you what you are doing, and what you were doing, and you'll answer as if you had done it yourself. For example, if she asks 'What are you doing?', you answer 'I am dancing.' If she asks 'What were you doing?', you answer 'I was dancing.'",
+"dur": 13.76
 }
 }

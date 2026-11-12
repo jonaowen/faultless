@@ -11,7 +11,21 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-10.23`: Lessons 1–10, built from `dev/fieldtest/course_dise5b` (the course of record).
+- **Live version:** `2026-11-11.24` (interim, from the first naive tester's run of 11 Nov 21:12): Lessons 1–10 from
+  `dev/fieldtest/course_dise5c` (= `course_dise5b` with no leads, "do" tasks turned into "figure" tasks, and in
+  Lessons 1–2 the own-name units with the lit tag and no "Je m'appelle comment ?" beside own-name tests;
+  `reports/dise5c_changes.md`). Own-name errors are never corrected by another person's own-name sentence: the app plays
+  the learner's own earlier right answer ("own-name correction: own recording", clip id in the log's `modelClip` and in
+  the run file) or lights the learner's name tag ("own-name correction: name tag"); after an own-name seven-trial limit
+  the app goes on to the next part. A learner card with the typed name sits beside Pierre and Sylvie on every own-name
+  item, and the tag of whoever must say their name is lit. Corrections give one model, then the learner (no repeated
+  models, no extra retests, no app-made leads). Commands are acted by the learner's own named figure with nothing
+  asked, introduced once by the narrator (`you_do`, `you_do_b`). Count answers are heard against number words only.
+  Checks: oracle 1–10 2265/2265; selfjudge 0 refused / 0 wrongly accepted; real recordings 323/348 (L4 list), 313/348
+  (L10 list; the 3 fewer than .23 are machine-load variation, the lists are identical except counts); release gate
+  passed (teacher "Tu manges." re-recorded); new harness tests `ownfix.js`, `onemodel.py`, `figshots.js`.
+  **The revised course `course_dise6` is next (.25), not in the app yet;** see design log §17–§34.
+  .23 for reference: `2026-11-10.23`: Lessons 1–10, built from `dev/fieldtest/course_dise5b` (the course of record).
   New since .22 (all from the run of 11 Nov 08:28): (1) every model and learner clip that the automatic check did not
   hear was re-recorded (Sylvie's "Une." was unintelligible and cost a real error), and a **release gate** now fails the
   build on any answer clip the app's own listener does not hear as its line
@@ -91,6 +105,60 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 - **Never stop and wait for Jon on long tasks** unless he says to pause.
 - **The ElevenLabs key was deleted;** never reuse it.
 
+- **Rulings of 11 Nov 2026 (design log §17 on; they govern the revision `course_dise6`):**
+  - *Priority order.* The content analysis, English speakers' common errors, the big ideas with the single
+    interpretation principle, and not confusing the artificial learner all win over emulating DISE. DISE is compared
+    last, task by task: an item later than DISE stays only for a specific reason in the French; an item with no reason
+    ("not ambitious enough") moves, and only that item.
+  - *Nothing assumed.* Every French complication (no article, gendered form, elision, liaison…) is taught explicitly
+    with plenty of practice before it is relied on (`fieldtest/complications.md`).
+  - *Responses.* At or above DISE's count per lesson and track; lessons may be as long as needed.
+  - *Written words* are shown: the word being said is outlined, silent letters are blue, a new written word goes part
+    by part first (teacher says the part, learner says it), then whole sentence, then looser formats.
+  - *Natural French in what is only heard.* Teacher speech uses the natural wording even with a form not yet taught
+    ("Touche le livre."), where the response does not depend on it. It builds receptive French.
+  - *Receptive before expressive,* programmed deliberately, as DISE does: a stage of hearing and showing understanding
+    (tap, action, yes/no) before a form must be said.
+  - *The 10% rule, defined.* "New" means a new FORMAT: a new track, or a new format within a track that teaches a
+    genuinely new response pattern or grammar construction. From about Lesson 5 only about 10% of a lesson is new
+    formats; the rest is old formats. New nouns or other words slotted into an old format are not "new" and may run
+    well above 10%. Measured on DISE Lessons 5–8 this is four or five new-format exercises a lesson (about 24% of
+    responses); Jon ruled (11 Nov) that the limit is DISE's measured level, not a strict 10%, and accepted the
+    classification of DISE's formats (design log §26; audit C17).
+  - *ASSUME NOTHING: the level of specificity (Jon's acid test, le / les).* Choosing examples is not enough. Where the
+    learner must tell two forms apart by ear that a naive English ear merges (le / les, un / une, …), a purpose-built
+    format makes them attend to the difference before it is relied on: the two forms said adjacent on a single card
+    and a group ("Le livre, les livres"), examples built up one at a time, the differing piece said alone for each
+    highlighted card, a slow version first and then normal rate, Pierre and Sylvie lead, then the learner, half and
+    half in unpredictable order. Every teaching step is designed for what it makes the learner attend to, and written
+    at that level of detail (`fieldtest/component_analysis.md`, sound-pair inventory in `fieldtest/complications.md`).
+  - *Every test discriminates every component* (Jon's "Touche les trois livres" check): for each word that matters
+    there is a minimally different alternative on screen (two books beside three books; three pens beside three
+    books), and the guess rate is known.
+  - *No lead steps* (Jon, 11 Nov evening): nothing where the learner speaks at the same time as the teacher or a model
+    learner ("Avec moi"). In an app the learner always comes in late or not at all. A first production is model, then
+    "Répète".
+  - *One model, then the learner.* A correction gives the right answer once and then asks; no repeated models and no
+    run of immediate retests. In the course, never two identical models in a row.
+  - *The learner never performs actions* (Jon, 11 Nov evening: no user will stand, dance or smile; the first naive tester said the word
+    instead, because the green border and the ding always meant "speak"). The learner's own figure on screen, with a
+    name tag reading their name, stands in for them: a command is answered by tapping the action picture, then the
+    figure does it; "je / tu" and the tenses are about the figure. Speaking and tapping have different signals, and a
+    tap format comes by Lesson 1 Exercise 2 so the learner never decides that every answer is spoken. The narration
+    before the first figure task (Jon's content, 11 Nov): "This is you. When Marie tells you to do something, [tap the
+    picture of it, and] you'll see yourself do it. Imagine it's really you. Later, Marie will ask you what you are
+    doing, and what you were doing, and you'll answer as if you had done it yourself. For example, if she asks 'What
+    are you doing?', you answer 'I am dancing.' If she asks 'What were you doing?', you answer 'I was dancing.'"
+  - *Written prompts follow RMT Grade K Reading* (TG pp. 57–58, screenshots in `dev/source/rmt/`): **blue** = a letter
+    that makes no sound (in RMT it also signals that another letter's sound changes: final E, the second letter of
+    ea / ai); **underline** = letters that go together and make one sound; **wavy underline** = letters that do not make
+    the sounds the learner has been taught. Prompts are non-specific (they direct a strategy), each is taught before it
+    is relied on, and they are faded later. For French: blue for every silent letter (the s of "les", the e of "une");
+    underline for one-sound groups (ou, oi, ch, eau, au, ai, eu, qu, gn, -er / -ez, and nasals an / en / on / un / in);
+    wavy for irregular letters (the e of "femme").
+  - *Touch-counting* in Jon's format; *tap responses* on pictures.
+  - "I am / you are" with professions stays at Lesson 20.
+
 ## 3. The app (`index.html`, one file)
 
 - **Course:** `course/lessonN.js`, generated by `dev/appconv/convert.py` from `dev/fieldtest/course/L001-L020.json`.
@@ -141,6 +209,7 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 10 Nov 21:11 | Jon, rest of L2 on .20 | 46 of 47 right; **"Trois." for two shoes** shown beside one pen (three things on the screen; the question does not say what to count) | .21, course (cause C10: `gen/countalone.py`) |
 | 10 Nov 21:33 | Jon, start of L3 on .20 | no learner error: the phone lay on his chest and a low rumble (heartbeat, breathing; 99 % of the energy under 300 Hz, at full scale) drowned his voice; one "Lève-toi" came out as "trois" and was marked wrong | .22 (low-cut filter, spoken warning) |
 | 11 Nov 08:28 | Jon, L3 on .22 | 174 of 177 right. (1) **Sylvie's model "Une." was unintelligible** (he could not tell un from une; said "un" for the key). (2) Pierre's "Et moi ?" and (3) Marie's "Je m'appelle comment ?" at the start of Ex 13 both answered "Je m'appelle Jon." after 2+ s: a question about the asker answered about himself (only Marie had ever asked it) | .23: clips re-recorded with a release gate; new-asker rule in the generator (design log §16) |
+| 11 Nov 21:12 | the first naive tester, L1 Ex 1–5 on .23 | 134 answers, 15 real errors: 12 own-name answers with the name the model learner had just said (the own-name correction supplies it; she worked out "what is your name?" aloud in English and was right from then on); "Je m'appelle [own name]." ×2 for "Je m'appelle comment ?" (the question opens with her own answer); "Marie." for "Et toi ?" after three corrected "Marie."; one listener error ("trois" heard as "lève-toi" in a count). the run's doctor file in the dev bundle (`dev/qa/`) | next |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.
