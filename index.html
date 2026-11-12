@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-12.29";
+const APP_VERSION="2026-11-12.30";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1035,6 +1035,24 @@ function heardNow(){        // the audio-context time of the sound coming out of
     if(ts && ts.contextTime>0 && ts.performanceTime>0) return {t: ts.contextTime + (performance.now()-ts.performanceTime)/1000, how:"output timestamp"}; }catch(e){}
   return {t: actx.currentTime - (actx.outputLatency||actx.baseLatency||0), how:"reported latency"};
 }
+/* (.30, the owner's run of 12 Nov 16:01) Once, the phone's sound output fell 6.5 s behind: the browser reported it before
+   Marie's "Un ou une ?" started, and the question came out 6 s late, so she seemed to wait in silence. Before every clip the
+   app now reads that delay; over STALL_MS it starts a new audio context (the old one, with everything queued in it, is
+   closed) and plays the clip on the new one. If the new one cannot run, the old one is kept (the clip is late, as before).
+   Decoded clips (AudioBuffers) play on any context; a decode the old context had not finished is done again. */
+const STALL_MS = 1000;
+async function audioFresh(where){
+  if(!actx) return;
+  const lat=(actx.outputLatency||0)*1000;
+  if(!(lat>STALL_MS)) return;
+  trace(`AUDIO STALL — ${where}: the browser reports the speaker ${Math.round(lat)} ms behind the audio clock; starting the audio again`);
+  let fresh=null;
+  try{ fresh=new (window.AudioContext||window.webkitAudioContext)(); if(fresh.state!=="running") await Promise.race([fresh.resume(), sleep(600)]); }catch(e){}
+  if(!fresh || fresh.state!=="running"){ trace("audio restart failed ("+(fresh?fresh.state:"no context")+"): the old audio is kept"); try{ fresh&&fresh.close(); }catch(e){} return; }
+  const old=actx; actx=fresh; try{ old.close(); }catch(e){}
+  for(const cache of [TEACHER.buf, clipBufs, NARR]) for(const k of Object.keys(cache)){ const pr=cache[k]; Promise.resolve(pr).then(b=>{ if(!b && cache[k]===pr) delete cache[k]; }); }
+  trace(`audio restarted: the browser reports ${Math.round((actx.outputLatency||actx.baseLatency||0)*1000)} ms`);
+}
 let SAY_SLOW=false;
 async function playTeacher(text, onStart){
   // a question that has the same words as a statement ("Il mange ?" / "Il mange.", "Ça va ?" / "Ça va.") has its own
@@ -1046,6 +1064,7 @@ async function playTeacher(text, onStart){
   const meta=TEACHER.index && TEACHER.index[k];
   if(!meta || !TEACHER.raw[k]) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
+  await audioFresh(k);
   return new Promise(res=>{
     const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination);
     const startAt=actx.currentTime+0.03, lat=((actx.outputLatency||actx.baseLatency||0)*1000), tCall=performance.now();
@@ -1073,6 +1092,7 @@ async function narrate(key){
   audioUnlock(); trace("narrator: "+key);
   if(!(key in NARR)) NARR[key]=fetch("audio/narrator/"+key+".mp3").then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&actx.decodeAudioData(b)).catch(()=>null);
   const buf=await NARR[key]; if(!buf||!actx){ await sleep(1500); return; }
+  await audioFresh("narrator "+key);
   await new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.onended=res; src.start(actx.currentTime+0.02); });
   await sleep(250);
 }
@@ -1113,6 +1133,7 @@ const LEARNER = {index:null};       // .24: audio/learner/index.json {key: {text
 fetch("audio/learner/index.json").then(r=>r.ok?r.json():null).then(ix=>{ LEARNER.index=ix; }).catch(()=>{});
 async function playLearner(text, delay=0){       // resolves when the clip has finished (false if there is no clip)
   const buf=await learnerClip(text); if(!buf || !actx) return false;
+  await audioFresh(text);
   { const k=LEARNER_CLIP(text).replace(/^.*\//,"").replace(/\.mp3$/,""), m=LEARNER.index && LEARNER.index[k];
     textUnit(text.replace(/^(?:julie|man|woman) /,""), m || {dur:buf.duration*1000}, delay+30+((actx.outputLatency||actx.baseLatency||0)*1000)); }
   return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; const g=actx.createGain(); g.gain.value=0.9;

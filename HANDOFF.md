@@ -7,7 +7,7 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.29` (https://jonaowen.github.io/faultless). Lessons 1–5 have DISE boards and Jon's latest fixes;
+- **Live:** `2026-11-12.30` (https://jonaowen.github.io/faultless). Lessons 1–5 have DISE boards and Jon's latest fixes;
   Lessons 6–10 are still from .25. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
@@ -47,7 +47,10 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.29`: .28 plus one Lesson 1 change from Jon's run of 12 Nov 14:58 (L1E4: a new part
+- **Live version:** `2026-11-12.30`: .29 plus audio-stall recovery (Jon's run of 12 Nov 16:01: the phone's sound output
+  once fell 6.5 s behind, and Marie's "Un ou une ?" came 6 s late. Before every clip the app reads the browser's
+  output delay; over 1 s it starts a new audio context, traced "AUDIO STALL"). Checks: simulated 6.5 s stall
+  recovered (the clip played in 1.0 s); gate Lessons 1–2 passed; smoke clean. Earlier: `2026-11-12.29`: .28 plus one Lesson 1 change from Jon's run of 12 Nov 14:58 (L1E4: a new part
   "two or three at a glance": Sylvie "Deux." and Pierre "Trois." on the same apples, then the learner on the same
   things in the same look, only the number differing, before the expansion; design log §39). Checks: gate Lesson 1
   passed; smoke load clean; screens of the new part looked at. Earlier: `2026-11-12.28`: .27 plus the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (L1E7 f men drawn
