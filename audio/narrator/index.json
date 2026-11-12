@@ -114,5 +114,13 @@
 "you_do_c": {
 "text": "For example, if she asks, What are you doing? you answer, I am dancing. If she asks, What were you doing? you answer, I was dancing.",
 "dur": 9.51
+},
+"count_you_a": {
+"text": "When Marie says,",
+"dur": 1.04
+},
+"count_you_b": {
+"text": "it is the turn of the person she is talking to. They count, saying one number each time the hand touches a thing.",
+"dur": 5.92
 }
 }
