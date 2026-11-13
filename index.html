@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-13.38";
+const APP_VERSION="2026-11-13.39";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -663,7 +663,11 @@ const GEN_L1 = GEN[0] || null;
    lessons and never played once the lessons were generated (found in the run of 10 Nov 15:36: a learner answered the
    first either/or question, "Un ou une ?", by saying the question back, five times). It belongs to the first question
    of the course that the teacher asks and answers herself. */
+/* (.39) Not when the learner has already answered a question before it: on 13 Nov the first question the teacher answers herself
+   moved to the counting exercise (Lesson 1 Ex 4), after the learner had answered 'Et toi ?', 'C'est qui ?' and 'Pierre ou Sylvie ?'
+   (each shown first by Pierre and Sylvie, who say only the answer), and the narration added 15 s to an exercise already too long. */
 { let done=false; for(const L of GEN){ for(const E of L.exercises){ for(const P of E.parts){ for(const it of P.items){
+    if(!done && it.type==="task" && it.kind==="test" && (it.cue==="question" || it.cue==="you") && it.questionUnits.length && /\?\s*$/.test(it.questionUnits[it.questionUnits.length-1])) done=true;
     if(!done && it.type==="model" && it.voice==="teacher" && it.questionUnits.length && /\?\s*$/.test(it.questionUnits[it.questionUnits.length-1])){ it.qIntro=true; done=true; } } } } if(done) break; } }
 // the narrated introduction (first use only) comes before the first item of the course
 // (9 Nov 2026: Lesson 1 says no whole noun (gender track), so the introduction demonstrates on the teacher's name)
@@ -2955,7 +2959,7 @@ async function convIntro(it){
   /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
      before the FIRST task that uses its convention, models included: the two counting lines together before the first count of
      any kind ("À toi." is first said to Pierre in a model); "asker" before the first item in which Pierre or Sylvie asks */
-  if(it.touch && !it.touch.silent){ await convOnce("count"); await convOnce("count_you"); }
+  if(it.touch && !it.touch.silent){ await convOnce("count"); }      // (.39) "count_you" no longer played: Pierre and Sylvie show the turn ("À toi. Compte." and they count) before the learner's first count, and it cost 8.5 s of the counting exercise
   if(it.cueVoice) await convOnce("asker");
   /* (.35, Jon 12 Nov 17:53) "when that question type actually happens, a fair bit later in the course, you will also need to put in
      another reminder of how it works": before the first test about the learner's own figure doing something now (learnerDoing), and
@@ -2968,7 +2972,7 @@ async function convIntro(it){
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(it.board){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
   if(it.type==="tapshow") u.push("tapmodel"); if(it.tapTask) u.push("tap");
-  if(it.touch && !it.touch.silent) u.push("count","count_you"); if(it.cueVoice) u.push("asker");
+  if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
 // a command answered by a tap ("Danse." with picture cards of actions): the learner's figure then does it
