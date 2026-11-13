@@ -7,10 +7,10 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-12.37` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-13.38` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
   `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
-  dise5c, dise, flat — must stay byte-identical). Design log §17–§47 has every ruling and change since 11 Nov.
+  dise5c, dise, flat — must stay byte-identical). Design log §17–§48 has every ruling and change since 11 Nov.
 - **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
   the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
   narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
@@ -46,7 +46,10 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-12.37`: the rulings of 12 Nov evening (design log §44–§47). Formats are whole again (the split is
+- **Live version:** `2026-11-13.38`: every exercise of Lessons 1–3 cut towards a minute (Jon, 13 Nov; design log §48): the
+  automatic one-minute trim plus Lessons 1–3 by hand (counting, names, L2 "how many" of one thing, L3 "C'est quoi ?", L3
+  pronunciation). Quiet scripted run Lessons 1–3: 381 right, 112 taps, 0 faults; Lesson 1 in 6.8 min, Lesson 2 5.3, Lesson 3
+  7.7. Counting is still 92 s in the run; next. Earlier: `2026-11-12.37`: the rulings of 12 Nov evening (design log §44–§47). Formats are whole again (the split is
   withdrawn). No scripted delayed tests. Repeats are trimmed to DISE's count, counted strictly with no individual turns
   (Lesson 1: 123 responses against DISE's 83; the rest of the gap is content, see §47). Corrections: step 3 goes back two
   tasks; steps 5 and 7 give only the task with the error. No ding, smile or pause after a right answer. Animations are 2×
@@ -353,6 +356,7 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 | 12 Nov 14:58 | Jon, L1 on .28 | 154 answers, 2 errors, both "trois" for two (two apples straight after three shoes; two red shoes): the first two-thing pictures of OBJECTS answered without counting (two at a glance had been fingers only; every object pair had been counted aloud first). Recognition re-checked: he did say "trois". 8 hesitations (3 on "C'est qui ?" in L1E5). `dev/qa/doctor_jon_1458.md`; design log §39 | .29 |
 | 12 Nov 16:01 | Jon, L1 E8–9 on .29 | 0 errors. Glitch: the phone's sound output fell 6.5 s behind before Marie's "Un ou une ?" (L1E8-b3): she seemed to wait in silence (the touch he remembers was on the task before, a spoken "Un ou une ?" with the book pointed at). `dev/qa/doctor_jon_1601.md` | .30 (audio restarted when the delay is over 1 s) |
 | 12 Nov 16:08 | Jon, L1E8–L2E6 on .29 | 3 errors in L2E6: "un" for one apple and one shoe, "une" for one book. He asked whether numbers really have gender. Cause: Lesson 1 taught one = "Un." and L2E6 changed it with six bare models and no link to the thing. `dev/qa/doctor_jon_1608.md`; design log §40 | .31 |
+| 13 Nov 09:13 | Jon, L1 on .37 | Lesson 1 complete in 8 min 05 s (09:05:41 to 09:13:46), 123 answers, 0 errors, 2 slow starts (the 4.8 s one is him opening and closing the settings panel, not confusion). First run on the lean lesson. `dev/qa/doctor_jon_0913.md` | none needed |
 
 **Version .16** (10 Nov): the greeting redesign in Lesson 4 (three greeters, model learners greet in their own voices),
 the name screen and the own-name check.
