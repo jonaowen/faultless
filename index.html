@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-13.43";
+const APP_VERSION="2026-11-13.44";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -778,7 +778,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:44, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -797,8 +797,30 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   const old43=(S.delayed||[]).filter(d=>!d.sig && CHANGED_43.includes(d.ex));
   if(old43.length){ S.delayed=S.delayed.filter(d=>!old43.includes(d));
     S.log.push({t:new Date().toISOString(), result:"DELAYED TEST DROPPED for version "+APP_VERSION+": "+old43.map(d=>d.key).join(", ")+" (the exercise has changed since the error was made)", heard:[]}); }
+  if(!(s.courseRev>=44)) migrate44();      // (.44) a state saved before the exercises of Lessons 3 to 5 were renumbered
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
+/* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
+   "C'est un livre" is L3E7, and L3E5 is a new exercise. The saved state names exercises by these ids (finished, exHadError, ftc,
+   the delayed tests), so a state saved before .44 is carried over once (migrate44, called by load): each old exercise that
+   is still in the lesson, whole or shortened, gives its record to the id it has now (RENUM_44; an id not listed kept its
+   number); the five that were taken apart (GONE_44) give it to nobody, so their new exercises are still to do; a learner saved
+   inside Lesson 3, 4 or 5 goes on at the first exercise of that lesson not yet done. Delayed tests of the exercises that
+   changed in Lessons 2 to 5 (CHANGED_44: the ids as they were) are dropped, with a line in the log. */
+const RENUM_44 = {"L3E5":"L3E7","L3E7":"L3E8","L3E8":"L3E9","L3E9":"L3E10","L3E10":"L3E11","L3E11":"L3E12","L3E12":"L3E13","L3E13":"L3E14","L3E14":"L3E15","L4E14":"L4E15","L4E15":"L4E16","L4E16":"L4E17","L5E6":"L5E8","L5E8":"L5E9","L5E9":"L5E10","L5E10":"L5E12","L5E11":"L5E13","L5E14":"L5E17","L5E15":"L5E19"};
+const GONE_44 = ["L3E1","L3E3","L5E4","L5E12","L5E13"];
+const CHANGED_44 = ["L2E6","L2E9","L2E10","L2E11","L3E1","L3E2","L3E3","L3E5","L3E7","L3E8","L3E9","L3E10","L3E11","L3E12","L3E13","L3E14","L4E4","L4E5","L4E9","L4E10","L4E11","L4E14","L4E15","L4E16","L5E2","L5E4","L5E5","L5E6","L5E8","L5E9","L5E10","L5E11","L5E12","L5E13","L5E14","L5E15"];
+function migrate44(){
+  const now=id=>GONE_44.includes(id) ? null : (RENUM_44[id] || id);
+  const carry=o=>{ const n={}; for(const k of Object.keys(o||{})){ const m=/^(L\d+E\d+)(.*)$/.exec(k), to=m ? now(m[1]) : k; if(to) n[m ? to+m[2] : k]=o[k]; } return n; };
+  const touched=Object.keys(S.finished||{}).some(k=>RENUM_44[k] || GONE_44.includes(k));
+  S.finished=carry(S.finished); S.exHadError=carry(S.exHadError); S.ftc=carry(S.ftc);
+  const L=LESSONS[S.lesson]; let moved="";
+  if(L && ["L3","L4","L5"].includes(L.id)){ const i=L.exercises.findIndex(e=>!S.finished[e.id]), to=i<0 ? L.exercises.length-1 : i; if(to!==S.ex || touched) moved=L.exercises[to].id; S.ex=to; }
+  const old=(S.delayed||[]).filter(d=>CHANGED_44.includes(d.ex)); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  if(touched || moved || old.length) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 3 to 5 have new exercise numbers"+(moved?"; this lesson goes on at "+moved:"")+(old.length?"; delayed tests dropped: "+old.map(d=>d.key).join(", "):""), heard:[]});
+  S.courseRev=44;
+}
 /* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
    the oldest half of this user's trace goes and the save is tried again: the place in the course must never fail to be saved. */
