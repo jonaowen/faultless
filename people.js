@@ -382,8 +382,10 @@ function hairOf(style, u, c){
       return { back: `<path ${T} d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="${H}"/>`,
         front: `<path ${T} d="M156 354 q-2-58 44-60 q46 2 44 60 q-4-26-16-38 q-14-6-30-3 q-10 4-22 3 q-6 4-10 12 q-6 10-10 26z" fill="${H}"/>
           <path ${T} d="M188 297 q-14 8-22 26 M190 302 q-12 10-17 22 M214 299 q12 8 18 26 M222 302 q10 10 13 24" stroke="#6b4b39" stroke-width="1.6" fill="none" opacity=".5" stroke-linecap="round"/>` }; }
-    case "you": return { back: `<path d="M44.5 92 Q40 39 80 36.5 Q120 39 115.5 92 Q117 104 111.5 113 L103 102 H57 L48.5 113 Q43 104 44.5 92Z" fill="${H}"/>`,
-      front: `<path d="M47 86 q-3-45 33-47 q36 2 33 47 q-3-14-9-21 q-10 6-24 4 q-14-1-24-8 q-6 9-9 25z" fill="${H}"/>` + strand("M60 53 q12-8 28-6 M68 48 q10-3 20 1") };
+    /* (.41; Jon, 13 Nov: "the male figure doesn't really look like a male. The hair goes down to the bottom of the neck.") A short
+       men's cut: cropped close round the head, ending above the ears; nothing behind the neck. */
+    case "you": return { back: `<path d="M46.5 84 Q44 40 80 38 Q116 40 113.5 84 Q112.5 90 111 92 L108 80 H52 L49 92 Q47.5 90 46.5 84Z" fill="${H}"/>`,
+      front: `<path d="M47.5 84 q-2-42 32.5-44 q34.5 2 32.5 44 q-2.5-13-8-19 q-10 5-24 3.5 q-14-1-24-7 q-6 8-9 22.5z" fill="${H}"/>` + strand("M60 53 q12-8 28-6 M68 48 q10-3 20 1") };
     case "julie": return { back: `<path d="M40 98 q-2-64 40-66 q42 2 40 66 q2 50-8 78 q-32 8-64 0 q-10-28-8-78z" fill="${H}"/>`,
       front: `<path d="M47 90 q-3-46 33-48 q36 2 33 48 q-6-22-18-30 q-12 8-34 6 q-8 6-10 12 q-2 4-4 12z" fill="${H}"/>
          <path d="M78 44 q-14 6-22 24 M86 45 q12 8 18 26" stroke="#4a372d" stroke-width="1.1" fill="none" opacity=".6"/>` };
