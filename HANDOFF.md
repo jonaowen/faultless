@@ -7,10 +7,10 @@ rule), `dev/fieldtest/design_log.md` §9–11 (why), and `dev/fieldtest/learner_
 ## 0. Start here (12 Nov 2026, 13:00 UTC — the previous session ended to connect Google Drive)
 
 **Where things stand**
-- **Live:** `2026-11-13.42` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
+- **Live:** `2026-11-13.43` (https://jonaowen.github.io/faultless). Lessons 1–10 have DISE boards and Jon's latest fixes. Read "Live version" in §1 for each version's contents and checks.
 - **Course of record:** `dev/fieldtest/course_dise6` (Lessons 1–20; 1–10 revised; build with
-  `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the other builds — dise5,
-  dise5c, dise, flat — must stay byte-identical). Design log §17–§48 has every ruling and change since 11 Nov.
+  `cd dev/fieldtest/gen && FF_RATE=dise6 FF_OUT=../course_dise6 python3 build.py`; 0 findings; the rule that the older builds dise5, dise5c, dise and flat must stay
+  byte-identical was dropped by Jon on 13 Nov 2026: they are superseded and need not be rebuilt or kept in step). Design log §17–§48 has every ruling and change since 11 Nov.
 - **.28 shipped 12 Nov ~13:55** (state notes in `dev/appwork/wip28/STATUS.md`); was in progress: Lessons 3–5 with boards, plus
   the fixes from Jon's runs of 12 Nov 11:40 and 11:50 (§4 table): halve the figure animation; play the counting
   narration before the first "À toi." of the course (models included); L1E7 f three men must be drawn doing their
@@ -39,6 +39,61 @@ by an app agent, the artificial learner by its own agent; each lesson batch ship
 to the §4 table, fix. A `QUIET` flag file in the scratchpad pauses heavy jobs during timing-sensitive checks; never
 leave it up for long. The public HANDOFF is this file with tester names removed.
 
+## 0. RESUME HERE (13 Nov 2026, ~21:00)
+
+Live app: `2026-11-13.43` (checks in §1). The dev repository's `main` has this session's work up to 20:50 (pull request 1,
+merged); what came after is on the branch `claude/nice-euler-5hhtcv` (pull request 2). Jon's rulings of 13 Nov are in §2:
+the whole programme designed backwards from its terminal skills on a complete DISE analysis; the artificial learner
+paused and a run log in its place; the hill climb stopped; Claude may merge; a lighter release routine; the
+byte-identity rule dropped.
+
+**1. DISE analysis (design: `dev/source/dise_full/analysis/ANNOTATE.md`, `REAUDIT_hand_annotations.md`, `REVISE.md`).**
+- All 48 chunks of hand annotation are written and merged into the ten workbooks (`tools/apply_annotations.py`: 65,443
+  cells). Re-audit of 460 cells: task cells 96.7 % at grade 2 (bar met), part cells 90 % (not met); older hand labels and
+  early terse texts were the weak areas.
+- The revision (`REVISE.md`; sets in `annotations/cells/ZR-*.tsv`; check with `tools/annotation_revision.py`): DONE and
+  verified: ZR-AC1 to ZR-AC5 (all of actions) and ZR-VO1. Running when this was written: ZR-ID1, ZR-TE1, ZR-SP1, ZR-LO1,
+  ZR-PR1, ZR-MI1 with ZR-VO2, ZR-L21 with ZR-LS1. A set is finished only when the tool prints DONE; a stopped agent is
+  resumed with a message, its file kept. Reviewing one chunk's part cells claim by claim (VO-07) found 22 % with a small
+  false "new" or "first": more than the re-audit's sample showed.
+- When every set is DONE: `python3 -I tools/apply_annotations.py` (the ZR files are applied last), then a second re-audit
+  with `tools/reaudit_sample.py` under a new seed, sampling the revised cells as their own strata (older hand task cells,
+  older hand part cells, rewritten terse texts, reviewed part cells), bar 95 % at grade 2. Method: `reaudit/README.md`;
+  five auditors, two workbooks each; tally from the graded files yourself.
+- How to run agents on this: one per chunk or set, about 8 at a time; they never run git (the coordinator commits);
+  verify every "done" with the coverage tool before treating it as done.
+- Known faults in the workbooks themselves, not fixed by any merge: `REAUDIT_hand_annotations.md`, last section but one.
+
+**2. Next after the analysis (Jon's order, §2): the terminal skills of the programme, and the curriculum designed
+backwards from them.** Not started. Inputs: the ten workbooks, `analysis/formats/*.md`, `analysis/tg/*.md`,
+`workbooks/DISE_programme.xlsx`, the Teacher's Guides.
+
+**3. Course.** Lessons 1–10 are revised in `dev/fieldtest/course_next` (design log §54–§57): every exercise under a
+minute by `gen/extime.py`, two new things at a time, no lesson over DISE's response count; the build has 4 findings.
+`.43` holds only §54 (Lesson 1 Exercise 1, word pieces) and was converted from `course_dise6`.
+- **Next release, .44: Lessons 2–10 from `course_next`.** Needs 8 recordings, all in Lesson 5
+  (`reports/v44_needs.md`; `v45_needs.md` and `v46_needs.md` for Lessons 6–10 need none). It carries the fix for Lesson
+  2's boards, which have been one exercise out in the live app since .39. When it ships, `course_next` becomes the course
+  of record.
+- For Jon to rule (each is in the design log section named): what counts as "a new thing" and Lesson 1's exercises that
+  have three or four (§55); "il, elle" taught on danse / saute and not mange (§55); whether the form after vais / vas is
+  one new thing (§57; going-to is four short exercises without that); 19 to 25 exercises a lesson against DISE's 15 to
+  19 (§55–§57); review words no longer said in Lessons 8–10 (garçon, fille, chien, moi, toi, "Bois.") (§57); the
+  either/or question placed with "Un ou une ?" in L1E2 (§54).
+- Measured in .43's quiet run: L1E1 58 s, but L1E2 67.8 s and L1E3 64.7 s with their first-time narration.
+
+**4. Run log (`dev/runlog/`, its README).** Being built from the 54 run files when this was written: check its counts
+against the raw files before relying on it. Every run file Jon sends goes into it first (§2).
+
+**5. This environment.** The cloud environment "faultless" allows Hugging Face, the CPU torch download and the Pages
+site. A new container needs: `pip install piper-tts==1.8.0 faster-whisper vosk onnx scipy` and the Piper voices in
+`dev/vosk/voices` (list and download loop in `dev/README.md` §1). torch is no longer needed (hill climb stopped).
+
+**Timing runs:** pause any learner run or calibration (`learn.py`, `calibrate.py`: kill -STOP / -CONT by PID) and don't
+run agents' heavy scripts at the same time; the 8 AV faults in .42's error run came from four calibrate.py processes.
+`dev/harness/replay/quietrun.sh` (.43) does this for one run and undoes it however the run ends. The hill climb no longer
+runs (§2).
+
 ## 1. What this is
 
 **Faultless French** is a spoken-French course delivered as a phone web app, the first of a series ("Faultless").
@@ -46,7 +101,7 @@ It is a Direct Instruction programme modelled on DISE (Direct Instruction Spoken
 trainer and DI consultant, the designer-owner and the first tester. He tests on Android 10 Chrome.
 
 - **Live app:** https://jonaowen.github.io/faultless (repo `jonaowen/faultless`, branch `main`, GitHub Pages; PUBLIC).
-- **Live version:** `2026-11-13.42`: two new things at a time in Lesson 1's gender track (Jon, 13 Nov; design log §53): Exercise 2 teaches a pen and an apple only, two cards in every picture (blocks of three, then slowly side by side, each word on its own thing; Marie's 'Un, une.' on one book is gone); Exercise 6 the book and the shoe, then the four mixed; Exercise 8's naming parts show only the two things named. New recordings un_slow, une_slow. Checks: Lesson 1 scripted run 104 right, 0 faults, 8.3 min; with an error every 7th answer, 0 faults of the app's logic and 8 frame delays (0.14-0.39 s) from machine load (four calibration processes ran; the same code ran clean before); smoke clean. Earlier: `2026-11-13.41`: the learner's male figure has a short men's cut (Jon, 13 Nov: "the male figure doesn't really look like a male. The hair goes down to the bottom of the neck"); the word times of the 44 new model-learner recordings. Smoke clean. Earlier: `2026-11-13.40`: a naive tester's run of 13 Nov 15:24 and the owner's notes on it (design log §51–§52). The green border comes on for tap turns too. The smile plays at half speed and is shown twice as long. Every animation starts at its first frame (the page's one SVG clock had them start part-way through). Models in a row go at the counting pace (500 ms). In Lessons 1–5 a model student (Pierre or Sylvie) gives each new answer before the learner is first asked for it: 76 models, 44 new recordings. Lesson 1: no word pieces of Pierre, no pause inside souris, no spoken 'Un ou une ?' in the hearing-only tap parts, and Marie's 'Je m'appelle Marie.' before any 'Et toi ?' that would come cold. Checks (training paused): release gate Lessons 1–10 passed after one take of Sylvie's 'C'est pas une clé.' was re-recorded; Lesson 1 scripted run 98 right, 42 taps, 0 faults, 8.0 min; with an error every 7th answer, 0 faults; smoke clean. Earlier: `2026-11-13.39`: the counting exercise (L1E4) under a minute (design log §49): 92 → 49 s in the quiet run. The one-off question narration plays only before the learner's first question (it had drifted to L1E4, after six questions answered), and the narrator's second count line is dropped (Pierre shows the turn first). Sylvie's count of two goes. "Quatre" is its own exercise in Lesson 2 (L2E9, 23 s), as "cinq" is in Lesson 3. The delayed tests of four before it ask about two instead; the inventory records the reason (kind F). Checks: clips Lessons 1–3, 0 missing; quiet scripted run Lessons 1–3: 385 right, 112 taps, 0 faults; Lesson 1 in 6.4 min, Lesson 2 5.9, Lesson 3 8.5 (every exercise 59 s or less, except L1E1 at 65 s); run with an error every 7th answer, Lessons 1–2, 0 faults; smoke clean. Earlier: `2026-11-13.38`: every exercise of Lessons 1–3 cut towards a minute (Jon, 13 Nov; design log §48): the
+- **Live version:** `2026-11-13.43`: Lesson 1 Exercise 1 back under a minute, and word pieces by rule (design log §54). L1E1 loses Marie's second "Je m'appelle." model and the second "Et toi ?" round; "Pierre ou Sylvie ?" opens Exercise 2 (the order of tasks is the same). No pause inside a word or where French joins two words (Lessons 3, 8, 10): "Chaussure.", "Banane.", café and table whole; "de deux à cinq" built from the right. Recordings: Banane., Deux à cinq. (joined: deux‿à), Répète : deux à cinq.; Chaussure. recorded again (the old take was heard as "choussière"). A saved delayed test keeps what each task asks, so a lesson file made again cannot make it ask for another task. The narrator's board lines play when a board is first on the screen (since .37 they had played before "Répète : Marie.", with nothing written). Checks, on the final files with the machine quiet: Lesson 1 scripted run 103 right, 42 taps, 0 faults, 8.1 min, L1E1 58 s (L1E2 67.8 s and L1E3 64.7 s with first-time narration); with an error every 7th answer, 0 faults; Lessons 3, 8, 10: 156, 418, 434 right, 0 faults, no missing clip; gate Lessons 1–10 passed (505 clips); Lessons 2, 4–7, 9 byte-identical to .42; smoke clean. Not checked: nobody has listened to the new recordings; the own-recording model in L1E5 (scripted runs record nothing). Notes: `dev/appwork/v43_STATUS.md`. Earlier: `2026-11-13.42`: two new things at a time in Lesson 1's gender track (Jon, 13 Nov; design log §53): Exercise 2 teaches a pen and an apple only, two cards in every picture (blocks of three, then slowly side by side, each word on its own thing; Marie's 'Un, une.' on one book is gone); Exercise 6 the book and the shoe, then the four mixed; Exercise 8's naming parts show only the two things named. New recordings un_slow, une_slow. Checks: Lesson 1 scripted run 104 right, 0 faults, 8.3 min; with an error every 7th answer, 0 faults of the app's logic and 8 frame delays (0.14-0.39 s) from machine load (four calibration processes ran; the same code ran clean before); smoke clean. Earlier: `2026-11-13.41`: the learner's male figure has a short men's cut (Jon, 13 Nov: "the male figure doesn't really look like a male. The hair goes down to the bottom of the neck"); the word times of the 44 new model-learner recordings. Smoke clean. Earlier: `2026-11-13.40`: a naive tester's run of 13 Nov 15:24 and the owner's notes on it (design log §51–§52). The green border comes on for tap turns too. The smile plays at half speed and is shown twice as long. Every animation starts at its first frame (the page's one SVG clock had them start part-way through). Models in a row go at the counting pace (500 ms). In Lessons 1–5 a model student (Pierre or Sylvie) gives each new answer before the learner is first asked for it: 76 models, 44 new recordings. Lesson 1: no word pieces of Pierre, no pause inside souris, no spoken 'Un ou une ?' in the hearing-only tap parts, and Marie's 'Je m'appelle Marie.' before any 'Et toi ?' that would come cold. Checks (training paused): release gate Lessons 1–10 passed after one take of Sylvie's 'C'est pas une clé.' was re-recorded; Lesson 1 scripted run 98 right, 42 taps, 0 faults, 8.0 min; with an error every 7th answer, 0 faults; smoke clean. Earlier: `2026-11-13.39`: the counting exercise (L1E4) under a minute (design log §49): 92 → 49 s in the quiet run. The one-off question narration plays only before the learner's first question (it had drifted to L1E4, after six questions answered), and the narrator's second count line is dropped (Pierre shows the turn first). Sylvie's count of two goes. "Quatre" is its own exercise in Lesson 2 (L2E9, 23 s), as "cinq" is in Lesson 3. The delayed tests of four before it ask about two instead; the inventory records the reason (kind F). Checks: clips Lessons 1–3, 0 missing; quiet scripted run Lessons 1–3: 385 right, 112 taps, 0 faults; Lesson 1 in 6.4 min, Lesson 2 5.9, Lesson 3 8.5 (every exercise 59 s or less, except L1E1 at 65 s); run with an error every 7th answer, Lessons 1–2, 0 faults; smoke clean. Earlier: `2026-11-13.38`: every exercise of Lessons 1–3 cut towards a minute (Jon, 13 Nov; design log §48): the
   automatic one-minute trim plus Lessons 1–3 by hand (counting, names, L2 "how many" of one thing, L3 "C'est quoi ?", L3
   pronunciation). Quiet scripted run Lessons 1–3: 381 right, 112 taps, 0 faults; Lesson 1 in 6.8 min, Lesson 2 5.3, Lesson 3
   7.7. Counting was still 92 s in the run (fixed in .39). Earlier: `2026-11-12.37`: the rulings of 12 Nov evening (design log §44–§47). Formats are whole again (the split is
@@ -162,6 +217,18 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 ## 2. Jon's standing rules (keep all of them)
 
 **Teaching design**
+- **The whole programme is designed at once, backwards from its terminal skills, on a complete understanding of DISE
+  (Jon, 13 Nov 2026).** "The pressure on the design of the programme comes from two directions": testers' runs show what
+  does not work, and the early lessons are revised from them; and "the design of the app needs to be cohesive. We can't
+  just design the app linearly … The way you design a programme is that you look at the terminal skills that the learner
+  is supposed to have and you design backwards from those terminal skills." The order: (1) "a full and complete
+  understanding of DISE: every single task, every part, every format, every track, not only recorded in the database,
+  along with the teacher's guide, but fully analysed and understood"; (2) the terminal skills, and the curriculum
+  designed backwards from them with that understanding; (3) from that, the early lessons, which are then revised on
+  real users' runs. "If you don't understand the whole programme and what the whole programme is going to look like,
+  you're never going to design those early lessons correctly. Those early lessons do not know what they're leading
+  into." So the DISE analysis is finished for both levels before it is narrowed, later lessons are designed and revised
+  ahead of the testers, and revising them again after early-lesson changes is expected, not waste.
 - **No feedback for a right answer; step 3 goes back two tasks (Jon, 12 Nov 21:00).** No ding, no smile, no pause after a
   right answer: the absence of a correction is the feedback. After a correction the app goes back two tasks (to the
   part's start when the error was in its first two). The board stays while parts of its sentences are said.
@@ -215,15 +282,33 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
   cause, split them into **app faults** and **programme design faults**, fix all of them, ship. Do not ask him what he
   said: listen to the recording in the run file ("too long ago for me to remember"). The goal he set: every slight
   confusion of every tester diagnosed and fixed with little or no input from him.
-- **The artificial learner is a model to be trained** (Jon, 9 Nov). Input: the course sequence. Output: where errors
-  happen. Ground truth: real testers' errors. Every run file is fed to it (`learner_eval/`), then the course is run
-  through it again. Missing a real error is punished heavily, most of all Jon's (he knows French, so an error of his
-  is a severe programme fault: weight 3); a predicted error nobody made costs little (0.1).
-- **The listening hill climb should always be running** (`dev/listener/start_climb.sh`). It can only run while a
-  session is active: see §4.
+- **The artificial learner is paused (Jon, 13 Nov 2026).** "With the artificial learner I'm quite happy that we need a
+  rethink on that … At some point we will design an artificial learner but we need to do it more cleverly." Do not run
+  it, feed it run files or maintain it, and do not compare course variants on it. Its code and scores stay as they are
+  (`dev/fieldtest/learner_private/`, `learner_eval/`; v3.3 scores 0.137, and its whole gain over v3.2 rests on the one
+  run it was fitted to). This replaces the rule of 9 Nov that every run file is fed to it.
+- **The run log replaces it: every use of the app, kept for good (Jon, 13 Nov 2026).** "Make sure that we have a clear log
+  of every single time the app has been used: every single question, every single response (correct or incorrect), and
+  the user who used the app. Make sure that the log is linear in time … We must not lose that data. That data is
+  precious … Make sure that every single run, when I feed it to you, is automatically saved by being appended to the
+  file that already exists so we can have one file that has all the data." The log is `dev/runlog/` (its README has the
+  commands): one central file of every event in time order, one workbook with a sheet for each user and that user's
+  runs in date order, and the raw run files in `dev/real_audio/` untouched. **Every run file Jon sends: add it to the
+  log first** (`dev/runlog/add_run.py`), commit and push the same hour, then the run doctor.
+- **The listening hill climb is stopped (Jon, 13 Nov 2026: "The voice recognition seems to work fine as it is").** Do not
+  restart it. The app judges every answer with Vosk; nothing the climb produced was ever in the app (267 rounds, no
+  champion validated for a single phrase). This replaces the rule of 9 Nov that it should always be running. Restart it
+  only if Jon decides to move judging to Whisper. The app still downloads the unused Whisper model (about 46 MB) when the
+  page opens: removing that is a possible later change to the listening path, not yet asked for.
 - **Never stop and wait for Jon on long tasks** unless he says to pause.
 - **The ElevenLabs key was deleted;** never reuse it.
 
+- **Merging and the release routine (Jon, 13 Nov 2026).** "You have authorisation to merge whatever you want to", and a
+  lighter routine is approved "if you think it will speed things up and you don't need to wait for me". So: merge a
+  release pull request yourself as soon as its checks pass, then check `version.json` on Pages; merge the dev
+  repository's pull request whenever `main` should carry the session's work. For a small release, run the real-time
+  whole-lesson check only on the lessons that changed, once, on the final files; keep the clip gate and the load check;
+  give the release a time limit and ship what passes, leaving side findings for the next version.
 - **Speed of release (Jon, 12 Nov 2026): human testing comes first.** "It doesn't make sense to delay human testing
   because the development is too slow. Real human testing is the most valuable information we have." Ship as soon as
   the lessons testers will reach next pass their checks (oracle, selfjudge, release gate for those lessons); the full
@@ -390,6 +475,8 @@ lesson files needs the oracle; one that touches listening needs the replays too.
 9619 tasks, 656 exercises. Known findings: Lesson 3 has 3 new-material exercises (limit 2); Lessons 28 and 29 have 11
 tracks. Lessons 5–40 are built but not converted for the app or field-tested with people.
 
+**Stopped on 13 Nov 2026 (Jon; see §2). What follows is its history, kept in case judging ever moves to Whisper.**
+
 **Hill climb** (Whisper listener, not the shipping listener). **It produced nothing from 9 Nov 15:56 to 10 Nov 00:10.**
 Cause: model weights are not in git, so in a fresh container `hc/champion_r026/` exists but holds no
 `model.safetensors`; the code checked only that the folder was there. Every round that started from the champion
@@ -532,10 +619,6 @@ words) and marks a VERDICT IN DOUBT: this replaces asking Jon what he said. Repo
 
 - *Est-ce que* or rising intonation for yes/no questions (recommended: rising intonation).
 - Old clips for Claire/Paul/Julie are still in `audio/` (unused; harmless).
-- Hill climb: it stops when the session goes idle. Keeping a session awake for it is possible (a tracked background
-  task keeps the container up for 2 hours at most, then one model turn is needed to start the next) but costs
-  usage every 2 hours, day and night. Not done. Jon to decide: accept "runs during sessions", pay for keep-alive,
-  or move the climb to a machine that stays on.
 - The branch `learner-v23-wip` in `faultless-dev` is a superseded backup (the session could not delete it).
 
 ## 7. Bundle contents (`dev/`)
