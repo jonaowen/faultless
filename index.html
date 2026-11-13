@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-13.39";
+const APP_VERSION="2026-11-13.40";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -2821,6 +2821,10 @@ function buildStrip(spec, above){
     g.appendChild(picture({is:spec.is, looks:spec.looks||[], count:1})); STRIP.g.appendChild(g); STRIP.pts.push({x:cx, y:cy+30*k}); }
   BOUNDS.strip={x:x0, y:y0, w:W, h:H, r:12}; TARGET.strip={x:200, y:y0+H*0.7};
 }
+/* (.40; Jon, run of 13 Nov 15:24: "when he was expected to touch each object, the border stayed red and it should have gone green. That's
+   confusing. It should be that any time the learner is expected to interact with the app, the border of the phone goes green.")
+   A tap turn now has the green border too, with the hand and the dashed outlines (which say "tap", not "speak"); the microphone
+   stays closed. The rest of this note is the .25 design it replaces. */
 /* The tap signal (.25; Jon's ruling of 11 Nov: speaking and tapping have different signals). A tap turn has NO green border and
    no microphone (green means "speak", and only that): a hand over the pictures that can be tapped, its finger going down and up
    as if tapping, and a dashed outline round each of those pictures. It goes when the learner taps or the time is up. */
@@ -2897,9 +2901,9 @@ async function presentTap(t, {retest=false, firstSeen=null}={}){
   tapArm(t.targets);                     // (.27) a touch while the cue is said counts
   await say(t.questionUnits, "tutor", undefined, 0);
   if(t.touch && t.touch.silent) await silentTouches(t.touch.count);
-  textAtResponse(t); signal(false); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal; no green border, no microphone)");
+  textAtResponse(t); signal(true); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal and green border; no microphone)");
   window.__tapTask = t;                     // for the automatic test harness (an oracle learner taps what is asked for)
-  const r = await tapWait(t.targets, TAP_WINDOW); tapSignal(null);
+  const r = await tapWait(t.targets, TAP_WINDOW); tapSignal(null); signal(false);
   const ok = !!r && t.correct.includes(r.slot);
   const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id); const f=(S.ftc[ctx.exKey]=S.ftc[ctx.exKey]||{new:{c:0,n:0}, review:{c:0,n:0}}); f[t.tag].n++; if(ok) f[t.tag].c++; }
@@ -3003,6 +3007,7 @@ function itemStart(it){
   else handHide();
 }
 async function presentGenModel(m){
+  LASTMODEL={t:Date.now(), text:[].concat(arguments[0]&&arguments[0].answerUnits||[]).join(" ")};      // (.40) what was modelled last (presentTest: 'Et toi ?')
   ph("model");
   // the script's "Écoute." is not said (Jon 9 Nov 14:21: adults who chose the app know to listen; it costs time)
   const listenFirst = m.teacherUnits.length && /^écoute/i.test(m.teacherUnits[0]);
@@ -3040,12 +3045,16 @@ async function presentGenModel(m){
    act for half the time Marie's own actions take: long enough to see which action it is */
 /* (.37, Jon 12 Nov 20:00) the animations play twice as fast (people.js ACT_SPEED): every wait for one is half what it was */
 const ACT_HALF = 0.5;
-const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:2600, "raise hand":3600, eat:3600, drink:3600, stop:2200};
+/* (.40; Jon, run of 13 Nov 15:24: the tester "couldn't understand the smile because the animation didn't clearly show a person smiling
+   … double the length of the animation and halve the speed") the smile plays at half speed (people.js: one smile in 2.6 s) and
+   is shown twice as long: 2.6 s in Marie's box (ACT_TIME 5200), and one whole smile for a figure too (2.6 s, not a quarter of it) */
+const FIGURE_TIME = act => act==="smile" ? 2600 : Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:5200, "raise hand":3600, eat:3600, drink:3600, stop:2200};
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
 const ACTBOX={key:null};
+let LASTMODEL=null;
 function actPicture(who, act, opt){
   if(opt.face) return genPicture({is:"face", looks:[opt.face, {"feeling good":"thumb up", "feeling so-so":"flat hand rocking", "feeling bad":"thumb down"}[opt.face]||""], count:1, sex:S.learnerGender==="f"?"f":"m"});      // with its hand sign (.25)
   if(!window.PICS || !PICS.action) return placeholder(act);
@@ -3066,6 +3075,18 @@ function actPicture(who, act, opt){
   if(opt.stopped) return picKnows("stop") ? PICS.action("stop", who, {still:true, after:act, sex}) : picKnows(act) ? PICS.action(act, who, {still:true, sex}) : placeholder(act);
   return picKnows(act) ? PICS.action(act, who, {still:!!opt.still, sex}) : placeholder(act);
 }
+/* (.40; Jon, run of 13 Nov 15:24: "the animations tend to start with some frames from the end of the animation. Make sure that the
+   first frames … are the intended first frames (so the person starts sitting down and then stands up)") An SVG document has ONE
+   clock, started when the page loaded; an <animate> added later with begin 0 is already part-way through its loop when it
+   appears. Every animation added to the page now begins at the moment it is added (a watcher on the whole page). */
+function animFromStart(node){
+  const els = node.nodeType===1 ? [...(node.matches && node.matches("animate,animateTransform,animateMotion,set") ? [node] : []), ...node.querySelectorAll("animate,animateTransform,animateMotion,set")] : [];
+  if(!els.length) return;
+  let root = els[0].ownerSVGElement; while(root && root.ownerSVGElement) root = root.ownerSVGElement;
+  const t = root && root.getCurrentTime ? root.getCurrentTime() : 0;
+  for(const a of els){ if(a.dataset.fromStart) continue; a.dataset.fromStart = "1"; const b = a.getAttribute("begin"); if(b && b!=="0s" && b!=="0") continue; a.setAttribute("begin", t.toFixed(3)+"s"); }
+}
+new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) animFromStart(n); }).observe(document.documentElement, {childList:true, subtree:true});
 function actBox(who, act, opt){
   const g=document.getElementById("actBox"); if(!g) return;
   if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); ACTBOX.key=null; return; }
@@ -3266,6 +3287,11 @@ async function presentLead(t){
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
 async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0, quiet=false, afterAtoi=false}={}){
+  /* (.40; tester R, 13 Nov 15:24: "Et toi ?" asked on its own (a delayed test, a part gone through again) was answered with his
+     name alone: "And you?" asks for what the sentence before it said. When no "Je m'appelle …" was said just before, Marie says
+     her own sentence first, as the part that teaches it does.) */
+  if(t.questionUnits && /^et toi \?$/i.test(String(t.questionUnits[t.questionUnits.length-1]||"").trim()) && !(LASTMODEL && Date.now()-LASTMODEL.t<20000 && /m'appelle/i.test(LASTMODEL.text))){
+    await setPortraits(t.scene); await pointAt("self"); await say(["Je m'appelle "+VOCAB.claire.name+"."]); LASTMODEL={t:Date.now(), text:"Je m'appelle"}; trace("before 'Et toi ?' on its own: Marie's own sentence"); }
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
   curTask=t.id; await setPortraits(t.scene); itemStart(t); await convIntro(t);
   if(t.tapTask) return presentTap(t, {retest, firstSeen});
@@ -3561,7 +3587,13 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
          (Jon, 10 Nov 2026: "she is holding her hand to her ear and then lowering it again, over and over again, and it's
          distracting … she puts her hand down when the string of models is complete"). */
       if(it.type==="model"){ const nx=items[i+1]; holdEar = !!(it.gen && it.voice==="teacher" && nx && nx.type==="model" && nx.gen && nx.voice==="teacher" && !nx.qIntro);
-        await presentModel(it); holdEar=false; shown.add(it); prevTest=false; prevItem=it; i++; continue; }
+        await presentModel(it); holdEar=false; shown.add(it); prevTest=false; prevItem=it;
+        /* (.40; Jon, 13 Nov, tester R's run: when the shoe, the pen, the book and the apple were introduced, "the app went very very
+           quickly through each gender … The timing for this should be the same as the timing for the numbers 1, 2, 3, 4 … whenever
+           a list of objects is processed through one after the other, the rate should be that half-second rate so that the learner
+           can attend to what they're being presented with.") A model followed by another model: the counting gap between them. */
+        if(items[i+1] && items[i+1].type==="model"){ await sleep(COUNT_GAP); trace("list pace: "+COUNT_GAP+" ms before the next model"); }
+        i++; continue; }
       /* Jon, 11 Nov 2026 (evening): "No lead steps anywhere … It doesn't really work in an app environment. The person always
          responds late or not at all." A lead task of the course is not presented (the revised course has none); nothing is said
          together with the teacher or a model learner. NO_LEADS=false brings them back. */
