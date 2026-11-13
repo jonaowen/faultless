@@ -23,7 +23,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1
 #flag.hit{background:#f3d36b;opacity:1}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
-/* (.27) icons that fade in and out over the pictures (the end-of-exercise tick, the bookmark …) take no touch: at opacity 0 the tick
+/* (.27) icons that fade in and out over the pictures (the end-of-lesson tick …) take no touch: at opacity 0 the tick
    still lay over the middle picture and swallowed taps meant for it (taptouch.js) */
 #scene .fade, #actBox{pointer-events:none}
 @keyframes tapdown{0%,55%,100%{transform:translateY(0)}75%{transform:translateY(7px)}}
@@ -290,16 +290,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
       <path d="M172 556 q28 10 56 0" stroke="#1d1712" stroke-width="2" fill="none" opacity=".4"/>
     </g>
   </g>
-  <!-- restart and delayed-test symbols (no words) -->
-  <g id="icoRestart" class="fade" opacity="0">
-    <circle cx="200" cy="120" r="54" fill="#fff" stroke="var(--frame-line)" stroke-width="2"/>
-    <path d="M226 106 a30 30 0 1 0 4 26" stroke="var(--tutor-top)" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <path d="M214 92 l20 12 l-20 12z" fill="var(--tutor-top)"/>
-  </g>
-  <g id="icoBookmark" class="fade" opacity="0">
-    <circle cx="200" cy="120" r="54" fill="#fff" stroke="var(--frame-line)" stroke-width="2"/>
-    <path d="M180 88 h40 v66 l-20 -16 l-20 16z" fill="#d9822b"/>
-  </g>
+  <!-- (.45) the restart and delayed-test symbols are gone: no symbol marks any step of a correction (Jon, 13 Nov 2026) -->
   <!-- end-of-exercise tick -->
   <g id="tick" class="fade" opacity="0">
     <circle cx="200" cy="120" r="58" fill="var(--go)"/>
@@ -2373,10 +2364,6 @@ async function pointAt(who){
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
   armsGo(pose, 340); lastPoint=key;            // the hand moves while she speaks: nothing waits for it
 }
-async function flashIcon(which){
-  rest(); const el=document.getElementById(which==="restart"?"icoRestart":"icoBookmark");
-  el.style.opacity=1; await sleep(900); el.style.opacity=0; await sleep(250);
-}
 // two scenes: the classroom (teacher and one model learner facing her) and one-to-one (teacher facing the learner)
 let scene="one";
 async function setScene(which){
@@ -2451,8 +2438,8 @@ async function nod(){ const h=document.getElementById("head"); for(let k=0;k<2;k
 /* ============================================================
    ENGINE — Jon's flowchart, without individual turns
    ============================================================ */
-// Only taught words are spoken. Restarting a part and opening a delayed test are
-// shown with a symbol, not words (rubric 2h, A14).
+// Only taught words are spoken. Restarting a part and opening a delayed test are not announced at all: until .44 a symbol
+// showed them (rubric 2h, A14); since .45 nothing does, as a tester took the symbols for praise (Jon, 13 Nov 2026).
 /* What the teacher says to mark turns: natural French, not a word-for-word DISE translation (Jon, 8 Nov 2026: "My turn and
    your turn might be accurate to DISE, but it's not natural in French"). Écoute (listen) before the teacher models it;
    Vas-y (go on) when the learner answers; Avec moi when they say it together. */
@@ -2932,7 +2919,9 @@ async function tapModel(t, by, slot){
   await setPortraits(t.scene); gestureEar();
   if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); await handTap(by, slot); }
   else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); await handTap(by, slot); })()]);
+  const done = actx ? actx.currentTime : 0;      // (.45) the end of the model, for the pause after it in a correction (corrModel)
   await sleep(250); handHide(); rest();
+  return done;
 }
 async function presentTapShow(a){
   curTask=a.id; ph("model (tap): "+(handName(a.tap.by)||"the hand")); await setPortraits(a.scene); itemStart(a); await convIntro(a);
@@ -3544,7 +3533,7 @@ async function ownNameCorrection(task, o={}){
    the next (clipGap). Her hand is at her ear from "Non, écoute." to the end of the model; the open palm comes with "Vas-y.". */
 async function corrModel(task){
   if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : "", framed:true}); return; }
-  if(task.tapTask){ await tapModel(task, "teacher", task.correct[0]); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the hand has tapped)
+  if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct[0]); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
   /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
      the border on the single card and then on the card asked about (course field correction). */
   if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart;
@@ -3555,13 +3544,15 @@ async function corrModel(task){
     return; }
   await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
+const corrKind = t => isOwnName(t) ? "own name" : t.tapTask ? "tap" : t.corr ? "sound pair" : t.cue==="repeat" ? "Répète" : t.cue==="point" ? "touch-and-name" : t.cueVoice ? "spoken answer, cue by a model learner" : "spoken answer";
 async function correction(task, nth, how=""){
-  ph("correction "+nth+(how?" ("+how+")":""));
+  ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task));
   offering=false; gestureEar(); await say(["Non, écoute."]);
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
   // "Vas-y.": the open palm, the border on what is asked about; the learner's turn opens when it has ended
-  if(task.tapTask || task.cue==="point"){ rest(); await say(PHR.atoi); return; }
+  if(task.tapTask){ rest(); await say(PHR.atoi); return; }
+  if(task.cue==="point"){ rest(); await say(PHR.atoi); pointAt(task); return; }      // touch-and-name: the border on what to name comes on as "Vas-y." ends, as the pointing is its cue (askAndListen)
   await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(isOwnName(task) ? "you" : task.cueVoice ? task.cueAt : task); })()]);
 }
 // (.43) what a task is, whatever its id: what is asked, the answer, what the judge expects. Kept with a saved delayed test (see load).
@@ -3621,7 +3612,7 @@ async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
   offering=false; gestureEar(); await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)");      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
-  else { await pointAt(it.cueVoice ? it.cueAt : it); await say(answerUnits(it)); }
+  else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
   rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null}, it.id);
@@ -3743,7 +3734,7 @@ async function runExercise(li, ei){
   }
   S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
 }
-// a delayed test: the part's test tasks, opened with the bookmark symbol. Passed when it runs with no error;
+// a delayed test: the part's test tasks (since .45 opened with no symbol). Passed when it runs with no error;
 // an error resets the count and schedules it again (end of the next exercise, start of the next lesson).
 async function runDelayed(d, anchor){
   const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson && lesson.exercises.find(e=>e.id===d.ex);
@@ -4042,7 +4033,7 @@ askWho();
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
-window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, flashIcon, setScene, gestureLead};
+window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, setScene, gestureLead};
 </script>
 </body>
 </html>
