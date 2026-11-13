@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-13.42";
+const APP_VERSION="2026-11-13.43";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -788,7 +788,17 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   // version 8 (DISE formats: model, lead, Répète; pointing; then the question): progress and the introduction start again
   if(!s.stateVer || s.stateVer<12){    /* 11: the lessons were re-sequenced at DISE's rate (.18). 12: Lessons 1-4 rebuilt exercise for exercise, with actions (.19). A place saved in the old lessons means nothing in the new */  Object.assign(S,{lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], ftc:{}, introSeen:false, qIntroSeen:false, doneDay:null, stateVer:12});
     S.log.push({t:new Date().toISOString(), result:"PROGRESS RESET for version "+APP_VERSION+" (new version)", heard:[]}); }
+  /* (.43) A saved delayed test names a part by its letter and its tasks by their ids. When a lesson file is made again these can
+     come to name other tasks (.43: the parts of L1E1, L1E2 and L10E1 are re-lettered, L3E5 and L8E3 lose tasks: the delayed test
+     of "Répète : Pierre." would have asked for "Sylvie."). From .43 every delayed test carries what each of its tasks asks and
+     expects (taskSig, scheduleDelayed), and runDelayed drops a task that is no longer the same. A delayed test saved before .43
+     has no such record: those of the exercises that .43 changed are dropped here. The place in the course needs nothing: it is
+     an exercise, never a task, so a learner saved inside a changed exercise starts that exercise again. */
+  const old43=(S.delayed||[]).filter(d=>!d.sig && CHANGED_43.includes(d.ex));
+  if(old43.length){ S.delayed=S.delayed.filter(d=>!old43.includes(d));
+    S.log.push({t:new Date().toISOString(), result:"DELAYED TEST DROPPED for version "+APP_VERSION+": "+old43.map(d=>d.key).join(", ")+" (the exercise has changed since the error was made)", heard:[]}); }
   } }catch(e){} }
+const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
    the oldest half of this user's trace goes and the save is tried again: the place in the course must never fail to be saved. */
@@ -3501,12 +3511,15 @@ async function correction(task, nth, how=""){
   if(task.cue==="point"){ rest(); await sleep(200); await say(PHR.atoi); return; }
   await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task); })()]);
 }
+// (.43) what a task is, whatever its id: what is asked, the answer, what the judge expects. Kept with a saved delayed test (see load).
+const taskSig = it => [(it.questionUnits||[]).join(" "), it.target||"", (it.expect||[]).join(" ")].join(" | ");
 // A part's error is recorded for its delayed tests: first at the end of the next exercise, then at the start of the next lesson.
 function scheduleDelayed(part, anchor, taskId){
   const key=ctx.exKey.replace(" (delayed)","")+"/"+part.id;
   let d=S.delayed.find(x=>x.key===key);
   if(!d){ d={key, lesson:ctx.lesson, ex:ctx.ex, part:part.id, passed:0}; S.delayed.push(d); }
-  if(taskId){ d.tasks=d.tasks||[]; if(!d.tasks.includes(taskId)) d.tasks.push(taskId); }      // (.37) step 7: only the tasks that had an error
+  if(taskId){ d.tasks=d.tasks||[]; if(!d.tasks.includes(taskId)) d.tasks.push(taskId);      // (.37) step 7: only the tasks that had an error
+    const it=part.items.find(x=>x.id===taskId); if(it){ d.sig=d.sig||{}; d.sig[taskId]=taskSig(it); } }      // (.43) and what each of them is (see load)
   d.passed=0;                                   // a failed delayed test starts the count again
   d.dueAfterEx = anchor.afterEx;                // run when this exercise has finished
   d.dueLessonStart = anchor.lessonStart;        // and when this lesson starts
@@ -3680,6 +3693,12 @@ async function runExercise(li, ei){
 async function runDelayed(d, anchor){
   const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson && lesson.exercises.find(e=>e.id===d.ex);
   const part=ex && ex.parts.find(p=>p.id===d.part); if(!part){ S.delayed=S.delayed.filter(x=>x!==d); save(); return; }
+  /* (.43) only the tasks that are still what they were when the error was made (see load): a task whose id now names another
+     task, or no task, is taken out; a delayed test with none left is dropped, with nothing shown */
+  if(d.tasks && d.sig){ const gone=d.tasks.filter(id=>d.sig[id] && !part.items.some(x=>x.id===id && x.type==="task" && taskSig(x)===d.sig[id]));
+    if(gone.length){ d.tasks=d.tasks.filter(id=>!gone.includes(id)); gone.forEach(id=>{ delete d.sig[id]; });
+      trace("delayed test "+d.key+": "+gone.join(", ")+" taken out (the lesson has changed since the error was made)");
+      if(!d.tasks.length){ S.delayed=S.delayed.filter(x=>x!==d); save(); return; } } }
   ctx={lesson:d.lesson, ex:d.ex, exKey:d.ex+" (delayed)", delayedRec:d, part:part.id};
   /* (.28; Jon, 12 Nov 11:50: "un / une" stayed on the screen when the next exercise began) a delayed test of an earlier exercise,
      run at the start of another, shows no board: the board on the screen always belongs to the exercise being taught */
