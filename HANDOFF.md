@@ -256,9 +256,9 @@ trainer and DI consultant, the designer-owner and the first tester. He tests on 
 - **The learner types their first name once, at the start** (Jon, 9 Nov; rule 1q; this replaces "the learner types no
   name"). The teacher never says it. The listener cannot recognise it. The app uses it only to tell a course person's
   name said in its place ("Je m'appelle Marie." from someone not called Marie).
-- **Own-name answers are shown by a model learner first** (rule 1k, extended after the first naive tester's run): in Lessons 1–5 every
-  own-name test comes straight after a model learner's "Je m'appelle Pierre."; from Lesson 6, the first of each
-  exercise. The teacher's name never comes straight after an own-name test. The app's correction of an own-name answer
+- **Own-name answers are shown first** (rule 1k; superseded in part by C29, 11 Nov, design log §33): each own-name
+  test has Marie's held frame ("Je m'appelle…") or the learner's own earlier answer straight before it (no longer a
+  model learner's "Je m'appelle Pierre." before every one). The teacher's name never comes straight after an own-name test. The app's correction of an own-name answer
   is a model learner's sentence, never the teacher pointing at herself.
 - **The form of the last answer carries over** (rule 1p): no own-name test straight after a bare-name answer.
 - **Every part of an answer must do work** (rule 1r): a part that never varies gets dropped ("Salut." for "Salut,
