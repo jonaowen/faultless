@@ -2748,6 +2748,12 @@ function boardUsed(it){
   const said=words([it.teacher, it.answer, (it.questionUnits||[]).join(" "), (it.answerUnits||[]).join(" ")].join(" ")).flatMap(w=>[w, w.replace(/^[a-z]'/,"")]);
   return said.some(w=>bw.has(w));
 }
+/* (.43) whether an item's board is on the screen (the two rules of textCtx below: the board of the exercise being run, and only
+   on an item that uses it). The narrator's lines about a board ("What is said is also written…", "Blue letters are not said.",
+   the underlines) go by this, not by the item having a board: since .37 a board is hidden on the items that do not use it, and
+   the lines still played at the first item of the exercise, with nothing written on the screen (L1E1: before "Répète : Marie.";
+   L1E2 as .43 has it: the underline line before "Pierre ou Sylvie ?"). Now they play at the first item that shows a board. */
+const boardOn = it => !!(it && it.board && !(BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-")) && boardUsed(it));
 function textCtx(it){
   if(it && it.board && BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-")){ TXT.ctx=null; textHide(); trace("board not shown: "+(it.id||"")+" is not of the exercise being run ("+BOARD_EX+")"); return; }
   /* (.37; Jon on the run of 12 Nov 20:00: "the written words for je m'appelle were still on the screen when she was expected to do a
@@ -2960,7 +2966,7 @@ const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).
 async function convIntro(it){
   if(!it || S.settings.manual && S.settings.noConv) return;
   const w=it.text, said=[];
-  if(it.board){ const P=it.board.parts||[], has=k=>P.some(q=>(q[k]||[]).length);      // (.26) the board's conventions, the first time a board is shown
+  if(boardOn(it)){ const P=it.board.parts||[], has=k=>P.some(q=>(q[k]||[]).length);      // (.26) the board's conventions, the first time a board is shown (.43: shown on the screen, boardOn)
     if(await convOnce("words")) said.push("words"); if(has(2)) await convOnce("blue"); if(has(3)) await convOnce("underline"); if(has(4)) await convOnce("wavy"); }
   if(w && w.reveal!=="after" && (w.stage==="W1" || w.stage==="W2" || w.stage==="R" || (w.T && w.t))){
     if(await convOnce("words")) said.push("words");
@@ -2984,7 +2990,7 @@ async function convIntro(it){
 }
 // the conventions an item uses (what convIntro must have introduced before it), defined apart from the triggers above
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
-  if(it.board){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
+  if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
   if(it.type==="tapshow") u.push("tapmodel"); if(it.tapTask) u.push("tap");
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
