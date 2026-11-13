@@ -388,7 +388,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-13.44";
+const APP_VERSION="2026-11-13.45";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1066,6 +1066,15 @@ async function teacherBuf(k){
    and writes it to the trace ("av: ..."). Anything that could put the lips visibly out of step is written as an
    "AV FAULT" line, so a run file shows it without anyone having to report it. */
 const AV={gap:0};
+/* (.45) When the last clip played starts and ends on the audio clock, and the pause of a correction: the next clip starts CORR_GAP
+   after the end of the one before (clipGap waits for that; the gap that was really made is in the trace, "correction pause"). */
+const CLIP={k:"", s:0, e:0, want:""};
+const CORR_GAP=500;
+function clipMark(k, startAt, dur){ if(CLIP.want){ trace("correction pause "+CLIP.want+": "+Math.round((startAt-CLIP.e)*1000)+" ms from the end of "+CLIP.k+" to the start of "+k); CLIP.want=""; } CLIP.k=k; CLIP.s=startAt; CLIP.e=startAt+dur; }
+async function clipGap(what){ CLIP.want=what;
+  const byClock = actx && CLIP.e && CLIP.e > actx.currentTime-1;      // a clip has just ended; if not (a line said by the phone's own voice), from the moment the line ended
+  const w = byClock ? (CLIP.e + CORR_GAP/1000 - 0.03 - actx.currentTime)*1000 - 3 : CORR_GAP - (Date.now()-lastSpeechEnd);
+  if(w>0) await sleep(w); }
 function heardNow(){        // the audio-context time of the sound coming out of the speaker right now
   try{ const ts=actx.getOutputTimestamp && actx.getOutputTimestamp();
     if(ts && ts.contextTime>0 && ts.performanceTime>0) return {t: ts.contextTime + (performance.now()-ts.performanceTime)/1000, how:"output timestamp"}; }catch(e){}
@@ -1104,6 +1113,7 @@ async function playTeacher(text, onStart){
   return new Promise(res=>{
     const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination);
     const startAt=actx.currentTime+0.03, lat=((actx.outputLatency||actx.baseLatency||0)*1000), tCall=performance.now();
+    clipMark(k, startAt, buf.duration);
     const clock=()=> (heardNow().t - startAt)*1000;
     AV.gap=0;
     // the broad smile after a right answer must be gone before she speaks: since 9 Nov the next line follows at once, and a
@@ -2495,9 +2505,10 @@ const LEAD_GAP = 500;
 // the microphone is switched on as the test begins (never in leads), so that listening can start the instant the cue
 // ends; nothing is recorded or heard until then
 function warmMic(){ if(!S.settings.manual && S.settings.engine!=="google" && VOSK.model && window.LISTENER && LISTENER.audioReady) LISTENER.micOn().catch(()=>{}); }
-async function askAndListen(task, expect, think=0, alsoOk=[]){
+async function askAndListen(task, expect, think=0, alsoOk=[], cued=false){
   warmMic();
   recentSaid=[];                          // only the cue can be picked up by the microphone, so only it counts as an echo
+  if(cued){ recentSaid=[PHR.atoi.join(" ")]; if(task.cue==="you" && task.ownName) tagLit(learnerSlot()); return listenT(task, expect, alsoOk); }      // (.45) after a correction: "Vas-y." was the cue, and the turn opens as it ends
   if(task.cue==="point"){                 // touch-and-name: the pointing is the cue, nothing is said
     goldOff(); await sleep(250);          // the border goes off first, so its coming on is seen as the cue
     await sleep(think);                   // think time
@@ -2934,11 +2945,11 @@ async function presentTapShow(a){
   rest();
 }
 let holdHand=false;
-async function presentTap(t, {retest=false, firstSeen=null}={}){
+async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
   ph(retest ? "retest (tap)" : "test (tap)"); rest();
   tapArm(t.targets);                     // (.27) a touch while the cue is said counts
-  await say(t.questionUnits, "tutor", undefined, 0);
-  if(t.touch && t.touch.silent) await silentTouches(t.touch.count);
+  if(!cued){ await say(t.questionUnits, "tutor", undefined, 0);      // (.45) cued: "Vas-y." at the end of a correction was the cue
+    if(t.touch && t.touch.silent) await silentTouches(t.touch.count); }
   textAtResponse(t); signal(true); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal and green border; no microphone)");
   window.__tapTask = t;                     // for the automatic test harness (an oracle learner taps what is asked for)
   const r = await tapWait(t.targets, TAP_WINDOW); tapSignal(null); signal(false);
@@ -3324,16 +3335,17 @@ async function presentLead(t){
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase:"lead", result:"lead (not scored)", heard:[], delayed:!!ctx.delayedRec});
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
-async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0, quiet=false, afterAtoi=false}={}){
+async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0, quiet=false, afterAtoi=false, cued=false}={}){      // cued (.45): "Vas-y." at the end of a correction was the cue; the question is not said again
   /* (.40; tester R, 13 Nov 15:24: "Et toi ?" asked on its own (a delayed test, a part gone through again) was answered with his
      name alone: "And you?" asks for what the sentence before it said. When no "Je m'appelle …" was said just before, Marie says
      her own sentence first, as the part that teaches it does.) */
-  if(t.questionUnits && /^et toi \?$/i.test(String(t.questionUnits[t.questionUnits.length-1]||"").trim()) && !(LASTMODEL && Date.now()-LASTMODEL.t<20000 && /m'appelle/i.test(LASTMODEL.text))){
+  if(!cued && t.questionUnits && /^et toi \?$/i.test(String(t.questionUnits[t.questionUnits.length-1]||"").trim()) && !(LASTMODEL && Date.now()-LASTMODEL.t<20000 && /m'appelle/i.test(LASTMODEL.text))){
     await setPortraits(t.scene); await pointAt("self"); await say(["Je m'appelle "+VOCAB.claire.name+"."]); LASTMODEL={t:Date.now(), text:"Je m'appelle"}; trace("before 'Et toi ?' on its own: Marie's own sentence"); }
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
   curTask=t.id; await setPortraits(t.scene); itemStart(t); await convIntro(t);
-  if(t.tapTask) return presentTap(t, {retest, firstSeen});
-  if(t.gen){ if(t.cue==="repeat") await gesturePalm(t);       // the field-tested script says when "Vas-y" is said
+  if(t.tapTask) return presentTap(t, {retest, firstSeen, cued});
+  if(cued){ offering=true; }
+  else if(t.gen){ if(t.cue==="repeat") await gesturePalm(t);       // the field-tested script says when "Vas-y" is said
     else if(t.vasy && !afterAtoi){ await announce(t); think = t.cue==="point" ? Math.max(think, 300) : AFTER_ATOI; }
     else if(t.cue!=="you") offering = t.cue!=="point" || offering; }
   else if(t.cue==="repeat"){ await gesturePalm(t); }            // "Répète" is itself the turn word: no "Vas-y"
@@ -3343,7 +3355,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   ph(retest? "retest" : "test");
   const expect = t.expect || expectOf(t.target);
   curCue = (t.questionUnits||[]).join(" "); KEEP_THIS = Array.isArray(t.soundPair) && ["le|les","la|les","des|deux"].includes(t.soundPair.map(x=>String(x).toLowerCase()).sort().join("|"));      // the recording of a le / les, la / les, deux / des answer is always kept (ruled on by ear)
-  let r = await askAndListen(t, expect, think, t.alsoOk||[]);
+  let r = await askAndListen(t, expect, think, t.alsoOk||[], cued);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
     if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; rest(); await narrate("swamped"); }      // before asking again: the learner can put the phone down
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
@@ -3494,7 +3506,8 @@ async function ownRecording(){
 }
 function playOwn(o){
   return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=o.buf; const g=actx.createGain(); g.gain.value=Math.min(6, 0.8/Math.max(o.seg.peak,0.01));
-    src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(actx.currentTime+0.03, o.seg.t0, o.seg.dur); setTimeout(()=>res(false), (o.seg.dur+1.5)*1000); });
+    const startAt=actx.currentTime+0.03; clipMark("the learner's own recording", startAt, o.seg.dur);
+    src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(startAt, o.seg.t0, o.seg.dur); setTimeout(()=>res(false), (o.seg.dur+1.5)*1000); });
 }
 async function ownNameCorrection(task, o={}){
   offering=false; const slot=learnerSlot(), why=o.why||"";
@@ -3503,7 +3516,7 @@ async function ownNameCorrection(task, o={}){
   if(own){
     ph("own-name correction: own recording"+(why?" ("+why+")":""));
     gestureEar(); if(slot){ goldOn(slot); tagLit(slot); }
-    if(OWN_LISTEN.length) await say(OWN_LISTEN);
+    if(OWN_LISTEN.length && !o.framed) await say(OWN_LISTEN);      // (.45) inside the correction frame "Non, écoute." has just been said
     if(slot) speakLit("you", true, slot);
     trace("own recording played: "+own.id+" ("+own.seg.t0.toFixed(2)+"-"+own.seg.t1.toFixed(2)+" s of it)");
     await playOwn(own); speakLit("you", false);
@@ -3511,33 +3524,45 @@ async function ownNameCorrection(task, o={}){
     L({result:"own-name correction: the learner's own right answer played", modelClip:own.id});
   } else {
     ph("own-name correction: name tag"+(why?" ("+why+")":""));
+    if(o.framed && actx){ await sleep(27); clipMark("the lit name tag", actx.currentTime, 0.7); }      // (.45) a model with no clip: its 0.7 s count as one for the pauses of the correction frame
     if(slot){ goldOn(slot); tagLit(slot); } await sleep(700);
     trace("own-name correction: no right own-name answer of this learner recorded yet; the learner's name tag is lit"+(slot?"":" (no card on the screen)"));
     L({result:"own-name correction: the learner's name tag lit (no own recording yet)", modelClip:null});
   }
   lastSpeechEnd=Date.now();
 }
-/* Corrections (Jon, 11 Nov 2026: "just one model of the correct answer, and then ask the student"). One model, then the
-   learner's turn: no second model, no build-from-the-end step, no lead. A "Répète : …" cue is itself the model, so a
-   Répète task is asked again at once with nothing before it. */
-async function correction(task, nth, how=""){
-  ph("correction "+nth+(how?" ("+how+")":""));
-  if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : ""}); return; }      // then the question again
-  if(task.tapTask){ await gestureEar(); await tapModel(task, "teacher", task.correct[0]); return; }      // a tap: her hand taps the right picture while she says the cue again; then the task again
+/* Corrections. Jon, 11 Nov 2026: "just one model of the correct answer, and then ask the student": one model, then the learner's
+   turn; no second model, no build-from-the-end step, no lead.
+   (.45; Jon, 13 Nov 2026: "it's currently not clear when the learner has made a mistake … Whenever the learner makes a mistake,
+   Marie should say 'no' in French and then she should say 'listen' and then she should say the answer. When she says the answer,
+   the answer should be very clear. We make it clear by putting a half-second pause before and after the correction. She says
+   'non, écoute' [pause]. She says the answer [pause]. Then she says 'vas-y.'") The frame of every correction:
+       "Non, écoute."  -  0.5 s  -  the model  -  0.5 s  -  "Vas-y."  -  the learner's turn (presentTest, cued: nothing more is said)
+   The model is in the form the task uses (corrModel): the answer said; for a tap her hand taps the right picture while she says
+   the cue; for "Répète : X." the words themselves, "X."; for a sound-pair task the pair again, slowly; for the learner's own
+   name their own earlier right answer played, or their name tag lit. The pauses are from the end of one clip to the start of
+   the next (clipGap). Her hand is at her ear from "Non, écoute." to the end of the model; the open palm comes with "Vas-y.". */
+async function corrModel(task){
+  if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : "", framed:true}); return; }
+  if(task.tapTask){ await tapModel(task, "teacher", task.correct[0]); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the hand has tapped)
   /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
-     the border on the single card and then on the card asked about; then the task again (course field correction). */
-  if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart; await gestureEar();
+     the border on the single card and then on the card asked about (course field correction). */
+  if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart;
     if(c.a) TXT.ctx={w:{stage:"W2", A:c.answer, a:c.a}, tc:0};
     TXT.onPart=(pi, isAnswer)=>{ if(c.sweep[pi]) goldOn(sideOf(c.sweep[pi])); };
     if(c.sweep[0]) goldOn(sideOf(c.sweep[0]));
     SAY_SLOW=!!c.slow; try{ await say([c.answer]); } finally{ SAY_SLOW=false; TXT.onPart=on; TXT.ctx=keep; }
-    await sleep(300); await pointAt(task); return; }
-  if(task.cue==="repeat") return;                                 // the cue "Répète : X." is the one model
-  await gestureEar();                                             // give the answer at once (DISE: "say the correct word as soon as students make a mistake")
-  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));
-  // then the task again (presentTest gives the cue). For touch-and-name the hand comes back first.
-  if(task.cue==="point"){ rest(); await sleep(200); await say(PHR.atoi); return; }
-  await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(task); })()]);
+    return; }
+  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
+}
+async function correction(task, nth, how=""){
+  ph("correction "+nth+(how?" ("+how+")":""));
+  offering=false; gestureEar(); await say(["Non, écoute."]);
+  await clipGap("before the model"); await corrModel(task);
+  await clipGap("after the model");
+  // "Vas-y.": the open palm, the border on what is asked about; the learner's turn opens when it has ended
+  if(task.tapTask || task.cue==="point"){ rest(); await say(PHR.atoi); return; }
+  await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(isOwnName(task) ? "you" : task.cueVoice ? task.cueAt : task); })()]);
 }
 // (.43) what a task is, whatever its id: what is asked, the answer, what the judge expects. Kept with a saved delayed test (see load).
 const taskSig = it => [(it.questionUnits||[]).join(" "), it.target||"", (it.expect||[]).join(" ")].join(" | ");
@@ -3594,8 +3619,9 @@ const PART_REPEATS = 4;    // a part is gone through again at most this many tim
    with another "Je m'appelle Pierre." and she said it again). */
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
-  if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit"});
-  else { await gestureEar(); await pointAt(it.cueVoice ? it.cueAt : it); await say(answerUnits(it)); }
+  offering=false; gestureEar(); await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)");      // (.45) the error is said here too; then one model and on, with no "Vas-y."
+  if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
+  else { await pointAt(it.cueVoice ? it.cueAt : it); await say(answerUnits(it)); }
   rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null}, it.id);
@@ -3655,10 +3681,10 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         let tries=1, fixed=false;
         while(!fixed && tries<TRIAL_LIMIT){
           await correction(it, tries, "new item");
-          fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true}); tries++;
+          fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true}); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part"); break; } i++; prevTest=false; continue; }
-        ph("final confirmation"); smile(true); rest();      // Jon 9 Nov: right = a smile
+        ph("final confirmation"); rest();      // (.45) no smile here: it showed during the icon's second, and with no icon the next task follows at once, as after any right answer
         i++; prevTest=false; continue;
       }
 
@@ -3670,7 +3696,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         // whole exercise, not per correction (a test of 9 Nov 2026 with scattered errors corrected one task 82 times)
         if(tries>=TRIAL_LIMIT || errorsByTask[it.id]>=TRIAL_LIMIT) break;
         await correction(it, errorsByTask[it.id]);
-        fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true});
+        fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true});
         // (until .23 a right retest was followed by two more, "immediate repeat 1, 2": gone (Jon, 11 Nov 2026); the part's
         // repeat below and its delayed tests are the firming check)
       }
@@ -3678,7 +3704,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part (no further model learner's own-name model in it)"); break; }
         i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
-      ph("final confirmation"); smile(true); rest();
+      ph("final confirmation"); rest();
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors.
       // At most PART_REPEATS times: a learner whose errors are scattered across the part would otherwise never leave it;
       // the part is then left for its delayed tests (end of the next exercise, start of the next lesson)
@@ -3686,7 +3712,9 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       if(partRepeats[part.id]>PART_REPEATS){
         logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"PART NOT FIRM after "+PART_REPEATS+" repeats: moved on; it comes back as a delayed test", heard:[]});
         trace("part "+part.id+" not firm after "+PART_REPEATS+" repeats: moved on"); break; }
-      await flashIcon("restart");
+      /* (.45; Jon, 13 Nov 2026: a tester took the circular arrow and the bookmark for praise. "There shouldn't be any indication that
+         the learner is in error correction. It should just seem like the lesson is continuing normally.") no icon here, none at
+         step 5, none before a delayed test: the next task simply follows */
       /* (.37, Jon 12 Nov 21:00: "for step 3 it should go back two 'things': two problems, sounds, pictures, etc. Where it is closer to the
          start of the part it should go back to the start of the part. This is a time saving device.") back two tasks from the one with
          the error, with what goes with the first of them; within the first two tasks of the part, back to its start */
@@ -3711,7 +3739,6 @@ async function runExercise(li, ei){
     // NIFDI step 5 (.37, Jon 12 Nov 20:00): only the tasks that had an error in this exercise are asked again, not the whole exercise
     const only=new Set(Object.keys(errorsByTask).filter(k=>!k.startsWith("__") && !(errorsByTask.__limited||new Set()).has(k)));
     if(only.size){ ph("the tasks with an error again (step 5)"); trace("step 5: the tasks with an error again: "+[...only].join(", "));
-      await flashIcon("restart");
       await runParts(ex.parts, {run:{only}, firstSeen, errorsByTask, anchor}); }
   }
   S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
@@ -3732,7 +3759,6 @@ async function runDelayed(d, anchor){
      run at the start of another, shows no board: the board on the screen always belongs to the exercise being taught */
   BOARD_EX="(a delayed test)"; textHide();
   curSceneKey=null;
-  await flashIcon("bookmark");
   trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
   const hadError = await runParts([part], {run: (d.tasks && d.tasks.length) ? {only:new Set(d.tasks)} : "test", anchor});
   if(!hadError){ d.passed=(d.passed||0)+1; if(d.passed>=2) S.delayed=S.delayed.filter(x=>x!==d); }
