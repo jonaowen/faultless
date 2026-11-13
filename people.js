@@ -601,8 +601,9 @@ function bust(spec, name, variant){
   // mouth
   const my = F.my;
   if (smile){
-    /* neutral mouth -> broad smile and back: the corners go out and up, the teeth show, the cheeks lift and the eyes narrow */
-    const an = smile === "anim", K = `keyTimes="0;0.14;0.4;0.8;1" dur="1.3s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1;0.4 0 0.6 1"`;
+    /* neutral mouth -> broad smile and back: the corners go out and up, the teeth show, the cheeks lift and the eyes narrow.
+       (.40; Jon, 13 Nov: the tester could not see that it was a smile) half speed: one smile in 2.6 s (was 1.3 s) */
+    const an = smile === "anim", K = `keyTimes="0;0.14;0.4;0.8;1" dur="2.6s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1;0.4 0 0.6 1"`;
     const A = (attr, a, b) => an ? `<animate attributeName="${attr}" values="${a};${a};${b};${b};${a}" ${K}/>` : "";
     const V = (a, b) => an ? a : b;
     const m0 = "M70.5 109.6 Q80 110.8 89.5 109.6 Q80 112.4 70.5 109.6 Z", m1 = "M63.5 105.4 Q80 111.4 96.5 105.4 Q80 127 63.5 105.4 Z";
