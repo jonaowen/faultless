@@ -3587,7 +3587,13 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
          (Jon, 10 Nov 2026: "she is holding her hand to her ear and then lowering it again, over and over again, and it's
          distracting … she puts her hand down when the string of models is complete"). */
       if(it.type==="model"){ const nx=items[i+1]; holdEar = !!(it.gen && it.voice==="teacher" && nx && nx.type==="model" && nx.gen && nx.voice==="teacher" && !nx.qIntro);
-        await presentModel(it); holdEar=false; shown.add(it); prevTest=false; prevItem=it; i++; continue; }
+        await presentModel(it); holdEar=false; shown.add(it); prevTest=false; prevItem=it;
+        /* (.40; Jon, 13 Nov, tester R's run: when the shoe, the pen, the book and the apple were introduced, "the app went very very
+           quickly through each gender … The timing for this should be the same as the timing for the numbers 1, 2, 3, 4 … whenever
+           a list of objects is processed through one after the other, the rate should be that half-second rate so that the learner
+           can attend to what they're being presented with.") A model followed by another model: the counting gap between them. */
+        if(items[i+1] && items[i+1].type==="model"){ await sleep(COUNT_GAP); trace("list pace: "+COUNT_GAP+" ms before the next model"); }
+        i++; continue; }
       /* Jon, 11 Nov 2026 (evening): "No lead steps anywhere … It doesn't really work in an app environment. The person always
          responds late or not at all." A lead task of the course is not presented (the revised course has none); nothing is said
          together with the teacher or a model learner. NO_LEADS=false brings them back. */
