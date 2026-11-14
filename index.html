@@ -3064,7 +3064,12 @@ function listenT(task, expect, alsoOk){
 const CONV_LINES = {words:"words", blue:"blue", underline:"underline", wavy:"wavy", lis:"lis", tapmodel:"tapmodel", tap:"tap", count:"count", count_you:"count_you", asker:"asker"};
 async function convOnce(key){ S.conv=S.conv||{}; if(S.conv[key]) return false; S.conv[key]=true; save(); ph("introduction: "+key); trace("narrator: the convention \""+key+"\"");
   if(key==="count_you"){ await narrate("count_you_a"); await say(["À toi.", "Compte."]); await sleep(150); await narrate("count_you_b"); return true; }      // (.37) the cue is "À toi. Compte." (DISE: "Your turn: Count.")      // (.28) Marie's "À toi." between the narrator's two clips
-  if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
+  if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }
+  /* (.53; Jon, 14 Nov: "the English narrator, when she explains about touching objects, should explain that Marie will ask for the French word
+     for 'touch', which is 'touche' whenever touching is expected.") The word is Marie's own "Touche." between the narrator's two clips. New keys
+     (touche_model, touche_tap), so that a learner who heard the old lines hears these once too. */
+  if(key==="touche_model"){ rest(); await narrate("tapmodel_a"); await say(["Touche."]); await sleep(150); await narrate("tapmodel_b"); return true; }
+  if(key==="touche_tap"){ rest(); await narrate("tap_a"); await say(["Touche."]); await sleep(150); await narrate("tap_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
   await narrate(CONV_LINES[key]||key); return true; }
 const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
 async function convIntro(it){
@@ -3078,8 +3083,8 @@ async function convIntro(it){
     if(partsHave(w,3)) await convOnce("underline");
     if(partsHave(w,4)) await convOnce("wavy"); }
   if(it.read) await convOnce("lis");
-  if(it.type==="tapshow") await convOnce("tapmodel");
-  if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("tap"); }
+  if(it.type==="tapshow") await convOnce("touche_model");
+  if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
   /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
      before the FIRST task that uses its convention, models included: the two counting lines together before the first count of
      any kind ("À toi." is first said to Pierre in a model); "asker" before the first item in which Pierre or Sylvie asks */
@@ -3095,7 +3100,7 @@ async function convIntro(it){
 // the conventions an item uses (what convIntro must have introduced before it), defined apart from the triggers above
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
-  if(it.type==="tapshow") u.push("tapmodel"); if(it.tapTask) u.push("tap");
+  if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap");
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
