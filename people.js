@@ -18,6 +18,10 @@
                                opts.still = true: one frozen frame; opts.name: the text of the name tag; opts.looks: as for a person.
                                PICS.person({person: "paul" | "julie", doing: "dancing" | "jumping" | "smiling" | "standing up" |
                                "sitting down" | "walking"}) gives the same (spec.still = true for the frozen frame)
+                               "smile" (.50): head and shoulders, no name tag; the loop starts on the whole picture with a level closed
+                               mouth, closes in on the face as the mouth turns into a wide closed smile (cheeks up, eyes narrowed), stays,
+                               and comes back (3.2 s). opts.still: the smiling face close up. "not smiling": the same close-up of the
+                               face, the mouth level and closed, the eyes open (always still): the negative example of the smile
      PICS.car(spec)            a car: looks red / black / green / blue, old, sports, small; spec.count > 1 lays several out
         (for a person, spec.doing may also be "drinking": a glass of water at the mouth, or "walking": a whole figure
         in mid-stride; looks may be written "in a coat", "with a hat", "wearing glasses")
@@ -48,7 +52,9 @@
         face        feeling good | feeling so-so | feeling bad | hungry | thirsty | cold | hot | tired: a face card, a plain adult face
         French flag (or "flag")     the tricolour on a small flagpole
         picture card (or "card")    a white card with the learner's figure, frozen, doing spec.doing: dancing | jumping | walking |
-                               smiling | eating | drinking | raising a hand (any act of PICS.action)
+                               smiling | eating | drinking | raising a hand (any act of PICS.action); spec.sex "f": the woman.
+                               smiling / not smiling (.50): the face close up, eyes to chin filling the card, smiling / with a level
+                               closed mouth: {is: "picture card", doing: "not smiling"} stands beside the smiling card
         newspaper   a folded newspaper               letter      a handwritten sheet and its envelope
         book, apple, pen, shoe      small plain versions of the app's own pictures (the app draws its own; these are for spec.holding);
                                book takes "open". key, dog, car: the same as PICS.key / PICS.dog / PICS.car
@@ -302,7 +308,9 @@ function lookName(x){
   if (String(x).toLowerCase().trim() === "on a bicycle") t = "bicycle";
   return SAME[t] || t;
 }
-const doingOf = spec => String(spec && spec.doing || "").toLowerCase().split(/[ ,]/)[0];
+/* the first word of what somebody is doing ("standing up" -> "standing"); "not smiling" stays whole (.50: the face that does not smile) */
+const firstWord = x => { const t = String(x || "").toLowerCase(); return /^\s*not smil(e|es|ing)\b/.test(t) ? "not smiling" : t.split(/[ ,]/)[0]; };
+const doingOf = spec => firstWord(spec && spec.doing);
 function traits(spec, variant){
   const looks = (spec.looks || []).map(lookName).filter(x => x !== "in a row" && x !== "a row" && !MOOD[x] && (!HEIGHT[x] || liveTall(spec))), L = {}; looks.forEach(x => L[x] = 1);
   let c;
@@ -453,6 +461,12 @@ function hairOf(style, u, c){
   return {};
 }
 
+/* the smile (PICS.action "smile"): one loop, the same dur and repeat for every animation of the picture. The picture closes in
+   (SMILE_KZ) a little before the mouth turns (SMILE_K), so that the change is seen large; both end together, on the first frame. */
+const SMILE_DUR = 3.2, SMILE_ZOOM = { z: 2.5, cy: 101 };
+const SMILE_KEY = kt => `keyTimes="${kt}" dur="${SMILE_DUR}s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1;0.4 0 0.6 1"`;
+const SMILE_KZ = SMILE_KEY("0;0.08;0.3;0.88;1"), SMILE_K = SMILE_KEY("0;0.24;0.48;0.88;1");
+
 /* ---------- one person, head and shoulders ---------- */
 function bust(spec, name, variant){
   const c = traits(spec, variant), L = c.L, u = "pk" + (seq++) + "_", kid = c.kid, fem = c.fem, P = c.named === "paul", J = c.named === "julie";
@@ -460,7 +474,7 @@ function bust(spec, name, variant){
   const mood = sleeping || drinking || reading ? "" : c.mood, anim = spec._act === "anim";      // a face that tells (MOOD); the loop of PICS.action "eat" / "drink"
   const tilt = mood === "bad" ? "translate(0 5) rotate(7 80 122)" : mood === "yuck" ? "rotate(-5 80 122)" : reading ? "translate(0 3)" : "";
   const skin = c.skin, top = c.top;
-  const smile = spec._smile || "";                         // "anim" | "still": the mouth goes from neutral to a broad smile (PICS.action "smile")
+  const smile = spec._smile || "";                         // PICS.action "smile": "anim" (the loop) | "still" (its smiling frame); "neutral": the same face, close up, not smiling
   // body shape: Pierre and Sylvie keep the portrait's; other women are a little narrower; children much narrower
   const B = kid ? { x0: 36, x1: 124, yt: 133, cw: 28, drop: 30, neck: "M73 112 h14 v20 q-7 5-14 0z", vw: 10, vb: 168 }
     : (fem && !c.named) ? { x0: 27, x1: 133, yt: 132, cw: 31, drop: 36, neck: "M71 110 h18 v20 q-9 7-18 0z", vw: 13, vb: 174 }
@@ -614,18 +628,26 @@ function bust(spec, name, variant){
   // mouth
   const my = F.my;
   if (smile){
-    /* neutral mouth -> broad smile and back: the corners go out and up, the teeth show, the cheeks lift and the eyes narrow.
-       (.40; Jon, 13 Nov: the tester could not see that it was a smile) half speed: one smile in 2.6 s (was 1.3 s) */
-    const an = smile === "anim", K = `keyTimes="0;0.14;0.4;0.8;1" dur="2.6s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1;0.4 0 0.6 1"`;
-    const A = (attr, a, b) => an ? `<animate attributeName="${attr}" values="${a};${a};${b};${b};${a}" ${K}/>` : "";
-    const V = (a, b) => an ? a : b;
-    const m0 = "M70.5 109.6 Q80 110.8 89.5 109.6 Q80 112.4 70.5 109.6 Z", m1 = "M63.5 105.4 Q80 111.4 96.5 105.4 Q80 127 63.5 105.4 Z";
-    const t0 = "M72 109.9 Q80 110.9 88 109.9 Q80 111.3 72 109.9 Z", t1 = "M66.4 107 Q80 112.2 93.6 107 Q80 118.4 66.4 107 Z";
-    head += `<path d="${V(m0, m1)}" fill="#5a1b1d" stroke="${lip}" stroke-width="2.4" stroke-linejoin="round">${A("d", m0, m1)}</path>
-      <path d="${V(t0, t1)}" fill="#fffdf8">${A("d", t0, t1)}</path>
-      <g opacity="${V(0, 1)}">${A("opacity", 0, 1)}<ellipse cx="60.5" cy="99" rx="10" ry="6.4" fill="url(#${u}b)"/><ellipse cx="99.5" cy="99" rx="10" ry="6.4" fill="url(#${u}b)"/>
-        <path d="M58.4 94.6 q8.6 -5.2 17.2 0 q-8.6 5.6 -17.2 0z M84.4 94.6 q8.6 -5.2 17.2 0 q-8.6 5.6 -17.2 0z" fill="${skin[1]}"/>
-        <path d="M59 93.6 q8 -4.4 16 0 M85 93.6 q8 -4.4 16 0" stroke="${skin[2]}" stroke-width="1.3" fill="none" stroke-linecap="round"/></g>`;
+    /* (.50; Jon, 14 Nov: a tester took "Souris." to mean "myself": he saw a face with a name tag, not a smile; "a zoom in on the smile
+       would do it. Also, usually a clearer smile is with a closed mouth") A closed-mouth smile, and the picture goes to it. The loop
+       starts on the whole head and shoulders with a level closed mouth; the picture closes in on the face while the mouth turns into a
+       wide upturned closed curve (corners up, cheeks lifted, the lower lids pushed up over the eyes); it stays there, and comes back.
+       No teeth, no name tag. Every animation has the same dur (SMILE_DUR: the app waits for one whole loop, the longest dur it finds).
+       "still": the smiling frame, close up; "neutral": the same close-up of the face not smiling (the card that stands beside it). */
+    const an = smile === "anim", on = smile === "still";
+    const A = (attr, a, b) => an ? `<animate attributeName="${attr}" values="${a};${a};${b};${b};${a}" ${SMILE_K}/>` : "";
+    const V = (a, b) => on ? b : a;
+    const m0 = `M70 ${110.6 + my} Q80 ${110.6 + my} 90 ${110.6 + my}`, m1 = `M62.4 ${104.6 + my} Q80 ${123 + my} 97.6 ${104.6 + my}`;
+    const line = (col, w, extra) => `<path d="${V(m0, m1)}" stroke="${col}" stroke-width="${w}" fill="none" stroke-linecap="round"${extra || ""}>${A("d", m0, m1)}</path>`;
+    head += line(c.beard ? "#cf6f72" : lip, 4.2) + line("#5e1f24", 1.3, ` opacity=".85"`);      // the lips, and the line where they meet (on a beard, lighter lips: they must show)
+    if (smile !== "neutral"){
+      const lids = F.ex.map(cx => { const cy = F.ey, lo = `L${cx + 7.8} ${cy + 5} Q${cx} ${cy + 9.5} ${cx - 7.8} ${cy + 5} Z`;
+        const e0 = `M${cx - 7.8} ${cy + 2.6} Q${cx} ${cy + 5.8} ${cx + 7.8} ${cy + 2.6}`, e1 = `M${cx - 7.8} ${r2(cy + 1.5)} Q${cx} ${r2(cy - 2.5)} ${cx + 7.8} ${r2(cy + 1.5)}`;
+        const one = `<path d="${V(e0, e1)} ${lo}" fill="url(#${u}s)">${A("d", e0 + " " + lo, e1 + " " + lo)}</path><path d="${V(e0, e1)}" stroke="#2a1c15" stroke-width="1.15" fill="none" stroke-linecap="round" opacity=".8">${A("d", e0, e1)}</path>`;
+        return F.es !== 1 ? `<g transform="translate(${cx} ${cy}) scale(${F.es}) translate(${-cx} ${-cy})">${one}</g>` : one; }).join("");
+      head += `<g opacity="${V(0, 1)}">${A("opacity", 0, 1)}<ellipse cx="58.5" cy="${99.5 + my}" rx="10.5" ry="6.6" fill="url(#${u}b)"/><ellipse cx="101.5" cy="${99.5 + my}" rx="10.5" ry="6.6" fill="url(#${u}b)"/>
+        ${c.beard ? "" : `<path d="M59.6 ${100.6 + my} q-3.4 3.6 -0.6 8 M100.4 ${100.6 + my} q3.4 3.6 0.6 8" stroke="${skin[2]}" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".9"/>`}${lids}</g>`;
+    }
   }
   else if (mood === "good" || mood === "yum") head += `<ellipse cx="60.5" cy="${99 + my}" rx="10" ry="6.4" fill="url(#${u}b)"/><ellipse cx="99.5" cy="${99 + my}" rx="10" ry="6.4" fill="url(#${u}b)"/>
      <path d="M63.5 ${105.4 + my} Q80 ${111.4 + my} 96.5 ${105.4 + my} Q80 ${128 + my} 63.5 ${105.4 + my} Z" fill="#5a1b1d" stroke="${lip}" stroke-width="2.4" stroke-linejoin="round"/>
@@ -692,7 +714,7 @@ function bust(spec, name, variant){
 
   /* --- in front: long hair over the shoulders, name tag, arms and things held, z z Z --- */
   let front = hair.over ? (sleeping ? `<g transform="rotate(-6 80 122)">${hair.over}</g>` : tilt ? `<g transform="${tilt}">${hair.over}</g>` : hair.over) : "";
-  if (c.named && name !== null && name !== undefined && name !== ""){
+  if (c.named && name !== null && name !== undefined && name !== "" && !smile){      // (.50) no name tag on a smile: a tag says "this is X", and the smile is what is shown
     const nm = String(name).replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
     const tw = Math.max(J ? 56 : 50, nm.length * 7.6 + 4);
     front += `<g class="nametag"><rect x="${80 - tw / 2}" y="146" width="${tw}" height="24" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/>
@@ -797,7 +819,12 @@ function bust(spec, name, variant){
   if (sleeping) front += L.umbrella ? zed(127, 98, 8) + zed(135, 76, 11) + zed(141, 50, 14.5) : zed(113, 62, 10) + zed(122, 40, 14) + zed(131, 13, 19);
 
   if (spec._head) return mk(`<defs>${defs}</defs><g class="hb">${hair.back || ""}</g><g class="hd">${head}${headFront}</g>`);      // PICS.action draws its own body
-  const all = behind + body + head + front;
+  let all = behind + body + head + front;
+  if (smile){                                              // the picture closes in on the face (see the mouth, above)
+    const Z = SMILE_ZOOM, zy = kid ? Z.cy + 2 : Z.cy, tx = r2(80 - Z.z * 80), ty = r2(95 - Z.z * zy);
+    all = smile === "anim" ? `<g><animateTransform attributeName="transform" type="translate" values="0 0;0 0;${tx} ${ty};${tx} ${ty};0 0" ${SMILE_KZ}/><g><animateTransform attributeName="transform" type="scale" values="1;1;${Z.z};${Z.z};1" ${SMILE_KZ}/>${all}</g></g>`
+      : `<g transform="translate(${tx} ${ty}) scale(${Z.z})">${all}</g>`;
+  }
   return mk(`<defs>${defs}${plain ? "" : `<clipPath id="${u}x"><rect x="0" y="0" width="160" height="190" rx="12"/></clipPath>`}</defs>` + (plain ? all : `<g clip-path="url(#${u}x)">${all}</g>`));
 }
 
@@ -1128,12 +1155,12 @@ function car(spec){
 
 /* ---------- actions that the learner does, the teacher shows and Pierre and Sylvie are pictured doing ----------
    PICS.action(act, who, opts): act "dance" | "jump" | "smile" | "stand up" | "sit down" | "walk" | "raise hand" | "stop" | "eat" | "drink";
-   who "you" | "marie" | "paul" | "julie"; opts.still = true gives one frozen frame ("smile", "eat" and "drink" are the head and shoulders). The figure is the usual head and shoulders, half size, on a jointed body; the joints
+   who "you" | "marie" | "paul" | "julie"; opts.still = true gives one frozen frame ("smile", "not smiling", "eat" and "drink" are the head and shoulders). The figure is the usual head and shoulders, half size, on a jointed body; the joints
    are turned by SMIL <animateTransform> (no script timers), so the picture loops by itself wherever it is put.
    The poses were drawn from the Mulberry symbols (dance, jump, sit, stand, walk, get out of chair, smile) and from photographs
    of people jumping and walking (Stanford 40 Actions): a jump is knees tucked, arms flung up and the ground left behind; a dance is
    one arm up, the other out, one leg kicked to the side, the body swaying; a walk is a scissor stride with the arms low. */
-const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump", smiling: "smile", smile: "smile", standing: "stand up", stand: "stand up",
+const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump", smiling: "smile", smile: "smile", "not smiling": "not smiling", standing: "stand up", stand: "stand up",
   sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
   talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave" };
 const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink" };
@@ -1181,13 +1208,14 @@ MOVES.leave = Object.assign({}, MOVES.walk, { scale: 0.86, ox: 30, house: "left"
 const ACT_SPEED = 2;
 function action(act, who, opts){
   opts = opts || {};
-  const word = x => String(x || "").toLowerCase().trim().split(/[ ,]/)[0];
+  const word = x => firstWord(String(x || "").trim());
   act = ACT_OF[word(act)] || ACT2[word(act)] || "smile";
   who = who === "marie" || who === "paul" || who === "julie" ? who : "you";
   const still = !!opts.still, spec = opts.spec && !opts.spec.person && opts.spec.is ? { is: opts.spec.is } : { person: who }, name = who === "you" ? "" : (opts.name || WHO_NAME[who]);
   if (opts.looks && opts.looks.length) spec.looks = opts.looks;
   if (opts.sex === "f" && spec.person === "you") spec.sex = "f";      // the learner as a woman (opts.sex "f"; "m", the default, is the man)
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
+  if (act === "not smiling"){ spec._smile = "neutral"; return bust(spec, name); }      // (.50) the face close up, as the smile is, the mouth level and closed: always still
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
   const c = traits(spec), L = c.L, K = opts.card ? Object.assign({}, MOVES.stop, { poses: [A_CARD, A_CARD], scale: 0.8, ox: -36 }) : opts.size ? Object.assign({}, MOVES.stop, { scale: opts.size === "short" ? 0.8 : 1.22, ox: 12 })
@@ -1233,7 +1261,7 @@ function action(act, who, opts){
     G("translate", P.map(p => `${p.bx} ${p.by}`), G("rotate", P.map(p => `${p.br} 80 118`), upper));
   let back = "", front = "";
   const S = r2((K.scale || 1) * W.k);
-  if (opts.card) back += `<g transform="translate(73.1 8.3) scale(.574)">${card(lookOf({}), { doing: opts.card })}</g>`;       // the picture card of what they are going to do, held up
+  if (opts.card) back += `<g transform="translate(73.1 8.3) scale(.574)">${card(lookOf({}), { doing: opts.card, sex: spec.sex })}</g>`;       // the picture card of what they are going to do, held up
   if (opts.size){ const y = r2(178 - (c.kid ? 138 : 131) * S);       // a measuring post behind, and a mark at the top of the head
     back += `<path d="M22 8 V180" stroke="#8f98a3" stroke-width="5" stroke-linecap="round"/><path d="${Array.from({ length: 10 }, (_, i) => `M22 ${178 - i * 17} h${i % 2 ? 7 : 11}`).join(" ")}" stroke="#8f98a3" stroke-width="2.4" stroke-linecap="round"/>
       <path d="M22 ${y} H92" stroke="#d8483f" stroke-width="2.6" stroke-dasharray="5 4"/><path d="M22 ${y} l-11 -6 v12z" fill="#d8483f"/>`; }
@@ -1255,7 +1283,10 @@ function action(act, who, opts){
     front += `<path d="M${x0} ${y} H${x1 - 8}" stroke="#3fae5a" stroke-width="6" stroke-linecap="round"/><path d="M${x1 - 14} ${y - 8} L${x1} ${y} L${x1 - 14} ${y + 8}" stroke="#3fae5a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   if (K.talk){                                             // (.48) the speech bubble and its sound lines
-    const blink = d => still ? "" : `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.7;1" begin="${d}s" dur="${r2(1.2 / ACT_SPEED * 2)}s" repeatCount="indefinite"/>`;
+    /* (.50) every part of the bubble begins with the loop: a dot that comes in later has its wait inside its own key times, not a later
+       begin (a later begin left the dot in the middle of a loop for its first 0.15 / 0.3 s when the picture was shown a second time) */
+    const blink = d => { const f = r2(d / (1.2 / ACT_SPEED * 2));
+      return still ? "" : `<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;${f};${r2(f + 0.2)};${r2(0.7 + f)};1" dur="${r2(1.2 / ACT_SPEED * 2)}s" repeatCount="indefinite"/>`; };
     front += `<path d="M102 14 H150 Q156 14 156 20 V50 Q156 56 150 56 H116 L100 68 L106 56 H102 Q96 56 96 50 V20 Q96 14 102 14Z" fill="#fff" stroke="#6d737c" stroke-width="2.2" stroke-linejoin="round"/>` +
       [0, 1, 2].map(i => `<circle cx="${110 + i * 16}" cy="35" r="4.6" fill="#6a55b8">${blink(i * 0.15)}</circle>`).join("") +
       `<path d="M92 48 q5 4 0 9 M97 44 q8 8 0 17" stroke="#6a55b8" stroke-width="2.6" fill="none" stroke-linecap="round">${blink(0)}</path>`;
@@ -1800,9 +1831,11 @@ function shoeS(k){
 }
 /* a picture card: a white card with the learner's figure doing spec.doing, frozen: it tells which action to command */
 function card(k, spec){
-  const u = k.u, w = String(spec && spec.doing || "").toLowerCase().trim().split(/[ ,]/)[0], a = ACT_OF[w] || ACT2[w] || "smile", face = a === "smile" || a === "eat" || a === "drink", s = face ? 0.86 : 0.84;
+  const u = k.u, w = firstWord(String(spec && spec.doing || "").trim()), a = ACT_OF[w] || ACT2[w] || "smile", close = a === "smile" || a === "not smiling", face = a === "eat" || a === "drink", s = close ? 0.9 : face ? 0.86 : 0.84;
+  const sex = spec && spec.sex === "f" ? "f" : "m";        // the learner's own figure, a man or a woman (the app gives spec.sex)
+  /* (.50) "smiling" / "not smiling": the face close up fills the card (the smiling frame of the loop; the same face, the mouth level) */
   return `<g transform="rotate(-3 80 95)"><rect x="15" y="14" width="136" height="170" rx="9" fill="#000" opacity=".14"/><rect x="12" y="10" width="136" height="170" rx="9" fill="#fff" stroke="${k.cn ? k.tint().b : "#7d848e"}" stroke-width="${k.cn ? 6 : 2.4}"/>
-    <clipPath id="${u}c"><rect x="14" y="12" width="132" height="166" rx="7"/></clipPath><g clip-path="url(#${u}c)"><g transform="translate(${r2(80 - 80 * s)} ${face ? r2(181 - 190 * s) : r2(172 - 186 * s)}) scale(${s})">${action(a, "you", { still: true }).outerHTML}</g></g></g>`;
+    <clipPath id="${u}c"><rect x="14" y="12" width="132" height="166" rx="7"/></clipPath><g clip-path="url(#${u}c)"><g transform="translate(${r2(80 - 80 * s)} ${close ? r2(95 - 95 * s) : face ? r2(181 - 190 * s) : r2(172 - 186 * s)}) scale(${s})">${action(a, "you", { still: true, sex }).outerHTML}</g></g></g>`;
 }
 /* --- the weather: a snowy scene and a thermometer low and blue (cold); a blazing sun and a thermometer high and red (hot) --- */
 function weather(k){
@@ -2454,10 +2487,11 @@ function thing(spec){
 
 /* ---------- the learner and the teacher side by side, doing the same thing in step (the loops share the clock of the picture) ---------- */
 function together(act, opts){
-  const w = String(act || "").toLowerCase().trim().split(/[ ,]/)[0], a = ACT_OF[w] || ACT2[w] || "smile", face = a === "smile" || a === "eat" || a === "drink", s = face ? 0.66 : 0.62, g = mk("");
+  const w = firstWord(String(act || "").trim()), a = ACT_OF[w] || ACT2[w] || "smile", face = a === "smile" || a === "not smiling" || a === "eat" || a === "drink", close = a === "smile" || a === "not smiling", s = close ? 0.5 : face ? 0.66 : 0.62, g = mk("");
   ["you", "marie"].forEach((who, i) => {
     const c = mk("");
-    c.setAttribute("transform", `translate(${r2((i ? 120 : 40) + (face ? (i ? -1 : 1) : 0) - 80 * s)} ${r2(face ? 190 - 190 * s : 108 - 110 * s)}) scale(${s})`);
+    c.setAttribute("transform", close ? `translate(${i ? 80 : 0} 47.5) scale(${s})`      // (.50) the smile fills its picture when it closes in: the two side by side, not overlapping
+      : `translate(${r2((i ? 120 : 40) + (face ? (i ? -1 : 1) : 0) - 80 * s)} ${r2(face ? 190 - 190 * s : 108 - 110 * s)}) scale(${s})`);
     c.appendChild(action(act, who, opts)); g.appendChild(c);
   });
   return g;
