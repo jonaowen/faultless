@@ -146,5 +146,9 @@
 "tap_b": {
 "text": "touch the picture she asks for.",
 "dur": 1.78
+},
+"doing_intro": {
+"text": "Next, Marie asks people what they are doing, while they are doing it. Watch Sylvie and Pierre answer. Then you will see yourself doing something, and Marie will ask you. Answer as if you were really doing it.",
+"dur": 11.26
 }
 }
