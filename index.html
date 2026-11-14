@@ -377,7 +377,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-14.52";
+const APP_VERSION="2026-11-14.53";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -3047,7 +3047,7 @@ document.addEventListener("pointerdown", e=>{ if(e.target && e.target.closest &&
    any other field the scene gives it. A tap's log entry also lists every picture on the screen by place (shown) and the place expected. */
 const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; const m=/^s(\d+)$/.exec(slot), x=m && sc && sc.row && sc.row[+m[1]];
   if(!x) return slot;
-  let n = x.person ? VOCAB[x.person].name : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "");
+  let n = x.person ? (VOCAB[x.person] ? VOCAB[x.person].name : x.person==="you" ? "the learner's own card" : String(x.person)) : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "");
   for(const k of Object.keys(x)){ if(["person","is","looks","count"].includes(k)) continue; const v=x[k]; if(v==null || v==="" || v===false || (Array.isArray(v) && !v.length)) continue;
     n += " ["+(k==="doing" ? "" : k+": ")+(typeof v==="object" ? JSON.stringify(v) : v)+"]"; }
   return n; };
