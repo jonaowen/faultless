@@ -1746,6 +1746,41 @@ async function listenVosk(expect, alsoOk=[]){
   const ECHO_MS = 450, TAIL_END_MS = 250;
   rec.setWords(true);
   const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now(), lastWordEnd=0, sound=null, firstEarly=null, firstEarlyRaw="", spk=null, sawWord=false, nFinal=0, askedTimes=0; const micAt=Date.now();
+  /* (.51) "Une." said once and written as two words. A tester's run of 14 Nov 2026 (Lesson 1, "Répète : une." and "Un ou une ?"):
+     five answers that were one word, "une" said with weight, the tongue let go of the n at the end with a small puff ("une-uh"; an
+     English ear writes it "Ed", "End"), came out as "un deux" and were corrected as errors, three of them in a row on the same
+     task; a sixth, the vowel drawn out for half a second, came out as "deux" alone. Each was ONE unbroken stretch of sound of 0.5
+     to 0.8 s by the app's own loudness measure. The listener wrote the vowel as "un" or "une" (or wrote nothing for it) and the
+     let-go as "deux". Measured on his recordings replayed into this function and on the recogniser alone: that "deux" begins 0 to
+     150 ms after the front word, lasts 130 to 270 ms (300 ms for the one alone) and is 0.27 to 0.83 as loud as the sound just
+     before it (in four answers, two of them accepted on the phone, it is as loud or louder, and lasts 210 to 240 ms).
+     A "deux" somebody says is a word. The 248 in the real answers that have one (9-14 Nov, counts included) last 270 ms or more
+     (half of them 360 ms or more). The ones said alone have next to no sound in the 0.2 s before them (0.27 of their own
+     loudness at most). Of the 59 that follow "un" in a count, 53 come 210 to 630 ms after it, and the six that come sooner (a
+     fast count) are as loud as the "un" or louder (1.0 to 1.7). The rule below fires on none of the 248.
+     So, only where the answer asked for is the front word alone ("Un." / "Une."), a "deux" is the end of a word let go, not a
+     word, when (a) it lasts 330 ms or less and is quieter than the sound in the 0.2 s before it (under 0.88 of its loudest
+     20 ms), or (b) it starts within 200 ms of the end of "un" / "une" and lasts 240 ms or less. A front word with an end to let
+     go is "une" ("un" ends in its vowel): the front word before it, if one was written, and the "deux" are together heard as
+     "une"; right for "Une.", still wrong for "Un.". The trace says so with the measures, and a right answer's reason in the run
+     file names what the listener wrote. "Un, une" and "un … une" (two words) are untouched: still not "Une.". */
+  const loneFront = expect.length===1 && ["UN","UNE","n1"].includes(expect[0]);
+  const LET_GO = {gapMs:200, shortMs:240, maxMs:330, quieter:0.88, beforeMs:200};
+  const heardW=[]; let letGoNote="";
+  const letGo=()=>{ if(!loneFront || !sound) return; let changed=false;
+    for(let i=0;i<heardW.length;i++){ const b=heardW[i], a=i?heardW[i-1]:null;
+      if(b.w!=="deux") continue;
+      const dur=b.e-b.s, pb=sound.peak(b.s,b.e), before=sound.peak(Math.max(0,b.s-LET_GO.beforeMs), b.s), gap=a?b.s-a.e:-1;
+      const front = !!a && (a.w==="un" || a.w==="une") && gap<=LET_GO.gapMs && !(spk && i===1);      // (a first word taken as the speaker's own sound is not the learner's)
+      const tail = dur<=LET_GO.maxMs && pb>0 && pb<before*LET_GO.quieter;
+      if(!(tail || (front && dur<=LET_GO.shortMs))) continue;
+      if(!front && a && a.w!=="[unk]" && gap<=LET_GO.gapMs) continue;      // the end of some other word: left as written
+      const wrote = front ? a.w+" deux" : "deux";
+      letGoNote="the end of \"une\" let go: the listener wrote \""+wrote+"\"";
+      trace("\"deux\" "+(front?gap+" ms after \""+a.w+"\"":"with no word before it")+", "+dur+" ms long, "+(before>0?(pb/before).toFixed(2):"?")+" as loud as the 0.2 s before it: the end of a word let go, not a word; heard as \"une\"");
+      if(front){ a.w="une"; heardW.splice(i,1); i--; } else b.w="une";
+      changed=true; }
+    if(changed) for(let k=0;k<finals.length;k++) if(heardW.some(x=>x.k===k) || finals[k]==="deux") finals[k]=heardW.filter(x=>x.k===k).map(x=>x.w).join(" "); };
   // everything the recogniser has so far, without the speaker's own last sound (spk) if that gave a first word
   const rawAll=()=>{ let r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(spk && (r===spk || r.startsWith(spk+" "))) r=r.slice(spk.length).trim(); return r; };
   const askTimes=()=>new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,500); }).then(()=>{ onFinal=null; });
@@ -1772,7 +1807,8 @@ async function listenVosk(expect, alsoOk=[]){
             +(spk?": \""+spk+"\" was over within "+(spk===w.word?TAIL_END_MS/1000:0.46)+" s of the microphone opening, so it is the end of the teacher's own cue from the speaker, not counted":"")
             +(firstEarly?"; \""+firstEarly+"\" was over within 0.46 s":"")); } }
       lastWordEnd=Math.round(ws[ws.length-1].end*1000); }
-    if(t) finals.push(t); partial=""; noteRaw(); if(onFinal) onFinal(); });
+    if(t){ finals.push(t); if(loneFront && ws.length===t.split(" ").length){ const k=finals.length-1; for(const w of ws) heardW.push({w:w.word, s:Math.round(w.start*1000), e:Math.round(w.end*1000), k}); letGo(); } }
+    partial=""; noteRaw(); if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
   const textNow=()=>voskClean(rawAll(), expect);
   let buf=[], n=0;
@@ -1789,12 +1825,18 @@ async function listenVosk(expect, alsoOk=[]){
      for 0.6 s with no other sound (an unfinished one, "un…", gets the same extra wait as below). Either way the word
      times are asked for first: if the word was the end of the teacher's own cue (see above), nothing has been said yet
      and the turn stays open. */
+  /* (.51) "Un" is a word, not the start of "une". The wait for an answer that stopped part-way ("un…" before "livre") compared
+     letters, so "un" said for "Une." counted as an unfinished "une": the turn stayed open, green border on and nothing said, for
+     2.6 s after it. Six times in a tester's two runs (13 and 14 Nov 2026) he then said the other word into that wait, 1.8 to 2.6 s
+     after the first ("un … une"), and was corrected for the pair; three more of the owner's turns sat out the wait. Where the
+     answer asked for is the front word alone, nothing is part-way: "un" for "Une." ends the turn like any other wrong word. */
+  const partWay = t => want.startsWith(t) && !(loneFront && t!==want);
   let stopNow=null, early=false, earlyWhy="";
   const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow(); if(!t) return;
     const still=Date.now()-rawSince, open=Date.now()-micAt, st=sound && sound.state();
     if(st && st.speechStart<0 && !nFinal && !(askedTimes && Date.now()-askedTimes>300)){ if(still>=450 && open>=700 && !askedTimes){ askedTimes=Date.now(); rec.retrieveFinalResult(); } return; }
     if(still>=450 && open>=700 && judge(t, expect, [], alsoOk).ok){ early=true; earlyWhy="the whole answer heard, unchanged for 0.45 s"; return stopNow(); }
-    if(st && st.speechStart<0 && open>=1100 && still>=(want.startsWith(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
+    if(st && st.speechStart<0 && open>=1100 && still>=(partWay(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
   const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, longMs:LISTEN.longMs||0, ignoreMs:ECHO_MS, onAudio:feed, onStart:(s,snd)=>{ stopNow=s; sound=snd; },
     onSpeechEnd: async (audio, voice)=>{ await sleep(150); let t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
       let rawNow=rawAll();
@@ -1817,7 +1859,7 @@ async function listenVosk(expect, alsoOk=[]){
         if(after>=160){ trace("own name: "+after+" ms of sound after \"m'appelle\" (which ended at "+lastWordEnd+" ms) with no word for it: the name was said"); return false; }
         trace("own name: \"je m'appelle\" and then "+after+" ms of sound: waiting for the name"); return true;
       }
-      return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
+      return !!t && (expect.includes("REST") ? rawNow===want : partWay(t)); } });
   clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" ("+earlyWhy+")":""));
   /* The microphone swamped by a loud low noise (the phone lying on something that moves: LISTENER.swamp): nothing the
      listener writes for such a turn means anything. Not scored (a listening fault); the narrator says what to do, once
@@ -1843,6 +1885,7 @@ async function listenVosk(expect, alsoOk=[]){
   let v=judge(text, expect, [], alsoOk);
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
+  if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
   trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`);
   return Object.assign(base,{status:"heard", heard:[text], ...v});
 }
@@ -4027,9 +4070,18 @@ function courseGrammar(expect){
     LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>(it.expect||[]).includes("salut"))) && (VOSK.greetFrom=[li,ei]))); }
   const g=VOSK.greetFrom, greets = (expect||[]).includes("salut") || (g && (S.lesson>g[0] || (S.lesson===g[0] && S.ex>=g[1])));
   if(!greets) base = base.filter(p=>!/salut/.test(p));
-  // Lessons 3+ (Lessons 1-2 hear one list, as the four lessons of .17 did): only what has been reached (see VOSK.from above); the answer asked for is always in
-  const GATED_FROM=2, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
+  /* Only what has been reached (see VOSK.from above); the answer asked for is always in. Until .50 this began at Lesson 3
+     and Lessons 1-2 heard one list, as the four lessons of .17 did. (.51) From the first exercise: a tester's "Sylvie." at
+     Lesson 1 Exercise 1 (14 Nov 2026, 17:19:46; plain on the recording) was written "souris", a word she first meets five
+     exercises later, and corrected; another tester's on 13 Nov the same. A word the learner has not met cannot be what was
+     meant: it can only take a right answer away. */
+  const GATED_FROM=0, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
   base = base.filter(p=>reached(VOSK.from.get(p)||[0,0]));
+  /* (.51) Where the answer is the front word alone ("Un." / "Une."), "deux" stays in the list before it is reached (Lesson 1
+     Exercise 7). It is what the listener writes for the end of "une" let go (listenVosk, "said once and written as two
+     words"): with it, such a "une" is "un deux" and is heard as "une"; without it the n is not written at all and three of a
+     tester's five came out "un", a right answer corrected as the other word. */
+  if((expect||[]).length===1 && ["UN","UNE","n1"].includes(expect[0]) && !base.includes("deux")) base = base.concat(["deux"]);
   /* A count ("Un, deux, trois, quatre.") is heard against number words only (.24; tester H 11 Nov 21:08: her "trois" in a count
      came out as "lève-toi", which is in the Lesson 1 list only because Lessons 1 and 2 share one list). */
   if((expect||[]).length>=2 && expect.every(e=>VOCAB[e] && VOCAB[e].kind==="number")){
