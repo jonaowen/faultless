@@ -629,7 +629,7 @@ function genItem(it){
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
-  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner"]) if(it[k]) o[k]=it[k];
+  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner","intro"]) if(it[k]) o[k]=it[k];
   if(+(it.pauseAfterMs||it.pause_after_ms)>0) o.pauseAfterMs=+(it.pauseAfterMs||it.pause_after_ms);      // (.46) course_fix, design log section 58
   if(it.mark===false) o.mark=false;
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
@@ -3138,6 +3138,10 @@ async function convIntro(it){
     if(partsHave(w,2)) await convOnce("blue");
     if(partsHave(w,3)) await convOnce("underline");
     if(partsHave(w,4)) await convOnce("wavy"); }
+  /* (.54; Jon, 14 Nov 2026, on "Tu fais quoi ?": "for this format we need the introductory explanation in English because it's quite an abstract
+     format") a lesson item may name an introduction (course field intro: the key of a narrator clip, audio/narrator/<key>.mp3): the narrator
+     says it once, before that item, which is the first model of the format. About how the app works only: no English about French. */
+  if(it.intro) await convOnce(String(it.intro));
   if(it.read) await convOnce("lis");
   if(it.type==="tapshow") await convOnce("touche_model");
   if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
@@ -3157,6 +3161,7 @@ async function convIntro(it){
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
   if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap");
+  if(it.intro) u.push(String(it.intro));
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
