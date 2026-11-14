@@ -3734,8 +3734,17 @@ async function corrModel(task){
   await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
 const corrKind = t => isOwnName(t) ? "own name" : t.tapTask ? "tap" : t.corr ? "sound pair" : t.cue==="repeat" ? "Répète" : t.cue==="point" ? "touch-and-name" : t.cueVoice ? "spoken answer, cue by a model learner" : "spoken answer";
+/* (.53; Jon, 14 Nov 2026, after a naive tester had a right "une" refused six times with the same words: "'Non, écoute. Une. Vas-y' obscures what
+   the correction actually is by having three words irrelevant to the correction. So instead, the correction should just be the target word.
+   Marie puts her hand to her ear and says 'une' only, then repeats the task. This is for oral tasks. Other tasks can remain how they are for
+   now.") A spoken task's correction is now: her hand to her ear  -  0.5 s  -  the model (the target words and nothing else)  -  0.5 s  -  the
+   task asked again as it was asked (presentTest, not cued: "Répète : une." / "Un ou une ?" / the pointing). No "Non, écoute.", no "Vas-y.".
+   A tap task keeps the .45 frame ("Non, écoute."  -  the cue and her hand's tap  -  "Vas-y."). */
+const oralCorr = t => !t.tapTask;
+const retestOpts = t => oralCorr(t) ? {retest:true, atoi:false, quiet:true} : {retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true};
 async function correction(task, nth, how=""){
-  ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task));
+  ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task)+(oralCorr(task) ? " (the target only, then the task again)" : ""));
+  if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); rest(); return; }
   offering=false; gestureEar(); await say(["Non, écoute."]);
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
@@ -3799,7 +3808,9 @@ const PART_REPEATS = 4;    // a part is gone through again at most this many tim
    with another "Je m'appelle Pierre." and she said it again). */
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
-  offering=false; gestureEar(); await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)");      // (.45) the error is said here too; then one model and on, with no "Vas-y."
+  offering=false; gestureEar();
+  if(oralCorr(it)) await sleep(CORR_GAP);      // (.53) a spoken task: the target only, her hand at her ear
+  else { await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
   else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
   rest();
@@ -3862,7 +3873,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         let tries=1, fixed=false;
         while(!fixed && tries<TRIAL_LIMIT){
           await correction(it, tries, "new item");
-          fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true}); tries++;
+          fixed=await presentTest(it, retestOpts(it)); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part"); break; } i++; prevTest=false; continue; }
         ph("final confirmation"); rest();      // (.45) no smile here: it showed during the icon's second, and with no icon the next task follows at once, as after any right answer
@@ -3877,7 +3888,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         // whole exercise, not per correction (a test of 9 Nov 2026 with scattered errors corrected one task 82 times)
         if(tries>=TRIAL_LIMIT || errorsByTask[it.id]>=TRIAL_LIMIT) break;
         await correction(it, errorsByTask[it.id]);
-        fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true});
+        fixed=await presentTest(it, retestOpts(it));
         // (until .23 a right retest was followed by two more, "immediate repeat 1, 2": gone (Jon, 11 Nov 2026); the part's
         // repeat below and its delayed tests are the firming check)
       }
