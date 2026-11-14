@@ -2080,7 +2080,7 @@ function cardOf(inner, k=0.74){
   const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80-80*k} ${95-95*k}) scale(${k})`); c.appendChild(inner); g.appendChild(c); return g;
 }
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
-const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave"};      // (.48) parler, arriver, partir
+const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave"};      // (.48) parler, arriver, partir
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -3143,7 +3143,8 @@ async function presentGenModel(m){
 const ACT_HALF = 0.5;
 /* (.40; Jon, run of 13 Nov 15:24: the tester "couldn't understand the smile because the animation didn't clearly show a person smiling
    … double the length of the animation and halve the speed") the smile plays at half speed (people.js: one smile in 2.6 s) and
-   is shown twice as long: 2.6 s in Marie's box (ACT_TIME 5200), and one whole smile for a figure too (2.6 s, not a quarter of it) */
+   is shown twice as long: 2.6 s in Marie's box (ACT_TIME 5200), and one whole smile for a figure too (2.6 s, not a quarter of it)
+   (.50) the smile's loop is now 3.2 s (it closes in on the face, smiles, and comes back): wholeLoop makes every wait one whole loop */
 const FIGURE_TIME = act => act==="smile" ? 2600 : Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
 const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:5200, "raise hand":3600, eat:3600, drink:3600, stop:2200};
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
@@ -3212,7 +3213,7 @@ function actBox(who, act, opt){
     const key=["pair", act, opt.you].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
     g.innerHTML=[["marie", act, 30, VOCAB.claire.name+":"], ["you", opt.you, 210, "You:"]].map(([w,a,x,lab],i)=>`<text x="${x+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${lab}</text><g transform="translate(${x},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic${i}"></g></g>`).join("");
     [["marie", act], ["you", opt.you]].forEach(([w,a],i)=>{ try{ document.getElementById("actPic"+i).appendChild(actPicture(w, a, {})); }catch(e){ trace("FAULT action picture "+a+": "+e.message); } });
-    const t=learnerCard().querySelector(".nametag"); if(t){ const k=1; t.setAttribute("transform",`translate(${(290-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); }
+    const t=/^smil/.test(String(opt.you)) ? null : learnerCard().querySelector(".nametag"); if(t){ const k=1; t.setAttribute("transform",`translate(${(290-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); }
     g.setAttribute("opacity",1); return; }
   const BX = opt.left ? 28 : 120;      // (.25) opt.left: the box stands at the left, a picture of one person beside it (setPortraits)
   const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||"", opt.alsoWill||"", BX].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
@@ -3221,7 +3222,10 @@ function actBox(who, act, opt){
     <g transform="translate(${BX},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
   try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
   /* the learner's own name tag under their figure (.24), as on their card in own-name tasks: the figure is the learner */
-  if(mine && !opt.face){ const t=learnerCard().querySelector(".nametag"); if(t){ const k=1.1, x=(who==="both" ? 160 : 200)+(BX-120);      // PICS.together puts the learner on the left
+  /* (.50; Jon, 14 Nov: a tester took "Souris." to mean "myself") no name tag on a smile: "You:" + a face + a name says "this is me";
+     the picture closes in on the mouth as it smiles (people.js), and the label alone says whose smile it is */
+  const smiles = /^smil/.test(String(act)) && !opt.stopped && !opt.will;
+  if(mine && !opt.face && !smiles){ const t=learnerCard().querySelector(".nametag"); if(t){ const k=1.1, x=(who==="both" ? 160 : 200)+(BX-120);      // PICS.together puts the learner on the left
     t.setAttribute("transform",`translate(${(x-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); } }
   g.setAttribute("opacity",1);
 }
