@@ -2206,7 +2206,10 @@ function genPicture0(e){
   /* (.28; Jon, 12 Nov 11:50: "one man in three pictures" was three identical standing men, so "Danse." could not be answered) an
      unnamed person doing an action of the library is drawn doing it (PICS.action with that person), not as a bust */
   if(PEOPLE_KIND.includes(e.is) && e.doing && ACT_NAME[e.doing] && !["eating","drinking","walking"].includes(e.doing) && window.PICS && PICS.action)
-    return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:false});
+    /* (.53; Jon's run of 14 Nov 18:09: "Souris." answered by the man not smiling) a smile among pictures to choose from is the still, close-up
+       smile, as on the cards: the loop starts on a neutral face and goes back to one, so for part of every loop the smiling man was not smiling,
+       beside a picture of the same man not smiling. Whole-body actions still move. */
+    return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:ACT_NAME[e.doing]==="smile"});
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
@@ -2994,8 +2997,18 @@ function touchLog(e, slot, what){ try{ trace("touch event: "+what+" "+(slot||"")
 document.addEventListener("pointerdown", e=>{ if(e.target && e.target.closest && e.target.closest("#tapLayer")) return;
   const el=e.target, what=el ? (el.id || (el.closest && el.closest("[id]") && el.closest("[id]").id) || el.tagName) : "?";
   touchLog(e, "", tapResolver ? "not on a picture that can be tapped (hit "+what+")" : "no tap asked for (hit "+what+")"); }, true);
+/* (.53; Jon, 14 Nov: "You can't have the log giving all pictures in a row the same name. Every item needs qualitative information, because what
+   if a test learner made a mistake and you couldn't reconstruct the qualitative information afterwards? It'd be useless") Until .52 a picture
+   was named by what it is and its looks: four pictures of one man doing four things were all "man (cap)", and every picture card was "picture
+   card". The name now carries everything that tells one picture of a scene from another: what it is doing, did, holds, will do, its value and
+   any other field the scene gives it. A tap's log entry also lists every picture on the screen by place (shown) and the place expected. */
 const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; const m=/^s(\d+)$/.exec(slot), x=m && sc && sc.row && sc.row[+m[1]];
-  return !x ? slot : x.person ? VOCAB[x.person].name : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "")+(x.value!=null && x.is==="numeral" ? " "+x.value : ""); };
+  if(!x) return slot;
+  let n = x.person ? VOCAB[x.person].name : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "");
+  for(const k of Object.keys(x)){ if(["person","is","looks","count"].includes(k)) continue; const v=x[k]; if(v==null || v==="" || v===false || (Array.isArray(v) && !v.length)) continue;
+    n += " ["+(k==="doing" ? "" : k+": ")+(typeof v==="object" ? JSON.stringify(v) : v)+"]"; }
+  return n; };
+const slotsShown = t => { const row=(t.scene && t.scene.row)||[], out=row.map((x,i)=>"s"+i+": "+slotName(t.scene, "s"+i)); if((t.targets||[]).includes("self")) out.push("self: "+VOCAB.claire.name); return out; };
 // the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
 async function tapModel(t, by, slot){
   await setPortraits(t.scene); gestureEar();
@@ -3030,7 +3043,7 @@ async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
   ctx.firm=ctx.firm||{}; ctx.slow=ctx.slow||{};
   if(ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1; if(!ok){ ctx.firm[t.target]=0; }
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:"tap", said:t.questionUnits.join(" "), expected:t.correct.map(s=>slotName(t.scene, s)).join(" or "), heard:[],
-            tapped: r ? slotName(t.scene, r.slot) : null, tappedSlot: r ? r.slot : null, latencyMs: r ? r.ms : null,
+            tapped: r ? slotName(t.scene, r.slot) : null, tappedSlot: r ? r.slot : null, expectedSlot: t.correct.join(" or "), shown: slotsShown(t), latencyMs: r ? r.ms : null,
             result: ok ? "correct" : "ERROR", reason: ok ? "" : r ? "tapped the wrong picture" : "no tap in "+(TAP_WINDOW/1000)+" s", first:!!isFirst, retest, delayed:!!ctx.delayedRec,
             ...(t.ear ? {ear:true} : {}), ...(t.tapInfo ? {discriminates:t.tapInfo.discriminates, heardOnly:t.tapInfo.heardOnly, chance:t.tapInfo.chance} : {})});
   save();
