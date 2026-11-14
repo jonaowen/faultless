@@ -11,7 +11,7 @@
 <style>
 :root{
   --bg:#f4f1ea; --ink:#22252b; --muted:#6b7079; --frame:#ffffff; --frame-line:#d9d3c7;
-  --go:#1fa855; --stop:#d5372e; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
+  --go:#1fa855; --tap:#2f6fd0; --stop:#d5372e; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
   --tutor-top:#3d5a73; --tutor-hair:#4a3326; --paul-top:#3f6fb5; --paul-hair:#6b4a2f;
   --julie-top:#c0453b; --julie-hair:#2a1f1a; --panel:#ffffff;
 }
@@ -19,6 +19,9 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 #signal{position:fixed;inset:0;pointer-events:none;border:14px solid var(--stop);transition:border-color .12s;z-index:20}
 #signal.on{border-color:var(--go)}
+#signal.tap{border-color:transparent}
+#tapBorder{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20;display:none}
+#tapBorder.on{display:block}
 #flag{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(66px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
 #flag.hit{background:#f3d36b;opacity:1}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
@@ -374,7 +377,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-14.52";
+const APP_VERSION="2026-11-14.53";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1283,7 +1286,24 @@ const signalEl = document.getElementById("signal");
 // The border is always shown. Brown: no response wanted. Green: respond now.
 // "listen" = green with the microphone open; "lead" = green while the teacher says it with the learner,
 // microphone closed so the app never hears its own voice; false = brown.
-function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen" || state==="lead"); }
+/* (.53; Jon, 14 Nov, after a naive tester's run: "the border of the screen was green when she needed to tap, so she thought she needed to respond
+   orally. We should change it so a green border is only for oral responses." and: "The clearest border for tapping tasks would be loads of the
+   tapping hand as a pattern forming a border.") Green is for speaking and nothing else. On a tap turn (state "tap") the border is a band of
+   tapping hands all the way round the screen: the same hand as the tap signal on the pictures. Not red, which says "listen, say nothing"
+   and left a tester waiting on 13 Nov (.40), and not green. */
+const TAPBORDER = (()=>{ const el=document.createElementNS("http://www.w3.org/2000/svg","svg"); el.id="tapBorder"; el.setAttribute("aria-hidden","true"); document.body.appendChild(el); return el; })();
+function tapBorderDraw(){
+  const W=window.innerWidth, H=window.innerHeight, T=24, k=21/57, r1=n=>n.toFixed(1);       // T: the band's width (px): the pictures begin 28 px in, so it covers none of them; the hand is 21 px tall in it
+  let h=`<path fill-rule="evenodd" d="M0 0H${W}V${H}H0Z M${T} ${T}V${H-T}H${W-T}V${T}Z" fill="#dbe8fb"/><rect x="${T-1}" y="${T-1}" width="${W-2*T+2}" height="${H-2*T+2}" rx="3" fill="none" stroke="#5a6f8a" stroke-width="2"/>`;
+  const put=(cx,cy)=>{ h+=`<g transform="translate(${r1(cx-1.5*k)},${r1(cy-28*k)}) scale(${k.toFixed(3)})"><use href="#hs_point"/></g>`; };
+  const nx=Math.max(3, Math.round(W/27)), ny=Math.max(3, Math.round((H-2*T)/27));
+  for(let i=0;i<nx;i++){ const cx=(i+0.5)*W/nx; put(cx, T/2); put(cx, H-T/2); }
+  for(let j=0;j<ny;j++){ const cy=T+(j+0.5)*(H-2*T)/ny; put(T/2, cy); put(W-T/2, cy); }
+  TAPBORDER.innerHTML=h;
+}
+window.addEventListener("resize", ()=>{ if(TAPBORDER.classList.contains("on")) tapBorderDraw(); });
+function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen" || state==="lead"); const tap = state==="tap";
+  signalEl.classList.toggle("tap", tap); if(tap) tapBorderDraw(); TAPBORDER.classList.toggle("on", tap); }
 
 function normalise(t){
   return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-…\u2010-\u2015\u2212\u00a0]/g," ").replace(/\s+/g," ").trim();
@@ -1726,6 +1746,41 @@ async function listenVosk(expect, alsoOk=[]){
   const ECHO_MS = 450, TAIL_END_MS = 250;
   rec.setWords(true);
   const finals=[]; let partial="", onFinal=null, rawSeen="", rawSince=Date.now(), lastWordEnd=0, sound=null, firstEarly=null, firstEarlyRaw="", spk=null, sawWord=false, nFinal=0, askedTimes=0; const micAt=Date.now();
+  /* (.51) "Une." said once and written as two words. A tester's run of 14 Nov 2026 (Lesson 1, "Répète : une." and "Un ou une ?"):
+     five answers that were one word, "une" said with weight, the tongue let go of the n at the end with a small puff ("une-uh"; an
+     English ear writes it "Ed", "End"), came out as "un deux" and were corrected as errors, three of them in a row on the same
+     task; a sixth, the vowel drawn out for half a second, came out as "deux" alone. Each was ONE unbroken stretch of sound of 0.5
+     to 0.8 s by the app's own loudness measure. The listener wrote the vowel as "un" or "une" (or wrote nothing for it) and the
+     let-go as "deux". Measured on his recordings replayed into this function and on the recogniser alone: that "deux" begins 0 to
+     150 ms after the front word, lasts 130 to 270 ms (300 ms for the one alone) and is 0.27 to 0.83 as loud as the sound just
+     before it (in four answers, two of them accepted on the phone, it is as loud or louder, and lasts 210 to 240 ms).
+     A "deux" somebody says is a word. The 248 in the real answers that have one (9-14 Nov, counts included) last 270 ms or more
+     (half of them 360 ms or more). The ones said alone have next to no sound in the 0.2 s before them (0.27 of their own
+     loudness at most). Of the 59 that follow "un" in a count, 53 come 210 to 630 ms after it, and the six that come sooner (a
+     fast count) are as loud as the "un" or louder (1.0 to 1.7). The rule below fires on none of the 248.
+     So, only where the answer asked for is the front word alone ("Un." / "Une."), a "deux" is the end of a word let go, not a
+     word, when (a) it lasts 330 ms or less and is quieter than the sound in the 0.2 s before it (under 0.88 of its loudest
+     20 ms), or (b) it starts within 200 ms of the end of "un" / "une" and lasts 240 ms or less. A front word with an end to let
+     go is "une" ("un" ends in its vowel): the front word before it, if one was written, and the "deux" are together heard as
+     "une"; right for "Une.", still wrong for "Un.". The trace says so with the measures, and a right answer's reason in the run
+     file names what the listener wrote. "Un, une" and "un … une" (two words) are untouched: still not "Une.". */
+  const loneFront = expect.length===1 && ["UN","UNE","n1"].includes(expect[0]);
+  const LET_GO = {gapMs:200, shortMs:240, maxMs:330, quieter:0.88, beforeMs:200};
+  const heardW=[]; let letGoNote="";
+  const letGo=()=>{ if(!loneFront || !sound) return; let changed=false;
+    for(let i=0;i<heardW.length;i++){ const b=heardW[i], a=i?heardW[i-1]:null;
+      if(b.w!=="deux") continue;
+      const dur=b.e-b.s, pb=sound.peak(b.s,b.e), before=sound.peak(Math.max(0,b.s-LET_GO.beforeMs), b.s), gap=a?b.s-a.e:-1;
+      const front = !!a && (a.w==="un" || a.w==="une") && gap<=LET_GO.gapMs && !(spk && i===1);      // (a first word taken as the speaker's own sound is not the learner's)
+      const tail = dur<=LET_GO.maxMs && pb>0 && pb<before*LET_GO.quieter;
+      if(!(tail || (front && dur<=LET_GO.shortMs))) continue;
+      if(!front && a && a.w!=="[unk]" && gap<=LET_GO.gapMs) continue;      // the end of some other word: left as written
+      const wrote = front ? a.w+" deux" : "deux";
+      letGoNote="the end of \"une\" let go: the listener wrote \""+wrote+"\"";
+      trace("\"deux\" "+(front?gap+" ms after \""+a.w+"\"":"with no word before it")+", "+dur+" ms long, "+(before>0?(pb/before).toFixed(2):"?")+" as loud as the 0.2 s before it: the end of a word let go, not a word; heard as \"une\"");
+      if(front){ a.w="une"; heardW.splice(i,1); i--; } else b.w="une";
+      changed=true; }
+    if(changed) for(let k=0;k<finals.length;k++) if(heardW.some(x=>x.k===k) || finals[k]==="deux") finals[k]=heardW.filter(x=>x.k===k).map(x=>x.w).join(" "); };
   // everything the recogniser has so far, without the speaker's own last sound (spk) if that gave a first word
   const rawAll=()=>{ let r=finals.concat(partial?[partial]:[]).join(" ").replace(/\s+/g," ").trim(); if(spk && (r===spk || r.startsWith(spk+" "))) r=r.slice(spk.length).trim(); return r; };
   const askTimes=()=>new Promise(res=>{ onFinal=res; rec.retrieveFinalResult(); setTimeout(res,500); }).then(()=>{ onFinal=null; });
@@ -1752,7 +1807,8 @@ async function listenVosk(expect, alsoOk=[]){
             +(spk?": \""+spk+"\" was over within "+(spk===w.word?TAIL_END_MS/1000:0.46)+" s of the microphone opening, so it is the end of the teacher's own cue from the speaker, not counted":"")
             +(firstEarly?"; \""+firstEarly+"\" was over within 0.46 s":"")); } }
       lastWordEnd=Math.round(ws[ws.length-1].end*1000); }
-    if(t) finals.push(t); partial=""; noteRaw(); if(onFinal) onFinal(); });
+    if(t){ finals.push(t); if(loneFront && ws.length===t.split(" ").length){ const k=finals.length-1; for(const w of ws) heardW.push({w:w.word, s:Math.round(w.start*1000), e:Math.round(w.end*1000), k}); letGo(); } }
+    partial=""; noteRaw(); if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
   const textNow=()=>voskClean(rawAll(), expect);
   let buf=[], n=0;
@@ -1769,12 +1825,18 @@ async function listenVosk(expect, alsoOk=[]){
      for 0.6 s with no other sound (an unfinished one, "un…", gets the same extra wait as below). Either way the word
      times are asked for first: if the word was the end of the teacher's own cue (see above), nothing has been said yet
      and the turn stays open. */
+  /* (.51) "Un" is a word, not the start of "une". The wait for an answer that stopped part-way ("un…" before "livre") compared
+     letters, so "un" said for "Une." counted as an unfinished "une": the turn stayed open, green border on and nothing said, for
+     2.6 s after it. Six times in a tester's two runs (13 and 14 Nov 2026) he then said the other word into that wait, 1.8 to 2.6 s
+     after the first ("un … une"), and was corrected for the pair; three more of the owner's turns sat out the wait. Where the
+     answer asked for is the front word alone, nothing is part-way: "un" for "Une." ends the turn like any other wrong word. */
+  const partWay = t => want.startsWith(t) && !(loneFront && t!==want);
   let stopNow=null, early=false, earlyWhy="";
   const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow(); if(!t) return;
     const still=Date.now()-rawSince, open=Date.now()-micAt, st=sound && sound.state();
     if(st && st.speechStart<0 && !nFinal && !(askedTimes && Date.now()-askedTimes>300)){ if(still>=450 && open>=700 && !askedTimes){ askedTimes=Date.now(); rec.retrieveFinalResult(); } return; }
     if(still>=450 && open>=700 && judge(t, expect, [], alsoOk).ok){ early=true; earlyWhy="the whole answer heard, unchanged for 0.45 s"; return stopNow(); }
-    if(st && st.speechStart<0 && open>=1100 && still>=(want.startsWith(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
+    if(st && st.speechStart<0 && open>=1100 && still>=(partWay(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
   const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, longMs:LISTEN.longMs||0, ignoreMs:ECHO_MS, onAudio:feed, onStart:(s,snd)=>{ stopNow=s; sound=snd; },
     onSpeechEnd: async (audio, voice)=>{ await sleep(150); let t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
       let rawNow=rawAll();
@@ -1797,7 +1859,7 @@ async function listenVosk(expect, alsoOk=[]){
         if(after>=160){ trace("own name: "+after+" ms of sound after \"m'appelle\" (which ended at "+lastWordEnd+" ms) with no word for it: the name was said"); return false; }
         trace("own name: \"je m'appelle\" and then "+after+" ms of sound: waiting for the name"); return true;
       }
-      return !!t && (expect.includes("REST") ? rawNow===want : want.startsWith(t)); } });
+      return !!t && (expect.includes("REST") ? rawNow===want : partWay(t)); } });
   clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" ("+earlyWhy+")":""));
   /* The microphone swamped by a loud low noise (the phone lying on something that moves: LISTENER.swamp): nothing the
      listener writes for such a turn means anything. Not scored (a listening fault); the narrator says what to do, once
@@ -1823,6 +1885,7 @@ async function listenVosk(expect, alsoOk=[]){
   let v=judge(text, expect, [], alsoOk);
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
+  if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
   trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`);
   return Object.assign(base,{status:"heard", heard:[text], ...v});
 }
@@ -2186,7 +2249,10 @@ function genPicture0(e){
   /* (.28; Jon, 12 Nov 11:50: "one man in three pictures" was three identical standing men, so "Danse." could not be answered) an
      unnamed person doing an action of the library is drawn doing it (PICS.action with that person), not as a bust */
   if(PEOPLE_KIND.includes(e.is) && e.doing && ACT_NAME[e.doing] && !["eating","drinking","walking"].includes(e.doing) && window.PICS && PICS.action)
-    return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:false});
+    /* (.53; Jon's run of 14 Nov 18:09: "Souris." answered by the man not smiling) a smile among pictures to choose from is the still, close-up
+       smile, as on the cards: the loop starts on a neutral face and goes back to one, so for part of every loop the smiling man was not smiling,
+       beside a picture of the same man not smiling. Whole-body actions still move. */
+    return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:ACT_NAME[e.doing]==="smile"});
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
@@ -2871,14 +2937,17 @@ let w1Run=false;
 const w1Units = t => (w1Run ? [] : ["Répète :"]).concat(t.bareUnits);
 
 /* ---- things in a line, the hand, taps ---- */
+/* (.53; Jon, 14 Nov: "the hand that models touching should be larger, so the model and the correction is clearer") the hand was 0.88 of
+   the drawn hand (about 49 px long on a 400 px screen); it is 1.45 now (about 81 px), with its sleeve and name tag in proportion */
+const HAND_K = 1.45;
 const STRIP = {g:null, pts:[]};
 STRIP.g = mkLayer("stripG", "frames");
 const TAPL = mkLayer("tapLayer", "room"), HANDL = mkLayer("handLayer", "room");
-HANDL.innerHTML=`<circle id="touchPulse" cx="0" cy="0" r="0" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0"/>
-  <rect id="tapRing" x="0" y="0" width="10" height="10" rx="12" fill="none" stroke="#3fae5a" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
-  <g id="theHand" opacity="0" style="transition:transform .2s ease-out, opacity .15s"><g transform="rotate(180) scale(0.88)"><use href="#hs_point"/></g>
-    <rect x="-10" y="-3" width="20" height="20" rx="4" fill="#3d5a7a"/><g id="handTag"></g></g>`;
-const HAND_LEN = 56*0.88, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
+HANDL.innerHTML=`<circle id="touchPulse" cx="0" cy="0" r="0" fill="none" stroke="#2f6fd0" stroke-width="4" opacity="0"/>
+  <rect id="tapRing" x="0" y="0" width="10" height="10" rx="12" fill="none" stroke="#2f6fd0" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
+  <g id="theHand" opacity="0" style="transition:transform .2s ease-out, opacity .15s"><g transform="rotate(180) scale(${HAND_K})"><use href="#hs_point"/></g>
+    <rect x="${-11.4*HAND_K}" y="-3" width="${22.8*HAND_K}" height="${22.8*HAND_K}" rx="${4.5*HAND_K}" fill="#3d5a7a"/><g id="handTag" transform="translate(0,${(22.8*HAND_K-20).toFixed(1)})"></g></g>`;
+const HAND_LEN = 56*HAND_K, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
 const boundsOf = slot => slot==="self" ? SELF_BOUNDS : BOUNDS[slot==="strip" ? "strip" : sideOf(slot)] || BOUNDS[slot];
 const handName = by => by==="teacher"||by==="both" ? VOCAB.claire.name : by==="paul"||by==="julie" ? VOCAB[by].name : by==="you" ? "You" : "";
 function handTo(x, y, by){
@@ -2915,6 +2984,7 @@ function buildStrip(spec, above){
     g.appendChild(picture({is:spec.is, looks:spec.looks||[], count:1})); STRIP.g.appendChild(g); STRIP.pts.push({x:cx, y:cy+30*k}); }
   BOUNDS.strip={x:x0, y:y0, w:W, h:H, r:12}; TARGET.strip={x:200, y:y0+H*0.7};
 }
+/* (.53) Green is for speech only (see signal()): on a tap turn the border is a band of tapping hands. The .40 note below is the step before it. */
 /* (.40; Jon, run of 13 Nov 15:24: "when he was expected to touch each object, the border stayed red and it should have gone green. That's
    confusing. It should be that any time the learner is expected to interact with the app, the border of the phone goes green.")
    A tap turn now has the green border too, with the hand and the dashed outlines (which say "tap", not "speak"); the microphone
@@ -2970,8 +3040,18 @@ function touchLog(e, slot, what){ try{ trace("touch event: "+what+" "+(slot||"")
 document.addEventListener("pointerdown", e=>{ if(e.target && e.target.closest && e.target.closest("#tapLayer")) return;
   const el=e.target, what=el ? (el.id || (el.closest && el.closest("[id]") && el.closest("[id]").id) || el.tagName) : "?";
   touchLog(e, "", tapResolver ? "not on a picture that can be tapped (hit "+what+")" : "no tap asked for (hit "+what+")"); }, true);
+/* (.53; Jon, 14 Nov: "You can't have the log giving all pictures in a row the same name. Every item needs qualitative information, because what
+   if a test learner made a mistake and you couldn't reconstruct the qualitative information afterwards? It'd be useless") Until .52 a picture
+   was named by what it is and its looks: four pictures of one man doing four things were all "man (cap)", and every picture card was "picture
+   card". The name now carries everything that tells one picture of a scene from another: what it is doing, did, holds, will do, its value and
+   any other field the scene gives it. A tap's log entry also lists every picture on the screen by place (shown) and the place expected. */
 const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; const m=/^s(\d+)$/.exec(slot), x=m && sc && sc.row && sc.row[+m[1]];
-  return !x ? slot : x.person ? VOCAB[x.person].name : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "")+(x.value!=null && x.is==="numeral" ? " "+x.value : ""); };
+  if(!x) return slot;
+  let n = x.person ? (VOCAB[x.person] ? VOCAB[x.person].name : x.person==="you" ? "the learner's own card" : String(x.person)) : (x.count>1 ? x.count+" × " : "")+x.is+((x.looks||[]).length ? " ("+x.looks.join(", ")+")" : "");
+  for(const k of Object.keys(x)){ if(["person","is","looks","count"].includes(k)) continue; const v=x[k]; if(v==null || v==="" || v===false || (Array.isArray(v) && !v.length)) continue;
+    n += " ["+(k==="doing" ? "" : k+": ")+(typeof v==="object" ? JSON.stringify(v) : v)+"]"; }
+  return n; };
+const slotsShown = t => { const row=(t.scene && t.scene.row)||[], out=row.map((x,i)=>"s"+i+": "+slotName(t.scene, "s"+i)); if((t.targets||[]).includes("self")) out.push("self: "+VOCAB.claire.name); return out; };
 // the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
 async function tapModel(t, by, slot){
   await setPortraits(t.scene); gestureEar();
@@ -2997,7 +3077,7 @@ async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
   tapArm(t.targets);                     // (.27) a touch while the cue is said counts
   if(!cued){ await say(t.questionUnits, "tutor", undefined, 0);      // (.45) cued: "Vas-y." at the end of a correction was the cue
     if(t.touch && t.touch.silent) await silentTouches(t.touch.count); }
-  textAtResponse(t); signal(true); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal and green border; no microphone)");
+  textAtResponse(t); signal("tap"); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal and the border of tapping hands; no microphone)");
   window.__tapTask = t;                     // for the automatic test harness (an oracle learner taps what is asked for)
   const r = await tapWait(t.targets, TAP_WINDOW); tapSignal(null); signal(false);
   const ok = !!r && t.correct.includes(r.slot);
@@ -3006,7 +3086,7 @@ async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
   ctx.firm=ctx.firm||{}; ctx.slow=ctx.slow||{};
   if(ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1; if(!ok){ ctx.firm[t.target]=0; }
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:"tap", said:t.questionUnits.join(" "), expected:t.correct.map(s=>slotName(t.scene, s)).join(" or "), heard:[],
-            tapped: r ? slotName(t.scene, r.slot) : null, tappedSlot: r ? r.slot : null, latencyMs: r ? r.ms : null,
+            tapped: r ? slotName(t.scene, r.slot) : null, tappedSlot: r ? r.slot : null, expectedSlot: t.correct.join(" or "), shown: slotsShown(t), latencyMs: r ? r.ms : null,
             result: ok ? "correct" : "ERROR", reason: ok ? "" : r ? "tapped the wrong picture" : "no tap in "+(TAP_WINDOW/1000)+" s", first:!!isFirst, retest, delayed:!!ctx.delayedRec,
             ...(t.ear ? {ear:true} : {}), ...(t.tapInfo ? {discriminates:t.tapInfo.discriminates, heardOnly:t.tapInfo.heardOnly, chance:t.tapInfo.chance} : {})});
   save();
@@ -3040,7 +3120,12 @@ function listenT(task, expect, alsoOk){
 const CONV_LINES = {words:"words", blue:"blue", underline:"underline", wavy:"wavy", lis:"lis", tapmodel:"tapmodel", tap:"tap", count:"count", count_you:"count_you", asker:"asker"};
 async function convOnce(key){ S.conv=S.conv||{}; if(S.conv[key]) return false; S.conv[key]=true; save(); ph("introduction: "+key); trace("narrator: the convention \""+key+"\"");
   if(key==="count_you"){ await narrate("count_you_a"); await say(["À toi.", "Compte."]); await sleep(150); await narrate("count_you_b"); return true; }      // (.37) the cue is "À toi. Compte." (DISE: "Your turn: Count.")      // (.28) Marie's "À toi." between the narrator's two clips
-  if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
+  if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }
+  /* (.53; Jon, 14 Nov: "the English narrator, when she explains about touching objects, should explain that Marie will ask for the French word
+     for 'touch', which is 'touche' whenever touching is expected.") The word is Marie's own "Touche." between the narrator's two clips. New keys
+     (touche_model, touche_tap), so that a learner who heard the old lines hears these once too. */
+  if(key==="touche_model"){ rest(); await narrate("tapmodel_a"); await say(["Touche."]); await sleep(150); await narrate("tapmodel_b"); return true; }
+  if(key==="touche_tap"){ rest(); await narrate("tap_a"); await say(["Touche."]); await sleep(150); await narrate("tap_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
   await narrate(CONV_LINES[key]||key); return true; }
 const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
 async function convIntro(it){
@@ -3054,8 +3139,8 @@ async function convIntro(it){
     if(partsHave(w,3)) await convOnce("underline");
     if(partsHave(w,4)) await convOnce("wavy"); }
   if(it.read) await convOnce("lis");
-  if(it.type==="tapshow") await convOnce("tapmodel");
-  if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("tap"); }
+  if(it.type==="tapshow") await convOnce("touche_model");
+  if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
   /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
      before the FIRST task that uses its convention, models included: the two counting lines together before the first count of
      any kind ("À toi." is first said to Pierre in a model); "asker" before the first item in which Pierre or Sylvie asks */
@@ -3071,7 +3156,7 @@ async function convIntro(it){
 // the conventions an item uses (what convIntro must have introduced before it), defined apart from the triggers above
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
-  if(it.type==="tapshow") u.push("tapmodel"); if(it.tapTask) u.push("tap");
+  if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap");
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
@@ -3649,8 +3734,17 @@ async function corrModel(task){
   await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
 const corrKind = t => isOwnName(t) ? "own name" : t.tapTask ? "tap" : t.corr ? "sound pair" : t.cue==="repeat" ? "Répète" : t.cue==="point" ? "touch-and-name" : t.cueVoice ? "spoken answer, cue by a model learner" : "spoken answer";
+/* (.53; Jon, 14 Nov 2026, after a naive tester had a right "une" refused six times with the same words: "'Non, écoute. Une. Vas-y' obscures what
+   the correction actually is by having three words irrelevant to the correction. So instead, the correction should just be the target word.
+   Marie puts her hand to her ear and says 'une' only, then repeats the task. This is for oral tasks. Other tasks can remain how they are for
+   now.") A spoken task's correction is now: her hand to her ear  -  0.5 s  -  the model (the target words and nothing else)  -  0.5 s  -  the
+   task asked again as it was asked (presentTest, not cued: "Répète : une." / "Un ou une ?" / the pointing). No "Non, écoute.", no "Vas-y.".
+   A tap task keeps the .45 frame ("Non, écoute."  -  the cue and her hand's tap  -  "Vas-y."). */
+const oralCorr = t => !t.tapTask;
+const retestOpts = t => oralCorr(t) ? {retest:true, atoi:false, quiet:true} : {retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true};
 async function correction(task, nth, how=""){
-  ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task));
+  ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task)+(oralCorr(task) ? " (the target only, then the task again)" : ""));
+  if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); rest(); return; }
   offering=false; gestureEar(); await say(["Non, écoute."]);
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
@@ -3714,7 +3808,9 @@ const PART_REPEATS = 4;    // a part is gone through again at most this many tim
    with another "Je m'appelle Pierre." and she said it again). */
 async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
-  offering=false; gestureEar(); await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)");      // (.45) the error is said here too; then one model and on, with no "Vas-y."
+  offering=false; gestureEar();
+  if(oralCorr(it)) await sleep(CORR_GAP);      // (.53) a spoken task: the target only, her hand at her ear
+  else { await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
   else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
   rest();
@@ -3777,7 +3873,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         let tries=1, fixed=false;
         while(!fixed && tries<TRIAL_LIMIT){
           await correction(it, tries, "new item");
-          fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true}); tries++;
+          fixed=await presentTest(it, retestOpts(it)); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part"); break; } i++; prevTest=false; continue; }
         ph("final confirmation"); rest();      // (.45) no smile here: it showed during the icon's second, and with no icon the next task follows at once, as after any right answer
@@ -3792,7 +3888,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         // whole exercise, not per correction (a test of 9 Nov 2026 with scattered errors corrected one task 82 times)
         if(tries>=TRIAL_LIMIT || errorsByTask[it.id]>=TRIAL_LIMIT) break;
         await correction(it, errorsByTask[it.id]);
-        fixed=await presentTest(it,{retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true});
+        fixed=await presentTest(it, retestOpts(it));
         // (until .23 a right retest was followed by two more, "immediate repeat 1, 2": gone (Jon, 11 Nov 2026); the part's
         // repeat below and its delayed tests are the firming check)
       }
@@ -3985,9 +4081,18 @@ function courseGrammar(expect){
     LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>(it.expect||[]).includes("salut"))) && (VOSK.greetFrom=[li,ei]))); }
   const g=VOSK.greetFrom, greets = (expect||[]).includes("salut") || (g && (S.lesson>g[0] || (S.lesson===g[0] && S.ex>=g[1])));
   if(!greets) base = base.filter(p=>!/salut/.test(p));
-  // Lessons 3+ (Lessons 1-2 hear one list, as the four lessons of .17 did): only what has been reached (see VOSK.from above); the answer asked for is always in
-  const GATED_FROM=2, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
+  /* Only what has been reached (see VOSK.from above); the answer asked for is always in. Until .50 this began at Lesson 3
+     and Lessons 1-2 heard one list, as the four lessons of .17 did. (.51) From the first exercise: a tester's "Sylvie." at
+     Lesson 1 Exercise 1 (14 Nov 2026, 17:19:46; plain on the recording) was written "souris", a word she first meets five
+     exercises later, and corrected; another tester's on 13 Nov the same. A word the learner has not met cannot be what was
+     meant: it can only take a right answer away. */
+  const GATED_FROM=0, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
   base = base.filter(p=>reached(VOSK.from.get(p)||[0,0]));
+  /* (.51) Where the answer is the front word alone ("Un." / "Une."), "deux" stays in the list before it is reached (Lesson 1
+     Exercise 7). It is what the listener writes for the end of "une" let go (listenVosk, "said once and written as two
+     words"): with it, such a "une" is "un deux" and is heard as "une"; without it the n is not written at all and three of a
+     tester's five came out "un", a right answer corrected as the other word. */
+  if((expect||[]).length===1 && ["UN","UNE","n1"].includes(expect[0]) && !base.includes("deux")) base = base.concat(["deux"]);
   /* A count ("Un, deux, trois, quatre.") is heard against number words only (.24; tester H 11 Nov 21:08: her "trois" in a count
      came out as "lève-toi", which is in the Lesson 1 list only because Lessons 1 and 2 share one list). */
   if((expect||[]).length>=2 && expect.every(e=>VOCAB[e] && VOCAB[e].kind==="number")){

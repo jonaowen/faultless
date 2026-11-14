@@ -130,5 +130,21 @@
 "you_before": {
 "text": "Remember: Marie talks to you as if you had really done what your figure did.",
 "dur": 3.12
+},
+"tapmodel_a": {
+"text": "Sometimes Marie wants a picture to be touched. The French word for touch is",
+"dur": 4.07
+},
+"tapmodel_b": {
+"text": "Whenever something is to be touched, she says it. Watch the hand touch the picture.",
+"dur": 4.54
+},
+"tap_a": {
+"text": "When this hand appears over the pictures, don't speak. When Marie says",
+"dur": 4.04
+},
+"tap_b": {
+"text": "touch the picture she asks for.",
+"dur": 1.78
 }
 }
