@@ -379,7 +379,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-13.45";
+const APP_VERSION="2026-11-14.46";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -612,6 +612,7 @@ function genItem(it){
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
   for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner"]) if(it[k]) o[k]=it[k];
+  if(+(it.pauseAfterMs||it.pause_after_ms)>0) o.pauseAfterMs=+(it.pauseAfterMs||it.pause_after_ms);      // (.46) course_fix, design log section 58
   if(it.mark===false) o.mark=false;
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
   if(it.kind==="show" && it.act==="tap") return Object.assign(o,{type:"tapshow", kind:"show", act:"tap", tap:it.tap, target:"show tap "+keyOf(it.teacher)+" "+it.tap.at});
@@ -2199,10 +2200,28 @@ function buildRow(items, area={y:24, h:190}){
 /* Paul and Julie as model learners (the field-tested course: "Claire says 'Vas-y.' to Paul and points; he names it"):
    small portraits beside the teacher, Paul on the left, Julie on the right. The one who answers lights up. */
 const BOUNDS={L:{x:28,y:24,w:160,h:190,r:14}, R:{x:212,y:24,w:160,h:190,r:14}};
+/* (.46; the owner's run of 13 Nov 21:17, Lesson 1 on .43: "a book is highlighted and she says un and une, one after the other".
+   Measured in the app, L1E6: the border was on the left card, a book, for "Un."; 0.2 s later the row was drawn again with a shoe
+   in that place and she said "Répète : une.", and the border had never gone off: it was back on the same place within its own
+   0.15 s fade. The same at the end of the part before: "Une." on a shoe, then "Un." on a book drawn in its place, 0.17 s apart.)
+   The border is seen to leave one picture before it lands on another in the same place: when it comes back to a place it left
+   less than GOLD_BLINK ago and the picture there is a different one, it stays off until GOLD_BLINK has passed (the time
+   askAndListen already uses: "the border goes off first, so its coming on is seen as the cue"). A model waits for it
+   (goldClear), so the border is on its card before the word starts; a test does not (the border lands early in the cue, before
+   its last word). A border that moves to another place, or comes back to the same picture, comes on at once as before. */
+const GOLD={slot:"", thing:"", offAt:-1e9, timer:0}, GOLD_BLINK=250;
+const goldThing = side => { const p = curScene && curScene.row && /^s\d+$/.test(side) ? curScene.row[+side.slice(1)] : null; return side+" "+(p==null ? "" : JSON.stringify(p)); };
 function goldOn(side){ const g=document.getElementById("goldRing"), b=BOUNDS[side];
-  if(!b || (curScene && curScene.row && (side==="L"||side==="R"))){ g.setAttribute("opacity",0); return; }
-  const m=4; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m); g.setAttribute("opacity",1); }
-function goldOff(){ const g=document.getElementById("goldRing"); if(g) g.setAttribute("opacity",0); }
+  if(!b || (curScene && curScene.row && (side==="L"||side==="R"))){ goldOff(); return; }
+  const m=4; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m);
+  const thing=goldThing(side), since=performance.now()-GOLD.offAt, show=()=>{ g.setAttribute("opacity",1); GOLD.slot=side; GOLD.thing=thing; };
+  clearTimeout(GOLD.timer);
+  if(g.getAttribute("opacity")!=="1" && GOLD.slot===side && GOLD.thing!==thing && since<GOLD_BLINK) GOLD.timer=setTimeout(show, GOLD_BLINK-since);
+  else show(); }
+function goldOff(){ const g=document.getElementById("goldRing"); if(!g) return; clearTimeout(GOLD.timer); if(g.getAttribute("opacity")==="1") GOLD.offAt=performance.now(); g.setAttribute("opacity",0); }
+// before a model whose border goes on a different picture in the place the border is on, or left less than GOLD_BLINK ago: off, and wait
+async function goldClear(side){ if(!/^s\d+$/.test(side||"") || GOLD.slot!==side || GOLD.thing===goldThing(side)) return;
+  goldOff(); const w=GOLD_BLINK-(performance.now()-GOLD.offAt); if(w>0){ await sleep(w); trace("border off "+Math.round(w)+" ms: a different picture in the same place"); } }
 const BADGE={paul:{x:22,y:262}, julie:{x:318,y:262}}, BW=60;
 function setSideBadges(side){
   const el=document.getElementById("sideBadges"); el.replaceChildren();
@@ -3234,11 +3253,31 @@ async function presentSay(a){
   else await sleep(350);
   rest();
 }
+/* (.46) The list pace (COUNT_GAP, .40) was kept only between two models of the same part. Where one part ended on a model and the
+   next began with one (L1E2 c to d, L1E6 a to b: 44 places in Lessons 1-10), the two words came 0.17 s apart and the border did
+   not go off between them; and a model followed by a test about ANOTHER thing ("Un." on the book, then "Répète : une." on the
+   shoe: 82 places) came 0.2 s after it. Now the pace is kept from the end of every model: the next model, in whatever part or
+   exercise, and a test whose border goes on a different picture or place, start no sooner than COUNT_GAP after it, with the
+   border off in between. A test about the same picture in the same place (a model learner's "Deux.", then "Répète : deux."),
+   and one with no border on a card, follow at once as before.
+   A model with pause_after_ms (course_fix, design log section 58: the slow first pass of a gender introduction, 1200 ms) has
+   that gap in place of COUNT_GAP before whatever comes next, test or model; its border stays on through the pause but for the
+   last GOLD_BLINK, so that the next picture in the same place is seen as a new one. */
+const MODEL_END={t:-1e9, thing:"", gap:COUNT_GAP};
+// what the gold border is on for an item: the place in the row and the picture there ("" when it is not on a card of the row)
+const goldThingOf = it => { const sc=sceneOf(it.scene), at = it.type!=="model" && it.cueVoice ? it.cueAt : it.at, p = sc && sc.row && !boxOf(sc) && /^s\d+$/.test(at||"") ? sc.row[+at.slice(1)] : null;
+  return p && it.mark!==false ? at+" "+JSON.stringify(p) : ""; };
+async function listPace(next){ const w=MODEL_END.gap-(performance.now()-MODEL_END.t); if(w>0){ await sleep(w); trace("list pace: "+MODEL_END.gap+" ms before the next "+next); } }
 async function presentModel(m){
+  if(!(m.introOnly && S.introSeen)) await listPace("model");
   curTask="model "+m.target;
   if(m.introOnly && S.introSeen) return;
   await setPortraits(m.scene); itemStart(m); await convIntro(m);
-  if(m.gen){ if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m); if(holdEar) goldOff(); else rest(); return; }
+  if(m.gen){ if(goldThingOf(m)) await goldClear(m.at);
+    if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m);
+    const end=performance.now(), gap=m.pauseAfterMs>0 ? m.pauseAfterMs : COUNT_GAP;
+    if(gap>COUNT_GAP){ await sleep(gap-GOLD_BLINK); trace("pause after the model: "+gap+" ms"); }      // the border stays on its card
+    if(holdEar) goldOff(); else rest(); MODEL_END.t=end; MODEL_END.gap=gap; MODEL_END.thing=goldThingOf(m); return; }
   if(m.set){                                   // "Un livre… un livre." — pointing to each in turn, no question
     ph("model: several of a kind");
     await gestureEar(); await say(PHR.amoi);
@@ -3262,7 +3301,7 @@ async function presentModel(m){
     await gestureEar(); await say(PHR.amoi);
     await pointAt(m); await sleep(250); await multipleModels(m, m.once?1:3, !m.once);
   }
-  rest();
+  rest(); MODEL_END.t=performance.now(); MODEL_END.thing=""; MODEL_END.gap=COUNT_GAP;
 }
 /* The introduction (Jon, 8 November 2026, after testing with his family): a narrated demo in English of what the learner
    does, shown by the on-screen learner, in the formats of the exercise that follows. Red border: listen only. ("Avec moi",
@@ -3331,6 +3370,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(!cued && t.questionUnits && /^et toi \?$/i.test(String(t.questionUnits[t.questionUnits.length-1]||"").trim()) && !(LASTMODEL && Date.now()-LASTMODEL.t<20000 && /m'appelle/i.test(LASTMODEL.text))){
     await setPortraits(t.scene); await pointAt("self"); await say(["Je m'appelle "+VOCAB.claire.name+"."]); LASTMODEL={t:Date.now(), text:"Je m'appelle"}; trace("before 'Et toi ?' on its own: Marie's own sentence"); }
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
+  if(!cued){ const g=goldThingOf(t); if(MODEL_END.gap>COUNT_GAP || (g && MODEL_END.thing && g!==MODEL_END.thing)) await listPace("test"); }      // (.46) straight after a model about another thing, or after a model's pause (not a retest cued by "Vas-y.")
   curTask=t.id; await setPortraits(t.scene); itemStart(t); await convIntro(t);
   if(t.tapTask) return presentTap(t, {retest, firstSeen, cued});
   if(cued){ offering=true; }
@@ -3650,7 +3690,8 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
            quickly through each gender … The timing for this should be the same as the timing for the numbers 1, 2, 3, 4 … whenever
            a list of objects is processed through one after the other, the rate should be that half-second rate so that the learner
            can attend to what they're being presented with.") A model followed by another model: the counting gap between them. */
-        if(items[i+1] && items[i+1].type==="model"){ await sleep(COUNT_GAP); trace("list pace: "+COUNT_GAP+" ms before the next model"); }
+        /* (.46) the gap is kept by presentModel itself (listPace), from the end of the model before it, so that it also holds
+           between the last model of one part and the first of the next */
         i++; continue; }
       /* Jon, 11 Nov 2026 (evening): "No lead steps anywhere … It doesn't really work in an app environment. The person always
          responds late or not at all." A lead task of the course is not presented (the revised course has none); nothing is said
