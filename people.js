@@ -76,6 +76,17 @@
      PICS.together(act, opts)  the learner ("you") and the teacher ("marie") side by side in one box, doing the same act in step:
                                any act of PICS.action (dance, jump, walk, smile, ...); opts as for PICS.action (opts.still works)
 
+   Added for the new Lessons 1-10 (.48, the whole-course sketch). Nothing above changes.
+     PICS.thing kinds: heart (any colour) | foot, hand, head (looks fair / light / tan / brown / dark: the skin) | town (red roofs |
+                               with a church | with tall buildings | by a river | at night) | street (with houses | with trees | with
+                               shops | with cars | at night) | restaurant (a colour + "awning"). The head is drawn in colour on the pale
+                               outline of a whole person, with a soft yellow light behind it (the part, not the person); the hand has
+                               the fingers together (never a number); the foot is bare, from the side.
+     The look "in an open box" on any kind: the thing in an open red box (PICS.place, rel "in").
+     PICS.action acts "talk" (standing, a hand out, a speech bubble whose dots come and go), "arrive" (walking toward the door of a
+                               house at the right; the green arrow ends at the door), "leave" (walking away from a house at the left;
+                               the arrow starts at its door); doing "talking" / "arriving" / "leaving" on any person; picture cards too.
+
    Added for Lessons 11-20 (where things are, going places, having, states, weather, size, colour). Again nothing above changes, with
    one wanted exception: the window with the looks "big, shop" is now a wide picture window of a house (the shop front is the place "shop").
 
@@ -1123,7 +1134,8 @@ function car(spec){
    of people jumping and walking (Stanford 40 Actions): a jump is knees tucked, arms flung up and the ground left behind; a dance is
    one arm up, the other out, one leg kicked to the side, the body swaying; a walk is a scissor stride with the arms low. */
 const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump", smiling: "smile", smile: "smile", standing: "stand up", stand: "stand up",
-  sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk" };
+  sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
+  talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave" };
 const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink" };
 const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
 const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
@@ -1152,13 +1164,20 @@ const MOVES = {
   /* a hand put up: the arm goes straight up beside the head, the open hand above it, and stays there a moment (ARASAAC "raise hand", photographs of pupils) */
   "raise hand": { dur: 2.6, kt: [0, 0.12, 0.36, 1], poses: [A_DOWN, A_DOWN, A_UP, A_UP], still: 2, scale: 1.1, open: "aR", fade: true },
   stop: { dur: 1, kt: [0, 1], poses: [A_DOWN, A_DOWN], still: 0, scale: 1.1 },       // standing still, arms down: what is shown when an action has stopped
+  /* (.48) talking: standing, one hand a little out, a speech bubble by the mouth whose sound lines come and go; arriving / leaving: walking
+     (side view) toward the door of a house at the right, the green arrow ending at the door / away from a house at the left, the arrow
+     starting at its door */
+  talk: { dur: 1.2, kt: [0, 0.5, 1], poses: [{ aL: [3, 0], aR: [-24, -40] }, { aL: [3, 0], aR: [-30, -52] }, { aL: [3, 0], aR: [-24, -40] }], still: 1, scale: 0.98, ox: -16, talk: true },
   /* one movement only, played once: the end pose is held, the figure fades out and comes back already in the starting pose (a loop that
      ran back to the start would show the opposite action as well). The chair stays. The raised hand does the same instead of coming down. */
+  arrive: null, leave: null,
   "stand up": { dur: 2.6, kt: [0, 0.12, 0.34, 0.54, 1], poses: [SEATED, SEATED, RISING, UPRIGHT, UPRIGHT], side: true, chair: true, still: 2, scale: 1.08, ox: -12, fade: true },
   "sit down": { dur: 2.6, kt: [0, 0.12, 0.34, 0.54, 1], poses: [UPRIGHT, UPRIGHT, RISING, SEATED, SEATED], side: true, chair: true, still: 2, scale: 1.08, ox: -12, fade: true }
 };
 /* (.37, Jon 12 Nov 20:00: "make the animations that play run twice as fast ... we halved it before but that comes from doubling the
    speed of the animation") every action plays at twice its old speed, so a whole action fits the halved time the app gives it */
+MOVES.arrive = Object.assign({}, MOVES.walk, { scale: 0.86, ox: -30, house: "right" });
+MOVES.leave = Object.assign({}, MOVES.walk, { scale: 0.86, ox: 30, house: "left" });
 const ACT_SPEED = 2;
 function action(act, who, opts){
   opts = opts || {};
@@ -1229,10 +1248,22 @@ function action(act, who, opts){
   } else {
     back += `<g transform="translate(80 181)">` + G("scale", P.map(p => `${p.sh}`), `<ellipse cx="0" cy="0" rx="24" ry="4" fill="#000" opacity=".13"/>`) + `</g>`;
   }
-  if (act === "walk"){                                      // the ground slides back under the feet (walking on the spot); frozen: marks behind
+  if (K.house){                                            // (.48) arriving / leaving: the house, the arrow on the ground
+    const left = K.house === "left", hx = left ? 2 : 98;
+    back += `<g transform="translate(${hx} 96) scale(.4)">${house(lookOf({ looks: ["red roof"] }))}</g>`;
+    const y = 184, x0 = left ? 44 : 50, x1 = left ? 152 : 112;
+    front += `<path d="M${x0} ${y} H${x1 - 8}" stroke="#3fae5a" stroke-width="6" stroke-linecap="round"/><path d="M${x1 - 14} ${y - 8} L${x1} ${y} L${x1 - 14} ${y + 8}" stroke="#3fae5a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if (K.talk){                                             // (.48) the speech bubble and its sound lines
+    const blink = d => still ? "" : `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.7;1" begin="${d}s" dur="${r2(1.2 / ACT_SPEED * 2)}s" repeatCount="indefinite"/>`;
+    front += `<path d="M102 14 H150 Q156 14 156 20 V50 Q156 56 150 56 H116 L100 68 L106 56 H102 Q96 56 96 50 V20 Q96 14 102 14Z" fill="#fff" stroke="#6d737c" stroke-width="2.2" stroke-linejoin="round"/>` +
+      [0, 1, 2].map(i => `<circle cx="${110 + i * 16}" cy="35" r="4.6" fill="#6a55b8">${blink(i * 0.15)}</circle>`).join("") +
+      `<path d="M92 48 q5 4 0 9 M97 44 q8 8 0 17" stroke="#6a55b8" stroke-width="2.6" fill="none" stroke-linecap="round">${blink(0)}</path>`;
+  }
+  if (act === "walk" || K.house){                          // the ground slides back under the feet (walking on the spot); frozen: marks behind
     back += `<clipPath id="${u}g"><rect x="26" y="176" width="108" height="14"/></clipPath><g clip-path="url(#${u}g)"><g>` + loop(`type="translate" values="0 0;-26 0"`, 0.55) +
       [30, 56, 82, 108, 134, 160].map(x => `<path d="M${x} 186.5 h11" stroke="#b9bec6" stroke-width="3" stroke-linecap="round"/>`).join("") + `</g></g>`;
-    if (still) front += `<path d="M22 112 h14 M16 126 h18 M22 140 h14" stroke="#b9bec6" stroke-width="3.4" stroke-linecap="round"/>`;
+    if (still && K.house !== "left") front += `<path d="M22 112 h14 M16 126 h18 M22 140 h14" stroke="#b9bec6" stroke-width="3.4" stroke-linecap="round"/>`;
   }
   if (act === "jump" && still) front += `<path d="M62 160 Q80 169 98 160 M68 170 Q80 175.5 92 170" stroke="#b9bec6" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
   if (act === "dance"){                                     // music in the air: two notes that bob
@@ -2281,10 +2312,115 @@ const VARIANT = {
   }
 };
 const placeThing = is => (k, spec) => `<defs><clipPath id="${k.u}c"><rect x="0" y="0" width="160" height="190" rx="15"/></clipPath></defs><g transform="translate(5.6 6.6) scale(.93)"><g clip-path="url(#${k.u}c)">${scene(is, spec && spec.of, k.u, k)}</g><rect width="160" height="190" rx="15" fill="none" stroke="#8f98a3" stroke-width="2.6"/></g>`;
+/* ---------- the nouns of the new Lessons 1-10 (the whole-course sketch, .48): heart, foot, hand, head, town, street, restaurant ----------
+   Drawn as the kinds above: one thing, a soft outline a shade darker than its fill, a highlight, a shadow on the ground, nothing written.
+   Each is drawn so that it cannot be taken for a kind the course already has: the heart is the red symbol (not an organ); the foot is a
+   bare foot from the side with its ankle; the hand is an open hand with the fingers together and the thumb apart (never a number:
+   fingers spread are the finger cards); the head is a head and neck in colour on a pale outline of the whole person (the part, not the
+   person); the town is many buildings of different heights together, with a church tower; the street is a road going away between two
+   rows of house fronts, the pavements and a centre line; the restaurant is a front with an awning, a knife-and-fork sign and a laid table
+   with a cloth, plates and a glass under it. */
+const skinOf = k => SKIN[["fair", "light", "tan", "brown", "dark"].find(x => k.has(x)) || "light"];
+function heart(k){
+  const u = k.u, P = k.tint("red");
+  return `<defs>${lgr(u + "h", P.h, P.a)}</defs>` + shad(80, 170, 48) +
+    `<path d="M80 160 C52 136 18 112 18 76 C18 50 38 32 60 32 C70 32 77 38 80 46 C83 38 90 32 100 32 C122 32 142 50 142 76 C142 112 108 136 80 160Z" fill="url(#${u}h)" stroke="${P.d}" stroke-width="2.4" stroke-linejoin="round"/>` +
+    `<path d="M40 62 Q46 46 62 46" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" opacity=".55"/>`;
+}
+function foot(k){
+  /* a bare foot from the side, toes to the right, the ankle cut just above the bone (the leg is not drawn) */
+  const S = skinOf(k), st = `stroke="${S[2]}" stroke-width="2.2" stroke-linejoin="round"`;
+  return shad(82, 158, 70) +
+    `<path d="M30 70 Q44 64 60 70 L62 96 Q66 110 84 116 Q110 122 132 126 Q150 130 150 142 Q150 154 134 156 H40 Q14 156 14 132 Q14 112 26 100 Q30 92 30 70Z" fill="${S[0]}" ${st}/>` +
+    `<ellipse cx="45" cy="70" rx="15" ry="4.4" fill="${S[1]}" stroke="${S[2]}" stroke-width="2"/>` +
+    `<path d="M34 80 Q32 98 24 110" stroke="${S[1]}" stroke-width="6" fill="none" stroke-linecap="round" opacity=".55"/><ellipse cx="56" cy="102" rx="7" ry="6" fill="${S[1]}" opacity=".6"/>` +
+    `<path d="M70 126 Q88 138 112 136" stroke="${S[2]}" stroke-width="1.6" fill="none" opacity=".6"/>` +
+    [[140, 130, 12], [122, 126, 8.6], [108, 122, 7.6], [96, 118, 6.8], [86, 115, 6]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r2(r * 0.86)}" fill="${S[0]}" ${st}/>`).join("") +
+    `<path d="M141 124 q6 1 7 6" stroke="#fbeee4" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M40 156 H132" stroke="${S[2]}" stroke-width="2.2"/>`;
+}
+function handPic(k){
+  const S = skinOf(k), st = `stroke="${S[2]}" stroke-width="2" stroke-linejoin="round"`;
+  const finger = (x, top, w) => `<path d="M${x} 104 V${top + w / 2} A${w / 2} ${w / 2} 0 0 1 ${x + w} ${top + w / 2} V104" fill="${S[0]}" ${st}/><path d="M${x + 3} ${top + w * 1.3} q${w / 2 - 3} -2 ${w - 6} 0" stroke="${S[1]}" stroke-width="1.4" fill="none"/>`;
+  return shad(80, 176, 40) + `<rect x="50" y="146" width="60" height="34" rx="4" fill="#4d7fc4" stroke="#3a64a3" stroke-width="1.8"/><path d="M50 156 H110" stroke="#3a64a3" stroke-width="1.6"/>` +
+    finger(52, 40, 15) + finger(66, 30, 15.5) + finger(80.5, 34, 15) + finger(94.5, 48, 13.5) +
+    `<path d="M50 96 Q50 140 62 148 H100 Q110 140 109 104 L108 96Z" fill="${S[0]}" ${st}/>` +
+    `<path d="M52 118 Q38 104 30 86 Q26 76 34 73 Q42 71 48 82 Q54 94 60 104" fill="${S[0]}" ${st}/>` +
+    `<path d="M66 104 V100 M80.5 104 V98 M94.5 104 V100" stroke="${S[2]}" stroke-width="1.6"/><path d="M62 128 Q80 136 100 124" stroke="${S[1]}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+}
+function headPic(k){
+  /* the head in colour on the pale outline of the whole person: a person's portrait would be the whole bust; here only the head and
+     neck are drawn, the body is a faint shape, so the picture names the part */
+  const u = k.u, S = skinOf(k), H = HAIR[k.has("dark") ? "black" : k.has("brown") ? "dkbrown" : k.has("tan") ? "brown" : "ltbrown"];
+  const ghost = `<g fill="#e9ecf0" stroke="#cfd5dc" stroke-width="2" stroke-dasharray="5 4"><path d="M44 182 V128 Q44 106 66 102 H94 Q116 106 116 128 V182"/><path d="M44 130 L30 176 M116 130 L130 176" fill="none"/></g>`;
+  return ghost + `<defs>${lgr(u + "s", S[0], S[1])}<radialGradient id="${u}g"><stop offset=".55" stop-color="#ffe27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffe27a" stop-opacity="0"/></radialGradient></defs>` +
+    `<circle cx="80" cy="60" r="62" fill="url(#${u}g)"/>` +
+    `<rect x="70" y="84" width="20" height="22" fill="${S[1]}" stroke="${S[2]}" stroke-width="1.6"/>` +
+    `<ellipse cx="50" cy="60" rx="7" ry="11" fill="${S[1]}" stroke="${S[2]}" stroke-width="1.6"/><ellipse cx="110" cy="60" rx="7" ry="11" fill="${S[1]}" stroke="${S[2]}" stroke-width="1.6"/>` +
+    `<ellipse cx="80" cy="56" rx="30" ry="36" fill="url(#${u}s)" stroke="${S[2]}" stroke-width="2"/>` +
+    `<path d="M50 50 Q48 18 80 18 Q112 18 110 50 Q102 34 80 32 Q58 34 50 50Z" fill="${H[1]}" stroke="${H[2]}" stroke-width="1.6"/>` +
+    `<circle cx="69" cy="58" r="3.4" fill="#2b2420"/><circle cx="91" cy="58" r="3.4" fill="#2b2420"/><path d="M80 62 q-3 9 2 10" stroke="${S[2]}" stroke-width="1.8" fill="none" stroke-linecap="round"/>` +
+    `<path d="M70 78 Q80 84 90 78" stroke="#a5534a" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+}
+function town(k){
+  /* many buildings together on a hill: blocks of different heights, rows of windows, roofs, a church tower with a spire */
+  const has = k.has, night = has("night"), river = has("river"), tall = has("tall"), church = has("church") || !tall;
+  const sky = night ? "#2f3a5c" : "#dcecf8", win = night ? "#f6d469" : "#eaf3fb", R = pal(has("roofs") || !k.cn ? COL.red : TINT[k.cn] || COL.red);
+  const B = [[8, 98, 26, 64, "#e8d9bf"], [30, 84, 22, 78, "#d9c7a8"], [50, 104, 24, 58, "#efe4cf"], [92, 90, 24, 72, "#e3d3b6"], [114, 74, 22, 88, "#d4c2a2"], [134, 100, 22, 62, "#ece0c8"]];
+  if (tall) B.push([60, 52, 20, 110, "#c9cfd8"], [98, 60, 18, 102, "#b9c1cc"]);
+  let s = `<defs><clipPath id="${k.u}c"><rect x="0" y="0" width="160" height="190" rx="15"/></clipPath></defs><g clip-path="url(#${k.u}c)"><rect width="160" height="190" fill="${sky}"/>`;
+  if (night) s += [[20, 20], [60, 14], [120, 26], [140, 12]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="#fff"/>`).join("") + `<circle cx="132" cy="36" r="9" fill="#f6e7a8"/>`;
+  s += `<path d="M0 150 Q80 128 160 150 V190 H0Z" fill="#8fc06e"/>`;
+  B.sort((a, b) => a[1] - b[1]).forEach(([x, y, w, h, c]) => {
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" stroke="#8f8b82" stroke-width="1.3"/>`;
+    if (h < 80 && !(tall && w < 21)) s += `<path d="M${x - 2} ${y} L${x + w / 2} ${y - 12} L${x + w + 2} ${y}Z" fill="${R.a}" stroke="${R.d}" stroke-width="1.3" stroke-linejoin="round"/>`;
+    for (let yy = y + 8; yy < y + h - 10; yy += 13) for (let xx = x + 4; xx < x + w - 6; xx += 9) s += `<rect x="${xx}" y="${yy}" width="5" height="7" fill="${win}" stroke="#8f8b82" stroke-width=".7"/>`;
+  });
+  if (church) s += `<rect x="72" y="70" width="16" height="92" fill="#e4e0d6" stroke="#8f8b82" stroke-width="1.4"/><path d="M70 70 L80 34 L90 70Z" fill="#74808f" stroke="#4c5563" stroke-width="1.4"/><path d="M80 34 V24 M76 28 H84" stroke="#4c5563" stroke-width="2"/><circle cx="80" cy="84" r="5" fill="#fff" stroke="#8f8b82" stroke-width="1.2"/><path d="M76 108 Q80 100 84 108 V122 H76Z" fill="#6d4c3a"/>`;
+  if (river) s += `<path d="M0 176 Q40 166 80 174 Q120 182 160 170 V190 H0Z" fill="#6aa7d8"/><path d="M14 180 h16 M70 182 h18 M120 180 h14" stroke="#cfe5f7" stroke-width="2" stroke-linecap="round"/>`;
+  return s + `</g><rect x="1" y="1" width="158" height="188" rx="15" fill="none" stroke="#b9c1cc" stroke-width="2"/>`;
+}
+function street(k){
+  /* a road going away to the middle of the picture between two rows of house fronts seen at a slant, pavements, a dashed centre line,
+     a lamp post; looks: with trees, with shops (awnings), with cars, at night */
+  const has = k.has, night = has("night"), trees = has("trees"), shops = has("shops"), cars = has("cars");
+  const sky = night ? "#2f3a5c" : "#dcecf8", win = night ? "#f6d469" : "#cfe3f2", VX = 80, VY = 84;
+  const C = shops ? ["#e8a39a", "#9fc3e6", "#f1d58a", "#b5d6a7", "#e8a39a"] : ["#e8d9bf", "#d9c7a8", "#efe4cf", "#d4c2a2", "#e3d3b6"];
+  let s = `<defs><clipPath id="${k.u}c"><rect x="0" y="0" width="160" height="190" rx="15"/></clipPath></defs><g clip-path="url(#${k.u}c)"><rect width="160" height="190" fill="${sky}"/>`;
+  s += `<path d="M-30 190 L${VX - 4} ${VY} H${VX + 4} L190 190Z" fill="#8a9099"/><path d="M-30 190 L${VX - 4} ${VY} L${VX - 10} ${VY} L-30 160Z" fill="#c9c5bb"/><path d="M190 190 L${VX + 4} ${VY} L${VX + 10} ${VY} L190 160Z" fill="#c9c5bb"/>`;
+  s += [[VY + 6, VY + 10], [VY + 18, VY + 26], [VY + 38, VY + 52], [VY + 70, VY + 96]].map(([a, b]) => `<path d="M${VX} ${a} V${b}" stroke="#f4f2ec" stroke-width="${r2(1 + (a - VY) / 25)}"/>`).join("");
+  const side = (L) => { let t = ""; const xs = [0, 30, 48, 60, 68, 72];        // the fronts from near to far: x along the side, the top falls toward VY
+    for (let i = 0; i < 5; i++){ const xa = xs[i], xb = xs[i + 1], f = x => (VX - 10 - x) / (VX - 10), topA = VY - 70 * f(xa), topB = VY - 70 * f(xb), botA = VY + 76 * f(xa), botB = VY + 76 * f(xb);
+      const X = x => L ? x : 160 - x, pt = (x, y) => `${r2(X(x))} ${r2(y)}`;
+      t += `<path d="M${pt(xa, topA - 6)} L${pt(xb, topB - 4)} L${pt(xb, botB)} L${pt(xa, botA)}Z" fill="${C[i]}" stroke="#8f8b82" stroke-width="1"/>`;
+      for (let r = 0; r < 3; r++){ const ya = topA + (botA - topA) * (0.12 + r * 0.24), yb = topB + (botB - topB) * (0.12 + r * 0.24), ha = (botA - topA) * 0.13, hb = (botB - topB) * 0.13, m = (xb - xa) * 0.25;
+        t += `<path d="M${pt(xa + m, ya + (yb - ya) * 0.25)} L${pt(xb - m, ya + (yb - ya) * 0.75)} L${pt(xb - m, ya + (yb - ya) * 0.75 + hb)} L${pt(xa + m, ya + (yb - ya) * 0.25 + ha)}Z" fill="${win}" stroke="#8f8b82" stroke-width=".7"/>`; }
+      if (shops){ const ya = topA + (botA - topA) * 0.74, yb = topB + (botB - topB) * 0.74, ha = (botA - topA) * 0.08, hb = (botB - topB) * 0.08;
+        t += `<path d="M${pt(xa, ya)} L${pt(xb, yb)} L${pt(xb, yb + hb)} L${pt(xa, ya + ha)}Z" fill="${["#d8483f", "#3a64a3", "#3f8551", "#cb782b", "#d8483f"][i]}"/>`; }
+    } return t; };
+  s += side(true) + side(false);
+  if (trees) s += [[46, 134, 1.3], [114, 134, 1.3], [64, 108, 0.8], [96, 108, 0.8]].map(([x, y, f]) => `<path d="M${x} ${y} v${r2(16 * f)}" stroke="#7a5638" stroke-width="${r2(3 * f)}"/><circle cx="${x}" cy="${r2(y - 6 * f)}" r="${r2(10 * f)}" fill="#5aa86d" stroke="#3f8551" stroke-width="1.2"/>`).join("");
+  if (cars) s += `<rect x="54" y="146" width="24" height="13" rx="4" fill="#d8483f" stroke="#ad332c" stroke-width="1.2"/><rect x="84" y="104" width="10" height="6" rx="2" fill="#4d7fc4" stroke="#3a64a3" stroke-width="1"/>`;
+  s += `<path d="M138 182 V118" stroke="#4b4f57" stroke-width="3"/><path d="M138 118 q-8 -4 -12 2" stroke="#4b4f57" stroke-width="3" fill="none"/><circle cx="126" cy="123" r="3.6" fill="${night ? "#f6d469" : "#fbfaf5"}" stroke="#4b4f57" stroke-width="1.2"/>`;
+  if (night) s += `<circle cx="80" cy="30" r="8" fill="#f6e7a8"/>`;
+  return s + `</g><rect x="1" y="1" width="158" height="188" rx="15" fill="none" stroke="#b9c1cc" stroke-width="2"/>`;
+}
+function restaurant(k){
+  /* a front with an awning, a sign with a knife and fork, a big window, and a laid table outside: a cloth, two plates, a glass */
+  const A = k.tint("red"), st = `stroke="#8f8b82" stroke-width="1.4"`;
+  let s = shad(80, 178, 74) + `<rect x="14" y="40" width="132" height="134" fill="#efe4cf" ${st}/><rect x="10" y="32" width="140" height="10" fill="#d4c2a2" ${st}/>`;
+  s += `<rect x="58" y="10" width="44" height="26" rx="5" fill="#fbfaf5" stroke="#4b4f57" stroke-width="1.8"/><path d="M70 14 V32 M66 14 V21 Q66 25 70 25 Q74 25 74 21 V14" stroke="#4b4f57" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M90 32 V14 Q96 18 94 26 H90" stroke="#4b4f57" stroke-width="2" fill="#b9bec6" stroke-linejoin="round"/>`;
+  s += `<path d="M10 50 H150 L144 74 H16Z" fill="${A.a}" stroke="${A.d}" stroke-width="1.6"/>` + [0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${r2(16 + i * 18.3)} 74 q9.15 10 18.3 0" fill="${i % 2 ? "#fbfaf5" : A.a}" stroke="${A.d}" stroke-width="1.2"/>`).join("") +
+    [0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${r2(20 + i * 18.6)} 50 l-2 24" stroke="${i % 2 ? A.a : "#fbfaf5"}" stroke-width="7" opacity=".5"/>`).join("");
+  s += `<rect x="22" y="88" width="62" height="46" fill="#cfe3f2" stroke="#6d737c" stroke-width="1.6"/><path d="M53 88 V134" stroke="#6d737c" stroke-width="1.4"/><rect x="98" y="90" width="38" height="84" fill="#7f604c" stroke="#5e4535" stroke-width="1.6"/><circle cx="129" cy="134" r="2.6" fill="#f0c648"/>`;
+  s += `<path d="M24 150 H92 L96 160 H20Z" fill="#fbfaf5" stroke="#b9bec6" stroke-width="1.4"/><path d="M20 160 L22 172 H94 L96 160" fill="#d8483f" opacity=".85"/><path d="M28 172 V184 M88 172 V184" stroke="#5e4535" stroke-width="3"/>`;
+  s += `<ellipse cx="40" cy="152" rx="11" ry="3.4" fill="#fff" stroke="#8f98a3" stroke-width="1.2"/><ellipse cx="72" cy="152" rx="11" ry="3.4" fill="#fff" stroke="#8f98a3" stroke-width="1.2"/><path d="M56 140 q-4 0 -4 6 q0 4 4 4 q4 0 4 -4 q0 -6 -4 -6z M56 150 v3" fill="#e8f2fa" stroke="#8f98a3" stroke-width="1.1"/>`;
+  return s;
+}
 /* --- every kind of thing, by name --- */
 const THING = { cake, pizza, coffee, glass, banana, plate, bus, table, chair, bag, box, house, door, window: windowPic, cat, tree, bicycle,
   face: faceCard, "french flag": flag, flag, "picture card": card, card, newspaper, letter, weather, book: bookS, apple: appleS, pen: penS, shoe: shoeS,
   ball, hat, phone, bread, flower, lamp, shirt, trousers, dress, fish, cheese, tomato, plane, motorbike, boy: kid, girl: kid, baby,
+  heart, foot, hand: handPic, head: headPic, town, street, restaurant,
   train, park: placeThing("park"), beach: placeThing("beach"), garden: placeThing("garden"), shop: placeThing("shop"), station: placeThing("station"), kitchen: placeThing("kitchen") };
 /* "big" and "small" on any kind: the same picture at two sizes, standing on the same line. The look lists of Lessons 5-10 in which
    big or small names a picture of its own keep that picture (SIZED: the look words of each, sorted). */
@@ -2300,6 +2436,8 @@ function sized(el, big, is){
 function oneThing(spec){
   spec = spec || {};
   const is = String(spec.is || "").toLowerCase().trim();
+  if ((spec.looks || []).some(x => String(x).toLowerCase() === "in an open box"))      // (.48) what is found in an open box ('Oh ! Un téléphone !')
+    return placePic({ thing: { is: spec.is, looks: (spec.looks || []).filter(x => String(x).toLowerCase() !== "in an open box") }, rel: "in", ground: { is: "box", looks: ["red"] } });
   if (is === "key") return oneKey(spec);
   if (is === "dog") return oneDog(spec);
   if (is === "car") return /\bbig\b/i.test((spec.looks || []).join(" ")) ? sized(oneCar(spec), true) : oneCar(spec);

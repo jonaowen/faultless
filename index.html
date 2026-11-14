@@ -379,7 +379,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-14.46";
+const APP_VERSION="2026-11-14.48";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -513,10 +513,29 @@ const VOCAB = {
   bonjour: {name:"bonjour", kind:"word", say:["Bonjour."], accept:["bonjour","bonjours"]},
   bon: {name:"bon", kind:"word", say:[], accept:["bon","bons","bond","bonds"]},
   francais: {name:"français", kind:"word", say:[], accept:["français","francais"]},
-  main: {name:"main", kind:"word", say:[], accept:["main","mains"]},
+  main: {name:"main", kind:"object", art:"UNE", say:["Une","main."], accept:["main","mains"]},
   // .24 (the revision of 11 Nov 2026, course_dise6): nouns brought forward, "touche", "nage", "moi", "jusqu'à", "comment"
   garcon: {name:"garçon", kind:"object", art:"UN", say:["Un","garçon."], accept:["garçon","garçons","garcon"]},
   fille: {name:"fille", kind:"object", art:"UNE", say:["Une","fille."], accept:["fille","filles"]},
+  /* (.48) the new Lessons 1-10 (the whole-course sketch): the stream's nouns, parler / arriver / partir, et puis, oh */
+  train: {name:"train", kind:"object", art:"UN", say:["Un","train."], accept:["train","trains","trin"]},
+  ville: {name:"ville", kind:"object", art:"UNE", say:["Une","ville."], accept:["ville","villes","vil","vile"]},
+  pied: {name:"pied", kind:"object", art:"UN", say:["Un","pied."], accept:["pied","pieds","pié","pie"]},
+  tete: {name:"tête", kind:"object", art:"UNE", say:["Une","tête."], accept:["tête","têtes","tete","tet","tette"]},
+  restaurant: {name:"restaurant", kind:"object", art:"UN", say:["Un","restaurant."], accept:["restaurant","restaurants","resto"]},
+  telephone: {name:"téléphone", kind:"object", art:"UN", say:["Un","téléphone."], accept:["téléphone","téléphones","telephone","téléphonent"]},
+  coeur: {name:"cœur", kind:"object", art:"UN", say:["Un","cœur."], accept:["cœur","cœurs","coeur","coeurs","chœur","choeur"]},
+  rue: {name:"rue", kind:"object", art:"UNE", say:["Une","rue."], accept:["rue","rues","ru","roue"]},
+  bus: {name:"bus", kind:"object", art:"UN", say:["Un","bus."], accept:["bus","busse"]},
+  parle: {name:"parle", kind:"word", verb:true, tu:"parles", say:[], accept:["parle","parles","parlent"]},
+  arrive: {name:"arrive", kind:"word", verb:true, tu:"arrives", say:[], accept:["arrive","arrives","arrivent"]},
+  jarrive: {name:"j'arrive", kind:"word", say:[], accept:["j'arrive","jarrive","j arrive"]},              // one unit, like "j'apprends"
+  part: {name:"part", kind:"word", verb:true, tu:"pars", say:[], accept:["part","pars","par","parts"]},
+  parler: {name:"parler", kind:"word", inf:true, say:[], accept:["parler","parlé","parlez"]},
+  arriver: {name:"arriver", kind:"word", inf:true, say:[], accept:["arriver","arrivé","arrivez","arrivée"]},
+  partir: {name:"partir", kind:"word", inf:true, say:[], accept:["partir","parti","partie"]},
+  puis: {name:"puis", kind:"word", say:[], accept:["puis","pui","puits"]},
+  oh: {name:"oh", kind:"word", say:["Oh !"], accept:["oh","o","ô","eau","au"]},
   ballon: {name:"ballon", kind:"object", art:"UN", say:["Un","ballon."], accept:["ballon","ballons"]},
   lampe: {name:"lampe", kind:"object", art:"UNE", say:["Une","lampe."], accept:["lampe","lampes"]},
   chapeau: {name:"chapeau", kind:"object", art:"UN", pl:"chapeaux", say:["Un","chapeau."], accept:["chapeau","chapeaux"]},
@@ -770,7 +789,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:44, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:48, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -790,6 +809,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(old43.length){ S.delayed=S.delayed.filter(d=>!old43.includes(d));
     S.log.push({t:new Date().toISOString(), result:"DELAYED TEST DROPPED for version "+APP_VERSION+": "+old43.map(d=>d.key).join(", ")+" (the exercise has changed since the error was made)", heard:[]}); }
   if(!(s.courseRev>=44)) migrate44();      // (.44) a state saved before the exercises of Lessons 3 to 5 were renumbered
+  if(!(s.courseRev>=48)) migrate48();      // (.48) a state saved before Lessons 1 to 10 were made anew from the whole-course sketch
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -812,6 +832,23 @@ function migrate44(){
   const old=(S.delayed||[]).filter(d=>CHANGED_44.includes(d.ex)); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
   if(touched || moved || old.length) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 3 to 5 have new exercise numbers"+(moved?"; this lesson goes on at "+moved:"")+(old.length?"; delayed tests dropped: "+old.map(d=>d.key).join(", "):""), heard:[]});
   S.courseRev=44;
+}
+/* (.48) Lessons 1 to 10 are made anew from the whole-course sketch (dev/plan/LESSONS_1_10.md): other exercises, other things, other
+   numbers, and Lessons 2, 8 and 9 are duplicates of Lessons 1, 7 and 7. Nothing of a saved place inside Lessons 1-10 names the same
+   exercise any more, so the simplest safe rule: a learner goes on at the START of the lesson they were in (the new lesson of that
+   number); the lessons before it count as done; their exercise records and delayed tests in Lessons 1-10 are dropped (a line in the
+   log says so). A learner who had not begun is not touched. */
+function migrate48(){
+  const L110 = k => /^L([1-9]|10)E\d+/.test(k);
+  const had = Object.keys(S.finished||{}).some(L110) || (S.lesson||0)>0 || (S.ex||0)>0;
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L110(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L110(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  const n=Math.min(S.lesson||0, LESSONS.length-1);
+  for(let i=0;i<n;i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;
+  if(had || old.length){ S.ex=0;
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 to 10 are made anew (the whole-course sketch); this learner starts Lesson "+(n+1)+" from its beginning"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
+  S.courseRev=48;
 }
 /* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
@@ -1044,7 +1081,7 @@ function faceZoom(on){ const r=document.getElementById("room");
    teacher with natural intonation (questions rise, statements fall). Each clip comes with the time of every sound,
    so the mouth follows the real audio. Lines without a clip fall back to the phone's own voice. */
 // a line left hanging ("Je m'appelle…", the learner goes on) has its own clip, said with the voice held up: key + "_suite"
-const clipKey = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"").replace(/[^a-z ]/g," ").trim().split(/\s+/).join("_") + (/…\s*$/.test(t) ? "_suite" : "");
+const clipKey = t => t.toLowerCase().replace(/œ/g,"oe").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"").replace(/[^a-z ]/g," ").trim().split(/\s+/).join("_") + (/…\s*$/.test(t) ? "_suite" : "");
 const TEACHER = { index:null, raw:{}, buf:{} };
 fetch("audio/teacher/index.json").then(r=>r.ok?r.json():null).then(ix=>{ TEACHER.index=ix;
   if(ix) for(const k of Object.keys(ix)) TEACHER.raw[k]=fetch("audio/teacher/"+k+".mp3").then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);
@@ -1145,7 +1182,7 @@ const VOICE_PREFIX = {paul:"", julie:"julie ", man:"man ", woman:"woman "};
 const voiceName = v => VOCAB[v] ? VOCAB[v].name : v==="man" ? "the man" : "the woman";
 const voiceLine = (v, units) => VOICE_PREFIX[v]+units.join(" ");
 const LEARNER_TWINS = ["ça_va"];
-const LEARNER_CLIP = t => { const k=t.toLowerCase().replace(/[’']/g,"").replace(/[^a-zà-ÿ ]/g,"").trim().replace(/\s+/g,"_");
+const LEARNER_CLIP = t => { const k=t.toLowerCase().replace(/œ/g,"oe").replace(/[’']/g,"").replace(/[^a-zà-ÿ ]/g,"").trim().replace(/\s+/g,"_");
   return "audio/learner/"+k+(/\?\s*$/.test(t) && LEARNER_TWINS.includes(k.replace(/^(?:julie|man|woman)_/,"")) ? "_q" : "")+".mp3"; };
 const clipBufs={};
 async function learnerClip(text){
@@ -1561,7 +1598,8 @@ function listen(expect, alsoOk=[]){
 /* Judging rule (chosen on held-out recordings): the best-scoring possible answer is taken only if the model's own
    free transcript says the same words ("text"). The older rule ("margin") took it if it scored close to the transcript. */
 const LISTEN = { rule:"text", T: 0.3 };
-const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿ' ]/g," ").replace(/\s+/g," ").trim();   // a hesitation (euh) is not the intended response
+/* (.48) œ (cœur) is a letter: it was outside à-ÿ and the word fell in two */
+const normSaid = t => (t||"").toLowerCase().replace(/[’`]/g,"'").replace(/[^a-zà-ÿœæ' ]/g," ").replace(/\s+/g," ").trim();   // a hesitation (euh) is not the intended response
 /* The words of an expected answer, as they are written (.20): "des livres", "trois clés", "tu manges", "on sourit", "il dansait",
    "Bois." The listener's word list is built from these, and its own spelling of what it heard is compared with them. */
 function phraseOf(want){ const ws=want.filter(x=>x!=="REST");
@@ -2045,7 +2083,7 @@ function cardOf(inner, k=0.74){
   const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80-80*k} ${95-95*k}) scale(${k})`); c.appendChild(inner); g.appendChild(c); return g;
 }
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
-const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand"};
+const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave"};      // (.48) parler, arriver, partir
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -2158,6 +2196,10 @@ function genPicture0(e){
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
   if(e.is==="numeral") return numberCard("n"+e.value);
   if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
+  if((e.looks||[]).includes("in an open box") && window.PICS && PICS.place){         // (.48) what is found in an open box ('Oh ! Un livre !')
+    const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="in an open box")});
+    if(!OWN_THING.includes(e.is)) return thingPicture(e);
+    return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:"in", ground:{is:"box", looks:["red"]}}, x=>onePicture(Object.assign({}, rest, x, {count:1}))); }
   if(!OWN_THING.includes(e.is)) return thingPicture(e);
   const n=e.count||1; if(n===1) return onePicture(e);
   if(n>4 && window.PICS) return PICS.group(n, ()=>onePicture(e));
@@ -2782,7 +2824,7 @@ function findUnitWhole(str, word, from){
 }
 function boardUsed(it){
   if((it.boardPoint||[]).length || (it.boardPointLearner||[]).length) return true;
-  const words=t=>String(t||"").toLowerCase().replace(/[’]/g,"'").split(/[^a-zà-ÿ']+/).filter(w=>w.length>1);
+  const words=t=>String(t||"").toLowerCase().replace(/[’]/g,"'").split(/[^a-zà-ÿœæ']+/).filter(w=>w.length>1);
   const bw=new Set(words(it.board.text).flatMap(w=>[w, w.replace(/^[a-z]'/,"")]));
   const said=words([it.teacher, it.answer, (it.questionUnits||[]).join(" "), (it.answerUnits||[]).join(" ")].join(" ")).flatMap(w=>[w, w.replace(/^[a-z]'/,"")]);
   return said.some(w=>bw.has(w));
@@ -3875,7 +3917,7 @@ const VOSK = {model:null, grammar:null, failed:false};
 const LISTENER_SPELLING = {"dansais":"dansait"};
 const listenerWords = t => t.split(" ").map(w=>LISTENER_SPELLING[w]||w).join(" ");
 function courseGrammar(expect){
-  const norm=t=>listenerWords(t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿ' -]/g," ").replace(/\s+/g," ").trim());
+  const norm=t=>listenerWords(t.toLowerCase().replace(/[’]/g,"'").replace(/…/g," ").replace(/[^a-zà-ÿœæ' -]/g," ").replace(/\s+/g," ").trim());
   const frag_=u=>Object.keys(VOCAB).some(k=>VOCAB[k].kind==="frag" && norm(VOCAB[k].say[0])===u);
   if(!VOSK.base){
     const frag=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="frag").map(k=>norm(VOCAB[k].say[0])));
