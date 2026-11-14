@@ -788,7 +788,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:48, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:54, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -809,6 +809,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
     S.log.push({t:new Date().toISOString(), result:"DELAYED TEST DROPPED for version "+APP_VERSION+": "+old43.map(d=>d.key).join(", ")+" (the exercise has changed since the error was made)", heard:[]}); }
   if(!(s.courseRev>=44)) migrate44();      // (.44) a state saved before the exercises of Lessons 3 to 5 were renumbered
   if(!(s.courseRev>=48)) migrate48();      // (.48) a state saved before Lessons 1 to 10 were made anew from the whole-course sketch
+  if(!(s.courseRev>=54)) migrate54();      // (.54) a state saved before the exercises of Lessons 1 to 5 were cut and renumbered
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -848,6 +849,24 @@ function migrate48(){
   if(had || old.length){ S.ex=0;
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 to 10 are made anew (the whole-course sketch); this learner starts Lesson "+(n+1)+" from its beginning"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
   S.courseRev=48;
+}
+/* (.54) Lessons 1 to 5 are rebuilt: an exercise is one sequence (models, leads, tests), a new question comes after its words, the
+   nouns have exercises of their own, some exercises are gone: every exercise after the first change in a lesson has another number
+   (dev/appwork/v54/exercise_map.json in the private bundle gives the .53 numbers and the new ones). A saved place, the finished
+   exercises and the delayed tests are keyed by those numbers, so the same safe rule as .48: the learner goes on at the START of the
+   lesson they were in; the lessons before it count as done; the exercise records and delayed tests of Lessons 1-5 are dropped (a
+   line in the log says so). A learner who had not begun is not touched. */
+function migrate54(){
+  const L15 = k => /^L[1-5]E\d+/.test(k);
+  const had = Object.keys(S.finished||{}).some(L15) || (S.lesson||0)>0 || (S.ex||0)>0;
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L15(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L15(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  const n=Math.min(S.lesson||0, LESSONS.length-1);
+  for(let i=0;i<n;i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;
+  if(had || old.length){ S.ex=0;
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 to 5 are rebuilt (their exercises have other numbers); this learner starts Lesson "+(n+1)+" from its beginning"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
+  S.courseRev=54;
 }
 /* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
