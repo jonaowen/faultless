@@ -1255,7 +1255,10 @@ function action(act, who, opts){
     front += `<path d="M${x0} ${y} H${x1 - 8}" stroke="#3fae5a" stroke-width="6" stroke-linecap="round"/><path d="M${x1 - 14} ${y - 8} L${x1} ${y} L${x1 - 14} ${y + 8}" stroke="#3fae5a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   if (K.talk){                                             // (.48) the speech bubble and its sound lines
-    const blink = d => still ? "" : `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.7;1" begin="${d}s" dur="${r2(1.2 / ACT_SPEED * 2)}s" repeatCount="indefinite"/>`;
+    /* (.50) every part of the bubble begins with the loop: a dot that comes in later has its wait inside its own key times, not a later
+       begin (a later begin left the dot in the middle of a loop for its first 0.15 / 0.3 s when the picture was shown a second time) */
+    const blink = d => { const f = r2(d / (1.2 / ACT_SPEED * 2));
+      return still ? "" : `<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;${f};${r2(f + 0.2)};${r2(0.7 + f)};1" dur="${r2(1.2 / ACT_SPEED * 2)}s" repeatCount="indefinite"/>`; };
     front += `<path d="M102 14 H150 Q156 14 156 20 V50 Q156 56 150 56 H116 L100 68 L106 56 H102 Q96 56 96 50 V20 Q96 14 102 14Z" fill="#fff" stroke="#6d737c" stroke-width="2.2" stroke-linejoin="round"/>` +
       [0, 1, 2].map(i => `<circle cx="${110 + i * 16}" cy="35" r="4.6" fill="#6a55b8">${blink(i * 0.15)}</circle>`).join("") +
       `<path d="M92 48 q5 4 0 9 M97 44 q8 8 0 17" stroke="#6a55b8" stroke-width="2.6" fill="none" stroke-linecap="round">${blink(0)}</path>`;

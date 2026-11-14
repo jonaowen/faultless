@@ -367,6 +367,11 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson3.js"></script>
 <script src="course/lesson4.js"></script>
 <script src="course/lesson5.js"></script>
+<script src="course/lesson6.js"></script>
+<script src="course/lesson7.js"></script>
+<script src="course/lesson8.js"></script>
+<script src="course/lesson9.js"></script>
+<script src="course/lesson10.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script>
@@ -374,7 +379,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-14.49";
+const APP_VERSION="2026-11-14.50";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
