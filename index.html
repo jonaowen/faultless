@@ -377,7 +377,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-14.53";
+const APP_VERSION="2026-11-14.54";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -629,7 +629,7 @@ function genItem(it){
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
-  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner"]) if(it[k]) o[k]=it[k];
+  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner","intro"]) if(it[k]) o[k]=it[k];
   if(+(it.pauseAfterMs||it.pause_after_ms)>0) o.pauseAfterMs=+(it.pauseAfterMs||it.pause_after_ms);      // (.46) course_fix, design log section 58
   if(it.mark===false) o.mark=false;
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
@@ -788,7 +788,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:48, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:54, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -809,6 +809,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
     S.log.push({t:new Date().toISOString(), result:"DELAYED TEST DROPPED for version "+APP_VERSION+": "+old43.map(d=>d.key).join(", ")+" (the exercise has changed since the error was made)", heard:[]}); }
   if(!(s.courseRev>=44)) migrate44();      // (.44) a state saved before the exercises of Lessons 3 to 5 were renumbered
   if(!(s.courseRev>=48)) migrate48();      // (.48) a state saved before Lessons 1 to 10 were made anew from the whole-course sketch
+  if(!(s.courseRev>=54)) migrate54();      // (.54) a state saved before the exercises of Lessons 1 to 5 were cut and renumbered
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -848,6 +849,24 @@ function migrate48(){
   if(had || old.length){ S.ex=0;
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 to 10 are made anew (the whole-course sketch); this learner starts Lesson "+(n+1)+" from its beginning"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
   S.courseRev=48;
+}
+/* (.54) Lessons 1 to 5 are rebuilt: an exercise is one sequence (models, leads, tests), a new question comes after its words, the
+   nouns have exercises of their own, some exercises are gone: every exercise after the first change in a lesson has another number
+   (dev/appwork/v54/exercise_map.json in the private bundle gives the .53 numbers and the new ones). A saved place, the finished
+   exercises and the delayed tests are keyed by those numbers, so the same safe rule as .48: the learner goes on at the START of the
+   lesson they were in; the lessons before it count as done; the exercise records and delayed tests of Lessons 1-5 are dropped (a
+   line in the log says so). A learner who had not begun is not touched. */
+function migrate54(){
+  const L15 = k => /^L[1-5]E\d+/.test(k);
+  const had = Object.keys(S.finished||{}).some(L15) || (S.lesson||0)>0 || (S.ex||0)>0;
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L15(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L15(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  const n=Math.min(S.lesson||0, LESSONS.length-1);
+  for(let i=0;i<n;i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;
+  if(had || old.length){ S.ex=0;
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 to 5 are rebuilt (their exercises have other numbers); this learner starts Lesson "+(n+1)+" from its beginning"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
+  S.courseRev=54;
 }
 /* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
@@ -2143,7 +2162,8 @@ function cardOf(inner, k=0.74){
   const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80-80*k} ${95-95*k}) scale(${k})`); c.appendChild(inner); g.appendChild(c); return g;
 }
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
-const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave"};      // (.48) parler, arriver, partir
+const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
+  working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen"};      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -3138,6 +3158,10 @@ async function convIntro(it){
     if(partsHave(w,2)) await convOnce("blue");
     if(partsHave(w,3)) await convOnce("underline");
     if(partsHave(w,4)) await convOnce("wavy"); }
+  /* (.54; Jon, 14 Nov 2026, on "Tu fais quoi ?": "for this format we need the introductory explanation in English because it's quite an abstract
+     format") a lesson item may name an introduction (course field intro: the key of a narrator clip, audio/narrator/<key>.mp3): the narrator
+     says it once, before that item, which is the first model of the format. About how the app works only: no English about French. */
+  if(typeof it.intro==="string") await convOnce(it.intro);      // (the engine's own introduction models carry intro:true: not a clip name)
   if(it.read) await convOnce("lis");
   if(it.type==="tapshow") await convOnce("touche_model");
   if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
@@ -3157,6 +3181,7 @@ async function convIntro(it){
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
   if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap");
+  if(typeof it.intro==="string") u.push(it.intro);
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
@@ -3745,7 +3770,10 @@ const retestOpts = t => oralCorr(t) ? {retest:true, atoi:false, quiet:true} : {r
 async function correction(task, nth, how=""){
   ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task)+(oralCorr(task) ? " (the target only, then the task again)" : ""));
   if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); rest(); return; }
-  offering=false; gestureEar(); await say(["Non, écoute."]);
+  /* (.54; Jon, 15 Nov 2026: "I'd lean towards removing écoute since a truly naive learner doesn't know what it means since we didn't teach it")
+     A tap's correction is "Non."  -  0.5 s  -  the cue and her hand's tap  -  0.5 s  -  "Vas-y.". "Écoute." is said nowhere now (a model's
+     opening "Écoute." has not been said since 9 Nov: presentGenModel). */
+  offering=false; gestureEar(); await say(["Non."]);
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
   // "Vas-y.": the open palm, the border on what is asked about; the learner's turn opens when it has ended
@@ -3810,7 +3838,7 @@ async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
   offering=false; gestureEar();
   if(oralCorr(it)) await sleep(CORR_GAP);      // (.53) a spoken task: the target only, her hand at her ear
-  else { await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
+  else { await say(["Non."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
   else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
   rest();
