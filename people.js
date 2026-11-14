@@ -1793,6 +1793,8 @@ function flag(k){
 const scrawl = (x, y, w, c) => { let d = `M${x} ${y}`; for (let i = 0; i < w / 6; i++) d += ` q1.5 ${i % 2 ? 3.4 : -3.4} 3 0 t3 0`; return `<path d="${d}" stroke="${c || "#3b55b3"}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`; };
 const lines = (x, y, w, n, gap) => `<path d="${Array.from({ length: n }, (_, i) => `M${x} ${y + i * gap} h${i === n - 1 ? r2(w * 0.6) : w}`).join(" ")}" stroke="#9a9a94" stroke-width="1.7" stroke-linecap="round"/>`;
 function newspaper(k){
+  if (k.has("folded")) return newspaperFolded(k);
+  if (k.has("open")) return newspaperOpen(k);
   const P = k.cn ? k.tint().h : "#f6f3ea", st = `stroke="#8a867a" stroke-width="1.6" stroke-linejoin="round"`;
   return shad(82, 170, 60) + `<g transform="rotate(-5 80 100)"><path d="M26 44 H138 V166 H26Z" fill="#dedacd" ${st} transform="translate(5 5)"/><path d="M22 38 H134 V160 H22Z" fill="${P}" ${st}/>
     <rect x="30" y="45" width="96" height="14" rx="1.5" fill="#33353b"/><path d="M30 64 H126" stroke="#33353b" stroke-width="1.6"/><path d="M30 73 H126 M30 81 H104" stroke="#55585f" stroke-width="5"/>
@@ -2449,17 +2451,170 @@ function restaurant(k){
   s += `<ellipse cx="40" cy="152" rx="11" ry="3.4" fill="#fff" stroke="#8f98a3" stroke-width="1.2"/><ellipse cx="72" cy="152" rx="11" ry="3.4" fill="#fff" stroke="#8f98a3" stroke-width="1.2"/><path d="M56 140 q-4 0 -4 6 q0 4 4 4 q4 0 4 -4 q0 -6 -4 -6z M56 150 v3" fill="#e8f2fa" stroke="#8f98a3" stroke-width="1.1"/>`;
   return s;
 }
+/* ---------- the nouns of Lessons 11-20 of the whole-course sketch (.55): photo, metro, sea, mountain, leaf, arm; the newspaper's looks ----------
+   Each is drawn against the kinds it could be taken for. A photo is a print: a white border, a strip of tape or album corners, a shine across
+   it, lying at a slant (a picture card is a plain white card with the learner's figure on it; a window has bars and a sill; a place is a scene
+   with no border). The metro is seen from the front, coming out of its dark tunnel beside a platform (the train is seen from the side in
+   daylight, nose and carriage on sleepers; a bus is a box on road wheels). The sea is water to the horizon and nothing else: rows of waves, no
+   sand, no parasol (the beach). A mountain is one great peak of rock with small trees at its foot (a pine tree is a green cone on a trunk).
+   A leaf is one leaf, big, with its stalk and veins (a tree has a crown and a trunk; a flower has petals). An arm is the arm in colour on
+   the pale outline of the person, the hand pale too (the hand picture is an open hand; a raised hand is a whole person). A newspaper is
+   grey print with a black title bar and a photograph, on thin sheets with no cover (a book has a coloured cover). */
+const mixc = (a, b, t) => "#" + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, "0")).join("");
+const framed = (k, inner) => `<defs><clipPath id="${k.u}c"><rect x="0" y="0" width="160" height="190" rx="15"/></clipPath></defs><g transform="translate(5.6 6.6) scale(.93)"><g clip-path="url(#${k.u}c)">${inner}</g><rect width="160" height="190" rx="15" fill="none" stroke="#8f98a3" stroke-width="2.6"/></g>`;
+/* a photo (une photo): looks "portrait" (the usual one) | "family" | "holiday" | "old"; a colour word colours the background of the portrait */
+function photo(k){
+  const u = k.u, has = k.has, old = has("old", "sepia"), land = has("holiday", "landscape"), fam = has("family"), wide = old || land;
+  const X = wide ? 16 : 28, Y = wide ? 44 : 26, W = wide ? 128 : 104, H = wide ? 106 : 136, m = wide ? 9 : 9, ix = X + m, iy = Y + m, iw = W - 2 * m, ih = wide ? H - 2 * m : H - m - 30;
+  /* a head and shoulders, very simply: s = size, by = the foot of the shoulders */
+  const bustS = (cx, by, s, skin, hair, top, long) => (long ? `<path d="M${r2(cx - 11.5 * s)} ${r2(by - 30 * s)} Q${r2(cx - 13 * s)} ${r2(by - 12 * s)} ${r2(cx - 9 * s)} ${r2(by - 9 * s)} H${r2(cx + 9 * s)} Q${r2(cx + 13 * s)} ${r2(by - 12 * s)} ${r2(cx + 11.5 * s)} ${r2(by - 30 * s)}Z" fill="${hair}"/>` : "") +
+    `<path d="M${r2(cx - 19 * s)} ${by} Q${r2(cx - 19 * s)} ${r2(by - 15 * s)} ${cx} ${r2(by - 16 * s)} Q${r2(cx + 19 * s)} ${r2(by - 15 * s)} ${r2(cx + 19 * s)} ${by}Z" fill="${top}"/><rect x="${r2(cx - 3.6 * s)}" y="${r2(by - 21 * s)}" width="${r2(7.2 * s)}" height="${r2(7 * s)}" fill="${skin}"/>
+    <ellipse cx="${cx}" cy="${r2(by - 30.5 * s)}" rx="${r2(11.4 * s)}" ry="${r2(12 * s)}" fill="${hair}"/><ellipse cx="${cx}" cy="${r2(by - 27.5 * s)}" rx="${r2(9.2 * s)}" ry="${r2(10 * s)}" fill="${skin}"/>
+    <circle cx="${r2(cx - 3.6 * s)}" cy="${r2(by - 28.5 * s)}" r="${r2(1.2 * s)}" fill="#3a2a22"/><circle cx="${r2(cx + 3.6 * s)}" cy="${r2(by - 28.5 * s)}" r="${r2(1.2 * s)}" fill="#3a2a22"/><path d="M${r2(cx - 3.6 * s)} ${r2(by - 23.4 * s)} q${r2(3.6 * s)} ${r2(3 * s)} ${r2(7.2 * s)} 0" stroke="#8a4a3a" stroke-width="${r2(1.1 * s)}" fill="none" stroke-linecap="round"/>`;
+  const by = iy + ih;
+  let pic;
+  if (old) pic = `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="#e3cfa6"/><ellipse cx="${ix + iw / 2}" cy="${iy + ih / 2}" rx="${iw * 0.62}" ry="${ih * 0.62}" fill="#f0e2c2"/>` +
+      bustS(ix + iw * 0.34, by, 1.5, "#d9bf98", "#5a4530", "#7a6248") + bustS(ix + iw * 0.68, by, 1.42, "#dcc49e", "#6b5238", "#a58d6c", true);
+  else if (land) pic = `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="#bfe2f7"/><circle cx="${ix + 18}" cy="${iy + 17}" r="9" fill="#ffd23c"/><path d="M${ix} ${by - 16} Q${ix + iw / 2} ${by - 30} ${ix + iw} ${by - 14} V${by} H${ix}Z" fill="#9ccf7a"/>
+      <path d="M${ix + 62} ${by - 12} L${ix + 76.5} ${iy + 12} V${iy + 4} h3 V${iy + 12} L${ix + 94} ${by - 12} h-9 Q${ix + 78} ${by - 44} ${ix + 71} ${by - 12}Z" fill="#6a5b52"/><path d="M${ix + 69} ${by - 34} h18 M${ix + 72.5} ${by - 52} h11" stroke="#6a5b52" stroke-width="3.4"/>` +
+      bustS(ix + 22, by, 1.02, "#f0c8a4", "#3a2a22", "#d8483f") + bustS(ix + 50, by, 0.98, "#e3b58d", "#b0865a", "#4d7fc4", true);
+  else if (fam) pic = `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="#cfe9b8"/><circle cx="${ix + 12}" cy="${iy + 18}" r="20" fill="#9ccf7a"/><circle cx="${ix + iw - 10}" cy="${iy + 12}" r="24" fill="#9ccf7a"/>` +
+      bustS(ix + 23, by - 10, 1.22, "#f0c8a4", "#604635", "#4d7fc4") + bustS(ix + 63, by - 10, 1.18, "#e3b58d", "#3a2a22", "#d8483f", true) + bustS(ix + 43, by, 0.92, "#f0c8a4", "#b0865a", "#f0c648");
+  else { const B = k.cn ? pal(TINT[k.cn]) : pal(["#bfe0f5", "#8fc3e6"]);
+    pic = `<rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="${k.cn ? B.h : B.a}"/><path d="M${ix} ${by - 26} Q${ix + iw / 2} ${by - 40} ${ix + iw} ${by - 26} V${by} H${ix}Z" fill="${k.cn ? B.a : B.b}" opacity=".7"/>` + bustS(ix + iw / 2, by, 2.2, "#f0c8a4", "#604635", k.cn === "red" || k.cn === "orange" ? "#4d7fc4" : "#e0574c"); }
+  const edge = old ? `<rect x="${X}" y="${Y}" width="${W}" height="${H}" fill="none" stroke="#fffaf0" stroke-width="5.4" stroke-dasharray="0.1 7.2" stroke-linecap="round"/>` : "";
+  const fix = old ? [[X - 3, Y - 3, 0], [X + W + 3, Y - 3, 90], [X + W + 3, Y + H + 3, 180], [X - 3, Y + H + 3, 270]].map(c => `<path d="M0 0 h17 l-17 17z" fill="#3d3a36" transform="translate(${c[0]} ${c[1]}) rotate(${c[2]})"/>`).join("")
+    : `<rect x="${X + W / 2 - 17}" y="${Y - 9}" width="34" height="17" fill="#f0dc8c" opacity=".86" stroke="#cdb65c" stroke-width="1" transform="rotate(4 ${X + W / 2} ${Y})"/>`;
+  return `<defs><clipPath id="${u}i"><rect x="${ix}" y="${iy}" width="${iw}" height="${ih}"/></clipPath></defs><g transform="rotate(${wide ? 5 : -6} 80 96)"><rect x="${X + 4}" y="${Y + 5}" width="${W}" height="${H}" rx="2" fill="#000" opacity=".16"/>
+    <rect x="${X}" y="${Y}" width="${W}" height="${H}" rx="2" fill="${old ? "#fffaf0" : "#fffefa"}" stroke="#a9a498" stroke-width="1.6"/>${edge}<g clip-path="url(#${u}i)">${pic}<path d="M${ix} ${iy + ih * 0.78} L${ix + iw * 0.66} ${iy} h${iw * 0.2} L${ix} ${iy + ih}Z" fill="#fff" opacity=".24"/></g>
+    <rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="none" stroke="${old ? "#8a7350" : "#6d737c"}" stroke-width="1.2"/>${fix}</g>`;
+}
+/* the metro (un métro): looks: a colour ("green" the usual one, "blue", "red", "yellow", "orange") | "old" */
+function metro(k){
+  const u = k.u, has = k.has, old = has("old"), C = k.cn ? k.tint() : pal(old ? ["#3f8f6a", "#2a6b4c"] : ["#35a585", "#237d63"]), B = old ? C : pal(["#f6f8fa", "#cfd6de"]), st = `stroke="${old ? C.d : "#6d737c"}" stroke-width="1.8" stroke-linejoin="round"`;
+  const tiles = old ? "#b9785f" : "#f1ecde", grout = old ? "#96563f" : "#d6cfbb";
+  let s = `<defs>${lgr(u + "b", B.h, B.a)}<radialGradient id="${u}l"><stop offset="0" stop-color="#fff7c2" stop-opacity=".95"/><stop offset="1" stop-color="#fff7c2" stop-opacity="0"/></radialGradient></defs>
+    <rect width="160" height="190" fill="${tiles}"/><path d="${Array.from({ length: 13 }, (_, i) => `M0 ${6 + i * 15} H160`).join(" ")}" stroke="${grout}" stroke-width="1.2"/><path d="${Array.from({ length: 8 }, (_, i) => `M${10 + i * 20} 0 V190`).join(" ")}" stroke="${grout}" stroke-width="1.2" opacity=".6"/>
+    <path d="M16 190 V78 A64 62 0 0 1 144 78 V190Z" fill="#1d2027" stroke="${old ? "#6e3d2c" : "#8f8b82"}" stroke-width="6" stroke-linejoin="round"/><path d="M26 190 V80 A54 52 0 0 1 134 80 V190Z" fill="#2a2e38"/>
+    <g fill="#f6e7a8"><circle cx="43" cy="56" r="3"/><circle cx="117" cy="56" r="3"/></g><path d="M40 190 L54 150 H106 L120 190Z" fill="#4a4e58"/>`;
+  s += [[158, 3], [168, 4], [181, 5.4]].map(r => { const f = (r[0] - 150) / 40, x0 = 56 - f * 18, x1 = 104 + f * 18; return `<path d="M${r2(x0)} ${r[0]} H${r2(x1)}" stroke="#7a5a3e" stroke-width="${r[1]}"/>`; }).join("") +
+    `<path d="M62 150 L46 190 M98 150 L114 190" stroke="#c3c8cf" stroke-width="3.6" stroke-linecap="round"/>`;
+  /* the platform at the right, its yellow line along the edge */
+  s += `<path d="M118 132 L160 122 V190 H140Z" fill="#dfe2e6"/><path d="M118 132 L140 190 H130 L114 140Z" fill="#8f98a3"/><path d="M121 133 L143 190" stroke="#f0c648" stroke-width="5"/>`;
+  if (old) s += `<path d="M42 152 V54 Q42 44 52 44 H108 Q118 44 118 54 V152Z" fill="url(#${u}b)" ${st}/><path d="M40 46 Q80 32 120 46 L118 54 H42Z" fill="#8f98a3" stroke="#5b616d" stroke-width="1.5" stroke-linejoin="round"/>
+      <rect x="47" y="60" width="19" height="34" rx="2" fill="#2f3b52"/><rect x="70.500" y="60" width="19" height="34" rx="2" fill="#2f3b52"/><rect x="94" y="60" width="19" height="34" rx="2" fill="#2f3b52"/><path d="M49 90 L62 62 M72.500 90 L85.500 62" stroke="#fff" stroke-width="3" opacity=".22" stroke-linecap="round"/>
+      <path d="M42 102 H118" stroke="#fdf4da" stroke-width="5"/><path d="M68.500 106 V150 M91.500 106 V150" stroke="${C.d}" stroke-width="1.5"/><circle cx="54" cy="122" r="8" fill="url(#${u}l)"/><circle cx="106" cy="122" r="8" fill="url(#${u}l)"/><circle cx="54" cy="122" r="5.6" fill="#fff7c2" stroke="#5b616d" stroke-width="1.5"/><circle cx="106" cy="122" r="5.6" fill="#fff7c2" stroke="#5b616d" stroke-width="1.5"/>
+      <rect x="40" y="142" width="80" height="11" rx="2" fill="#3d424c"/><rect x="72" y="138" width="16" height="12" rx="2" fill="#26272c"/>`;
+  else s += `<path d="M42 152 V66 Q42 42 66 40 H94 Q118 42 118 66 V152Z" fill="url(#${u}b)" ${st}/><path d="M48 96 V68 Q48 50 66 48 H94 Q112 50 112 68 V96Z" fill="#2f3b52"/><path d="M80 48 V96" stroke="${B.a}" stroke-width="2.4"/><path d="M53 92 L70 52 M85 92 L98 60" stroke="#fff" stroke-width="3.4" opacity=".22" stroke-linecap="round"/>
+      <rect x="62" y="41.500" width="36" height="5" rx="2" fill="#f6c64a"/><path d="M42 102 H118 V134 H42Z" fill="${C.a}" stroke="${C.d}" stroke-width="1.5"/><path d="M42 109 H118" stroke="#fff" stroke-width="3" opacity=".85"/>
+      <circle cx="56" cy="122" r="12" fill="url(#${u}l)"/><circle cx="104" cy="122" r="12" fill="url(#${u}l)"/><rect x="49" y="117" width="14" height="9" rx="4" fill="#fffbe0" stroke="#5b616d" stroke-width="1.3"/><rect x="97" y="117" width="14" height="9" rx="4" fill="#fffbe0" stroke="#5b616d" stroke-width="1.3"/>
+      <circle cx="69" cy="121.500" r="2.6" fill="#e0574c"/><circle cx="91" cy="121.500" r="2.6" fill="#e0574c"/><rect x="40" y="140" width="80" height="13" rx="3" fill="#3d424c"/><rect x="72" y="136" width="16" height="13" rx="2" fill="#26272c"/>`;
+  s += `<path d="M50 126 L34 190 H62 L62 126Z M110 126 L126 190 H98 L98 126Z" fill="#fff7c2" opacity=".13"/>`;
+  return framed(k, s);
+}
+/* the sea (une mer): looks "waves" (the usual one) | "calm" | "sunset" | "stormy" */
+function sea(k){
+  const u = k.u, has = k.has, sunset = has("sunset"), storm = has("stormy", "storm"), calm = has("calm"), hy = 68;
+  const sky = sunset ? ["#f79a55", "#fbe0a0"] : storm ? ["#5f6a7d", "#aab4c0"] : ["#a9d8f5", "#e8f6fd"];
+  const W = sunset ? ["#e9a56a", "#4a69a8", "#27407a"] : storm ? ["#6f9a98", "#39676f", "#1c3f4d"] : calm ? ["#9fd8f2", "#55aee8", "#2f83d0"] : ["#74c3ee", "#3f95dc", "#1f62b0"];
+  let s = `<defs>${lgr(u + "k", sky[0], sky[1])}</defs><rect width="160" height="${hy + 2}" fill="url(#${u}k)"/>`;
+  if (sunset) s += `<circle cx="80" cy="${hy}" r="24" fill="#fff0b0" opacity=".5"/><circle cx="80" cy="${hy}" r="17" fill="#ffd23c" stroke="#f08a1c" stroke-width="2"/>`;
+  else if (storm) s += `<g fill="#4a5466"><ellipse cx="40" cy="22" rx="42" ry="15"/><ellipse cx="112" cy="16" rx="50" ry="16"/><ellipse cx="84" cy="34" rx="34" ry="10"/></g><g fill="#6b7689"><ellipse cx="30" cy="34" rx="30" ry="9"/><ellipse cx="130" cy="36" rx="34" ry="9"/></g>`;
+  else s += `<circle cx="122" cy="28" r="14" fill="#ffd23c" stroke="#f39a1e" stroke-width="2.2"/>` + (calm ? "" : `<g fill="#fff" opacity=".95"><ellipse cx="38" cy="30" rx="20" ry="7"/><ellipse cx="52" cy="24" rx="13" ry="7"/></g>`);
+  s += `<rect y="${hy}" width="160" height="${190 - hy}" fill="${W[0]}"/>`;
+  if (sunset) s += Array.from({ length: 7 }, (_, i) => `<path d="M${r2(80 - 7 - i * 4.4)} ${hy + 6 + i * 13} h${r2(14 + i * 8.8)}" stroke="#ffd98a" stroke-width="${r2(2 + i * 0.5)}" stroke-linecap="round" opacity=".9"/>`).join("");
+  const rows = calm ? [[80, 14, 1.2], [94, 20, 1.6], [112, 28, 2.2], [134, 38, 3], [160, 50, 3.8]] : [[78, 16, 2.4], [92, 24, 4.4], [112, 34, 7], [138, 46, 10.5], [168, 60, 14]];
+  rows.forEach((r, i) => { const y = r[0], L = r[1], a = r[2] * (storm ? 1.25 : 1), x0 = -L - ((i * 17) % L), n = Math.ceil((170 - x0) / L) + 1, col = mixc(W[1], W[2], i / (rows.length - 1));
+    /* a row of waves: each rises slowly and falls steeply (a crest that leans), foam along the top */
+    let d = `M${x0} ${y}`; for (let j = 0; j < n; j++) d += calm ? ` q${r2(L / 4)} ${-a} ${r2(L / 2)} 0 t${r2(L / 2)} 0` : ` c${r2(L * 0.3)} ${r2(-a * 0.2)} ${r2(L * 0.52)} ${r2(-a * 1.5)} ${r2(L * 0.7)} ${r2(-a)} c${r2(L * 0.02)} ${r2(a * 0.7)} ${r2(L * 0.14)} ${r2(a)} ${r2(L * 0.3)} ${a}`;
+    s += `<path d="${d} V192 H${x0}Z" fill="${col}"/><path d="${d}" stroke="#fff" stroke-width="${r2(calm ? 1.6 + i * 0.3 : 2 + i * 0.9)}" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${calm ? 0.75 : 0.95}"/>`;
+    if (!calm && i > 1) for (let j = 0; j < n; j++){ const cx = r2(x0 + j * L + L * 0.66), cy = r2(y - a * 0.72); s += `<ellipse cx="${cx}" cy="${cy}" rx="${r2(L * 0.11)}" ry="${r2(a * 0.42)}" fill="#fff" opacity=".9"/>`; } });
+  return framed(k, s);
+}
+/* a mountain (une montagne): one great peak; looks "snowy" (the usual one) | "green" | "rocky" | "winter" */
+function mountain(k){
+  const u = k.u, has = k.has, green = has("green"), rocky = has("rocky", "brown", "red"), winter = has("winter", "white");
+  const R = winter ? ["#f6f9fd", "#c9d6e8", "#8fa0ba"] : rocky ? ["#d39a66", "#a56a40", "#7a4a2a"] : ["#9aa6bd", "#6c7892", "#4c5770"];        // the lit face, the face in shadow, the outline
+  const sky = winter ? ["#b9c9e0", "#e6eef8"] : rocky ? ["#bfe2f7", "#fbeccb"] : ["#a9d8f5", "#e8f6fd"], G = winter ? ["#fbfdff", "#dbe6f2"] : rocky ? ["#ecd29c", "#d6b677"] : ["#9ccf7a", "#79b85e"];
+  const ridge = "M-8 164 L26 116 L40 124 L64 62 L73 71 L86 20 L100 52 L109 45 L130 100 L140 93 L168 164Z", shade = "M86 20 L100 52 L109 45 L130 100 L140 93 L168 164 H98 L88 116 L96 76Z";
+  let s = `<defs>${lgr(u + "k", sky[0], sky[1])}</defs><rect width="160" height="190" fill="url(#${u}k)"/>`;
+  if (!winter) s += `<circle cx="134" cy="26" r="11" fill="#ffd23c" stroke="#f39a1e" stroke-width="2"/>`;
+  s += `<path d="${ridge}" fill="${R[0]}"/><path d="${shade}" fill="${R[1]}"/>`;
+  if (green) s += `<path d="M-8 164 L26 116 L40 124 L59 75 L68 92 L78 80 L88 100 L98 82 L108 98 L119 72 L130 100 L140 93 L168 164Z" fill="#7dbb68"/><path d="M98 164 L88 116 L88 100 L98 82 L108 98 L119 72 L130 100 L140 93 L168 164Z" fill="#5d9a52"/>`;
+  /* the snow on the top: its lower edge in points; a green mountain has only the tip white, a rocky one none */
+  if (!rocky && !winter) s += green ? `<path d="M86 20 L79 46 L84 42 L88 50 L93 42 L97 46Z" fill="#fff"/>` : `<path d="M86 20 L73 71 L64 62 L58 78 L66 90 L74 76 L82 94 L90 74 L98 90 L106 72 L114 86 L122 80 L109 45 L100 52Z" fill="#fff"/><path d="M86 20 L100 52 L109 45 L122 80 L114 86 L106 72 L98 90 L94 80 L96 60Z" fill="#dfe8f3"/>`;
+  if (rocky) s += `<path d="M64 62 L60 100 M73 71 L78 110 M40 124 L46 150 M109 45 L112 96 M130 100 L128 140" stroke="${R[2]}" stroke-width="1.4" opacity=".55" fill="none"/>`;
+  if (winter) s += `<path d="M64 62 L66 96 L58 120 M100 52 L104 92 L98 128 M130 100 L132 138" stroke="${R[2]}" stroke-width="1.5" opacity=".6" fill="none"/>`;
+  s += `<path d="${ridge}" fill="none" stroke="${R[2]}" stroke-width="2.2" stroke-linejoin="round"/>`;
+  s += `<g fill="#fff" stroke="#c3d0de" stroke-width="1"><ellipse cx="30" cy="94" rx="24" ry="8"/><ellipse cx="44" cy="87" rx="15" ry="8"/><ellipse cx="18" cy="89" rx="12" ry="6"/></g>`;
+  s += `<path d="M0 152 Q40 136 82 150 Q122 162 160 144 V190 H0Z" fill="${G[0]}"/><path d="M0 172 Q50 158 100 172 Q132 180 160 168 V190 H0Z" fill="${G[1]}"/>`;
+  const pine = (x, y, h) => `<path d="M${x} ${y} v${r2(h * 0.24)}" stroke="#74492b" stroke-width="${r2(h * 0.16)}"/><path d="M${x} ${r2(y - h)} L${r2(x + h * 0.36)} ${y} H${r2(x - h * 0.36)}Z" fill="${winter ? "#4f8a66" : "#3f8551"}" stroke="#2f6b3f" stroke-width="1" stroke-linejoin="round"/>` + (winter ? `<path d="M${x} ${r2(y - h)} L${r2(x + h * 0.16)} ${r2(y - h * 0.56)} H${r2(x - h * 0.16)}Z" fill="#fff"/>` : "");
+  if (rocky) s += [[22, 160], [48, 166], [118, 164], [140, 158]].map(p => `<path d="M${p[0] - 7} ${p[1]} q7 -10 14 0z" fill="#9aa66a" stroke="#74804a" stroke-width="1"/>`).join("");
+  else s += pine(18, 156, 17) + pine(31, 152, 21) + pine(45, 154, 15) + pine(118, 160, 17) + pine(132, 156, 22) + pine(147, 152, 16);
+  return framed(k, s);
+}
+/* a leaf (une feuille): one leaf, its stalk and veins; looks: a colour | "maple" | "oak" | "autumn" (the usual one is a plain green leaf) */
+const LEAFC = { green: ["#86cb64", "#4f9f44"], red: ["#e8604a", "#b93a2a"], orange: ["#f39a45", "#cf6f1e"], yellow: ["#f5d455", "#d3a724"], brown: ["#c08a52", "#8f5d2e"] };
+function leaf(k){
+  const u = k.u, has = k.has, maple = has("maple"), oak = has("oak"), cn = k.cn && LEAFC[k.cn] ? k.cn : has("autumn") ? "orange" : maple ? "red" : null;
+  const P = cn ? pal(LEAFC[cn]) : k.cn ? k.tint() : pal(LEAFC.green), st = `stroke="${P.d}" stroke-width="2.2" stroke-linejoin="round"`, V = `stroke="${P.d}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".75"`;
+  const mirror = pts => pts.concat(pts.slice(1, -1).reverse().map(p => [160 - p[0], p[1]]));
+  let body, half, veins, stalk = `<path d="M80 150 Q80 168 72 182" stroke="${P.d}" stroke-width="6.5" fill="none" stroke-linecap="round"/><path d="M80 150 Q80 168 72 182" stroke="${P.b}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+  if (maple){ const R = [[80, 12], [91, 42], [106, 33], [101, 64], [130, 48], [120, 78], [146, 86], [122, 106], [130, 122], [98, 122], [86, 138], [80, 138]], all = mirror(R);
+    body = "M" + all.map(p => p.join(" ")).join(" L") + "Z"; half = "M" + R.map(p => p.join(" ")).join(" L") + "Z";
+    veins = `<path d="M80 138 V22 M80 126 L122 60 M80 126 L38 60 M80 132 L136 88 M80 132 L24 88 M80 134 L120 118 M80 134 L40 118" ${V}/>`;
+    stalk = `<path d="M80 136 Q82 160 76 184" stroke="${P.d}" stroke-width="6.5" fill="none" stroke-linecap="round"/><path d="M80 136 Q82 160 76 184" stroke="${P.b}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`; }
+  else if (oak){ const r = "C94 16 104 30 96 42 C110 40 120 54 110 68 C126 68 132 86 118 96 C130 104 130 122 114 126 C116 140 100 150 80 152";
+    body = `M80 14 ${r} C60 150 44 140 46 126 C30 122 30 104 42 96 C28 86 34 68 50 68 C40 54 50 40 64 42 C56 30 66 16 80 14Z`; half = `M80 14 ${r}Z`;
+    veins = `<path d="M80 22 V150 M80 52 L92 38 M80 52 L68 38 M80 80 L104 62 M80 80 L56 62 M80 108 L112 90 M80 108 L48 90 M80 134 L106 120 M80 134 L54 120" ${V}/>`; }
+  else { body = "M80 12 C114 38 128 82 118 116 C111 140 94 150 80 152 C66 150 49 140 42 116 C32 82 46 38 80 12Z"; half = "M80 12 C114 38 128 82 118 116 C111 140 94 150 80 152Z";
+    veins = `<path d="M80 22 V150 ${[46, 68, 90, 112, 132].map((y, i) => { const w = [20, 30, 33, 28, 17][i]; return `M80 ${y} q${r2(w * 0.5)} ${-4 - i} ${w} ${-18 + i * 2} M80 ${y} q${r2(-w * 0.5)} ${-4 - i} ${-w} ${-18 + i * 2}`; }).join(" ")}" ${V}/>`; }
+  return `<defs>${lgr(u + "l", P.h, P.a)}</defs>` + shad(84, 176, 46) + `<g transform="rotate(${maple ? 12 : 24} 80 100)">${stalk}<path d="${body}" fill="url(#${u}l)" ${st}/><path d="${half}" fill="${P.b}" opacity=".3"/>${veins}<path d="${body}" fill="none" ${st}/></g>`;
+}
+/* an arm (un bras): looks: "fair" | "light" | "tan" | "brown" | "dark" (the skin); "straight" (held out; the usual one is bent at the elbow) */
+function arm(k){
+  const S = skinOf(k), straight = k.has("straight");
+  const A = straight ? [[58, 92], [98, 104], [134, 98]] : [[60, 84], [84, 138], [128, 112]], sh = A[0], el = A[1], wr = A[2];
+  const ang = Math.atan2(wr[1] - el[1], wr[0] - el[0]) * 180 / Math.PI, limb = `M${sh[0]} ${sh[1]} L${el[0]} ${el[1]} L${wr[0]} ${wr[1]}`;
+  /* a limb that tapers from a to b (half-widths ra, rb), its ends round */
+  const taper = (a, b, ra, rb) => { const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy), nx = -dy / d, ny = dx / d;
+    return `M${r2(a[0] + nx * ra)} ${r2(a[1] + ny * ra)} L${r2(b[0] + nx * rb)} ${r2(b[1] + ny * rb)} L${r2(b[0] - nx * rb)} ${r2(b[1] - ny * rb)} L${r2(a[0] - nx * ra)} ${r2(a[1] - ny * ra)}Z`; };
+  const shape = `<path d="${taper(sh, el, 14, 11.5)} ${taper(el, wr, 11.5, 8.5)}"/><circle cx="${sh[0]}" cy="${sh[1]}" r="14"/><circle cx="${el[0]}" cy="${el[1]}" r="11.5"/>`;
+  const ghost = `<g fill="#e6e9ee" stroke="#c3cad3" stroke-width="2" stroke-dasharray="5 4"><circle cx="36" cy="36" r="23"/><path d="M4 192 V106 Q4 70 30 68 H44 Q72 72 72 106 V192"/></g>`;
+  /* the hand: pale, like the rest of the person (the hand has its own picture) */
+  const handG = `<g transform="translate(${wr[0]} ${wr[1]}) rotate(${r2(ang)})" fill="#e6e9ee" stroke="#c3cad3" stroke-width="2" stroke-dasharray="4 3"><path d="M0 -9 H15 Q27 -9 27 0 Q27 9 15 9 H0Z"/><path d="M5 -9 Q9 -20 17 -15"/></g>`;
+  return ghost + `<path d="${limb}" stroke="#ffe27a" stroke-width="50" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>` + handG +
+    `<g fill="${S[2]}" stroke="${S[2]}" stroke-width="4.4" stroke-linejoin="round">${shape}</g><g fill="${S[0]}">${shape}</g>
+    <path d="M${sh[0] - 6} ${sh[1] + 10} L${el[0] - 2} ${el[1] + 8} L${wr[0] - 1} ${wr[1] + 6}" stroke="${S[1]}" stroke-width="4.6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>` +
+    (straight ? "" : `<path d="M${el[0] - 4} ${el[1] - 12} q7 3 9 10" stroke="${S[2]}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`) +
+    `<path d="M${sh[0] - 20} ${sh[1] - 14} Q${sh[0] - 2} ${sh[1] - 22} ${sh[0] + 12} ${sh[1] - 10} L${sh[0] + 16} ${sh[1] + 2} Q${sh[0] + 2} ${sh[1] + 12} ${sh[0] - 14} ${sh[1] + 12}Z" fill="#e6e9ee" stroke="#c3cad3" stroke-width="2" stroke-dasharray="5 4"/>`;
+}
+/* a newspaper (un journal): looks "front page" (the usual one, as before) | "folded" | "open"; a colour word colours the paper */
+function newspaperFolded(k){
+  const P = k.cn ? k.tint().h : "#f6f3ea", st = `stroke="#8a867a" stroke-width="1.6" stroke-linejoin="round"`;
+  return shad(82, 150, 62) + `<g transform="rotate(-7 80 100)"><path d="M20 62 H140 V140 Q140 147 132 147 H28 Q20 147 20 140Z" fill="#d9d5c8" ${st} transform="translate(4 5)"/><path d="M20 62 H140 V138 Q140 146 132 146 H28 Q20 146 20 138Z" fill="${P}" ${st}/>
+    <path d="M22 138.500 H138 M22 142 H138" stroke="#b9b5a8" stroke-width="1.3"/><rect x="28" y="69" width="104" height="15" rx="1.5" fill="#33353b"/><path d="M28 89 H132" stroke="#33353b" stroke-width="1.6"/><path d="M28 98 H88 M28 106 H76" stroke="#55585f" stroke-width="5"/>
+    <rect x="94" y="94" width="38" height="36" fill="#a9c7de" stroke="#6d737c" stroke-width="1.2"/><path d="M94 130 L107 112 L115 121 L121 114 L132 130Z" fill="#6f8f6a"/><circle cx="124" cy="102" r="3.6" fill="#f6e08a"/>` + lines(28, 114, 26, 3, 7) + lines(60, 114, 28, 3, 7) + `</g>`;
+}
+function newspaperOpen(k){
+  const P = k.cn ? k.tint().h : "#f6f3ea", st = `stroke="#8a867a" stroke-width="1.6" stroke-linejoin="round"`;
+  const col = (x, y, w, n, sk) => Array.from({ length: n }, (_, i) => `<path d="M${x} ${r2(y + i * 7 + (x - 80) * sk)} L${x + w} ${r2(y + i * 7 + (x + w - 80) * sk)}" stroke="#9a9a94" stroke-width="1.7" stroke-linecap="round"/>`).join("");
+  return shad(80, 168, 70) + `<path d="M8 58 L80 48 L152 58 V160 L80 150 L8 160Z" fill="#d9d5c8" ${st} transform="translate(0 5)"/><path d="M8 54 L80 44 V148 L8 158Z" fill="${P}" ${st}/><path d="M152 54 L80 44 V148 L152 158Z" fill="${tone(P, -0.05)}" ${st}/>
+    <path d="M16 61.500 L72 54 V66 L16 73.500Z" fill="#33353b"/><path d="M16 82 L72 74.500 M16 91 L56 85.500" stroke="#55585f" stroke-width="5"/><path d="M16 100 L42 96.500 V124 L16 127.500Z" fill="#a9c7de" stroke="#6d737c" stroke-width="1.2"/>` + col(48, 100, 24, 4, -0.135) + col(16, 135, 56, 3, -0.135) +
+    `<path d="M88 55 L144 62.500 M88 64 L126 69" stroke="#55585f" stroke-width="5"/>` + col(88, 76, 24, 9, 0.135) + `<path d="M118 80 L144 83.500 V112 L118 108.500Z" fill="#e3c9a0" stroke="#6d737c" stroke-width="1.2"/>` + col(118, 122, 26, 3, 0.135) + `<path d="M80 44 V148" stroke="#8a867a" stroke-width="2.2"/>`;
+}
 /* --- every kind of thing, by name --- */
 const THING = { cake, pizza, coffee, glass, banana, plate, bus, table, chair, bag, box, house, door, window: windowPic, cat, tree, bicycle,
   face: faceCard, "french flag": flag, flag, "picture card": card, card, newspaper, letter, weather, book: bookS, apple: appleS, pen: penS, shoe: shoeS,
   ball, hat, phone, bread, flower, lamp, shirt, trousers, dress, fish, cheese, tomato, plane, motorbike, boy: kid, girl: kid, baby,
   heart, foot, hand: handPic, head: headPic, town, street, restaurant,
+  photo, metro, sea, mountain, leaf, arm,
   train, park: placeThing("park"), beach: placeThing("beach"), garden: placeThing("garden"), shop: placeThing("shop"), station: placeThing("station"), kitchen: placeThing("kitchen") };
 /* "big" and "small" on any kind: the same picture at two sizes, standing on the same line. The look lists of Lessons 5-10 in which
    big or small names a picture of its own keep that picture (SIZED: the look words of each, sorted). */
 const SIZED = { cake: ["pink small"], coffee: ["a black cup in small"], banana: ["big", "small"], pizza: ["small"], table: ["low small"], box: ["metal small", "big open"], house: ["small white"],
   door: ["big black"], cat: ["small white"], glass: ["small"], tree: ["big green", "small young"], window: ["big shop"] };
-const SMALL = { park: 0.72, beach: 0.72, garden: 0.72, shop: 0.72, station: 0.72, kitchen: 0.72, train: 0.7, plane: 0.62, motorbike: 0.62, cheese: 0.68, boy: 0.62, girl: 0.62 };       // how small "small" is (0.55 of big unless said here)
+const SMALL = { park: 0.72, beach: 0.72, garden: 0.72, shop: 0.72, station: 0.72, kitchen: 0.72, sea: 0.72, mountain: 0.72, metro: 0.72, photo: 0.66, train: 0.7, plane: 0.62, motorbike: 0.62, cheese: 0.68, boy: 0.62, girl: 0.62 };       // how small "small" is (0.55 of big unless said here)
 function sized(el, big, is){
   const b = measure(el), f = Math.min(150 / b.w, 168 / b.h, 1.3) * (big ? 1 : SMALL[is] || 0.55), g = mk(""), o = mk("");
   g.setAttribute("transform", `translate(${r2(80 - (b.x + b.w / 2) * f)} ${r2(180 - (b.y + b.h) * f)}) scale(${r2(f * 1000) / 1000})`);
