@@ -2045,7 +2045,7 @@ function cardOf(inner, k=0.74){
   const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80-80*k} ${95-95*k}) scale(${k})`); c.appendChild(inner); g.appendChild(c); return g;
 }
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
-const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand"};
+const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave"};      // (.48) parler, arriver, partir
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -2158,6 +2158,10 @@ function genPicture0(e){
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
   if(e.is==="numeral") return numberCard("n"+e.value);
   if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
+  if((e.looks||[]).includes("in an open box") && window.PICS && PICS.place){         // (.48) what is found in an open box ('Oh ! Un livre !')
+    const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="in an open box")});
+    if(!OWN_THING.includes(e.is)) return thingPicture(e);
+    return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:"in", ground:{is:"box", looks:["red"]}}, x=>onePicture(Object.assign({}, rest, x, {count:1}))); }
   if(!OWN_THING.includes(e.is)) return thingPicture(e);
   const n=e.count||1; if(n===1) return onePicture(e);
   if(n>4 && window.PICS) return PICS.group(n, ()=>onePicture(e));
