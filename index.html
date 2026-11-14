@@ -379,7 +379,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-14.46";
+const APP_VERSION="2026-11-14.48";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -789,7 +789,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:44, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:48, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -809,6 +809,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(old43.length){ S.delayed=S.delayed.filter(d=>!old43.includes(d));
     S.log.push({t:new Date().toISOString(), result:"DELAYED TEST DROPPED for version "+APP_VERSION+": "+old43.map(d=>d.key).join(", ")+" (the exercise has changed since the error was made)", heard:[]}); }
   if(!(s.courseRev>=44)) migrate44();      // (.44) a state saved before the exercises of Lessons 3 to 5 were renumbered
+  if(!(s.courseRev>=48)) migrate48();      // (.48) a state saved before Lessons 1 to 10 were made anew from the whole-course sketch
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -831,6 +832,23 @@ function migrate44(){
   const old=(S.delayed||[]).filter(d=>CHANGED_44.includes(d.ex)); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
   if(touched || moved || old.length) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 3 to 5 have new exercise numbers"+(moved?"; this lesson goes on at "+moved:"")+(old.length?"; delayed tests dropped: "+old.map(d=>d.key).join(", "):""), heard:[]});
   S.courseRev=44;
+}
+/* (.48) Lessons 1 to 10 are made anew from the whole-course sketch (dev/plan/LESSONS_1_10.md): other exercises, other things, other
+   numbers, and Lessons 2, 8 and 9 are duplicates of Lessons 1, 7 and 7. Nothing of a saved place inside Lessons 1-10 names the same
+   exercise any more, so the simplest safe rule: a learner goes on at the START of the lesson they were in (the new lesson of that
+   number); the lessons before it count as done; their exercise records and delayed tests in Lessons 1-10 are dropped (a line in the
+   log says so). A learner who had not begun is not touched. */
+function migrate48(){
+  const L110 = k => /^L([1-9]|10)E\d+/.test(k);
+  const had = Object.keys(S.finished||{}).some(L110) || (S.lesson||0)>0 || (S.ex||0)>0;
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L110(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L110(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  const n=Math.min(S.lesson||0, LESSONS.length-1);
+  for(let i=0;i<n;i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;
+  if(had || old.length){ S.ex=0;
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 to 10 are made anew (the whole-course sketch); this learner starts Lesson "+(n+1)+" from its beginning"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
+  S.courseRev=48;
 }
 /* The phone gives a page about 5 MB of this storage. A user's state is at most about 1.2 MB (2000 log lines, 4000 trace lines);
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
