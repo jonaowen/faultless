@@ -530,6 +530,7 @@ const VOCAB = {
   parle: {name:"parle", kind:"word", verb:true, tu:"parles", say:[], accept:["parle","parles","parlent"]},
   arrive: {name:"arrive", kind:"word", verb:true, tu:"arrives", say:[], accept:["arrive","arrives","arrivent"]},
   jarrive: {name:"j'arrive", kind:"word", say:[], accept:["j'arrive","jarrive","j arrive"]},              // one unit, like "j'apprends"
+  ouioui: {name:"oui oui", kind:"word", say:[], accept:["oui oui","ouioui","oui, oui"]},              // (.48) one unit: a stutter counts once (stripEcho), "oui oui" is two words on purpose
   part: {name:"part", kind:"word", verb:true, tu:"pars", say:[], accept:["part","pars","par","parts"]},
   parler: {name:"parler", kind:"word", inf:true, say:[], accept:["parler","parlé","parlez"]},
   arriver: {name:"arriver", kind:"word", inf:true, say:[], accept:["arriver","arrivé","arrivez","arrivée"]},
@@ -1334,7 +1335,8 @@ const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
   n = n.replace(/(^| )tu t'? ?app?ell?es?(?= |$)/g, "$1tutappelles");                             // tu t'appelles (said to the teacher about her)
-  n = n.replace(/(^| )s'app?ell?e(?:s|nt)?(?= |$)/g, "$1sappelle");                                 // il / elle s'appelle … (the pronoun before it is judged)
+  n = n.replace(/(^| )s'app?ell?e(?:s|nt)?(?= |$)/g, "$1sappelle");
+  n = n.replace(/(^| )oui oui(?= |$)/g, "$1ouioui");                                                  // (.48) "Oui oui." (yes, yes): one unit, so the stutter rule does not take one away                                 // il / elle s'appelle … (the pronoun before it is judged)
   /* "toi" at the end of the two commands, as the listener writes it. Run of 10 Nov 16:36 (Jon, Lesson 2): "Lève-toi", said
      right every time, came out as "lève trois" 14 times in 16 and was marked wrong 14 times ("trois" is in the list as a
      number, and an English "toi" has the r-coloured start of "trois" for this small model). Nobody says "lève trois" or
