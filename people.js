@@ -1219,12 +1219,12 @@ MOVES.leave = Object.assign({}, MOVES.walk, { scale: 0.86, ox: 30, house: "left"
      at her ear; dancing throws the arms and a leg out). */
 const W_A = Object.assign({}, SEATED, { rx: 0, aL: [-62, -22], aR: [-30, -84] }), W_B = Object.assign({}, SEATED, { rx: 0, aL: [-62, -36], aR: [-30, -68] });
 const C_A = { aL: [3, 0], aR: [-102, -136], ph: 41 }, C_B = { aL: [3, 0], aR: [-104, -133], ph: 41, by: -0.8 };
-const P_K = { br: -5, lL: [3, 0], lR: [-70, 10], aL: [50, 12], aR: [-34, -26], ball: [134, 133] }, P_K2 = { br: -4, lL: [3, 0], lR: [-58, 16], aL: [46, 10], aR: [-32, -24], ball: [133, 110] },
-      P_U = { br: 0, lL: [0, 0], lR: [-8, 6], aL: [22, 6], aR: [-18, -12], ball: [130, 78] };
+const P_K = { br: -5, lL: [3, 0], lR: [-56, 4], aL: [50, 12], aR: [-8, -8], ball: [129.5, 136.5] }, P_K2 = { br: -4, lL: [3, 0], lR: [-48, 8], aL: [46, 10], aR: [-8, -8], ball: [129.5, 114] },
+      P_U = { br: 0, lL: [0, 0], lR: [-8, 6], aL: [22, 6], aR: [-10, -8], ball: [127, 74] };
 const GO_D = 120, GO = MOVES.walk.poses.slice(0, 4);
 MOVES.work = { dur: 1.2, kt: [0, 0.25, 0.5, 0.75, 1], poses: [W_A, W_B, W_A, W_B, W_A], side: true, chair: true, desk: true, still: 0, scale: 1.1, ox: -29 };
 MOVES.call = { dur: 1.6, kt: [0, 0.5, 1], poses: [C_A, C_B, C_A], still: 0, scale: 1, ox: -22, phone: true };
-MOVES.play = { dur: 1.6, kt: [0, 0.14, 0.5, 1], poses: [P_K, P_K2, P_U, P_K], side: true, still: 1, scale: 1, ox: -24, ball: true };
+MOVES.play = { dur: 1.6, kt: [0, 0.14, 0.5, 1], poses: [P_K, P_K2, P_U, P_K], side: true, still: 1, scale: 1, ox: -12, ball: true };
 MOVES.listen = { dur: 1.6, kt: [0, 0.25, 0.5, 0.75, 1], poses: [{ hr: 0 }, { hr: -8 }, { hr: 0 }, { hr: 8 }, { hr: 0 }].map(p => Object.assign(p, A_DOWN)), still: 1, scale: 1.1, cans: true };
 MOVES["go out"] = { dur: 3.4, kt: [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 1], linear: true, side: true, fade: true, door: true, still: 4, scale: 0.8, ox: -40,
   poses: [0, 1, 2, 3, 4, 5, 6, 7].map(i => Object.assign({}, GO[i % 4], { rx: r2(GO_D * i / 8) })).concat([{ rx: GO_D, aL: [3, 0], aR: [-3, 0] }, { rx: GO_D, aL: [3, 0], aR: [-3, 0] }]) };
@@ -1313,12 +1313,12 @@ function action(act, who, opts){
     const R = pal(COL.red), DR = pal(["#b9763f", "#8a5529"]), WL = `fill="#b9b0a0" stroke="#7d766a" stroke-width="1.2"`;
     back += `<rect x="62" y="16" width="11" height="20" fill="#c66f50" stroke="#9a4e36" stroke-width="1.2"/><path d="M-6 51 L46 10 L100 51Z" fill="${R.a}" stroke="${R.d}" stroke-width="1.6" stroke-linejoin="round"/>
       <rect x="6" y="50" width="83" height="124" fill="#fbeccb"/><rect x="6" y="150" width="83" height="24" fill="#f3dcae"/><path d="M6 150 H89" stroke="#d9bf8a" stroke-width="1.4"/>
-      <rect x="16" y="78" width="30" height="34" rx="1.5" fill="#cfe6f5" stroke="#fff" stroke-width="3.4"/><path d="M31 78 V112 M16 95 H46" stroke="#fff" stroke-width="2.4"/><rect x="14.300" y="76.300" width="33.400" height="37.400" rx="2" fill="none" stroke="#b9ae98" stroke-width="1"/>
-      <path d="M66 52 V64" stroke="#5b616d" stroke-width="1.6"/><path d="M57 76 L61 64 H71 L75 76Z" fill="#f0c648" stroke="#cc9f26" stroke-width="1.2" stroke-linejoin="round"/>
+      <rect x="16" y="86" width="30" height="34" rx="1.5" fill="#cfe6f5" stroke="#fff" stroke-width="3.4"/><path d="M31 86 V120 M16 103 H46" stroke="#fff" stroke-width="2.4"/><rect x="14.300" y="84.300" width="33.400" height="37.400" rx="2" fill="none" stroke="#b9ae98" stroke-width="1"/>
+      <path d="M52 52 V64" stroke="#5b616d" stroke-width="1.6"/><path d="M43 76 L47 64 H57 L61 76Z" fill="#f0c648" stroke="#cc9f26" stroke-width="1.2" stroke-linejoin="round"/>
       <rect x="4" y="172" width="86" height="8" fill="#c9a274" stroke="#8a6a3e" stroke-width="1.2"/><path d="M26 172 v8 M48 172 v8 M70 172 v8" stroke="#8a6a3e" stroke-width="1"/>
       <rect x="1" y="48" width="6" height="132" ${WL}/><rect x="1" y="46" width="93" height="6" ${WL}/><rect x="88" y="50" width="6" height="18" ${WL}/>
-      <ellipse cx="128" cy="180.500" rx="36" ry="5" fill="#9ccf7a"/>
-      <rect x="94" y="70" width="30" height="109" fill="${DR.a}" stroke="${DR.d}" stroke-width="1.6" stroke-linejoin="round"/><path d="M99 77 h20 v40 h-20z M99 124 h20 v48 h-20z" fill="none" stroke="${DR.d}" stroke-width="1.3"/><circle cx="118.500" cy="121" r="2.4" fill="#f2d268" stroke="#a07c1c" stroke-width=".8"/>`;
+      <ellipse cx="128" cy="180.500" rx="36" ry="5" fill="#9ccf7a"/><circle cx="136" cy="30" r="11" fill="#ffd23c" stroke="#f39a1e" stroke-width="2"/>
+      <rect x="60" y="70" width="29" height="103" fill="${DR.a}" stroke="${DR.d}" stroke-width="1.6" stroke-linejoin="round"/><path d="M65 77 h19 v38 h-19z M65 122 h19 v45 h-19z" fill="none" stroke="${DR.d}" stroke-width="1.3"/><circle cx="64.500" cy="119" r="2.4" fill="#f2d268" stroke="#a07c1c" stroke-width=".8"/>`;
     front += `<path d="M26 186 H144" stroke="#3fae5a" stroke-width="6" stroke-linecap="round"/><path d="M138 178 L152 186 L138 194" stroke="#3fae5a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   if (K.phone){                                            // (.55) calling: the signal goes out from the telephone at the ear, and another telephone rings
@@ -2713,7 +2713,7 @@ function thing(spec){
 function together(act, opts){
   const w = firstWord(String(act || "").trim()), a = ACT_OF[w] || ACT2[w] || "smile", face = a === "smile" || a === "not smiling" || a === "eat" || a === "drink", close = a === "smile" || a === "not smiling", s = close ? 0.5 : face ? 0.66 : 0.62, g = mk("");
   if (a === "go out"){                                      // (.55) one house, the two of them going out of it one behind the other
-    g.appendChild(action(act, "you", Object.assign({}, opts, { shift: -18, reach: 0.85 }))); g.appendChild(action(act, "marie", Object.assign({}, opts, { shift: 18, reach: 0.85, bare: true })));
+    g.appendChild(action(act, "you", Object.assign({}, opts, { shift: -22, reach: 0.85 }))); g.appendChild(action(act, "marie", Object.assign({}, opts, { shift: 22, reach: 0.85, bare: true })));
     return g; }
   if (a === "work"){                                        // each at a desk: two whole pictures side by side, half size
     ["you", "marie"].forEach((who, i) => { const c = mk(""); c.setAttribute("transform", `translate(${i ? 80 : 0} 47.5) scale(.5)`); c.appendChild(action(act, who, opts)); g.appendChild(c); });
