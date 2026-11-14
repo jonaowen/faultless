@@ -3750,7 +3750,10 @@ const retestOpts = t => oralCorr(t) ? {retest:true, atoi:false, quiet:true} : {r
 async function correction(task, nth, how=""){
   ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task)+(oralCorr(task) ? " (the target only, then the task again)" : ""));
   if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); rest(); return; }
-  offering=false; gestureEar(); await say(["Non, écoute."]);
+  /* (.54; Jon, 15 Nov 2026: "I'd lean towards removing écoute since a truly naive learner doesn't know what it means since we didn't teach it")
+     A tap's correction is "Non."  -  0.5 s  -  the cue and her hand's tap  -  0.5 s  -  "Vas-y.". "Écoute." is said nowhere now (a model's
+     opening "Écoute." has not been said since 9 Nov: presentGenModel). */
+  offering=false; gestureEar(); await say(["Non."]);
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
   // "Vas-y.": the open palm, the border on what is asked about; the learner's turn opens when it has ended
@@ -3815,7 +3818,7 @@ async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
   offering=false; gestureEar();
   if(oralCorr(it)) await sleep(CORR_GAP);      // (.53) a spoken task: the target only, her hand at her ear
-  else { await say(["Non, écoute."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
+  else { await say(["Non."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
   else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
   rest();
