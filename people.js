@@ -309,7 +309,7 @@ function lookName(x){
   return SAME[t] || t;
 }
 /* the first word of what somebody is doing ("standing up" -> "standing"); "not smiling" stays whole (.50: the face that does not smile) */
-const firstWord = x => { const t = String(x || "").toLowerCase(); return /^\s*not smil(e|es|ing)\b/.test(t) ? "not smiling" : t.split(/[ ,]/)[0]; };
+const firstWord = x => { const t = String(x || "").toLowerCase(); return /^\s*not smil(e|es|ing)\b/.test(t) ? "not smiling" : /^\s*(go|goes|going) out\b/.test(t) ? "go out" : t.split(/[ ,]/)[0]; };
 const doingOf = spec => firstWord(spec && spec.doing);
 function traits(spec, variant){
   const looks = (spec.looks || []).map(lookName).filter(x => x !== "in a row" && x !== "a row" && !MOOD[x] && (!HEIGHT[x] || liveTall(spec))), L = {}; looks.forEach(x => L[x] = 1);
@@ -1162,7 +1162,8 @@ function car(spec){
    one arm up, the other out, one leg kicked to the side, the body swaying; a walk is a scissor stride with the arms low. */
 const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump", smiling: "smile", smile: "smile", "not smiling": "not smiling", standing: "stand up", stand: "stand up",
   sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
-  talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave" };
+  talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave",
+  working: "work", work: "work", calling: "call", call: "call", phoning: "call", "go out": "go out", playing: "play", play: "play", listening: "listen", listen: "listen" };
 const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink" };
 const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
 const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
@@ -1205,6 +1206,28 @@ const MOVES = {
    speed of the animation") every action plays at twice its old speed, so a whole action fits the halved time the app gives it */
 MOVES.arrive = Object.assign({}, MOVES.walk, { scale: 0.86, ox: -30, house: "right" });
 MOVES.leave = Object.assign({}, MOVES.walk, { scale: 0.86, ox: 30, house: "left" });
+/* (.55) the verbs of Lessons 11-20. Each is drawn so that it cannot be read as another action of the course, and every animation of one
+   picture has the loop's own length (one clock, one loop).
+   work (travailler): seated at a desk, seen from the side, typing: a screen, a keyboard, a pile of papers (reading is a book held up to the
+     face; writing would be a pen; sitting down has no desk);
+   call (appeler): standing, a telephone held at the ear, its signal going out to another telephone that rings (talking has a speech bubble
+     and an open hand; listening has headphones and both arms down);
+   go out (sortir): the house cut open, the room inside and the garden outside: the figure walks from the room through the open door, the
+     arrow under it going from inside to outside (leaving is walking away from a small house, already outside; arriving is toward it);
+   play (jouer): keeping a ball up with one foot, seen from the side (dancing has both arms up and notes; jumping leaves the ground);
+   listen (ecouter): headphones on, the head rocking from side to side, sound at both ears, the arms down (the teacher's "listen" is a hand
+     at her ear; dancing throws the arms and a leg out). */
+const W_A = Object.assign({}, SEATED, { rx: 0, aL: [-62, -22], aR: [-30, -84] }), W_B = Object.assign({}, SEATED, { rx: 0, aL: [-62, -36], aR: [-30, -68] });
+const C_A = { aL: [3, 0], aR: [-102, -136], ph: 41 }, C_B = { aL: [3, 0], aR: [-104, -133], ph: 41, by: -0.8 };
+const P_K = { br: -5, lL: [3, 0], lR: [-70, 10], aL: [50, 12], aR: [-34, -26], ball: [134, 133] }, P_K2 = { br: -4, lL: [3, 0], lR: [-58, 16], aL: [46, 10], aR: [-32, -24], ball: [133, 110] },
+      P_U = { br: 0, lL: [0, 0], lR: [-8, 6], aL: [22, 6], aR: [-18, -12], ball: [130, 78] };
+const GO_D = 120, GO = MOVES.walk.poses.slice(0, 4);
+MOVES.work = { dur: 1.2, kt: [0, 0.25, 0.5, 0.75, 1], poses: [W_A, W_B, W_A, W_B, W_A], side: true, chair: true, desk: true, still: 0, scale: 1.1, ox: -29 };
+MOVES.call = { dur: 1.6, kt: [0, 0.5, 1], poses: [C_A, C_B, C_A], still: 0, scale: 1, ox: -22, phone: true };
+MOVES.play = { dur: 1.6, kt: [0, 0.14, 0.5, 1], poses: [P_K, P_K2, P_U, P_K], side: true, still: 1, scale: 1, ox: -24, ball: true };
+MOVES.listen = { dur: 1.6, kt: [0, 0.25, 0.5, 0.75, 1], poses: [{ hr: 0 }, { hr: -8 }, { hr: 0 }, { hr: 8 }, { hr: 0 }].map(p => Object.assign(p, A_DOWN)), still: 1, scale: 1.1, cans: true };
+MOVES["go out"] = { dur: 3.4, kt: [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 1], linear: true, side: true, fade: true, door: true, still: 4, scale: 0.8, ox: -40,
+  poses: [0, 1, 2, 3, 4, 5, 6, 7].map(i => Object.assign({}, GO[i % 4], { rx: r2(GO_D * i / 8) })).concat([{ rx: GO_D, aL: [3, 0], aR: [-3, 0] }, { rx: GO_D, aL: [3, 0], aR: [-3, 0] }]) };
 const ACT_SPEED = 2;
 function action(act, who, opts){
   opts = opts || {};
@@ -1219,10 +1242,10 @@ function action(act, who, opts){
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
   const c = traits(spec), L = c.L, K = opts.card ? Object.assign({}, MOVES.stop, { poses: [A_CARD, A_CARD], scale: 0.8, ox: -36 }) : opts.size ? Object.assign({}, MOVES.stop, { scale: opts.size === "short" ? 0.8 : 1.22, ox: 12 })
-    : act === "stop" && after ? Object.assign({}, MOVES.stop, { scale: after.scale }) : MOVES[act], u = "pa" + (seq++) + "_", skin = c.skin;
+    : act === "stop" && after ? Object.assign({}, MOVES.stop, { scale: after.scale }) : opts.shift ? Object.assign({}, MOVES[act], { ox: (MOVES[act].ox || 0) + opts.shift }) : MOVES[act], u = "pa" + (seq++) + "_", skin = c.skin;
   const outerName = L.coat ? c.coat : L.suit ? c.suit : null, sleeve = outerName ? COL[outerName] : c.top, dress = !!L["red dress"], bare = [skin[1], skin[2]];
   const legs = L.suit ? COL[c.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c.kind + c.topName + c.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
-  const P = K.poses.map(p => Object.assign({}, POSE0, p, L.umbrella ? { aR: [-20, -125] } : null)), n = P.length, si = K.still;
+  const P = K.poses.map(p => Object.assign({}, POSE0, p, L.umbrella ? { aR: [-20, -125] } : null, opts.reach && p.rx ? { rx: r2(p.rx * opts.reach) } : null)), n = P.length, si = K.still;
   const SY = 97, UA = 21, FA = 20, HY = 126, TH = 26, SH = 26;                   // the skeleton: shoulders, elbows, hips, knees (the same for everybody: the poses turn these joints)
   const W = BUILD[c.kid ? "kid" : c.fem ? "woman" : "man"], q = K.side ? 0.86 : 1, AW = W.aw, LW = W.lw, sh = r2(W.sh * q), ch = r2(sh - AW / 2 + 1.5), wa = r2(W.wa * q), hip = r2(W.hip * q), xo = r2(sh + AW / 2 - 1.2);
   const lx = K.side ? [77, 84] : [r2(80 - W.hx), r2(80 + W.hx)], pc = (lx[0] + lx[1]) / 2, ph = r2((lx[1] - lx[0]) / 2 + LW / 2 + 1);
@@ -1235,6 +1258,7 @@ function action(act, who, opts){
   const arm = (sx, key) => G("rotate", P.map(p => `${p[key][0]} ${sx} ${SY}`), seg(sx, SY, UA, AW, armC) +
     G("rotate", P.map(p => `${p[key][1]} ${sx} ${SY + UA}`), (K.open === key ? [-4.5, -1.5, 1.5, 4.5].map((dx, i) => `<rect x="${r2(sx + dx - 1.4)}" y="${SY + UA + FA + 1}" width="2.8" height="${[7, 8.6, 8.6, 7][i]}" rx="1.4" fill="${skin[0]}" stroke="${skin[2]}" stroke-width=".8" transform="rotate(${-dx * 3.4} ${sx} ${SY + UA + FA})"/>`).join("") +
       `<rect x="${r2(sx - hr - 3)}" y="${SY + UA + FA - 2.6}" width="3" height="7" rx="1.5" fill="${skin[0]}" stroke="${skin[2]}" stroke-width=".8" transform="rotate(38 ${r2(sx - hr - 1.5)} ${SY + UA + FA})"/>` : "") +
+    (K.phone && key === "aR" ? G("rotate", P.map(p => `${p.ph || 0} ${sx} ${SY + UA + FA}`), `<rect x="${r2(sx - 5)}" y="${SY + UA + FA - 7}" width="10" height="21" rx="2.6" fill="#2c2d33" stroke="#17181c" stroke-width="1"/><rect x="${r2(sx - 3.4)}" y="${SY + UA + FA + 9.5}" width="6.8" height="2.2" rx="1" fill="#6d737c"/>`) : "") +
     `<ellipse cx="${sx}" cy="${SY + UA + FA}" rx="${hr}" ry="${r2(hr * 1.12)}" fill="${skin[1]}" stroke="${skin[2]}" stroke-width="1"/>` + seg(sx, SY + UA, FA - 4, AW - 0.8, armC)));
   const far = dress ? bare : [legs[1], legs[1]], legC = dress ? bare : legs, T1 = `stroke="${sleeve[1]}" stroke-width="1.2" stroke-linejoin="round"`;
   /* the trunk: a neck, sloping shoulders that end under the tops of the arms, a chest that narrows to the waist, a hem on the hips */
@@ -1271,10 +1295,38 @@ function action(act, who, opts){
       <path d="M49 161 L44 100 M57 161 L55 100" stroke="#6e5140" stroke-width="5" stroke-linecap="round"/><path d="M41 101 Q49 96 58 100 L57.4 111 Q49 108 42 112 Z" fill="#7f604c" stroke="#5e4535" stroke-width="1.2"/>
       <path d="M43 124 Q50 121 56.6 123 M44 138 Q50 135 56.8 137" stroke="#6e5140" stroke-width="4" fill="none" stroke-linecap="round"/>
       <path d="M50 164 L48 180 M94 164 L96 180" stroke="#5e4535" stroke-width="5" stroke-linecap="round"/><rect x="44" y="158.5" width="56" height="8" rx="3.5" fill="#8a6a52" stroke="#5e4535" stroke-width="1.2"/>`;
-    if (still){ const up = act === "stand up", ax = 132, y0 = up ? 96 : 52, y1 = up ? 52 : 96, hd = up ? 1 : -1;      // which way: an arrow, only in the frozen frame
+    if (K.desk){                                           // (.55) working: the desk in front of the chair, a screen turned a little to the viewer, a keyboard under the hands, papers
+      const blink = (a, b) => still ? "" : `<animate attributeName="opacity" values="${a};${b};${a};${b};${a}" keyTimes="0;0.25;0.5;0.75;1" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"/>`;
+      back += `<rect x="152" y="143" width="20" height="38" rx="1.5" fill="#a67a48" stroke="#74522c" stroke-width="1.2"/><path d="M152 156 h20 M152 168 h20" stroke="#74522c" stroke-width="1.1"/><circle cx="162" cy="149.500" r="1.3" fill="#f2d268"/><circle cx="162" cy="162" r="1.3" fill="#f2d268"/>
+        <rect x="100" y="139" width="74" height="5" rx="2" fill="#c99a62" stroke="#74522c" stroke-width="1.2"/>
+        <rect x="157" y="131.500" width="15" height="2.6" fill="#fffdf6" stroke="#8a867a" stroke-width=".8"/><rect x="156" y="134" width="16" height="2.6" fill="#f0c648" stroke="#8a867a" stroke-width=".8"/><rect x="157.500" y="136.500" width="15" height="2.6" fill="#fffdf6" stroke="#8a867a" stroke-width=".8"/>
+        <path d="M140 139 h13 l-2 -3 h-9z" fill="#3d424c"/><path d="M146.500 136 V126" stroke="#3d424c" stroke-width="3"/><path d="M149 90 L153 91.500 V130 L149 131.500Z" fill="#26272c"/><path d="M130 95 L149 90 V131.500 L130 127.500Z" fill="#3d424c" stroke="#26272c" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="M132.500 97.500 L146.500 93.800 V128.200 L132.500 125.300Z" fill="#cfe8fb"/><path d="M134.500 103 l10 -2.400 M134.500 108.500 l7 -1.600 M134.500 114 l10 -2 M134.500 119.500 l6 -1" stroke="#4d7fc4" stroke-width="1.7" stroke-linecap="round">${blink(1, 0.35)}</path>
+        <rect x="103" y="136.200" width="27" height="3" rx="1.2" fill="#e6e9ed" stroke="#6d737c" stroke-width="1"/>`;
+    } else if (still){ const up = act === "stand up", ax = 132, y0 = up ? 96 : 52, y1 = up ? 52 : 96, hd = up ? 1 : -1;      // which way: an arrow, only in the frozen frame
       front += `<path d="M${ax} ${y0} V${y1 + hd * 4}" stroke="#3fae5a" stroke-width="7" stroke-linecap="round"/><path d="M${ax - 11} ${y1 + hd * 12} L${ax} ${y1} L${ax + 11} ${y1 + hd * 12}" stroke="#3fae5a" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`; }
   } else {
-    back += `<g transform="translate(80 181)">` + G("scale", P.map(p => `${p.sh}`), `<ellipse cx="0" cy="0" rx="24" ry="4" fill="#000" opacity=".13"/>`) + `</g>`;
+    if (!K.door) back += `<g transform="translate(${K.phone || K.ball ? 80 + K.ox : 80} 181)">` + G("scale", P.map(p => `${p.sh}`), `<ellipse cx="0" cy="0" rx="24" ry="4" fill="#000" opacity=".13"/>`) + `</g>`;
+  }
+  const D1 = r2(K.dur / ACT_SPEED), fade1 = (vals, kts) => still ? "" : `<animate attributeName="opacity" values="${vals}" keyTimes="${kts}" dur="${D1}s" repeatCount="indefinite"/>`;
+  if (K.door){                                             // (.55) going out: the house cut open (the room, its window and lamp), the open door, the garden, the arrow from inside to outside
+    const R = pal(COL.red), DR = pal(["#b9763f", "#8a5529"]), WL = `fill="#b9b0a0" stroke="#7d766a" stroke-width="1.2"`;
+    back += `<rect x="62" y="16" width="11" height="20" fill="#c66f50" stroke="#9a4e36" stroke-width="1.2"/><path d="M-6 51 L46 10 L100 51Z" fill="${R.a}" stroke="${R.d}" stroke-width="1.6" stroke-linejoin="round"/>
+      <rect x="6" y="50" width="83" height="124" fill="#fbeccb"/><rect x="6" y="150" width="83" height="24" fill="#f3dcae"/><path d="M6 150 H89" stroke="#d9bf8a" stroke-width="1.4"/>
+      <rect x="16" y="78" width="30" height="34" rx="1.5" fill="#cfe6f5" stroke="#fff" stroke-width="3.4"/><path d="M31 78 V112 M16 95 H46" stroke="#fff" stroke-width="2.4"/><rect x="14.300" y="76.300" width="33.400" height="37.400" rx="2" fill="none" stroke="#b9ae98" stroke-width="1"/>
+      <path d="M66 52 V64" stroke="#5b616d" stroke-width="1.6"/><path d="M57 76 L61 64 H71 L75 76Z" fill="#f0c648" stroke="#cc9f26" stroke-width="1.2" stroke-linejoin="round"/>
+      <rect x="4" y="172" width="86" height="8" fill="#c9a274" stroke="#8a6a3e" stroke-width="1.2"/><path d="M26 172 v8 M48 172 v8 M70 172 v8" stroke="#8a6a3e" stroke-width="1"/>
+      <rect x="1" y="48" width="6" height="132" ${WL}/><rect x="1" y="46" width="93" height="6" ${WL}/><rect x="88" y="50" width="6" height="18" ${WL}/>
+      <ellipse cx="128" cy="180.500" rx="36" ry="5" fill="#9ccf7a"/>
+      <rect x="94" y="70" width="30" height="109" fill="${DR.a}" stroke="${DR.d}" stroke-width="1.6" stroke-linejoin="round"/><path d="M99 77 h20 v40 h-20z M99 124 h20 v48 h-20z" fill="none" stroke="${DR.d}" stroke-width="1.3"/><circle cx="118.500" cy="121" r="2.4" fill="#f2d268" stroke="#a07c1c" stroke-width=".8"/>`;
+    front += `<path d="M26 186 H144" stroke="#3fae5a" stroke-width="6" stroke-linecap="round"/><path d="M138 178 L152 186 L138 194" stroke="#3fae5a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if (K.phone){                                            // (.55) calling: the signal goes out from the telephone at the ear, and another telephone rings
+    const hx = r2(80 + K.ox + (sh + 1) * S), hy = r2(178 - 107 * S), arc = (r, a0, a1) => `M${r2(hx + r * Math.cos(a0))} ${r2(hy + r * Math.sin(a0))} A${r} ${r} 0 0 1 ${r2(hx + r * Math.cos(a1))} ${r2(hy + r * Math.sin(a1))}`;
+    front += [0, 1, 2].map(i => `<path d="${arc(16 + i * 9.5, -1.12, -0.36)}" stroke="#6a55b8" stroke-width="3.4" fill="none" stroke-linecap="round">${fade1("0;0;1;1;0;0", `0;${r2(0.04 + i * 0.1)};${r2(0.1 + i * 0.1)};${r2(0.62 + i * 0.1)};${r2(0.7 + i * 0.1)};1`)}</path>`).join("") +
+      `<g transform="translate(${r2(hx + 50)} ${r2(hy - 31)})"><g transform="rotate(${still ? 10 : 0})">` + (still ? "" : `<animateTransform attributeName="transform" type="rotate" values="0;0;-11;11;-11;11;-11;0;0" keyTimes="0;0.3;0.38;0.46;0.54;0.62;0.7;0.78;1" dur="${D1}s" repeatCount="indefinite"/>`) +
+      `<rect x="-11.500" y="-19" width="23" height="38" rx="4.6" fill="#3d424c" stroke="#17181c" stroke-width="1.4"/><rect x="-8.500" y="-13.500" width="17" height="25" rx="1.5" fill="#cfe8fb"/><circle cx="0" cy="-1" r="5.6" fill="#3fae5a"/><circle cx="0" cy="15.200" r="1.7" fill="#8f98a3"/>
+      <path d="M16.500 -17 q6 7 2 15 M22.500 -21 q8 11 3 23 M-16.500 5 q-6 7 -2 13" stroke="#6a55b8" stroke-width="2.8" fill="none" stroke-linecap="round">${fade1("0;0;1;1;0;0", "0;0.3;0.36;0.78;0.86;1")}</path></g></g>`;
   }
   if (K.house){                                            // (.48) arriving / leaving: the house, the arrow on the ground
     const left = K.house === "left", hx = left ? 2 : 98;
@@ -1303,10 +1355,27 @@ function action(act, who, opts){
   }
   /* the figure itself; for the movements that are played once (K.fade) it fades out at the end and is back, in its first pose, when the loop begins again */
   const fig = `<g>` + (K.fade && !still ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"/>` : "") + G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g>`;
-  const g = mk((K.chair ? "" : back) + `<g transform="translate(${80 + (K.ox || 0)} 178) scale(${S}) translate(-80 -178)">` + (K.chair ? back : "") + fig + `</g>` + front);
+  let ballG = "";
+  if (K.ball){                                             // (.55) playing: the ball goes up from the foot and comes down on it again (it slows as it rises, as a thrown ball does)
+    ballG = `<g transform="translate(${P[si].ball.join(" ")})">` + (still ? `<path d="M-6 16 v8 M6 16 v8 M0 19 v9" stroke="#b9bec6" stroke-width="2.8" stroke-linecap="round"/>`
+        : `<animateTransform attributeName="transform" type="translate" values="${P.map(p => p.ball.join(" ")).join(";")}" keyTimes="${K.kt.join(";")}" dur="${D1}s" repeatCount="indefinite" calcMode="spline" keySplines="0.2 0.3 0.6 0.8;0.1 0.5 0.4 1;0.6 0 0.9 0.5"/>`) +
+      `<circle r="12" fill="${COL.red[0]}" stroke="${COL.red[1]}" stroke-width="1.8"/><path d="M-10.800 -4.500 Q0 2.500 10.800 -4.500 M-11.500 2 Q0 9.500 11.500 2" stroke="#fff" stroke-width="2.6" fill="none" opacity=".92"/><ellipse cx="-4.400" cy="-6.400" rx="3" ry="1.800" fill="#fff" opacity=".5" transform="rotate(-30 -4.400 -6.400)"/></g>`;
+  }
+  if (opts.bare){ back = ""; front = ""; }                 // the figure alone: a second person in a scene that is already drawn (PICS.together)
+  const g = mk((K.chair ? "" : back) + `<g transform="translate(${80 + (K.ox || 0)} 178) scale(${S}) translate(-80 -178)">` + (K.chair ? back : "") + fig + ballG + `</g>` + front);
   spec._head = true;
   const hd = bust(spec, name), slot = k => g.querySelector(`g[data-s="${u}${k}"]`);      // the head from the portrait: its hair behind the trunk, the rest in front
   slot("h").appendChild(hd.querySelector("defs")); slot("b").appendChild(hd.querySelector("g.hb")); slot("h").appendChild(hd.querySelector("g.hd"));
+  if (K.cans){                                             // (.55) listening: the head rocks from side to side (the name tag stays on the chest); headphones on it, sound at both ears
+    const rot = `<g transform="rotate(${P[si].hr} 80 118)">` + (still ? "" : `<animateTransform attributeName="transform" type="rotate" values="${P.map(p => `${p.hr} 80 118`).join(";")}" ${timing}/>`) + `</g>`;
+    const ey = c.kid ? 93 : 90, CUP = pal(COL.red), wave = (d, a, b) => `<path d="${d}" stroke="#6a55b8" stroke-width="6" fill="none" stroke-linecap="round">${fade1(`${a};${b};${a};${b};${a}`, "0;0.25;0.5;0.75;1")}</path>`;
+    ["b", "h"].forEach(key => { const sl = slot(key), w = mk(rot).firstChild, part = sl.querySelector(key === "b" ? "g.hb" : "g.hd"); sl.appendChild(w); w.appendChild(part);
+      if (key === "h"){ const nt = part.querySelector("g.nametag"); if (nt) sl.appendChild(nt);
+        w.appendChild(mk(`<path d="M43 ${ey - 4} C36 12 124 12 117 ${ey - 4}" stroke="#2c2d33" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M47 ${ey - 30} C52 26 108 26 113 ${ey - 30}" stroke="#5a5b65" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <rect x="31" y="${ey - 21}" width="21" height="42" rx="9" fill="${CUP.a}" stroke="${CUP.d}" stroke-width="2.4"/><rect x="108" y="${ey - 21}" width="21" height="42" rx="9" fill="${CUP.a}" stroke="${CUP.d}" stroke-width="2.4"/>
+          <rect x="35.500" y="${ey - 13}" width="6" height="26" rx="3" fill="${CUP.h}" opacity=".7"/><rect x="118.500" y="${ey - 13}" width="6" height="26" rx="3" fill="${CUP.h}" opacity=".7"/>` +
+          wave(`M22 ${ey - 14} q-9 14 0 28`, 1, 0.15) + wave(`M138 ${ey - 14} q9 14 0 28`, 1, 0.15) + wave(`M9 ${ey - 24} q-15 24 0 48`, 0.15, 1) + wave(`M151 ${ey - 24} q15 24 0 48`, 0.15, 1))); } });
+  }
   const tag = c.fem ? g.querySelector(`g[data-s="${u}h"] g.nametag`) : null;       // a woman's chest is narrower than her name tag: the tag is made to fit
   if (tag){ const f = r2(Math.min(1, (2 * ch - 3) / (+tag.querySelector("rect").getAttribute("width") * W.hs))); if (f < 1) tag.setAttribute("transform", `translate(80 158) scale(${f}) translate(-80 -158)`); }
   return g;
@@ -2643,6 +2712,12 @@ function thing(spec){
 /* ---------- the learner and the teacher side by side, doing the same thing in step (the loops share the clock of the picture) ---------- */
 function together(act, opts){
   const w = firstWord(String(act || "").trim()), a = ACT_OF[w] || ACT2[w] || "smile", face = a === "smile" || a === "not smiling" || a === "eat" || a === "drink", close = a === "smile" || a === "not smiling", s = close ? 0.5 : face ? 0.66 : 0.62, g = mk("");
+  if (a === "go out"){                                      // (.55) one house, the two of them going out of it one behind the other
+    g.appendChild(action(act, "you", Object.assign({}, opts, { shift: -18, reach: 0.85 }))); g.appendChild(action(act, "marie", Object.assign({}, opts, { shift: 18, reach: 0.85, bare: true })));
+    return g; }
+  if (a === "work"){                                        // each at a desk: two whole pictures side by side, half size
+    ["you", "marie"].forEach((who, i) => { const c = mk(""); c.setAttribute("transform", `translate(${i ? 80 : 0} 47.5) scale(.5)`); c.appendChild(action(act, who, opts)); g.appendChild(c); });
+    return g; }
   ["you", "marie"].forEach((who, i) => {
     const c = mk("");
     c.setAttribute("transform", close ? `translate(${i ? 80 : 0} 47.5) scale(${s})`      // (.50) the smile fills its picture when it closes in: the two side by side, not overlapping
