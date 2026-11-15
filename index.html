@@ -635,7 +635,7 @@ function genItem(it){
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
   if(it.kind==="show" && it.act==="tap") return Object.assign(o,{type:"tapshow", kind:"show", act:"tap", tap:it.tap, target:"show tap "+keyOf(it.teacher)+" "+it.tap.at});
   if(it.kind==="do" && it.act==="tap") return Object.assign(o,{type:"task", kind:"test", cue:"tap", tapTask:true, targets:it.targets, correct:it.correct, tag:"new", expect:[], noEcho:true,
-    target:"tap "+keyOf(it.teacher)+" "+it.correct.join("+")});
+    target:"tap "+keyOf(it.teacher)+" "+it.correct.join("+"), ...(it.leadHand ? {leadHand:it.leadHand} : {})});      // (.56) leadHand: a lead of a tap (presentTap)
   // "say" (Lessons 9+): the teacher says a line that nobody answers (her reply in a conversation; "Arrête." to a pictured person)
   if(it.kind==="say") return Object.assign(o,{type:"say", kind:"say", target:"say "+keyOf(it.teacher)});
   // "figure" (dise5c, .24): what was "do": Marie's command, and the learner's own figure does it (presentAct); nothing is asked
