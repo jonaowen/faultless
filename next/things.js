@@ -632,6 +632,60 @@ function street(k){
   return s + clipped(panel, in_);
 }
 
+/* ================================================================ the grounds of sur / sous / dans ================================================================
+   THINGS.ground(kind, k): the table, chair, box or bag that a thing is put on, under or in (people.js placePic). The SAME places as the
+   present drawings, so that placePic's own numbers still put the thing on the top, under it, in it: only the finish changes.
+   k: people.js's look object (k.cn a colour name, k.has(...)); k.under: what stands under the table / chair (drawn behind the front legs);
+   k.inside: what is in the open box / bag (drawn behind the front). Returns null for a variant not drawn here (the caller draws its own). */
+const groundCol = (k, def) => { const n = k && k.cn === "wooden" ? "wood" : k && k.cn; return C[n] || C[def]; };
+const leg = (x0, y0, x1, y1, w, p, farL) => { const q = farL ? { l: p.fl, s: p.fs, r: p.fl } : p, a = Math.atan2(y1 - y0, x1 - x0) + Math.PI / 2, dx = Math.cos(a) * w / 2, dy = Math.sin(a) * w / 2;
+  const d = poly([[x0 - dx, y0 - dy], [x0 + dx, y0 + dy], [x1 + dx * 0.8, y1 + dy * 0.8], [x1 - dx * 0.8, y1 - dy * 0.8]]);
+  return fill(d, q.s) + fill(poly([[x0 - dx, y0 - dy], [x0 - dx * 0.1, y0 - dy * 0.1], [x1 - dx * 0.1, y1 - dy * 0.1], [x1 - dx * 0.8, y1 - dy * 0.8]]), q.l); };
+function groundTable(k){
+  if (k.has && k.has("garden", "round", "low", "long", "dining", "glass")) return null;
+  const W = groundCol(k, "wood");
+  return ground(82, 168, 66, 7, 0.2) + leg(49, 78, 49, 146, 7, W, 1) + leg(111, 78, 111, 146, 7, W, 1) + (k.under || "") +
+    leg(25, 104, 25, 166, 7.5, W) + leg(135, 104, 135, 166, 7.5, W) +
+    fill("M18 98H142V104Q142 106.5 139.5 106.5H20.5Q18 106.5 18 104Z", W.m) + fill("M112 98H142V104Q142 106.5 139.5 106.5H112Z", W.s) +      // the edge of the top, its right end turned from the light
+    fill(rpoly([[18, 98], [44, 72], [116, 72], [142, 98]], 2), W.l) + fill(poly([[96, 72], [116, 72], [142, 98], [118, 98]]), W.m, 'opacity=".55"') +
+    line("M19.5 97L44.5 73.2H115", W.r, 1.4) + line("M40 92H104M54 82H112", W.s, 0.9, 'opacity=".35"');                                      // the light on the lit edge; the grain
+}
+function groundChair(k){
+  if (k.has && k.has("office", "folding", "plastic", "garden", "kitchen")) return null;
+  const W = groundCol(k, "wood");
+  return ground(80, 178, 50, 6, 0.2) + leg(64, 104, 64, 150, 6, W, 1) + leg(122, 108, 122, 158, 6, W, 1) + leg(64, 104, 60, 36, 6.5, W) + leg(122, 108, 118, 42, 6.5, W, 1) +
+    leg(74, 46, 76, 100, 3.6, W, 1) + leg(90, 47, 92, 102, 3.6, W, 1) + leg(105, 48, 107, 104, 3.6, W, 1) +
+    fill("M56 34Q90 28 122 40V51Q90 39 56 45Z", W.l) + fill("M104 34.5Q114 36.5 122 40V51Q114 47 104 44.5Z", W.m) + line("M57 34Q90 28.5 121 39.6", W.r, 1.2) +       // the top rail
+    (k.under || "") + leg(40, 128, 40, 176, 6.5, W) + leg(98, 134, 98, 182, 6.5, W) + leg(40, 158, 98, 164, 3.6, W) +
+    fill("M40 124L98 130L122 108V115L98 137L40 131Z", W.s) + fill("M40 124L98 130V137L40 131Z", W.m) + fill(rpoly([[40, 124], [64, 102], [122, 108], [98, 130]], 1.5), W.l) + line("M41 123.4L64.4 102.6L121 108.2", W.r, 1.3);
+}
+function groundBox(k){
+  if (k.has && k.has("gift", "plastic", "metal") || (k.has && k.has("wooden") && !k.has("open"))) return null;
+  const B = groundCol(k, "kraft") || P("#D9AE74", "#B58A52");
+  if (k.has && k.has("open")){
+    const IN = mix(B.s, INK, 0.35);
+    return ground(86, 168, 70, 8, 0.22) +
+      fill(poly([[54, 70], [150, 70], [154, 40], [58, 40]]), B.m) + fill(poly([[54, 70], [150, 70], [151, 62], [55, 62]]), B.s, 'opacity=".5"') + line("M58.6 40.6H153.4", B.r, 1.2) +      // the back flap, standing
+      fill(poly([[20, 96], [54, 70], [150, 70], [116, 96]]), IN) + fill(poly([[54, 70], [150, 70], [140, 78], [48, 78]]), mix(IN, INK, 0.25)) +                                  // the inside
+      fill(poly([[20, 96], [54, 70], [32, 58], [2, 82]]), B.r) + line("M2.6 81.4L31.6 58.6", "#FFFFFF", 1, 'opacity=".6"') +                                                         // the left flap, laid open to the light
+      (k.inside || "") +
+      fill(poly([[116, 96], [150, 70], [150, 136], [116, 162]]), B.s) + fill(poly([[116, 96], [150, 70], [158, 92], [128, 116]]), B.fs) +                                          // the right side and its flap
+      fill(poly([[20, 96], [116, 96], [116, 162], [20, 162]]), B.l) + fill(poly([[20, 96], [116, 96], [122, 118], [14, 118]]), B.m) + line("M15 117.4H121.4", B.s, 1, 'opacity=".6"') +      // the front, its flap folded down
+      line("M20.6 119V161.4", B.r, 1.3);
+  }
+  return ground(88, 160, 62, 7, 0.22) + fill(poly([[110, 88], [140, 66], [140, 134], [110, 156]]), B.s) + fill(poly([[26, 88], [110, 88], [110, 156], [26, 156]]), B.l) +
+    fill(rpoly([[26, 88], [56, 66], [140, 66], [110, 88]], 1), B.r) + fill(poly([[61, 88], [91, 66], [104, 66], [74, 88]]), "#F1E2B4") + fill(poly([[61, 88], [74, 88], [74, 112], [61, 112]]), "#E6D29E") +      // the top, and the tape
+    line("M26.6 89V155.4", B.r, 1.3) + line("M32 146H52M32 140H44", B.s, 1.6, 'opacity=".5"');
+}
+function groundBag(k){
+  const B = groundCol(k, "blue");
+  return ground(82, 176, 52, 6, 0.2) + line("M56 96Q56 46 80 46Q104 46 104 96", B.fs, 7) + `<ellipse cx="80" cy="98" rx="52" ry="15" fill="${mix(B.s, INK, 0.3)}"/>` + (k.inside || "") +
+    solid("M28 98Q80 126 132 98L124 166Q80 178 36 166Z", B, { k: 7, rim: 1.4 }) + line("M28.6 98.4Q80 125.6 131.4 98.4", B.r, 1.4) +
+    line("M58 112Q60 146 80 146Q100 146 102 112", B.s, 7.4) + line("M58 112Q60 146 80 146Q100 146 102 112", B.l, 4.4);
+}
+const GROUND = { table: groundTable, chair: groundChair, box: groundBox, bag: groundBag };
+function groundOf(kind, k){ const f = GROUND[String(kind || "").toLowerCase()]; if (!f) return null; try { return f(k || {}); } catch (e) { return null; } }
+
 /* ---------- the looks, read as people.js reads them ---------- */
 function lookOf(spec){
   const S = " " + (spec.looks || []).join(" ").toLowerCase().replace(/[^a-z'\- ]+/g, " ").replace(/\s+/g, " ").trim() + " ";
@@ -677,6 +731,6 @@ function install(){
   if (t0) Pc.thing = function(spec){ return whole(spec, t0, this); };
   if (c0) Pc.car = function(spec){ return whole(spec ? Object.assign({}, spec, { is: "car" }) : spec, c0, this); };
 }
-window.THINGS = { one, can, kinds: Object.keys(DRAW), install };
+window.THINGS = { one, can, ground: groundOf, kinds: Object.keys(DRAW), install };
 install();
 })();
