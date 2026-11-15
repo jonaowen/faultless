@@ -28,7 +28,7 @@ const SHELL = (()=>{
     LATE_HOUR: 23,                    // (work) a second lesson that could only start after this hour is "tomorrow"
     PACE_DEFAULT: [5.5, 12],          // (work) seconds a task, seconds an exercise, until the learner's own pace is known
     GATE_ON: !/[?&]gate=off/.test(location.search),
-    LEARNER_FIGURE_ON: /[?&]learner=on/.test(location.search),      // (coordinator) the course's "you" drawn from the learner's own figure (PICS.setLearner): OFF until the picture library draws the close-ups from it too; ?learner=on to preview      // the tester's door: ?gate=off runs the lessons straight through (for scripted runs with errors)
+    LEARNER_FIGURE_ON: !/[?&]learner=off/.test(location.search),      // the course's "you" drawn from the learner's own figure (PICS.setLearner; the close-ups keep the default learner, by the picture library's own guard); ?learner=off for the default everywhere      // the tester's door: ?gate=off runs the lessons straight through (for scripted runs with errors)
   };
   const uid = USERS.current, GK="frDIn.g."+uid, AK=id=>"frDIn.a."+id;
   const blank = ()=>({v:1, points:0, lessons:{}, furthest:0, next:null, why:"", below:{}, days:{}, daysLearned:0, run:{len:0, last:""}, bestRun:0, rest:RULES.REST_DAYS_MAX, restEarnedAt:0,
