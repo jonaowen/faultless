@@ -1549,11 +1549,11 @@ function head(J, B, cam, c, out, zb){
   /* (c.live: the teacher's eyes: the irises in a group that can look down, the upper lid in a group that comes down with them, and a shut lid for a blink) */
   const LV = c.live ? ` style="transition:transform .25s ease-in-out"` : "";
   const eyeArt0 = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><g class="pup"${LV}><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g></g>
-      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${c.live ? "#3a2820" : lid}" stroke-width="${c.live ? 0.032 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.185 * sg} -.014l${0.05 * sg} -.034" stroke="${lid}" stroke-width=".03" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8"/>`
+      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${c.live ? "#2e1f18" : lid}" stroke-width="${c.live ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.13 * sg} -.084Q${0.2 * sg} -.064 ${0.212 * sg} -.008" stroke="#2e1f18" stroke-width=".044" fill="none" stroke-linecap="round"/><path d="M${0.2 * sg} -.03q${0.04 * sg} -.008 ${0.052 * sg} -.034M${0.165 * sg} -.064q${0.03 * sg} -.014 ${0.034 * sg} -.04" stroke="${lid}" stroke-width=".017" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity="${c.live ? 0.4 : 0.8}"/>`
       + (c.live ? `<g class="blk" visibility="hidden"><path d="M-.2 0Q0 -.19 .2 -.01Q0 .15 -.2 0Z" fill="${sk.n[0]}"/><path d="M-.18 .012Q0 .1 .18 .004" stroke="${lid}" stroke-width=".04" fill="none" stroke-linecap="round"/></g>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
   const eyeArt = sg => c.live ? `<g transform="scale(.9 .95)">${eyeArt0(sg)}</g>` : eyeArt0(sg);      // (the teacher's eyes a little narrower than the cards' faces: calm, not wide)
-  const browArt = sg => big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
+  const browArt = sg => c.live ? `<path d="M${0.24 * sg} .055Q${0.08 * sg} -.13 ${-0.19 * sg} -.04Q${-0.225 * sg} -.015 ${-0.2 * sg} .008Q${0.07 * sg} -.065 ${0.24 * sg} .055Z" fill="${mixc(c.browC, "#1d1410", 0.25)}"/>` : big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
   const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = c.mouthInner ? c.mouthInner(px) : big && c.speaks ? `<ellipse cy=".05" rx=".2" ry=".13" fill="#5a2326"/><path d="M-.2 .05A.2 .13 0 0 1 .2 .05" stroke="${c.lip}" stroke-width=".05" fill="none"/><path d="M-.2 .05A.2 .13 0 0 0 .2 .05" stroke="${c.lip}" stroke-width=".06" fill="none"/>` : big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
     : c.speaks ? `<ellipse cy=".04" rx=".15" ry=".12" fill="#5a2326"/><path d="M-.15 .04A.15 .12 0 0 1 .15 .04" stroke="${c.lipC}" stroke-width=".05" fill="none"/>`
     : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.06 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
@@ -1603,7 +1603,7 @@ const HANDS = {
 };
 const handFlat = H => [H.f[0][0], H.f[0][1], H.f[1][0], H.f[1][1], H.f[2][0], H.f[2][1], H.f[3][0], H.f[3][1], H.sp, H.th[0], H.th[1], H.th[2]];
 function fingers(wr, hd, pn, left, hp, B, P, S, SK, id){
-  const HL = B.hand * (hp[12] || 1), PW = HL * 0.235, th = left ? cross(pn, hd) : cross(hd, pn), parts = [], LX = LIGHT[0], LY = LIGHT[1];
+  const HL = B.hand * (hp[12] || 1), PW = HL * (B.pwk || 0.235), th = left ? cross(pn, hd) : cross(hd, pn), parts = [], LX = LIGHT[0], LY = LIGHT[1];
   const bend = (d, n, a) => { const c = Math.cos(a), s = Math.sin(a); return [add(mul(d, c), mul(n, s)), sub(mul(n, c), mul(d, s))]; };
   const Q = (p, r) => { const q = P(p); return [q[0], q[1], r * S, q[2]]; };
   const tube = pts => (g, dx, dy) => { let d = ""; for (let i = 0; i + 1 < pts.length; i++) d += capsule(pts[i][0] + dx, pts[i][1] + dy, Math.max(0.3, pts[i][2] + g), pts[i + 1][0] + dx, pts[i + 1][1] + dy, Math.max(0.3, pts[i + 1][2] + g)); return d; };
@@ -1653,7 +1653,7 @@ function frame(k, B, cam, c, floor, o){
   /* the trunk: one garment, from the cross-sections of the body: the hem round the hips, the waist, the chest, the yoke of the shoulders
      (two round shoulder caps and the foot of the neck) */
   const Ech = ellipse(P(at(J.chest, J.Bc, [0, 0.012, 0.004])), lax(J.Bc, B.chest)), Ehm = ellipse(P(at(J.root, J.Bp, [0, 0.012, 0])), lax(J.Bp, B.hem)), Ewa = ellipse(P(lerp(J.root, J.chest, 0.45)), lax(J.Bp, B.waist));
-  const EsL = disc(P(J.shL), B.rSh * S), EsR = disc(P(J.shR), B.rSh * S), Enb = disc(P(at(J.nb, J.Bc, [0, -0.012, 0])), B.rNeck * S * 1.3);
+  const EsL = disc(P(J.shL), B.rSh * S), EsR = disc(P(J.shR), B.rSh * S), Enb = disc(P(at(J.nb, J.Bc, [0, -0.012, 0])), B.rNeck * S * (B.nkY || 1.3)); if (B.nkV){ Enb.b = B.rNeck * S * B.nkV; Enb.c = [Enb.c[0], Enb.c[1] + B.nkDy * S]; }      // (the teacher: the foot of the neck wide and low, so that the line of the shoulders slopes gently from it)
   Ech.n = 36; Ehm.n = 30; Ewa.n = 26; EsL.n = EsR.n = 18; Enb.n = 12;
   const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
@@ -1722,7 +1722,7 @@ function frame(k, B, cam, c, floor, o){
   for (const p of headParts) parts.push(p);
   const skull = headParts.find(p => p.id === "skull");
   /* the shadows that the arms, the hands and the head throw on the trunk: their own shapes, moved away from the light, kept inside the trunk */
-  { const dx = -LIGHT[0] * 0.028 * S, dy = -LIGHT[1] * 0.032 * S; let d = ""; for (const fn of cast) d += fn(0.003 * S, dx, dy);
+  { const ck = B.castK || 1, dx = -LIGHT[0] * 0.028 * S * ck, dy = -LIGHT[1] * 0.032 * S * ck; let d = ""; for (const fn of cast) d += fn(0.003 * S, dx, dy);
     if (part === "arms") castD = d;                                                 // (the teacher: the arms' shadow belongs to the body's group, under her name tag: handed back with the list)
     else { if (skull && skull.z > zt) d += skull.cast(dx * 1.4, dy * 1.9);
       parts.push({ id: "trunkC", z: zt + 0.0005, tag: "clip", clip: trunkD, d: part ? d + (o.cast || "") : d, fill: T.n[1] }); } }
@@ -1911,33 +1911,37 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 61, chest: 1.16, waist: 1.15, rSh: 1.1, sy: 0.088, nb: 0.168, neckUp: 63, chairUp: 0.16, fwd: 0.4, palmHd: [0.25, -0.3, 0.92], palmPn: [-0.1, 0.7, 0.72], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 20, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 1.15, chairCol: ["#b0a291", "#857767"],
+const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0.8, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
   const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "woman", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
-  for (const r of ["rUa", "rEl", "rFa"]) B[r] *= 0.96;
+  for (const r of ["rUa", "rEl", "rFa"]) B[r] *= TUT.arm;
   const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
-  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * TUT.waist, B.hem[1], B.hem[2]]; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
+  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
   const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
   for (const [i, sg] of [[57, 1], [69, -1]]){ const L = TUT.legs[sg > 0 ? 0 : 1]; setv(base, i, [L[0] * sg, L[1], L[2]]); setv(base, i + 3, [L[3] * sg, L[4], L[5]]); setv(base, i + 6, [L[6] * sg, L[7], L[8]]); }      // the thighs as on a chair of ordinary height (CMU 86_15), the knees together and the feet side by side, one a little forward (a composed sitter: see REFERENCES)
   /* the neck's length is set so that the mouth is where the stage's close-up expects it: 63 above the line of the shoulders */
-  { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (TUT.neckUp - a) / (b - a) * 0.06; }
+  { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (TUT.shY - TUT.mouthY - a) / (b - a) * 0.06; }
   const J0 = skeleton(base, B), floor = lowest(J0), ys0 = (J0.shL[1] + J0.shR[1]) / 2, zs0 = (J0.shL[2] + J0.shR[2]) / 2;
-  const ox = 200, oy = 448 + ((ys0 - floor) * cp - zs0 * sp) * S, cam = camera(0, pitch, S, ox, oy);
+  const ox = 200, oy = TUT.shY + ((ys0 - floor) * cp - zs0 * sp) * S, cam = camera(0, pitch, S, ox, oy);
   const unproj = (X, Y, z) => [(X - ox) / S, floor + ((oy - Y) / S + z * sp) / cp, z];
   /* ----- the chair she sits on (the stage's present chair, in the figures' finish): an upholstered back seen from the front behind her
      shoulders, the seat's cushion under her, two front legs of dark wood; the same camera as her body; light from the upper left ----- */
   function chairSVG(J){
     if (o.chair === false) return "";
+    const stool = o.chair === "stool";                       // (the other option: a small upholstered seat under her and no back, as the round-one drawing the owner liked)
     const Q = (x, y, z) => { const q = cam.pt([x, y - floor, z]); return [q[0], q[1]]; }, R = v => v.toFixed(1);
     const ys = J.root[1] - 0.058, zf = J.root[2] + 0.165, zb = J.root[2] - 0.13, hw = 0.148, th = 0.052, ysh = (J.shL[1] + J.shR[1]) / 2;
     const up = TUT.chairUp, zk = zb - 0.035;                         // the back: a padded panel standing behind her, its top `up` above her shoulders
     const rr = (x0, y0, x1, y1, r) => `M${R(x0 + r)} ${R(y0)}H${R(x1 - r)}Q${R(x1)} ${R(y0)} ${R(x1)} ${R(y0 + r)}V${R(y1 - r)}Q${R(x1)} ${R(y1)} ${R(x1 - r)} ${R(y1)}H${R(x0 + r)}Q${R(x0)} ${R(y1)} ${R(x0)} ${R(y1 - r)}V${R(y0 + r)}Q${R(x0)} ${R(y0)} ${R(x0 + r)} ${R(y0)}Z`;
     const UP = TUT.chairCol, M = material(UP[0], UP[1]), wood = ["#5f4838", "#46352a"];
     const b0 = Q(-hw * 0.96, ysh + up, zk), b1 = Q(hw * 0.96, ys, zk), bw = b1[0] - b0[0], e = bw * 0.06;
+    if (stool){ const sw2 = 0.105, t0s = Q(-sw2, ys, zb + 0.05), t1s = Q(sw2, ys, zf - 0.02), f0s = Q(-sw2, ys, zf - 0.02), f1s = Q(sw2, ys - th * 0.8, zf - 0.02), rs = (f1s[1] - f0s[1]) * 0.45, SM = material("#6d5848", "#4e3e33");
+      const lg = sg => { const a = Q(sg * (sw2 - 0.02), ys - th * 0.8, zf - 0.04), b = Q(sg * (sw2 - 0.012), 0, zf - 0.04), w = (f1s[0] - f0s[0]) * 0.05; return `<path d="M${R(a[0] - w)} ${R(a[1])}L${R(b[0] - w * 0.8)} ${R(b[1])}H${R(b[0] + w * 0.8)}L${R(a[0] + w)} ${R(a[1])}Z" fill="${wood[1]}"/>`; };
+      return `<g class="chair">` + lg(-1) + lg(1) + `<path d="${rr(t0s[0], t0s[1], t1s[0], t1s[1] + rs, rs)}" fill="${SM.n[0]}"/><path d="${rr(f0s[0], f0s[1] - 1, f1s[0], f1s[1], rs)}" fill="${SM.n[1]}"/></g>`; }
     const back = rr(b0[0], b0[1], b1[0], b1[1], bw * 0.16), backS = rr(b0[0] + e, b0[1] + e * 0.9, b1[0], b1[1], bw * 0.16), backL = rr(b0[0], b0[1], b1[0] - e, b1[1] - e * 0.9, bw * 0.16);
     const t0 = Q(-hw, ys, zb), t1 = Q(hw, ys, zf), f0 = Q(-hw, ys, zf), f1 = Q(hw, ys - th, zf), rad = (f1[1] - f0[1]) * 0.45;
     const seatTop = rr(t0[0], t0[1], t1[0], t1[1] + rad, rad), front = rr(f0[0], f0[1] - 1, f1[0], f1[1], rad), frontS = rr(f0[0] + e * 0.7, f0[1] + (f1[1] - f0[1]) * 0.45, f1[0], f1[1], rad);
@@ -1954,7 +1958,7 @@ function tutor(c, o){
      the dimples of a smile), laid on the head in the mouth's place and turned with it; units: the stage's, from the middle of the mouth ----- */
   const f2s = n => n.toFixed(2), dimple = mixc(c.skin[1], c.skin[2], 0.55);
   const mouthInner = px => `<g transform="scale(${(1 / px).toFixed(5)})"><path class="mLips" fill="#c4626a"/><path class="mIn" fill="#4a1c22"/><clipPath id="${u}mc"><path class="mClip"/></clipPath><g clip-path="url(#${u}mc)"><rect class="mTU" fill="#f7f3ec"/><rect class="mTL" fill="#ece6dc"/><ellipse class="mTg" ry="3" fill="#cf6b74"/></g>` +
-    `<path class="mLine" stroke="#8e3d45" stroke-width="1.3" fill="none" stroke-linecap="round"/><path class="mHi" stroke="#e39aa0" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/><rect class="mTF" x="-7" y="-3" width="14" height="3" rx="1" fill="#f7f3ec" opacity="0"/><path class="mDim" stroke="${dimple}" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".6"/></g>`;
+    `<path class="mLine" stroke="#8e3d45" stroke-width="1.3" fill="none" stroke-linecap="round"/><path class="mHi" stroke="#e39aa0" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".4"/><rect class="mTF" x="-7" y="-3" width="14" height="3" rx="1" fill="#f7f3ec" opacity="0"/><path class="mDim" stroke="${dimple}" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".6"/></g>`;
   let M = null, lastV = [0.04, 0.5, 0, 1, 0, 0, 0], lastSmile = 0.8, mouthT = 0, smileLid = 0, lidHook = null;
   function mouthDraw(v, smile){
     if (smile == null) smile = lastSmile; lastSmile = smile;
@@ -1974,14 +1978,14 @@ function tutor(c, o){
     M.inn.setAttribute("d", inner); M.clip.setAttribute("d", inner); M.inn.setAttribute("opacity", H > 0.7 || fv > 0.5 ? 1 : 0);
     M.line.setAttribute("d", `M${f2s(xl + 1.2)} ${f2s(yc + 0.2)} Q${f2s(cx)} ${f2s(cy + lift * 0.95 + 0.3)} ${f2s(xr - 1.2)} ${f2s(yc + 0.2)}`); M.line.setAttribute("opacity", H > 1.2 ? 0 : 1);
     M.hi.setAttribute("d", `M${f2s(cx - Wd * 0.38)} ${f2s(dn - 1.3)} Q${f2s(cx)} ${f2s(dn - 0.6)} ${f2s(cx + Wd * 0.38)} ${f2s(dn - 1.3)}`);
-    M.dim.setAttribute("d", `M${f2s(xl - 1.6)} ${f2s(yc - 3.4)} q-2.2 3.2 0 6.6 M${f2s(xr + 1.6)} ${f2s(yc - 3.4)} q2.2 3.2 0 6.6`); M.dim.setAttribute("opacity", f2s(Math.max(0, sm - 0.35) * 0.9));
+    M.dim.setAttribute("d", `M${f2s(xl - 1.6)} ${f2s(yc - 3.4)} q-2.2 3.2 0 6.6 M${f2s(xr + 1.6)} ${f2s(yc - 3.4)} q2.2 3.2 0 6.6`); M.dim.setAttribute("opacity", f2s(Math.max(0, sm - 0.95) * 1.2));
     const th = teeth > 0.05 ? Math.min(H * 1.2, 2.2 + 1.4 * teeth) : bs ? H * 1.15 : 0;
     M.tu.setAttribute("x", f2s(cx - Wd)); M.tu.setAttribute("width", f2s(2 * Wd)); M.tu.setAttribute("y", f2s(cy - H - lift * 0.3)); M.tu.setAttribute("height", f2s(th));
     M.tl.setAttribute("x", f2s(cx - Wd)); M.tl.setAttribute("width", f2s(2 * Wd)); M.tl.setAttribute("y", f2s(cy + H - Math.min(1.6, H * 0.4))); M.tl.setAttribute("height", (open > 0.25 || teeth > 0.95) ? "1.60" : "0");
     M.tg.setAttribute("cy", f2s(cy + H - 1.5 - 3.5 * tongue * open)); M.tg.setAttribute("rx", f2s(Wd * 0.7)); M.tg.setAttribute("opacity", (open > 0.15 ? 0.55 + 0.45 * tongue : 0).toFixed(2));
     M.tf.setAttribute("opacity", fv > 0.5 ? 1 : 0);
   }
-  const W = wearer(c, { legs: o.legs || ["#5a6272", "#3f4654"], tag: o.tag == null ? "Marie" : o.tag, tagAt: [0.033, TUT.tagY], tagBox: [50 / S, 23 / S], tagId: "claireTag", live: true, mouthInner, smile: 0.5 }, u);
+  const W = wearer(c, { legs: o.legs || ["#5a6272", "#3f4654"], tag: o.tag == null ? "Marie" : o.tag, tagAt: [TUT.tagX, TUT.tagY], tagBox: [50 / S, 23 / S], tagId: "claireTag", live: true, mouthInner, smile: 0.5 }, u);
   /* ----- the body: the seated pose; the small sway of sitting still (x: 0 .. 1 along the captured two seconds; only the trunk's part of
      it: the head stays level and the hands stay where they are); the head bent forward for a nod (a: radians) ----- */
   const keyOf = (x, a) => { const k = Float32Array.from(base);
@@ -2010,7 +2014,7 @@ function tutor(c, o){
     let d = sub(wr, sh), L = Math.hypot(d[0], d[1], d[2]); const a = B.ua, b = B.fa, mx = (a + b) * 0.999, mn = Math.abs(a - b) + 0.02;
     if (L > mx){ d = mul(d, mx / L); L = mx; } if (L < mn){ d = mul(d, mn / (L || 1)); L = mn; }
     const uu = mul(d, 1 / L), x = (a * a - b * b + L * L) / (2 * L), h = Math.sqrt(Math.max(0, a * a - x * x)), up = sm01((d[1] + 0.16) / 0.14);      // a hand in the lap: the elbow back, beside the body; a hand raised: the elbow out
-    let pole = [sg * (0.34 + 0.4 * up), -0.62, -0.7 + 0.55 * up]; pole = nrm(sub(pole, mul(uu, dot(pole, uu))));
+    let pole = [sg * (TUT.elOut + 0.4 * up), -0.62, -0.7 + 0.55 * up]; pole = nrm(sub(pole, mul(uu, dot(pole, uu))));
     const el = add(add(sh, mul(uu, x)), mul(pole, h)), w2 = add(sh, d); return { ud: nrm(sub(el, sh)), fd: nrm(sub(w2, el)) }; }
   /* the hand: which way it points and which way its palm faces, for each shape the page asks for */
   const perp = (v, h) => nrm(sub(v, mul(h, dot(v, h)))), PNR = { L: getv(base, 42), R: getv(base, 54) };
@@ -2036,7 +2040,7 @@ function tutor(c, o){
       const e = sm01(w), hd = st.from ? nrm(mixv(st.from.hd, O.hd, e)) : O.hd, pn = st.from ? perp(mixv(st.from.pn, O.pn, e), hd) : O.pn, hp = st.from ? mixv(st.from.hp, O.hp, e) : O.hp;
       st.last = { hd, pn, hp };
       setv(k, off, E.ud); setv(k, off + 3, E.fd); setv(k, off + 6, hd); setv(k, off + 9, pn); hands[side] = hp;
-      { const HL = B.hand, th = side === "L" ? cross(pn, hd) : cross(hd, pn), q = cam.pt((p => [p[0], p[1] - floor, p[2]])(add(add(wr, mul(hd, 0.956 * HL)), mul(th, 0.74 * 0.235 * HL)))); TIP[ps] = { x: q[0], y: q[1] }; } }
+      { const HL = B.hand, th = side === "L" ? cross(pn, hd) : cross(hd, pn), q = cam.pt((p => [p[0], p[1] - floor, p[2]])(add(add(wr, mul(hd, 0.956 * HL)), mul(th, 0.74 * B.pwk * HL)))); TIP[ps] = { x: q[0], y: q[1] }; } }
     const list = frame(k, B, cam, W, floor, { part: "arms", hands }); armCast = list.cast || "";
     for (const ps of ["L", "R"]){ const p = pose[ps] || REST[ps], st = ST[ps]; if (p.shape !== "cup") continue;      // the hand cupped behind the ear: the ear is in front of the palm
       const side = ps === "L" ? "R" : "L", sg = side === "L" ? 1 : -1, hh = B.hh, e3 = at(J.head, J.Bh, [sg * 0.83 * hh, -0.1 * hh, -0.1 * hh]), q = cam.pt([e3[0], e3[1] - floor, e3[2]]);
@@ -2057,7 +2061,7 @@ function tutor(c, o){
     return `<g id="hs_${name}"><g transform="translate(${dx} 0)">` + R.parts.map(n => n.tag ? `<g transform="matrix(${n.m.join(" ")})">${n.inner}</g>` : n.layers.map(l => `<path d="${l[0]}" fill="${l[1]}"/>`).join("")).join("") + `</g></g>`; };
   /* the hand shapes the page itself draws with (the learners' pointing hand, the small hands of a tap turn): the same hand, flat on the page,
      the wrist at 0, 0, pointing down; the tip of the pointing finger where it has always been (8.5, 55.3) */
-  const defs = shapeDef("relaxed", [0, -1, 0], [0, 0, -1], 0) + shapeDef("point", [0, -1, 0], [0, 0, -1], -1.5) + shapeDef("flat", [0, -1, 0], [0, 0, -1], 0) + shapeDef("palmup", [0, -0.58, 0.81], [0, 0.81, 0.58], 0) + shapeDef("cup", [0, 1, 0], [0, 0, 1], 0);
+  const defs = shapeDef("relaxed", [0, -1, 0], [0, 0, -1], 0) + shapeDef("point", [0, -1, 0], [0, 0, -1], f2(8.55 - 0.74 * B.pwk * B.hand * S)) + shapeDef("flat", [0, -1, 0], [0, 0, -1], 0) + shapeDef("palmup", [0, -0.58, 0.81], [0, 0.81, 0.58], 0) + shapeDef("cup", [0, 1, 0], [0, 0, 1], 0);
   g.innerHTML = `<defs>${W.defs}${defs}</defs><g id="tutorBody">${chairSVG(J0)}</g><g id="arms"></g>`;
   const hostB = g.children[1], hostA = g.children[2];
   const syncer = host => { let order = null; const byId = {}, last = {}; return list => { const ord = list.map(n => n.id).join(" ");
@@ -2065,7 +2069,20 @@ function tutor(c, o){
     for (const n of list){ const sig = n.tag ? null : n.d + "|" + n.fill + "|" + n.op; if (sig !== null && last[n.id] === sig) continue; last[n.id] = sig; nodeSet(byId[n.id], n); } }; };      // (a part that has not changed is left alone: an arm at rest costs nothing while the other moves)
   const syncB = syncer(hostB), syncA = syncer(hostA);
   let swayX = 0, nodA = 0, kNow = keyOf(0, 0);
-  const bodyKept = {}, bodyList = (x, a) => { const id = x.toFixed(3) + "|" + a.toFixed(3); return bodyKept[id] || (bodyKept[id] = frame(keyOf(x, a), B, cam, W, floor, { part: "body" })); };
+  /* the jumper over her bust: a soft shade under each breast, laid on the chest and turned with it
+     (TUT.bust: how much; 0: none) */
+  const bustOf = k => { if (!TUT.bust) return []; const J = skeleton(k, B), Bc = J.Bc, T = W.topM, q = v => { const r = cam.pt([v[0], v[1] - floor, v[2]]); return [r[0], r[1]]; }, bz = TUT.bust, out = [];
+    const on = (x, y) => at(J.chest, Bc, [x, y, B.chest[2] * 1.0 * Math.sqrt(Math.max(0.05, 1 - (x / B.chest[0]) ** 2)) - 0.004]), R = v => v.toFixed(1);
+    let dS = "";
+    for (const sg of [1, -1]){ const cx = sg * TUT.bustX, y0 = TUT.bustY, w = 0.036, dep = 0.022 * bz;
+      const A = [], Bq = []; for (let i = 0; i <= 10; i++){ const t = i / 10, x = cx + sg * (-w + 2 * w * t) * 1, sa = Math.sin(Math.PI * t); A.push(q(on(x, y0 - dep * sa - 0.004 * t))); Bq.push(q(on(x, y0 - dep * 0.45 * sa - 0.004 * t + 0.002))); }
+      dS += "M" + A.map(p => R(p[0]) + " " + R(p[1])).join("L") + "L" + Bq.reverse().map(p => R(p[0]) + " " + R(p[1])).join("L") + "Z";
+    }
+    out.push({ id: "bustS", d: dS, fill: T.n[1], op: f2(0.55) });
+    return out; };
+  const bodyKept = {}, bodyList = (x, a) => { const id = x.toFixed(3) + "|" + a.toFixed(3); if (bodyKept[id]) return bodyKept[id];
+    const k = keyOf(x, a), L = frame(k, B, cam, W, floor, { part: "body" }), bs = bustOf(k); if (bs.length){ let i = -1; L.forEach((n, j) => { if (/^trunk\d/.test(n.id)) i = j; }); L.splice(i + 1, 0, ...bs); }
+    return (bodyKept[id] = L); };
   let castWas = null; const castSet = () => { if (!castEl) castEl = hostB.querySelector('[data-p="trunkC"]'); const d = headCast + armCast; if (castEl && d !== castWas){ castWas = d; castEl.lastChild.setAttribute("d", d); } };
   function drawBody(){ kNow = keyOf(swayX, 0); const L = bodyList(swayX, nodA); syncB(L); headCast = (L.find(n => n.id === "trunkC") || {}).d || ""; castSet(); }
   function drawArms(){ const t = now(); lastArmsDraw = t; syncA(armsList(Float32Array.from(kNow), t)); castSet(); if (t < blendUntil) requestAnimationFrame(() => { if (now() - lastArmsDraw > 8) drawArms(); }); }
