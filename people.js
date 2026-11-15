@@ -470,8 +470,8 @@ const SMILE_KZ = SMILE_KEY("0;0.08;0.3;0.88;1"), SMILE_K = SMILE_KEY("0;0.24;0.4
 /* ---------- one person, head and shoulders ---------- */
 function bust(spec, name, variant){
   const c = traits(spec, variant), L = c.L, u = "pk" + (seq++) + "_", kid = c.kid, fem = c.fem, P = c.named === "paul", J = c.named === "julie";
-  const act = doingOf(spec), sleeping = act === "sleeping", eating = act === "eating", drinking = act === "drinking", reading = act === "reading";
-  const mood = sleeping || drinking || reading ? "" : c.mood, anim = spec._act === "anim";      // a face that tells (MOOD); the loop of PICS.action "eat" / "drink"
+  const act = doingOf(spec), sleeping = act === "sleeping", eating = act === "eating", drinking = act === "drinking", reading = act === "reading", singing = act === "singing";
+  const mood = sleeping || drinking || reading || singing ? "" : c.mood, anim = spec._act === "anim";      // a face that tells (MOOD); the loop of PICS.action "eat" / "drink"
   const tilt = mood === "bad" ? "translate(0 5) rotate(7 80 122)" : mood === "yuck" ? "rotate(-5 80 122)" : reading ? "translate(0 3)" : "";
   const skin = c.skin, top = c.top;
   const smile = spec._smile || "";                         // PICS.action "smile": "anim" (the loop) | "still" (its smiling frame); "neutral": the same face, close up, not smiling
@@ -483,7 +483,7 @@ function bust(spec, name, variant){
   const TP = torso(B.x0, B.x1, B.yt, B.cw, B.drop), nx0 = B.x0 + B.cw, nx1 = B.x1 - B.cw, yt = B.yt;
   const outerName = L.coat ? c.coat : L.suit ? c.suit : null, outer = outerName ? COL[outerName] : null;
   const acc = n => COL[n] || COL.orange;
-  const plain = c.named && !sleeping && !eating && !drinking && !smile && !reading && !mood && !Object.keys(L).length;
+  const plain = c.named && !sleeping && !eating && !drinking && !singing && !smile && !reading && !mood && !Object.keys(L).length;
   const hair = hairOf(c.style, u, c);
   const browCol = c.old ? "#b9b9b4" : c.brow ? c.brow : P ? "#4f3622" : J ? "#2a1d17" : c.hair[2];
   const lip = c.lip ? c.lip : P ? "#b8645f" : J ? "#c75a64" : fem ? (c.skinName === "dark" || c.skinName === "brown" ? "#a8404e" : "#cf5266") : (c.skinName === "dark" || c.skinName === "brown" ? "#8a4a44" : "#b8645f");
@@ -676,6 +676,7 @@ function bust(spec, name, variant){
      <ellipse cx="81.5" cy="${116 + my}" rx="4.6" ry="2.2" fill="#d9706f"/>`;
   else if (drinking) head += `<path d="M73.5 ${112.6 + my} Q80 ${118.2 + my} 86.5 ${112.2 + my}" stroke="${lip}" stroke-width="3" fill="none" stroke-linecap="round"/>`;   // the lower lip, under the rim
   else if (sleeping) head += `<ellipse cx="80" cy="${111.6 + my}" rx="3.9" ry="3.3" fill="#6e2424" stroke="${lip}" stroke-width="1.5"/>`;
+  else if (singing) head += `<ellipse cx="80" cy="${112.4 + my}" rx="6.6" ry="8" fill="#6e2424" stroke="${lip}" stroke-width="2"/><path d="M75.6 ${107.4 + my} Q80 ${105.6 + my} 84.4 ${107.4 + my} L84 ${109 + my} Q80 ${107.6 + my} 76 ${109 + my} Z" fill="#fff"/><ellipse cx="80" cy="${117.2 + my}" rx="4" ry="2.4" fill="#d9706f"/>`;      // chanter: the mouth wide open
   else if (kid) head += `<path d="M71.5 ${109.6 + my} Q80 ${117.4 + my} 88.5 ${109.6 + my} Q80 ${112.4 + my} 71.5 ${109.6 + my} Z" fill="${lip}"/><path d="M72 ${109.8 + my} Q80 ${114.6 + my} 88 ${109.8 + my}" stroke="#8a3b3b" stroke-width="1.1" fill="none" stroke-linecap="round"/>`;
   else head += `<path d="M69.5 109.4 Q80 116.5 90.5 109.4 Q80 112.6 69.5 109.4 Z" fill="${lip}"/>
      <path d="M70 109.6 Q80 114.2 90 109.6" stroke="#8a3b3b" stroke-width="1.1" fill="none" stroke-linecap="round"/>
@@ -772,6 +773,18 @@ function bust(spec, name, variant){
       `<g transform="translate(37.5 ${151 + my}) rotate(-50)"><rect x="-6" y="-11.5" width="22" height="23" rx="9" fill="${skin[1]}" stroke="${skin[2]}" stroke-width="1.2"/>
          ${[-10.6, -5.2, 0.2, 5.6].map((y, i) => `<rect x="10" y="${y}" width="${[17, 20, 20, 17][i]}" height="5.6" rx="2.8" fill="${skin[0]}" stroke="${skin[2]}" stroke-width="1"/>`).join("")}
          <path d="M2 -11 q9 -6.5 15 -1.6 q-5 3 -9 4.4z" fill="${skin[1]}" stroke="${skin[2]}" stroke-width="1"/></g>`);
+  }
+  if (singing){
+    /* PICS.action "sing" (chanter): the mouth wide open, a microphone held up to it, and notes that come out one after another (one clock
+       for the three, as the z of sleeping). The microphone tells it from dancing, whose card has notes too. */
+    const N = [[112, 78, 17, "0;1;1;0", "0;0.12;0.86;1"], [126, 58, 22, "0;0;1;1;0", "0;0.26;0.4;0.86;1"], [140, 36, 27, "0;0;1;1;0", "0;0.52;0.66;0.86;1"]];
+    front += armStroke("M128 200 L113 158", 19) +
+      `<g transform="rotate(-28 100 136)"><rect x="95.6" y="134" width="9" height="38" rx="4" fill="#3a3d45" stroke="#1d1f24" stroke-width="1.2"/>
+         <circle cx="100" cy="127" r="9.6" fill="#9aa0ab" stroke="#4a4e57" stroke-width="1.6"/><path d="M92.6 124 h14.8 M91.4 128 h17.2 M93.4 132 h13.2" stroke="#5c616b" stroke-width="1" fill="none"/>
+         <rect x="90" y="146" width="20" height="20" rx="8" fill="${skin[1]}" stroke="${skin[2]}" stroke-width="1.2"/>
+         ${[147.6, 152.2, 156.8, 161.4].map(y => `<rect x="88.6" y="${y}" width="18" height="4.4" rx="2.2" fill="${skin[0]}" stroke="${skin[2]}" stroke-width=".9"/>`).join("")}</g>` +
+      N.map(z => `<text x="${z[0]}" y="${z[1]}" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-weight="800" font-size="${z[2]}" fill="#7a55c7" stroke="#fff" stroke-width=".8" paint-order="stroke" opacity="${anim ? 0 : 0.95}">\u266A` +
+        (anim ? `<animate attributeName="opacity" values="${z[3]}" keyTimes="${z[4]}" dur="2.8s" repeatCount="indefinite"/>` : "") + `</text>`).join("");
   }
   if (sleeping && spec._act){
     /* PICS.action "sleep" (dormir): three z above the sleeper, small to large; in the loop they come one after another and go together.
@@ -1171,7 +1184,7 @@ const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump"
   sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
   talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave",
   working: "work", work: "work", calling: "call", call: "call", phoning: "call", "go out": "go out", playing: "play", play: "play", listening: "listen", listen: "listen" };
-const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink", sleep: "sleep", sleeping: "sleep" };
+const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink", sleep: "sleep", sleeping: "sleep", sing: "sing", singing: "sing", read: "read", reading: "read" };
 const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
 const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
 const SEATED = { rx: 2, ry: 26, lL: [-90, 90], lR: [-90, 90], aL: [-4, -70], aR: [-8, -75] },
@@ -1247,7 +1260,9 @@ function action(act, who, opts){
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "not smiling"){ spec._smile = "neutral"; return bust(spec, name); }      // (.50) the face close up, as the smile is, the mouth level and closed: always still
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
-  if (act === "sleep"){ spec.doing = "sleeping"; spec._act = still ? "still" : "anim"; return bust(spec, name); }      // dormir: the head on a pillow, the eyes shut, z z z
+  if (act === "sleep"){ spec.doing = "sleeping"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
+  if (act === "sing"){ spec.doing = "singing"; spec._act = still ? "still" : "anim"; return bust(spec, name); }       // chanter: a microphone, the mouth wide open, notes
+  if (act === "read"){ spec.doing = "reading"; return reader(spec, name); }                                            // lire: the open book held in both hands, eyes down on it      // dormir: the head on a pillow, the eyes shut, z z z
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
   const c = traits(spec), L = c.L, K = opts.card ? Object.assign({}, MOVES.stop, { poses: [A_CARD, A_CARD], scale: 0.8, ox: -36 }) : opts.size ? Object.assign({}, MOVES.stop, { scale: opts.size === "short" ? 0.8 : 1.22, ox: 12 })
     : act === "stop" && after ? Object.assign({}, MOVES.stop, { scale: after.scale }) : opts.shift ? Object.assign({}, MOVES[act], { ox: (MOVES[act].ox || 0) + opts.shift }) : MOVES[act], u = "pa" + (seq++) + "_", skin = c.skin;
