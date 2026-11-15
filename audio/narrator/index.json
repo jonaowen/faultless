@@ -158,5 +158,9 @@
 "mirror_intro": {
 "text": "Next, Marie does something herself, and asks about it while she is doing it. Watch Pierre and Sylvie answer her. Then she will ask you.",
 "dur": 7.8
+},
+"ask_intro": {
+"text": "Next, Marie tells you to ask Pierre or Sylvie how they are. When she says it, say the question to them yourself. When Marie asks you, answer her.",
+"dur": 7.89
 }
 }

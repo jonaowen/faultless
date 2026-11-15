@@ -372,6 +372,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson5.js"></script>
 <script src="course/lesson6.js"></script>
 <script src="course/lesson7.js"></script>
+<script src="course/lesson8.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script>
@@ -379,7 +380,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.60";
+const APP_VERSION="2026-11-15.61";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -791,7 +792,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:60, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:61.1, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -819,6 +820,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=58)) migrate58();      // (.58) a state saved before Lessons 4 and 5 were built anew at DISE's rate (the either/or first)
   if(!(s.courseRev>=59)) migrate59();      // (.59) a state saved before Lessons 4 and 5 were drawn again with the naming of action words, and Lesson 6 came
   if(!(s.courseRev>=60)) migrate60();      // (.60) a state saved before Lesson 7 came (Lessons 1-6 unchanged)
+  if(!(s.courseRev>=61.1)) migrate61(s.courseRev);      // (.61) a state saved before Lesson 8 came (Lessons 1-7 unchanged), or by the first working copy of .61
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -897,6 +899,22 @@ function migrate58(){
   if(here || had || old.length)
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
   S.courseRev=58;
+}
+/* (.61) Lesson 8 is new; Lessons 1-7 are as .60 (their files are the same). A place anywhere in Lessons 1-7 stands, with its delayed
+   tests; a learner who has finished Lesson 7 goes on into Lesson 8 at the next start. Only a record of Lesson 8 from a build no longer
+   served (finished exercises, errors, delayed tests) is dropped, with a log line if there was one.
+   courseRev 61.1: Lesson 8 as mended (f4952def: E19, E27, E30, E48 changed). A state saved by the first working copy of .61 (courseRev 61,
+   never released; only the test browsers have one) keeps Lesson 8 but for those four exercises, whose records and delayed tests are
+   dropped; a learner saved inside one of them starts it again, as a saved place always does (a place is the start of an exercise). */
+function migrate61(from){
+  const L8 = from===61 ? (k => /^L8E(19|27|30|48)(\D|$)/.test(k)) : (k => /^L8E\d+/.test(k));
+  const had = Object.keys(S.finished||{}).some(L8);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L8(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L8(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  if(had || old.length)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+(from===61 ? ": Lesson 8 mended (E19, E27, E30, E48); their records dropped" : ": Lesson 8 is new; records of an older Lesson 8 dropped")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  S.courseRev=61.1;
 }
 /* (.60) Lesson 7 is new; Lessons 1-6 are as .59 (their files are the same). A place anywhere in Lessons 1-6 stands, with its delayed
    tests; a learner who has finished Lesson 6 goes on into Lesson 7 at the next start, as at the end of any lesson. Only a record of
