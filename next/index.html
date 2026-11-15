@@ -1195,7 +1195,7 @@ const UI = (()=>{
   /* How far through the lesson: the tests of the lesson answered right at least once, of all its tests. It only ever grows. Each right
      answer makes the same small mark at the bar's end (the bead), whatever came before it: nothing shows a correction. */
   const PROG={lesson:null, total:1, base:0, done:new Set()};
-  const testsOf=ex=>ex.parts.reduce((n,p)=>n+p.items.filter(it=>it.type==="task" && !it.leadHand).length, 0);
+  const testsOf=ex=>ex.parts.reduce((n,p)=>n+p.items.filter(it=>it.type==="task").length, 0);      // every task that is logged "correct" when answered: tests, taps, and the leads of taps
   function progStart(L){ if(!L) return; PROG.lesson=L.id; PROG.done=new Set(); PROG.total=Math.max(1, L.exercises.reduce((n,e)=>n+testsOf(e),0));
     PROG.base=L.exercises.filter(e=>S.finished[e.id]).reduce((n,e)=>n+testsOf(e),0); progDraw(); }
   function progDraw(){ const bar=document.getElementById("bar"); if(!bar) return; const p=Math.max(0.02, Math.min(1, (PROG.base+PROG.done.size)/PROG.total));
@@ -1379,11 +1379,12 @@ const MOUTH = (()=>{
     }
     for(let i=0;i<cur.length;i++) cur[i] += (target[i]-cur[i])*0.45;   // smooth: about 40 ms to settle
     smileNow += (smileTarget-smileNow)*0.12;                          // the smile grows and fades over about 300 ms
-    draw(cur);
+    API.draw(cur, smileNow);      // (next) the one drawing call of the mouth, replaceable: a new tutor rig draws the mouth from the same shape (TUTOR.adopt)
     raf = (play || Math.abs(smileNow-smileTarget)>0.005 || cur.some((c,i)=>Math.abs(c-target[i])>0.01)) ? requestAnimationFrame(loop) : null;
   }
   const kick=()=>{ if(!raf) raf=requestAnimationFrame(loop); };
-  return {
+  const API = {
+    draw(v, smile){ draw(v); },      // (next) default: the drawing in this page (v: [open, width, protrusion, closed, teeth, fv, tongue]; smile 0..1)
     plan,
     start(pl, rate){
       if(pl.missing){ trace("no IPA for: "+pl.text); return; }
@@ -1409,6 +1410,7 @@ const MOUTH = (()=>{
     get smiling(){ return smileNow; },
     IPA, VIS,
   };
+  return API;
 })();
 MOUTH.stop();                                  // draw the resting (smiling) mouth straight away
 // reinforcement: a broad, warm smile for a moment after a correct answer
