@@ -340,3 +340,20 @@ html[data-motion="less"] .rb-track i, html[data-motion="less"] .rankup .emb.big{
 #sheet .wbig{width:150px;margin:0 auto 4px} #sheet .wbig svg{width:100%;display:block} #sheet .wsub{text-align:center;margin-top:0} #sheet .btn .tokn{width:22px;height:22px;vertical-align:-4px}
 /* the maker's age row names its four choices */
 .opt .ol{position:absolute;left:0;right:0;bottom:0;padding:3px 0 4px;background:rgba(255,253,248,.92);font:700 15px/1 var(--font-ui);color:var(--ink)}
+#sheet .sh-body .btn{width:100%;margin:8px 0 4px} #sheet .sh-body p.small{margin-top:14px}
+/* ---- motion and ease (brief 18): screens, tabs, lists, sheets, presses; nothing of it in a lesson; none with less movement ---- */
+@keyframes mvRise{from{transform:translateY(28px);opacity:0}} @keyframes mvPush{from{transform:translateX(40px);opacity:0}} @keyframes mvFade{from{opacity:0}}
+@keyframes mvSettle{from{transform:scale(.982);opacity:.6}} @keyframes mvTabL{from{transform:translateX(-22px);opacity:0}} @keyframes mvTabR{from{transform:translateX(22px);opacity:0}}
+@keyframes stIn{from{transform:translateY(14px);opacity:0}} @keyframes shDown{to{transform:translateY(48px);opacity:0}} @keyframes shDim{from{opacity:0}} @keyframes shUndim{to{opacity:0}}
+.mv-rise{animation:mvRise 380ms var(--ease-out) both} .mv-push{animation:mvPush 320ms var(--ease-out) both} .mv-fade{animation:mvFade 260ms var(--ease-out) both}
+.mv-settle{animation:mvSettle 300ms var(--ease-out) both} .mv-tab-l{animation:mvTabL 260ms var(--ease-out) both} .mv-tab-r{animation:mvTabR 260ms var(--ease-out) both}
+.mv-stag > *{animation:stIn 420ms var(--ease-out) both;animation-delay:calc(70ms + var(--i,0) * 40ms)}
+.mv-stag > .donefoot,.mv-stag > .btn,.mv-stag > .spacer{animation:none}
+#sheet:not([hidden]){animation:shDim 200ms var(--ease-out) both} #sheet.out{animation:shUndim 190ms var(--ease-in-out) forwards} #sheet.out .sh{animation:shDown 190ms var(--ease-in-out) forwards}
+.mv-ghost{position:fixed;z-index:60;background:var(--card);border-radius:16px;pointer-events:none;transform-origin:0 0;box-shadow:var(--e2)}
+/* every press answers within a frame: down onto its edge, then a spring back */
+:where(#home,.over,#nav,#sheet) :where(button){transition:transform 280ms var(--spring, var(--ease-out)), box-shadow 160ms var(--ease-out), background-color 160ms var(--ease-out)}
+:where(#home,.over,#nav,#sheet) :where(button):active{transform:translateY(2px) scale(.985);transition-duration:70ms}
+:where(#nav) .tab .pillbg{transition:background-color 200ms var(--ease-out), transform 260ms var(--spring, var(--ease-out))} :where(#nav) .tab.on .pillbg{transform:scale(1.04)}
+html[data-motion="less"] :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv-tab-r,.mv-stag > *,#sheet,#sheet .sh){animation:none!important}
+@media (prefers-reduced-motion:reduce){ :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv-tab-r,.mv-stag > *,#sheet,#sheet .sh){animation:none!important} .mv-ghost{display:none} }

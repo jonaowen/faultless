@@ -124,7 +124,7 @@ const SHELL = (()=>{
   // from what the page would do by itself
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || b.classList.contains("loading")) return;
     if(MIC.primerNeeded()){ e.stopPropagation(); e.preventDefault(); MIC.primer(); return; }
-    beadCtx();
+    beadCtx(); try{ const hm=$("home"); if(hm && !hm.closest("[hidden]")) MV.openCard(hm.querySelector(".hero")); }catch(e){}
     if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
     if(mark()!==seen){ G.next=natural(); G.why=""; pendingAgain=null; look(); }
     const T = pendingAgain!=null ? pendingAgain : G.next; const kind = pendingAgain!=null ? "again" : (G.why||"");
@@ -320,7 +320,7 @@ const SHELL = (()=>{
       face:`<circle cx="62" cy="96" r="14"/><circle cx="98" cy="96" r="14"/><path d="M76 96h8M34 92l14 2M126 92l-14 2"/>`, hand:`<path d="M58 80h44l8 74H50zM68 80c0-18 24-18 24 0"/>`,
       outfit:`<circle cx="80" cy="54" r="15"/><path d="M80 70v52M80 84l-24 22M80 84l24 22M80 122l-18 40M80 122l18 40"/>`, pose:`<circle cx="80" cy="54" r="15"/><path d="M80 70v52M80 84l-14 22 18 6M80 84l26-8M80 122l-18 40M80 122l18 40"/>`,
       dance:`<circle cx="74" cy="52" r="15"/><path d="M76 68l6 50M78 82l-30-10M78 82l30-22M82 118l-28 26M82 118l30 36"/><path d="M118 112c6-4 12-2 14 4M28 120c4-6 10-6 14-2" stroke-dasharray="3 6"/>`}[it.slot]||"";
-    return `<svg viewBox="0 0 160 190" aria-hidden="true"><rect x="9" y="9" width="142" height="172" rx="16" class="ph-box"/><g class="ph-g" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${glyph}</g><text x="80" y="168" text-anchor="middle" class="ph-t">PLACEHOLDER</text></svg>`; }
+    return `<svg viewBox="0 0 160 190" aria-hidden="true"><rect x="9" y="9" width="142" height="172" rx="16" class="ph-box"/><g class="ph-g" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" transform="translate(80 92) scale(.84) translate(-80 -100)">${glyph}</g><text x="80" y="170" text-anchor="middle" class="ph-t">PLACEHOLDER</text></svg>`; }
   function wardrobe(back){ const o=$("ward"), w=W(), k=G.rank||0, tok=G.tokens||0;
     const nextTok = k<RULES.RANKS.length ? tokensFor(k+1) : 0;
     const card = it=>{ const own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, can=tok>=it.price;
@@ -329,14 +329,14 @@ const SHELL = (()=>{
         <span class="wprice">${own ? (on ? "Wearing" : "Yours") : `${tokenIcon()}<b class="num">${it.price}</b>`}</span></button>`; };
     o.innerHTML=`<div class="mk-bar" style="padding:0"><button class="rb plain" id="wdBack" aria-label="Back">${ic("chev")}</button><h2>Your wardrobe</h2></div>
       <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${esc(rankName(k))}</b>
-        <div class="wtok">${tokenIcon()}<b class="num">${tok}</b><span>token${tok===1?"":"s"}</span></div>
+        <div class="wtok">${tokenIcon()}${MV.num("tokW", tok)}<span>token${tok===1?"":"s"}</span></div>
         <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} points to ${esc(rankName(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b>` : "The highest rank"}</small></div></div>
       <div class="card wrule"><p>Perfect exercises earn points. Points earn ranks. Each rank earns tokens, and higher ranks earn more. Tokens buy anything here.</p></div>
       ${TIERS.map(t=>`<h3 class="gh wh"><span>${t.label}</span><span class="wtier">${tokenIcon()}${t.price} token${t.price>1?"s":""}${t.price>1?"":" each"}</span></h3><div class="wgrid2">${WARDROBE.filter(it=>it.tier===t.id).map(card).join("")}</div>`).join("")}
       <p class="foot">What you wear shows here, on Today and on your celebrations. In the lessons you are always your plain self.</p>`;
-    o.hidden=false; if(!wardrobe.keep) o.scrollTop=0; wardrobe.keep=false;
+    o.hidden=false; if(!wardrobe.keep) o.scrollTop=0; wardrobe.keep=false; MV.count(o);
     $("wdBack").onclick=()=>{ tick(); o.hidden=true; if(back) back(); else home(); };
-    o.querySelectorAll("[data-it]").forEach(b=>{ b.onclick=()=>{ tick(); const it=WARDROBE.find(x=>x.id===b.dataset.it); wardItem(it, back); }; }); }
+    o.querySelectorAll("[data-it]").forEach(b=>{ b.onclick=()=>{ tick(); const it=WARDROBE.find(x=>x.id===b.dataset.it); wardItem(it, back); MV.grow(b.querySelector(".wthumb svg"), document.querySelector("#sheet .wbig svg")); }; }); }
   function tokenIcon(){ return `<svg class="tokn" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#E3A417"/><circle cx="10" cy="10" r="6.2" fill="none" stroke="#A66F00" stroke-width="1.3"/><path d="M10 5.6l1.3 2.8 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4z" fill="#FFF6DA"/></svg>`; }
   function wardItem(it, back){ const w=W(), own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, tok=G.tokens||0, short=it.price-tok;
     const again=()=>{ wardrobe.keep=true; wardrobe(back); };
@@ -449,7 +449,7 @@ const SHELL = (()=>{
     $("lvBack").onclick=()=>{ tick(); o.hidden=true; };
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
     o.querySelectorAll("[data-ei]").forEach(b=>{ b.onclick=()=>{ tick(); const ei=+b.dataset.ei, g=G.ex[L.exercises[ei].id];
-      info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`);
+      info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
       $("exGo").onclick=()=>{ tick(); $("sheet").hidden=true; o.hidden=true; pendingEx={li, ei}; pendingAgain=null; $("playBtn").click(); }; }; }); }
   const firstMini = (x, cls="")=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<span class="mini ${cls}"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1})).outerHTML}</svg></span>`; } }catch(e){} return `<span class="mini ${cls}"></span>`; };
 
@@ -517,7 +517,7 @@ const SHELL = (()=>{
     const L=LESSONS[T], mins=minutesFor(L), st=stageLine(Math.min(G.furthest+1, LESSONS.length));
     const R=ringsNow(now), k=G.rank||0;
     h.innerHTML=`<div class="h-top"><button class="h-me" id="hMe" aria-label="You">${avOut("portrait", "t").replace('viewBox="0 0 160 190"','viewBox="27 24 106 106"')}</button><div class="h-hello">${greet},<b>${esc(S.learnerName||"")}</b></div>
-        <button class="h-rank" id="hRank" aria-label="${esc(rankLabel(k))}. Your wardrobe${G.tokens?": "+G.tokens+" token"+(G.tokens===1?"":"s"):""}">${rankEmblem(k, "emb s")}<span class="hr-t"><b>${esc(rankName(k, false))}</b><span>${G.tokens ? `${tokenIcon()}<b class="num">${G.tokens}</b> to spend` : "Wardrobe"}</span></span></button></div>
+        <button class="h-rank" id="hRank" aria-label="${esc(rankLabel(k))}. Your wardrobe${G.tokens?": "+G.tokens+" token"+(G.tokens===1?"":"s"):""}">${rankEmblem(k, "emb s")}<span class="hr-t"><b>${esc(rankName(k, false))}</b><span>${G.tokens ? `${tokenIcon()}${MV.num("tokH", G.tokens)} to spend` : "Wardrobe"}</span></span></button></div>
       <section class="card rhythm" aria-label="Today, this week, your French"><div class="rbody">${ringsSvg(R)}${ringRows(R)}</div>
         <div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>
         ${G.anchors.set ? "" : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
@@ -530,7 +530,7 @@ const SHELL = (()=>{
     const lab=btn.querySelector(".ready"); if(lab && !play.classList.contains("afterDemo")) lab.textContent=(started?"Carry on with lesson ":"Start lesson ")+n;
     const sm=$("setMoments"); if(sm) sm.onclick=()=>{ tick(); anchors(false); };
     $("hMe").onclick=()=>tab("you"); $("hRank").onclick=()=>{ tick(); wardrobe(()=>home()); };
-    ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); store();
+    ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); MV.count(h.querySelector(".h-top")); store();
     const om=$("offerMaker"); if(om) om.onclick=()=>{ tick(); G.makerOffer=false; store(); maker(false, ()=>home()); };
     h.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });
     h.querySelectorAll("[data-again]").forEach(b=>{ b.onclick=()=>{ pendingAgain=+b.dataset.again; tick(); const lb=btn.querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(pendingAgain+1)+" again"; h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(pendingAgain+1); }; }); }
@@ -543,9 +543,12 @@ const SHELL = (()=>{
     return out; }
 
   /* ---- the three places at the foot: Today, Words, You ---- */
-  function tab(which){ tick(); for(const [id,v] of [["tabToday","today"],["tabWords","words"],["tabYou","you"]]){ const b=$(id); if(b) b.classList.toggle("on", v===which); }
+  const TABS=["today","words","you"], TABEL={today:"home", words:"wordsV", you:"you"}, scrollAt={}; let tabNow="today";
+  function tab(which){ tick(); const prev=tabNow, pe=$(TABEL[prev]); if(pe) scrollAt[prev]=pe.scrollTop; tabNow=which;
+    for(const [id,v] of [["tabToday","today"],["tabWords","words"],["tabYou","you"]]){ const b=$(id); if(b){ b.classList.toggle("on", v===which); b.setAttribute("aria-selected", v===which); } }
     $("wordsV").hidden = which!=="words"; $("you").hidden = which!=="you";
-    if(which==="words") words(); else if(which==="you") you(); else home(); }
+    if(which==="words") words(); else if(which==="you") you(); else home();
+    const ne=$(TABEL[which]); if(ne){ if(prev!==which){ ne.scrollTop=scrollAt[which]||0; MV.play(ne, TABS.indexOf(which)>TABS.indexOf(prev) ? "mv-tab-r" : "mv-tab-l", 500); } } }
 
   /* ---- words: every card the learner owns, with its picture and its sound ---- */
   function words(){ const o=$("wordsV"); const own=ownedCards(), byL={}; own.forEach(c=>{ (byL[c.lesson]=byL[c.lesson]||[]).push(c); });
@@ -554,7 +557,7 @@ const SHELL = (()=>{
       <div class="card owned"><div class="num big">${own.length}</div><div><b>${own.length===1?"French word is yours":"French words are yours"}</b><small>${own.length ? "Each came from a lesson you passed. They stay yours." : "Your first words arrive when you finish Lesson 1."}</small></div></div>
       ${ls.map(i=>`<h3 class="wl">From Lesson ${i+1}${G.wordsAt[LESSONS[i].id] ? `<small>${new Date(G.wordsAt[LESSONS[i].id]+"T12:00").toLocaleDateString([], {day:"numeric", month:"long"})}</small>` : ""}</h3><div class="wgrid">${byL[i].map(c=>wcard(c)).join("")}</div>`).join("")}
       ${own.length ? `<p class="foot">Tap a card to hear it. More come with every lesson.</p>` : ""}`;
-    o.hidden=false; o.scrollTop=0; wireCards(o); }
+    o.hidden=false; wireCards(o); }
 
   /* ---- who is learning? (more than one learner on this phone) ---- */
   function who(force){ const o=$("whoL"); if(!o) return; let chosen=false; try{ chosen=sessionStorage.getItem("frDIn.chosen")==="1"; }catch(e){}
@@ -569,12 +572,12 @@ const SHELL = (()=>{
   /* ---- a small sheet that asks one thing (a name) ---- */
   function ask(o, done){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(o.title)}"><h2>${esc(o.title)}</h2><label for="askIn">${esc(o.label)}</label><input id="askIn" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" value="${esc(o.value||"")}"><div class="msg" id="askMsg"></div><div class="two"><button class="btn quiet" id="askNo">Cancel</button><button class="btn" id="askOk">${esc(o.ok)}</button></div></div>`;
     sh.hidden=false; const inp=$("askIn"); setTimeout(()=>inp.focus(), 60);
-    const close=()=>{ sh.hidden=true; sh.innerHTML=""; };
+    const close=()=>sheetClose(sh);
     $("askNo").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
     const go=()=>{ const m=done(inp.value); if(m){ $("askMsg").textContent=m; } else close(); };
     $("askOk").onclick=go; inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); }); }
   function info(title, html){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2><div class="sh-body">${html}</div><button class="btn${/class="btn/.test(html)?" quiet":""}" id="infoOk">Close</button></div>`;
-    sh.hidden=false; const close=()=>{ sh.hidden=true; sh.innerHTML=""; }; $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
+    sh.hidden=false; const close=()=>sheetClose(sh); $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
 
   /* ---- the avatar maker: built from the picture library's own lists (PICS.avatarOptions), so options can be added without touching this ---- */
   const FIELDS = { body:{label:"Body", vals:["m","f"]}, age:{label:"Age", vals:["c","t","a","o"], names:{c:"Child", t:"Teen", a:"Adult", o:"Older"}}, girth:{label:"Build", n:4}, skin:{label:"Skin", opt:"skin"}, face:{label:"Face", n:5}, eyes:{label:"Eyes", opt:"eyes"},
@@ -688,8 +691,8 @@ const SHELL = (()=>{
   function you(){ const o=$("you"); if(!o) return; const own=ownedCards().length, st=stageLine(Math.max(1, G.furthest)), bs=RULES.BADGES.filter(n=>G.badges[n]), nextB=RULES.BADGES.find(n=>!G.badges[n]), tz=UI.pref.text||1, A=G.anchors;
     o.innerHTML=`<div class="tabhead"><h1>You</h1></div>
       <button class="card me" id="youAv"><div class="face">${avOut("portrait", "t")}</div><div class="l"><b>${esc(S.learnerName||"")}</b><small>Change how you look ${ic("chev")}</small></div></button>
-      <div class="card stats"><div><b class="num">${G.points}</b><small>points</small></div><div><b class="num">${perfectCount()}</b><small>perfect lesson${perfectCount()===1?"":"s"}</small></div><div><b class="num">${own}</b><small>words</small></div><div><b class="num">${G.daysLearned}</b><small>days learned</small></div></div>
-      <button class="card rankc" id="youRank">${rankEmblem(G.rank||0, "emb m")}<div class="l"><small>Your rank</small><b>${esc(rankName(G.rank||0))}</b><span>${(G.rank||0)<RULES.RANKS.length ? `<b class="num">${(RULES.RANKS[G.rank||0]-G.points).toLocaleString("en-GB")}</b> points to ${esc(rankName((G.rank||0)+1))}` : "The highest rank"}</span></div><div class="wtok">${tokenIcon()}<b class="num">${G.tokens||0}</b><small>Wardrobe</small></div></button>
+      <div class="card stats"><div>${MV.num("points", G.points)}<small>points</small></div><div>${MV.num("perfect", perfectCount())}<small>perfect lesson${perfectCount()===1?"":"s"}</small></div><div>${MV.num("words", own)}<small>words</small></div><div>${MV.num("days", G.daysLearned)}<small>days learned</small></div></div>
+      <button class="card rankc" id="youRank">${rankEmblem(G.rank||0, "emb m")}<div class="l"><small>Your rank</small><b>${esc(rankName(G.rank||0))}</b><span>${(G.rank||0)<RULES.RANKS.length ? `<b class="num">${(RULES.RANKS[G.rank||0]-G.points).toLocaleString("en-GB")}</b> points to ${esc(rankName((G.rank||0)+1))}` : "The highest rank"}</span></div><div class="wtok">${tokenIcon()}${MV.num("tokY", G.tokens||0)}<small>Wardrobe</small></div></button>
       ${levelCard(true)}
       <h3 class="gh">Badges</h3><div class="miles">${bs.map(n=>`<div class="ms">${badgeSvg(n)}<span>${badgeName(n)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${perfectCount()} of ${nextB} perfect lessons</span></div>` : ""}</div>
       ${st ? `<div class="sline">${st.text} lessons · best run ${G.bestRun} day${G.bestRun===1?"":"s"}</div>` : ""}
@@ -700,11 +703,11 @@ const SHELL = (()=>{
       <h3 class="gh">Help improve the course</h3><div class="card grp">${row("setRun","Save the run file","Everything you said and tapped, for the course's makers.","file")}${row("setIntro","See the introduction again","How a lesson works, shown.","play")}</div>
       <h3 class="gh">The course</h3><div class="card grp">${row("setAbout","About Faultless French", "Version "+esc(APP_VERSION),"info")}${row("youTester","For testers","","tool")}</div>
       <div class="card grp">${row("youRemove","Remove "+esc(currentUser().name)+" from this phone","Asked twice. Everything of this learner is deleted.","redo")}</div>`;
-    o.hidden=false;
+    o.hidden=false; MV.count(o);
     $("youAv").onclick=()=>maker(false, ()=>you()); $("youRank").onclick=()=>{ tick(); wardrobe(()=>you()); };
     $("youWho").onclick=()=>who(true);
     $("setA1").onclick=$("setA2").onclick=()=>anchors(false, ()=>you());
-    const flip=(id, f)=>{ $(id).onclick=()=>{ f(); UI.savePref(); tick(); you(); }; };
+    const flip=(id, f)=>{ $(id).onclick=()=>{ f(); UI.savePref(); tick(); const b=$(id), on=b.getAttribute("aria-checked")!=="true"; b.setAttribute("aria-checked", on); b.querySelector(".sw").classList.toggle("on", on); }; };
     flip("setSound", ()=>{ UI.pref.sound=!UI.pref.sound; }); flip("setBead", ()=>{ UI.pref.beadSound = UI.pref.beadSound===false; if(UI.pref.beadSound){ beadCtx(); setTimeout(beadSound, 120); } }); flip("setVibe", ()=>{ UI.pref.haptics=!UI.pref.haptics; }); flip("setMotion", ()=>{ UI.pref.motion = UI.pref.motion==="less" ? "auto" : "less"; });
     o.querySelectorAll("[data-tz]").forEach(b=>{ b.onclick=()=>{ UI.pref.text=+b.dataset.tz; UI.savePref(); textSize(); tick(); you(); }; });
     $("setName").onclick=()=>ask({title:"Your first name", label:"Marie will call you by it.", ok:"Save", value:S.learnerName||""}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name.";
@@ -741,11 +744,63 @@ const SHELL = (()=>{
     if(n){ try{ trace("record started from the saved place: "+n+" lesson(s) entered as passed"); }catch(e){} }
     if(S.learnerGender && !AV.get() && AV.has()){ try{ AV.set(PICS.avatarString({body:S.learnerGender==="f"?"f":"m"})); G.makerOffer=true; }catch(e){} } }
 
+
+  /* ---- motion and ease (the owner, brief 18): the shell never snaps. A screen arrives (rising, or pushed in from the right when it has a
+     way back); when it goes, what is beneath settles back (so nothing lingers on screen after the code has hidden it); tabs slide the way
+     they lie; lists come in one after another; numbers count; a sheet leaves as it came; a picture the finger chose grows into its sheet.
+     Edge swipe and the phone's back button close what has a way back. Nothing of it inside a lesson; none of it with less movement. ---- */
+  const MV = (()=>{ const KIND={done:"rise", lvl:"rise", back:"rise", mic:"rise", whoL:"fade", maker:"push", anch:"push", lessonV:"push", ward:"push"};
+    const BACK={lessonV:"lvBack", ward:"wdBack", maker:"mkBack", anch:"anBack"};
+    const play=(node, cls, ms)=>{ if(!node || lessMotion()) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); clearTimeout(node["_mv"+cls]); node["_mv"+cls]=setTimeout(()=>node.classList.remove(cls), ms); };
+    function stagger(root){ if(!root || lessMotion()) return; let i=0; for(const c of root.children){ if(c.classList.contains("donefoot") || c.classList.contains("btn") || c.classList.contains("spacer")) continue; c.style.setProperty("--i", Math.min(i++, 12)); } play(root, "mv-stag", 1200); }
+    function beneath(){ const vis=[...document.querySelectorAll(".over:not([hidden])")]; if(vis.length) return vis.sort((a,b)=>(+getComputedStyle(a).zIndex||0)-(+getComputedStyle(b).zIndex||0)).pop(); return $("home"); }
+    let pushed=0, ignorePop=0, popping=false;
+    const hasBack=o=>o.id==="sheet" ? !!o.querySelector("#infoOk,#askNo") : BACK[o.id] && !!$(BACK[o.id]);
+    function shown(o){ if(o.classList.contains("tabbed")) return; const k=KIND[o.id]||"fade"; play(o, "mv-"+k, 700); stagger(o);
+      if(hasBack(o) && !document.body.classList.contains("inLesson")){ try{ history.pushState({ff:o.id}, ""); pushed++; }catch(e){} } }
+    function gone(o){ if(o.classList.contains("tabbed")) return; play(beneath(), "mv-settle", 600);
+      if(pushed>0 && !popping && (o.id==="sheet" || BACK[o.id])){ pushed--; ignorePop++; try{ history.back(); }catch(e){ ignorePop--; } } }
+    const obs=new MutationObserver(ms=>{ for(const m of ms){ const o=m.target, now=o.hasAttribute("hidden"), was=m.oldValue!==null; if(now===was) continue; if(o.id==="sheet") continue; now ? gone(o) : shown(o); } });
+    function watch(){ document.querySelectorAll(".over").forEach(o=>obs.observe(o, {attributes:true, attributeFilter:["hidden"], attributeOldValue:true}));
+      const sh=$("sheet"); if(sh) new MutationObserver(ms=>{ for(const m of ms){ const now=sh.hasAttribute("hidden"), was=m.oldValue!==null; if(now===was) continue;
+        if(now){ if(pushed>0 && !popping){ pushed--; ignorePop++; try{ history.back(); }catch(e){ ignorePop--; } } } else if(hasBack(sh) && !document.body.classList.contains("inLesson")){ try{ history.pushState({ff:"sheet"}, ""); pushed++; }catch(e){} } } }).observe(sh, {attributes:true, attributeFilter:["hidden"], attributeOldValue:true}); }
+    // the phone's back button: closes the sheet, or the screen with a way back, never leaves the app from inside one
+    window.addEventListener("popstate", ()=>{ if(ignorePop>0){ ignorePop--; return; } if(pushed<=0) return; pushed--;
+      const sh=$("sheet"), b = sh && !sh.hidden ? sh.querySelector("#infoOk,#askNo") : (()=>{ const o=beneath(); return o && BACK[o.id] ? $(BACK[o.id]) : null; })();
+      if(b){ popping=true; try{ b.click(); }finally{ popping=false; } } });
+    // a swipe from the left edge takes the screen back with the finger; let go past a third (or quickly) and it goes
+    let sw=null;
+    document.addEventListener("touchstart", e=>{ const t=e.touches[0]; if(!t || t.clientX>26 || e.touches.length>1) return; const o=beneath(); if(!o || !BACK[o.id] || !$(BACK[o.id])) return;
+      sw={o, x0:t.clientX, y0:t.clientY, t0:performance.now(), dx:0, on:false}; }, {passive:true});
+    document.addEventListener("touchmove", e=>{ if(!sw) return; const t=e.touches[0], dx=t.clientX-sw.x0, dy=t.clientY-sw.y0;
+      if(!sw.on){ if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>8){ sw=null; return; } if(dx>8) sw.on=true; else return; }
+      sw.dx=Math.max(0, dx); sw.o.style.transition="none"; sw.o.style.transform=`translateX(${sw.dx}px)`; sw.o.style.boxShadow="-12px 0 30px rgba(27,36,51,.18)"; }, {passive:true});
+    document.addEventListener("touchend", ()=>{ if(!sw) return; const s=sw; sw=null; if(!s.on) return; const fast = s.dx/(performance.now()-s.t0)>0.5, go = s.dx>innerWidth/3 || (fast && s.dx>40);
+      s.o.style.transition=`transform ${go?200:280}ms ${go?"cubic-bezier(.4,0,1,1)":"cubic-bezier(.22,1,.36,1)"}`; s.o.style.transform = go ? "translateX(100%)" : "";
+      setTimeout(()=>{ s.o.style.transition=""; s.o.style.transform=""; s.o.style.boxShadow=""; if(go){ const b=$(BACK[s.o.id]); if(b) b.click(); } }, go?200:290); });
+    // a picture the finger chose grows into the sheet it opened
+    function grow(src, dst, ms=360){ if(!src || !dst || lessMotion()) return; const a=src.getBoundingClientRect(), b=dst.getBoundingClientRect(); if(!a.width || !b.width) return;
+      dst.animate([{transformOrigin:"0 0", transform:`translate(${a.left-b.left}px,${a.top-b.top}px) scale(${a.width/b.width},${a.height/b.height})`}, {transformOrigin:"0 0", transform:"none"}], {duration:ms, easing:"cubic-bezier(.22,1,.36,1)"}); }
+    // the lesson's card opens into the lesson: a card of paper grows from it to the whole screen and fades (300 ms; it covers nothing that teaches:
+    // the stage is still being set while it fades, and it takes no time from the lesson)
+    function openCard(card){ if(!card || lessMotion()) return; const a=card.getBoundingClientRect(); if(!a.width) return; const g=document.createElement("div"); g.className="mv-ghost";
+      g.style.cssText=`left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px`; document.body.appendChild(g);
+      const sx=innerWidth/a.width, sy=innerHeight/a.height; g.animate([{transform:"none", opacity:1, borderRadius:"16px"}, {transform:`translate(${-a.left}px,${-a.top}px) scale(${sx},${sy})`, opacity:0, borderRadius:"0px"}], {duration:320, easing:"cubic-bezier(.65,0,.35,1)", fill:"forwards"}).onfinish=()=>g.remove(); }
+    // numbers count from what was shown last to what is true now
+    function count(root){ if(!root) return; root.querySelectorAll("[data-count]").forEach(b=>{ const to=+b.dataset.count, from=+(b.dataset.from||0), fmt=x=>Math.round(x).toLocaleString("en-GB");
+      if(lessMotion() || from===to){ b.textContent=fmt(to); return; } const t0=performance.now(), D=Math.min(1100, 500+Math.abs(to-from)*8), ease=x=>1-Math.pow(1-x,3);
+      const step=t=>{ const k=ease(Math.min(1,(t-t0)/D)); b.textContent=fmt(from+(to-from)*k); if(k<1) requestAnimationFrame(step); }; b.textContent=fmt(from); requestAnimationFrame(step); }); }
+    const num=(key, v, cls="num")=>{ const seen=(G.seenN||(G.seenN={})); const from = seen[key]!=null ? seen[key] : v; seen[key]=v; return `<b class="${cls}" data-count="${v}" data-from="${from}">${(lessMotion()?v:from).toLocaleString("en-GB")}</b>`; };
+    return {watch, play, stagger, grow, openCard, count, num}; })();
+  // a sheet leaves as it came (down and away), then is gone
+  function sheetClose(sh){ if(!sh || sh.hidden) return; if(lessMotion()){ sh.hidden=true; sh.innerHTML=""; return; } if(sh.classList.contains("out")) return;
+    sh.classList.add("out"); setTimeout(()=>{ sh.classList.remove("out"); sh.hidden=true; sh.innerHTML=""; }, 190); }
+
   /* ---- start ---- */
   for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl","ward"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); rankSync(); syncNext(); store(); home(); MIC.init();
+  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); rankSync(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
     firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));
