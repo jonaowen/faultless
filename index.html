@@ -378,7 +378,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.58";
+const APP_VERSION="2026-11-15.59";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -789,7 +789,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:58, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:59, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -815,6 +815,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=56)) migrate56();      // (.56) a state saved before Lessons 1 and 2 were built anew, each format by a constructor
   if(!(s.courseRev>=57)) migrate57();      // (.57) a state saved before Lessons 3 to 5 were built anew from the plan's rows of 15 Nov
   if(!(s.courseRev>=58)) migrate58();      // (.58) a state saved before Lessons 4 and 5 were built anew at DISE's rate (the either/or first)
+  if(!(s.courseRev>=59)) migrate59();      // (.59) a state saved before Lessons 4 and 5 were drawn again with the naming of action words, and Lesson 6 came
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -893,6 +894,24 @@ function migrate58(){
   if(here || had || old.length)
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
   S.courseRev=58;
+}
+/* (.59) Lessons 4 and 5 are drawn again whole (the naming of action words: Marie says "Dis." with an action card lit, the learner says the
+   word, the figure does it; other exercises, other numbers: 26 and 27 exercises), and Lesson 6 is new. A learner saved in Lesson 4 or 5
+   starts the new Lesson 4 from its beginning. Lessons 1-3 are as .58: a place in them stands, and so do their delayed tests. The records
+   and delayed tests of Lessons 4-6 are dropped (their items have changed; anything of Lesson 6 is from a build no longer served). One log
+   line. */
+function migrate59(){
+  const L46 = k => /^L[4-6]E\d+/.test(k), L45 = k => /^L[45]E\d+/.test(k);
+  const here = S.lesson===3 || S.lesson===4;                       // saved in Lesson 4 or 5
+  const had = Object.keys(S.finished||{}).some(L45);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L46(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L46(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  if(here){ S.lesson=3; S.ex=0; }                                  // back to the start of the new Lesson 4
+  for(let i=3;i<Math.min(S.lesson||0, LESSONS.length);i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;   // beyond: the new lessons before the learner's own count as done
+  if(here || had || old.length)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are drawn again (other exercises) and Lesson 6 is new"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  S.courseRev=59;
 }
 /* (.57) Lessons 3 to 5 are built anew: other exercises, other numbers, and another ORDER of what is taught ("Dis :" is Lesson 3, "Je
    m'appelle comment ?" Lesson 4, "Tu fais quoi ?" Lesson 5; il / elle, "Salut !", "Ça va ?" come after Lesson 5). A learner anywhere in the
