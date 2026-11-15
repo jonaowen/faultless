@@ -150,5 +150,9 @@
 "doing_intro": {
 "text": "Next, Marie asks people what they are doing, while they are doing it. Watch Sylvie and Pierre answer. Then you will see yourself doing something, and Marie will ask you. Answer as if you were really doing it.",
 "dur": 11.26
+},
+"dis_intro": {
+"text": "Next, Marie sometimes asks you to say a word, and sometimes to do it. First, watch Pierre and Sylvie say a word when she asks. When she asks you to say it, speak. When she asks you to do it, touch its picture.",
+"dur": 11.94
 }
 }
