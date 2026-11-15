@@ -2062,6 +2062,7 @@ return { figure, act, avatar, person, tutor, bust: bustOf, specString, specParse
 })();
 /* the figure >>> */
 const ACT_SPEED = 2;
+const CLOSE_OF_YOU = { smile: 1, "not smiling": 1, eat: 1, drink: 1, sleep: 1, sing: 1, read: 1, write: 1 };
 function action(act, who, opts){
   opts = opts || {};
   const word = x => firstWord(String(x || "").trim());
@@ -2070,6 +2071,10 @@ function action(act, who, opts){
   const still = !!opts.still, spec = opts.spec && !opts.spec.person && opts.spec.is ? { is: opts.spec.is } : { person: who }, name = who === "you" ? "" : (opts.name || WHO_NAME[who]);
   if (opts.looks && opts.looks.length) spec.looks = opts.looks;
   if (opts.sex === "f" && spec.person === "you") spec.sex = "f";      // the learner as a woman (opts.sex "f"; "m", the default, is the man)
+  /* (the overhaul) the close-ups of "you" (smile, not smiling, eat, drink, sleep, sing, read, write) are still the older head, which cannot
+     show all of a learner's own figure (a headscarf, freckles, a build): until they are redrawn on the new head they show the default learner */
+  if (LEARNER && who === "you" && !opts._noLearner && CLOSE_OF_YOU[act]){ const keep = LEARNER; LEARNER = null;
+    try { return action(act, who, Object.assign({}, opts, { _noLearner: 1 })); } finally { LEARNER = keep; } }
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "not smiling"){ spec._smile = "neutral"; return bust(spec, name); }      // (.50) the face close up, as the smile is, the mouth level and closed: always still
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
