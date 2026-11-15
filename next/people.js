@@ -1342,9 +1342,10 @@ const WOMAN = Object.assign({}, MAN, { hw: 0.06, sw: 0.1, chest: [0.098, 0.108, 
   rSh: 0.041, rUa: 0.036, rEl: 0.032, rFa: 0.032, rWr: 0.025, rNeck: 0.033, palm: 0.042, shoe: 1.14 });
 /* the whole figure is `tall` units of the picture box at size 1 and `heads` heads high (the head is drawn larger than life so that the face
    can be known on a phone: an adult here is four and a half heads, a child four) */
-function build(kind, heads){ const b = kind === "woman" ? WOMAN : MAN, n = heads || (kind === "kid" ? 4 : 4.5), hh = 0.866 / (2 * n - 1.84), tall = kind === "kid" ? 112 : kind === "woman" ? 138 : 146;
-  return Object.assign({}, b, { hh, H: tall / (0.866 + 1.84 * hh), key: kind + n }); }
-const BUILDS = {}, bodyOf = (c, o) => { const kind = c.kid ? "kid" : c.fem ? "woman" : "man", k = kind + (o && o.heads || ""); return BUILDS[k] || (BUILDS[k] = build(kind, o && o.heads)); };
+function build(kind, heads, girth){ const b0 = kind === "woman" ? WOMAN : MAN, gw = [0.9, 1, 1.09, 1.2][girth == null ? 1 : girth], gl = [0.92, 1, 1.06, 1.14][girth == null ? 1 : girth], b = Object.assign({}, b0, { sw: b0.sw * (0.94 + 0.06 * gw), chest: [b0.chest[0] * gw, b0.chest[1], b0.chest[2] * gw], waist: [b0.waist[0] * (girth === 3 ? 1.36 : gw), b0.waist[1] * (girth === 3 ? 1.3 : 1), b0.waist[2] * (girth === 3 ? 1.5 : gw)], hem: [b0.hem[0] * (girth === 3 ? 1.22 : gw), b0.hem[1], b0.hem[2] * (girth === 3 ? 1.3 : gw)] }), n = heads || (kind === "kid" ? 4 : 4.5), hh = 0.866 / (2 * n - 1.84), tall = kind === "kid" ? 112 : kind === "woman" ? 138 : 146;
+  for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff", "rSh", "rUa", "rEl", "rFa", "rWr", "rNeck"]) b[r] = b0[r] * gl;
+  return Object.assign({}, b, { hh, H: tall / (0.866 + 1.84 * hh), key: kind + n + "g" + girth }); }
+const BUILDS = {}, bodyOf = (c, o) => { const kind = c.kid ? "kid" : c.fem ? "woman" : "man", k = kind + (o && o.heads || "") + "g" + c.girth; return BUILDS[k] || (BUILDS[k] = build(kind, o && o.heads, c.girth)); };
 
 /* ---------- the keyed actions ---------- */
 const CLIPS = {
@@ -1464,6 +1465,8 @@ const STYLE = {
   loose: { v: 0.1, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.62, r: [0.93, 0.96, 0.52] }, { a: [0.76, -0.2, 0.1], drop: 0.42, r: [0.22, 0.7, 0.36] }, { a: [-0.76, -0.2, 0.1], drop: 0.42, r: [0.22, 0.7, 0.36] }] },
   wavy:  { v: 0.12, top: 0.06, quiff: 0.04, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.8, r: [1.02, 1.12, 0.56] }, { a: [0.8, -0.2, 0.1], drop: 0.55, r: [0.27, 0.82, 0.38] }, { a: [-0.8, -0.2, 0.1], drop: 0.55, r: [0.27, 0.82, 0.38] }] },
   bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.34, r: [0.97, 0.74, 0.62] }, { a: [0.76, -0.2, 0.08], drop: 0.3, r: [0.26, 0.6, 0.42] }, { a: [-0.76, -0.2, 0.08], drop: 0.3, r: [0.26, 0.6, 0.42] }] },
+  scarf: { v: 0.07, top: 0.03, quiff: 0, cloth: true, ears: false, at: [[-180, -62], [-100, -62], [-72, -50], [-58, -12], [-46, 20], [-24, 34], [0, 38], [24, 34], [46, 20], [58, -12], [72, -50], [100, -62], [180, -62]],
+    mass: [{ a: [0, -0.2, -0.3], drop: 0.72, r: [0.92, 0.98, 0.52] }, { a: [0, -0.88, 0.06], drop: 0.42, r: [0.84, 0.46, 0.78] }] },
   bald:  { v: 0.02, top: 0, quiff: 0, at: [[-180, -30], [-120, -24], [-97, 6], [-80, 10], [-60, 40], [0, 88], [60, 40], [80, 10], [97, 6], [120, -24], [180, -30]] }
 };
 const HAIR_OF = { you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "loose", longM: "loose",
@@ -1475,14 +1478,15 @@ function lineAt(L, az){ const a = L.at, n = a.length; let i = 1; while (i < n - 
 function head(J, B, cam, c, out, zb){
   const hh = B.hh, Bh = J.Bh, o = J.head, S = cam.scale, sk = c.skinM, hr = c.hairM, px = hh * S, big = px >= 30;
   const ax = (r) => [cam.lin(mul(Bh.x, r[0] * hh)), cam.lin(mul(Bh.y, r[1] * hh)), cam.lin(mul(Bh.z, r[2] * hh))];
-  const crC = [0, 0.12, -0.04], crR = [0.84, 0.88, 0.9], cr0 = at(o, Bh, mul(crC, hh)), jw0 = at(o, Bh, [0, -0.31 * hh, 0.13 * hh]), jwR = [0.72, 0.69, 0.66];
+  const FS = [[0.72, 0.69, -0.31], [0.77, 0.66, -0.28], [0.68, 0.72, -0.34], [0.79, 0.7, -0.3], [0.63, 0.7, -0.31]][c.face || 0];          // the face: oval, round, long, square, narrow (the jaw's width, its depth, how low it hangs)
+  const crC = [0, 0.12, -0.04], crR = [0.84, 0.88, 0.9], cr0 = at(o, Bh, mul(crC, hh)), jw0 = at(o, Bh, [0, FS[2] * hh, 0.13 * hh]), jwR = [FS[0], FS[1], 0.66];
   const Ecr = ellipse(cam.pt(cr0), ax(crR)), Ejw = ellipse(cam.pt(jw0), ax(jwR)); Ecr.n = 44; Ejw.n = 36;
   const z = cam.pt(o)[2] + zb, e = 0.05 * px, rim = Math.min(0.9, 0.035 * px);
   const vl = [dot(Bh.x, cam.view), dot(Bh.y, cam.view), dot(Bh.z, cam.view)];                    // the way to the viewer, in the head's own frame
   /* the hair lies on the skull, proud of it (v), prouder on top and at the front (the quiff), thinning to nothing at its edge behind the
      ears and at the nape. It is laid on as small patches from its edge to the crown; each patch is cut where the surface turns away from
      the viewer, so the outline of the hair is the outline of the head it lies on, from any side */
-  const L = STYLE[HAIR_OF[c.style] || "short"];
+  const L = STYLE[c.headwear === "scarf" ? "scarf" : HAIR_OF[c.style] || c.style] || STYLE.short;
   const unit = (az, lat) => { const a = az * Math.PI / 180, l = lat * Math.PI / 180; return [Math.cos(l) * Math.sin(a), Math.sin(l), Math.cos(l) * Math.cos(a)]; };
   const patches = (c0, R, a0, a1, N, M, lo, hi, grow) => { const w = nrm([vl[0] / R[0], vl[1] / R[1], vl[2] / R[2]]), col = []; let d = "";
     const put = v => { const u = v.u || v, g = grow(u, v.t == null ? 1 : v.t); return cam.pt(at(c0, Bh, [u[0] * R[0] * g * hh, u[1] * R[1] * g * hh, u[2] * R[2] * g * hh])); };
@@ -1539,11 +1543,15 @@ function head(J, B, cam, c, out, zb){
   parts.push({ id: "skc", z: z + 0.0035, tag: "cp", d: skullD });
   const blush = `<ellipse rx=".23" ry=".13" fill="url(#${c.u}bl)"/>`;
   const shine = `<path d="M-.24 .04Q0 -.09 .24 .02Q0 -.03 -.24 .04Z" fill="${hr.hi}" opacity=".3"/>`;
-  const F = [{ id: "shine", tag: "g", m: (() => { const f = feat("x", [-0.25 * (vl[0] > 0 ? -1 : 1), 0.86 + L.top * 0.6, 0.32], vl[0] > 0 ? 30 : -30, "", -9); return f.m; })(), inner: shine, hide: L.v < 0.04 },
+  const F = [{ id: "shine", tag: "g", m: (() => { const f = feat("x", [-0.25 * (vl[0] > 0 ? -1 : 1), 0.86 + L.top * 0.6, 0.32], vl[0] > 0 ? 30 : -30, "", -9); return f.m; })(), inner: shine, hide: L.v < 0.04 || !!L.cloth },
     feat("chkL", [0.42, -0.38, 0.6], 38, blush, 0.5), feat("chkR", [-0.42, -0.38, 0.6], -38, blush, 0.5),
     feat("eyeL", [0.34, -0.015, 0.73], 24, eyeArt(1)), feat("eyeR", [-0.34, -0.015, 0.73], -24, eyeArt(-1)), feat("browL", [0.34, 0.25, 0.74], 24, browArt(1)), feat("browR", [-0.34, 0.25, 0.74], -24, browArt(-1)),
     feat("mouth", [0, -0.64, 0.74], 0, mouthArt, 0.2)];
   if (big) F.push(feat("noseL", [0, -0.24, 0.82], 0, noseArt, 0.72));
+  if (c.freckles && big){ const fr = sg => [[-.1, -.04], [.02, .03], [.11, -.03], [-.03, -.09], [.07, .07], [-.14, .05]].map(q => `<circle cx="${q[0] * sg}" cy="${q[1]}" r=".017" fill="#9a5f3a" opacity=".55"/>`).join(""); F.push(feat("frL", [0.4, -0.3, 0.62], 36, fr(1), 0.5), feat("frR", [-0.4, -0.3, 0.62], -36, fr(-1), 0.5)); }
+  if (c.old && big) F.push(feat("lines", [0, 0.44, 0.78], 0, `<path d="M-.22 0Q0 -.05 .22 0M-.17 .1Q0 .06 .17 .1" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8" stroke-linecap="round"/>`, 0.6));
+  if (c.glasses){ const gw = big ? 0.036 : 0.06, ring = `<circle r=".2" fill="#ffffff" fill-opacity=".2" stroke="${c.glasses}" stroke-width="${gw}"/>`;
+    F.push(feat("glL", [0.34, -0.02, 0.76], 24, ring), feat("glR", [-0.34, -0.02, 0.76], -24, ring), feat("glB", [0, -0.02, 0.84], 0, `<path d="M-.15 0Q0 -.06 .15 0" stroke="${c.glasses}" stroke-width="${gw}" fill="none"/>`, 0.5)); }
   F.forEach((x, i) => { x.z = z + 0.004 + i * 1e-4; parts.push(x); });
   for (const p of parts) out.push(p);
 }
@@ -1662,9 +1670,12 @@ function wearer(c, o, u){
   defs.push(`<radialGradient id="${u}sh"><stop offset="0" stop-color="#1d2233" stop-opacity=".34"/><stop offset=".55" stop-color="#1d2233" stop-opacity=".16"/><stop offset="1" stop-color="#1d2233" stop-opacity="0"/></radialGradient>`);
   defs.push(`<radialGradient id="${u}bl"><stop offset="0" stop-color="#e98a7a" stop-opacity="${c.kid ? 0.5 : 0.34}"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>`);
   const top = material(c.top[0], c.top[1]); top.rib = mixc(c.top[0], c.top[1], 0.55);
-  return { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.62), mixc(c.skin[1], c.skin[2], 0.3)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
+  const W0 = { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.62), mixc(c.skin[1], c.skin[2], 0.3)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
     shoeM: { n: ["#4a4340", "#2c2623"], f: ["#3a3431", "#231e1c"], sole: "#e6dfd2", soleF: "#bdb6aa" }, style: c.style, ink: "#2a2422", browC: c.brow || c.hair[2], lip: c.lip || "#bf6660", lipC: mixc(c.lip || "#bf6660", "#7a3030", 0.3), iris: c.iris,
-    curl: o.curl, smile: o.smile, shadow: `url(#${u}sh)`, defs: defs.join(""), fem: c.fem, kid: c.kid, beard: c.beard, bow: c.bow, tag: o.tag };
+    curl: o.curl, smile: o.smile, shadow: `url(#${u}sh)`, defs: defs.join(""), fem: c.fem, kid: c.kid, beard: c.beard, bow: c.bow, tag: o.tag, face: c.face, freckles: c.freckles, old: c.old,
+    glasses: c.glassesOn ? (c.glasses || "#26262b") : null, headwear: c.headwear };
+  if (c.headwear === "scarf"){ const sc = c.scarfCol || ["#8a9863", "#667545"]; W0.hairM = Object.assign(material(sc[0], sc[1]), { hi: sc[0], gh: sc[0] }); }
+  return W0;
 }
 
 /* ---------- the animation clock: every moving figure on the page, one requestAnimationFrame ---------- */
@@ -1723,7 +1734,33 @@ function act(name, c, o){
   g.innerHTML = back; g.appendChild(figure(c, Object.assign({}, o, { clip: name, x, y: o.y != null ? o.y : GY, k }))); const f = mk(front); while (f.firstChild) g.appendChild(f.firstChild);
   return g;
 }
-return { figure, act, CLIPS, clipOf, STAT };
+/* ---------- a person from a spec (the avatar the learner makes; and, in time, everybody in the course) ----------
+   One small object describes a person; the same spec draws the head and shoulders, the whole figure standing, and every action, from any
+   camera. Each field is an index into a list below (so a spec is saved as a short string: specString / specParse).
+     body "m" | "f"; age "c" (a child) | "a" | "o" (older: lines on the brow); girth 0 slim .. 3 heavy; skin; face (0 oval, 1 round, 2 long,
+     3 square, 4 narrow); eyes (colour); hair (style); hairc (colour); beard, glasses, freckles 0 | 1; head 0 | 1 (a headscarf); scarf
+     (its colour, from the clothes' colours); top (colour of the jumper); legs (colour of the trousers) */
+const AV = { skin: ["fair", "light", "julie", "tan", "brown", "dark"], eyes: ["#4a3524", "#5a3a22", "#3b2a1e", "#4b6f8f", "#5d7a4a", "#6b6f76"],
+  hair: ["short", "side", "crop", "bald", "pony", "long", "loose", "wavy", "bob"], hairc: ["jet", "black", "dkbrown", "brown", "ltbrown", "blond", "ginger", "grey", "white"],
+  /* the learner's clothes leave out blue, navy, sky and red: Marie's, Pierre's and Sylvie's (any colour within 25 degrees of hue of theirs) */
+  top: ["green", "teal", "purple", "orange", "yellow", "grey", "lime", "brown", "olive", "plum", "mustard", "charcoal", "white", "pink"],
+  legs: [["#5a6272", "#3f4654"], ["#5b616d", "#3d424c"], ["#77614f", "#5a4738"], ["#b9a57e", "#96825c"], ["#3a3d45", "#26282e"], ["#6f7f95", "#536277"]] };
+const AV_ORDER = ["body", "age", "girth", "skin", "face", "eyes", "hair", "hairc", "beard", "glasses", "freckles", "head", "scarf", "top", "legs"];
+const AV_DEFAULT = { body: "m", age: "a", girth: 1, skin: 3, face: 0, eyes: 0, hair: 0, hairc: 0, beard: 0, glasses: 0, freckles: 0, head: 0, scarf: 8, top: 0, legs: 0 };
+const specString = sp => "1." + AV_ORDER.map(k => { const v = sp[k] == null ? AV_DEFAULT[k] : sp[k]; return typeof v === "number" ? v.toString(36) : v; }).join(".");
+const specParse = str => { const a = String(str || "").split("."), sp = Object.assign({}, AV_DEFAULT); if (a[0] !== "1") return sp;
+  AV_ORDER.forEach((k, i) => { const v = a[i + 1]; if (v == null || v === "") return; sp[k] = typeof AV_DEFAULT[k] === "number" ? Math.max(0, parseInt(v, 36) || 0) : v; }); return sp; };
+const HAIRW = { white: ["#f6f6f3", "#e2e2de", "#bdbdb8"] };
+function person(sp){ sp = Object.assign({}, AV_DEFAULT, typeof sp === "string" ? specParse(sp) : sp);
+  const pick = (a, i) => a[Math.min(a.length - 1, Math.max(0, i | 0))], fem = sp.body === "f", hc = pick(AV.hairc, sp.hairc), hair = HAIRW[hc] || HAIR[hc], top = COL[pick(AV.top, sp.top)], skinName = pick(AV.skin, sp.skin), deep = skinName === "brown" || skinName === "dark";
+  return { kid: sp.age === "c", fem, old: sp.age === "o", girth: sp.girth, skin: SKIN[skinName], hair, style: pick(AV.hair, sp.hair), top, legs: pick(AV.legs, sp.legs), beard: !!sp.beard && !fem && sp.age !== "c", face: sp.face, iris: pick(AV.eyes, sp.eyes),
+    brow: hc === "grey" || hc === "white" ? "#9a9a94" : hair[2], lip: fem ? (deep ? "#a8404e" : "#cf5266") : (deep ? "#8a4a44" : "#b8645f"), glassesOn: !!sp.glasses, freckles: !!sp.freckles, headwear: sp.head ? "scarf" : "", scarfCol: COL[pick(AV.top, sp.scarf)], bow: "#3fa9a3" }; }
+/* FIG.avatar(spec, o): o.view "portrait" (head and shoulders) | "standing" | "doing" (o.doing: an action; o.still: its frozen frame) */
+function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
+  if (o.view === "portrait"){ const k = 78 / (2 * B.hh * B.H); return act("stand", c, { still: true, legs: c.legs, k, y: 90 + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: 0.5, yaw: o.yaw == null ? -12 : o.yaw }); }
+  if (o.view === "doing" && CLIPS[o.doing]) return act(o.doing, c, { still: !!o.still, legs: c.legs, k: o.k || (o.doing === "jump" ? 0.88 : 1), ox: o.doing === "run" || o.doing === "walk" ? -2 : 0, yaw: o.yaw, phase: o.phase });
+  return act("stand", c, { still: true, legs: c.legs, k: o.k || 1, smile: 0.5, yaw: o.yaw }); }
+return { figure, act, avatar, person, specString, specParse, AV, CLIPS, clipOf, STAT };
 })();
 /* the figure >>> */
 const ACT_SPEED = 2;
@@ -3276,6 +3313,6 @@ function together(act, opts){
   });
   return g;
 }
-window.PICS = { _fig: FIG, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
+window.PICS = { _fig: FIG, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
   things: Object.keys(THING).filter(k => !/^(book|apple|pen|shoe|flag|card|boy|girl)$/.test(k)) };
 })();
