@@ -377,7 +377,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.57";
+const APP_VERSION="2026-11-15.58";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -788,7 +788,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:57, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:58, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -813,6 +813,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=55)) migrate55();      // (.55) a state saved before Lessons 4 and 5 were built anew, each format by a constructor
   if(!(s.courseRev>=56)) migrate56();      // (.56) a state saved before Lessons 1 and 2 were built anew, each format by a constructor
   if(!(s.courseRev>=57)) migrate57();      // (.57) a state saved before Lessons 3 to 5 were built anew from the plan's rows of 15 Nov
+  if(!(s.courseRev>=58)) migrate58();      // (.58) a state saved before Lessons 4 and 5 were built anew at DISE's rate (the either/or first)
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -874,6 +875,23 @@ function migrate55(){
   if(inL45 || had || old.length){ if(S.lesson===3 || S.lesson===4) S.ex=0;
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (their exercises have other numbers)"+((S.lesson===3||S.lesson===4)?"; this learner starts Lesson "+(S.lesson+1)+" from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
   S.courseRev=55;
+}
+/* (.58) Lessons 4 and 5 are built anew from the plan's rows at DISE's rate (new action words, il / elle by ear, the numbers; the either/or
+   "Un train ou une maison ?" before the open "C'est quoi ?"; sur / sous and "Tu t'appelles comment ?" moved to Lesson 6): other exercises,
+   other numbers. A learner saved in Lesson 4 or 5 starts the new Lesson 4 from its beginning. Lessons 1-3 keep their exercises (some tests
+   drawn anew): a place in them stands. The delayed tests of Lessons 1-5 are dropped (their items have changed). One log line. */
+function migrate58(){
+  const L15 = k => /^L[1-5]E\d+/.test(k), L45 = k => /^L[45]E\d+/.test(k);
+  const here = S.lesson===3 || S.lesson===4;                       // saved in Lesson 4 or 5
+  const had = Object.keys(S.finished||{}).some(L45);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L45(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L15(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  if(here){ S.lesson=3; S.ex=0; }                                  // back to the start of the new Lesson 4
+  for(let i=3;i<Math.min(S.lesson||0, LESSONS.length);i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;   // beyond: the new lessons before the learner's own count as done
+  if(here || had || old.length)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  S.courseRev=58;
 }
 /* (.57) Lessons 3 to 5 are built anew: other exercises, other numbers, and another ORDER of what is taught ("Dis :" is Lesson 3, "Je
    m'appelle comment ?" Lesson 4, "Tu fais quoi ?" Lesson 5; il / elle, "Salut !", "Ça va ?" come after Lesson 5). A learner anywhere in the
@@ -2340,7 +2358,7 @@ function genPicture0(e){
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
-  if(e.is==="numeral") return numberCard("n"+e.value);
+  if(e.is==="numeral") return numberCard("n"+e.value, (e.looks||[])[0]);      // (.58) a written number in the colour of its look: six pictures of each number ("C'est quel nombre ?")
   if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
   { const REL = (e.looks||[]).includes("on a table") ? "on" : (e.looks||[]).includes("under a table") ? "under" : null;      // (.57) sur / sous by ear (Lesson 5): the same thing on a table and under it (people.js PICS.place)
     if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="on a table" && x!=="under a table")});
@@ -2362,11 +2380,12 @@ function picture(spec){ if(typeof spec==="object") return genPicture(spec);
   const [id,inst]=spec.split(":"); const k=VOCAB[id].kind;
   return k==="person" ? portrait(id) : k==="number" ? numberCard(id) : objectPicture(id, +inst||1); }
 // a numeral card (DISE Lesson 1, Exercise 4 shows the numerals 1–4); numerals, unlike French words, do not mislead pronunciation
-function numberCard(id){
+function numberCard(id, look){
+  const INK={black:"#2b3a55", blue:"#1f5fbf", red:"#c0392b", green:"#1e8449", orange:"#d9730d", purple:"#7d3c98"};      // (.58) the ink of the digit; the card stays the same
   const g=document.createElementNS(svgNS,"g"), d=id.slice(1), two=d.length>1;       // "10": two digits in the same card
   g.innerHTML=`<rect x="22" y="26" width="116" height="142" rx="12" fill="#000" opacity=".08" transform="translate(3 4)"/>
     <rect x="22" y="26" width="116" height="142" rx="12" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/>
-    <text x="80" y="${two?128:140}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="${two?84:116}" font-weight="700" fill="#2b3a55"${two?' textLength="100" lengthAdjust="spacingAndGlyphs"':''}>${d}</text>`;
+    <text x="80" y="${two?128:140}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="${two?84:116}" font-weight="700" fill="${INK[look]||"#2b3a55"}"${two?' textLength="100" lengthAdjust="spacingAndGlyphs"':''}>${d}</text>`;
   return g;
 }
 /* A scene is two frames {L, R}, or a row of three or four smaller frames {row:[…]} (several of a kind, a series,
