@@ -288,6 +288,25 @@ const SHELL = (()=>{
       for(let i=0;i<Math.min(n,6);i++){ const t=ac.currentTime+i*0.11, len=0.05, buf=ac.createBuffer(1, ac.sampleRate*len, ac.sampleRate), d=buf.getChannelData(0); for(let j=0;j<d.length;j++) d[j]=(Math.random()*2-1)*Math.pow(1-j/d.length, 3);
         const s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain(); s.buffer=buf; f.type="bandpass"; f.frequency.value=2600+i*180; f.Q.value=0.9; g.gain.value=0.22; s.connect(f).connect(g).connect(ac.destination); s.start(t); } }catch(e){} }
 
+  /* ---- a soft sound on a right answer (the owner's trial): made here with Web Audio, nothing fetched; under 150 ms, well below Marie;
+     never while Marie (or the phone's voice) is speaking or about to; never on an error; never delays anything (it is only scheduled) ---- */
+  const BEAD = {
+    A:(ac,t,k,g)=>{ const f=[523.25,587.33,659.25][k%3]; tone(ac,t,f,0.13,g,0.006); tone(ac,t,f*3,0.035,g*0.10,0.004); },                   // a soft marimba: the fundamental, a faint third partial gone in 35 ms
+    B:(ac,t,k,g)=>{ const f=[440,493.88,554.37][k%3]; tone(ac,t,f,0.14,g,0.008); tone(ac,t,f*2.76,0.05,g*0.07,0.006); },                  // a felt bell: low, one faint inharmonic partial
+    C:(ac,t,k,g)=>{ const f=[392,440,493.88][k%3]; tone(ac,t,f,0.11,g,0.007, 1.12); },                                                      // a drop: a pure tone that settles a little in pitch
+  };
+  function tone(ac, t, f, dur, gain, att, glide){ const o=ac.createOscillator(), v=ac.createGain(), lp=ac.createBiquadFilter(); o.type="sine";
+    o.frequency.setValueAtTime(f*(glide||1), t); if(glide) o.frequency.exponentialRampToValueAtTime(f, t+0.06);
+    lp.type="lowpass"; lp.frequency.value=2200; v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(gain, t+att); v.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(lp).connect(v).connect(ac.destination); o.start(t); o.stop(t+dur+0.02); }
+  let beadAC=null, beadK=0;
+  function beadCtx(){ try{ if(!beadAC){ const A=window.AudioContext||window.webkitAudioContext; beadAC=new A(); } if(beadAC.state!=="running") beadAC.resume(); }catch(e){} }
+  function beadSound(){ if(UI.pref.beadSound===false || !beadAC || beadAC.state!=="running") return;
+    try{ if(typeof synth!=="undefined" && synth && synth.speaking) return; }catch(e){}
+    try{ if(typeof actx!=="undefined" && actx && CLIP.e && actx.currentTime < CLIP.e+0.03) return; }catch(e){}      // Marie's clip is playing, or starts within the sound
+    try{ (BEAD[RULES.BEAD_SOUND]||BEAD.B)(beadAC, beadAC.currentTime+0.005, beadK++, 0.07); }catch(e){} }
+  { const ol0=UI.onLog; UI.onLog=function(o){ const r=ol0.apply(this, arguments); try{ if(o && o.result==="correct" && o.task && !/^lead/.test(o.phase||"") && document.body.classList.contains("inLesson")) beadSound(); }catch(e){} return r; }; }
+
   /* ---- home: today's two moments, the week, the next lesson, the path ---- */
   const mini = spec=>{ try{ return `<div class="mini"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(spec).outerHTML}</svg></div>`; }catch(e){ return ""; } };
   const picsOf = (()=>{ const memo={}; return i=>{ if(memo[i]) return memo[i]; const seen=new Set(), out=[];
@@ -484,14 +503,15 @@ const SHELL = (()=>{
   /* ---- you: the figure, the record, milestones, and the settings (nothing here changes the teaching) ---- */
   const sw = (id, on, label, sub, icon)=>`<button class="grow" id="${id}" role="switch" aria-checked="${on}"><div class="ic">${ic(icon)}</div><div class="l">${label}${sub?`<small>${sub}</small>`:""}</div><span class="sw${on?" on":""}"><i></i></span></button>`;
   const row = (id, label, sub, icon, val="")=>`<button class="grow" id="${id}"><div class="ic">${ic(icon)}</div><div class="l">${label}${sub?`<small>${sub}</small>`:""}</div><div class="v">${val}${ic("chev")}</div></button>`;
-  function you(){ const o=$("you"); if(!o) return; const own=ownedCards().length, st=stageLine(Math.max(1, G.furthest)), ms=MILES.filter(m=>G.milestones[m.id]), tz=UI.pref.text||1, A=G.anchors;
+  function you(){ const o=$("you"); if(!o) return; const own=ownedCards().length, st=stageLine(Math.max(1, G.furthest)), bs=RULES.BADGES.filter(n=>G.badges[n]), nextB=RULES.BADGES.find(n=>!G.badges[n]), tz=UI.pref.text||1, A=G.anchors;
     o.innerHTML=`<div class="tabhead"><h1>You</h1></div>
       <button class="card me" id="youAv"><div class="face">${AV.svg(AV.get(), "portrait", "t")}</div><div class="l"><b>${esc(S.learnerName||"")}</b><small>Change how you look ${ic("chev")}</small></div></button>
-      <div class="card stats"><div><b class="num">${G.points}</b><small>points</small></div><div><b class="num">${own}</b><small>words</small></div><div><b class="num">${G.daysLearned}</b><small>days learned</small></div><div><b class="num">${G.bestRun}</b><small>best run</small></div></div>
-      ${st ? `<div class="sline">${st.text} lessons</div>` : ""}
-      ${ms.length ? `<h3 class="gh">Milestones</h3><div class="miles">${ms.map(m=>`<div class="ms"><svg viewBox="0 0 56 70" aria-hidden="true"><use href="#i-rosette"/></svg><span>${esc(m.what)}</span></div>`).join("")}</div>` : ""}
+      <div class="card stats"><div><b class="num">${G.points}</b><small>points</small></div><div><b class="num">${perfectCount()}</b><small>perfect lessons</small></div><div><b class="num">${own}</b><small>words</small></div><div><b class="num">${G.daysLearned}</b><small>days learned</small></div></div>
+      ${levelCard()}
+      <h3 class="gh">Badges</h3><div class="miles">${bs.map(n=>`<div class="ms">${badgeSvg(n)}<span>${badgeName(n)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${perfectCount()} of ${nextB} perfect lessons</span></div>` : ""}</div>
+      ${st ? `<div class="sline">${st.text} lessons · best run ${G.bestRun} day${G.bestRun===1?"":"s"}</div>` : ""}
       <h3 class="gh">Your two moments</h3><div class="card grp">${row("setA1","First lesson","After "+esc(A.first.after),"sun",`<span class="num">${hm(atToday(A.first.time))}</span>`)}${G.goal!==1?row("setA2","Second lesson","After "+esc(A.second.after),"moon",`<span class="num">${hm(atToday(A.second.time))}</span>`):row("setA2","Lessons a day","One for now","moon","")}</div>
-      <h3 class="gh">Sound and touch</h3><div class="card grp">${sw("setSound", !!UI.pref.sound, "Sounds", "The app's own small sounds. Marie's voice is always on.", "speaker")}${sw("setVibe", !!UI.pref.haptics, "Vibration", "A light tap when you press. Never while you speak.", "vibe")}</div>
+      <h3 class="gh">Sound and touch</h3><div class="card grp">${sw("setBead", UI.pref.beadSound!==false, "Sound for right answers", "One soft note for each right answer. Never over Marie.", "speaker")}${sw("setSound", !!UI.pref.sound, "Other sounds", "Cards turning up. Marie's voice is always on.", "speaker")}${sw("setVibe", !!UI.pref.haptics, "Vibration", "A light tap when you press. Never while you speak.", "vibe")}</div>
       <h3 class="gh">Seeing</h3><div class="card grp"><div class="grow"><div class="ic">${ic("text")}</div><div class="l">Text size</div></div><div class="seg size" role="group" aria-label="Text size">${[1,2,3].map(k=>`<button class="${tz===k?"on":""}" data-tz="${k}" aria-label="Text size ${k}"><span style="font-size:${[16,20,24][k-1]}px">A</span></button>`).join("")}</div>${sw("setMotion", UI.pref.motion==="less", "Less movement", "Celebrations become still. The lessons do not change.", "eye")}</div>
       <h3 class="gh">You and this phone</h3><div class="card grp">${row("setName","Your first name","",  "you", esc(S.learnerName||""))}${row("youWho","Who is learning?", USERS.list.length>1 ? USERS.list.length+" learners on this phone" : "Add someone", "you")}</div>
       <h3 class="gh">Help improve the course</h3><div class="card grp">${row("setRun","Save the run file","Everything you said and tapped, for the course's makers.","file")}${row("setIntro","See the introduction again","How a lesson works, shown.","play")}</div>
@@ -502,7 +522,7 @@ const SHELL = (()=>{
     $("youWho").onclick=()=>who(true);
     $("setA1").onclick=$("setA2").onclick=()=>anchors(false, ()=>you());
     const flip=(id, f)=>{ $(id).onclick=()=>{ f(); UI.savePref(); tick(); you(); }; };
-    flip("setSound", ()=>{ UI.pref.sound=!UI.pref.sound; }); flip("setVibe", ()=>{ UI.pref.haptics=!UI.pref.haptics; }); flip("setMotion", ()=>{ UI.pref.motion = UI.pref.motion==="less" ? "auto" : "less"; });
+    flip("setSound", ()=>{ UI.pref.sound=!UI.pref.sound; }); flip("setBead", ()=>{ UI.pref.beadSound = UI.pref.beadSound===false; if(UI.pref.beadSound){ beadCtx(); setTimeout(beadSound, 120); } }); flip("setVibe", ()=>{ UI.pref.haptics=!UI.pref.haptics; }); flip("setMotion", ()=>{ UI.pref.motion = UI.pref.motion==="less" ? "auto" : "less"; });
     o.querySelectorAll("[data-tz]").forEach(b=>{ b.onclick=()=>{ UI.pref.text=+b.dataset.tz; UI.savePref(); textSize(); tick(); you(); }; });
     $("setName").onclick=()=>ask({title:"Your first name", label:"Marie will call you by it.", ok:"Save", value:S.learnerName||""}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name.";
       if(USERS.list.some(x=>x.id!==uid && x.name.toLowerCase()===nm.toLowerCase())) return "Someone on this phone is already called "+nm+".";
@@ -530,15 +550,19 @@ const SHELL = (()=>{
 
   /* ---- a learner whose record is new: what the page's saved place already says (a phone carried over from the live app, or a tester's
      jump) is entered as passed, without figures, with the points the same rule gives; no run or streak is invented ---- */
-  function seed(){ if(!fresh) return; let n=0; LESSONS.forEach((L,i)=>{ if(allDone(i) || i<S.lesson){ (G.lessons[L.id]=[{date:"", x:null, y:null, passed:true, pts:RULES.POINTS_EXERCISE*L.exercises.length+RULES.POINTS_LESSON, carried:true}]); G.points+=G.lessons[L.id][0].pts; G.furthest=Math.max(G.furthest, i+1); n++; } });
+  function seed(){ if(!fresh) return; let n=0; LESSONS.forEach((L,i)=>{ if(allDone(i) || i<S.lesson){ let pts=0;
+      for(const x of L.exercises){ const he=(S.exHadError||{})[x.id]; if(he===undefined) continue; G.ex[x.id]={g:!he, f:he?"e":"p", n:1, carried:true}; if(!he) pts+=RULES.POINTS_PERFECT_FIRST; }
+      if(lessonPerfect(L)){ G.lp[L.id]="carried"; pts+=RULES.POINTS_PERFECT_LESSON; }
+      G.lessons[L.id]=[{date:"", x:null, y:null, passed:true, pts, carried:true}]; G.points+=pts; G.furthest=Math.max(G.furthest, i+1); n++; } });
+    RULES.BADGES.forEach(b=>{ if(perfectCount()>=b) G.badges[b]="carried"; });
     if(n){ try{ trace("record started from the saved place: "+n+" lesson(s) entered as passed"); }catch(e){} }
     if(S.learnerGender && !AV.get() && AV.has()){ try{ AV.set(PICS.avatarString({body:S.learnerGender==="f"?"f":"m"})); G.makerOffer=true; }catch(e){} } }
 
   /* ---- start ---- */
-  for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
+  for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ textSize(); seed(); syncNext(); store(); home(); MIC.init();
+  function init(){ textSize(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
     firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));

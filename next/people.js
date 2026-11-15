@@ -1597,7 +1597,7 @@ const HANDS = {
   relaxed: { f: [[0.24, 0.36], [0.32, 0.44], [0.4, 0.52], [0.48, 0.6]], sp: 0.01, th: [0.42, 0.3, 0.3] },
   point:   { f: [[0.02, 0.04], [1.38, 1.62], [1.44, 1.68], [1.46, 1.66]], sp: 0, th: [0.18, 1.02, 0.8] },
   flat:    { f: [[0.06, 0.05], [0.05, 0.05], [0.06, 0.05], [0.08, 0.07]], sp: 0.012, th: [0.34, 0.1, 0.12] },
-  palmup:  { f: [[0.1, 0.2], [0.14, 0.22], [0.18, 0.26], [0.22, 0.3]], sp: 0.07, th: [0.72, 0.08, 0.2] },
+  palmup:  { f: [[0.16, 0.26], [0.2, 0.3], [0.25, 0.34], [0.3, 0.38]], sp: 0.06, th: [0.5, 0.18, 0.28] },
   cup:     { f: [[0.34, 0.42], [0.38, 0.46], [0.42, 0.5], [0.48, 0.54]], sp: 0, th: [0.08, 0.3, 0.3] }
 };
 const handFlat = H => [H.f[0][0], H.f[0][1], H.f[1][0], H.f[1][1], H.f[2][0], H.f[2][1], H.f[3][0], H.f[3][1], H.sp, H.th[0], H.th[1], H.th[2]];
@@ -1698,12 +1698,13 @@ function frame(k, B, cam, c, floor, o){
     const zu = zmid(sh, el), zf = zmid(el, wr), farU = !part && zu < zt - 0.012, far = !part && zf < zt - 0.012;
     if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 0, 7), T, e, far, true) });
     else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(sweep(Q, 0, 4), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
-    if (zu > zt) cast.push(sweep(Q, 0, 4)); if (zf > zt) cast.push(sweep(Q, 3, 7));
+    const kz = z => Math.max(1, Math.min(3.2, 1 + (z - zt - 0.03) / 0.035));          // a part held well out from the body throws its shadow further from itself
+    if (zu > zt) cast.push(sweep(Q, 0, 4)); if (zf > zt){ const k2 = kz(zf), sw = sweep(Q, 3, 7); cast.push((g, dx, dy) => sw(g, dx * k2, dy * k2)); }
     { const a0 = add(wr, mul(J["fd" + s], -0.026)), A = P(a0), Z = P(wr); parts.push({ id: "cf" + s, z: zf + 0.0005, mat: "cuff" + s, layers: [[capsule(A[0], A[1], B.rWr * 1.2 * S, Z[0], Z[1], B.rWr * 1.2 * S), far ? T.f[1] : T.rib]] }); }
     if (o && o.hands){                                         // a hand with fingers (at the size of the teacher): see fingers()
       const HP = fingers(wr, hd, pn, s === "L", o.hands[s], B, P, S, far ? sk.f : sk.n, "hn" + s);
       for (const x of HP.parts) parts.push(x);
-      if (HP.z > zt) cast.push((g, dx, dy) => HP.cast(g, dx, dy));
+      if (HP.z > zt){ const k2 = kz(HP.z); cast.push((g, dx, dy) => HP.cast(g, dx * k2, dy * k2)); }
       continue; }
     const curl = c.curl == null ? 0.5 : c.curl, HL = B.hand, th = s === "L" ? cross(pn, hd) : cross(hd, pn), ca = Math.cos(curl * 1.9), sa = Math.sin(curl * 1.9), fdir = add(mul(hd, ca), mul(pn, sa)), fn = sub(mul(pn, ca), mul(hd, sa));
     const kn = add(wr, mul(hd, HL * 0.5)), pc = add(wr, mul(hd, HL * 0.27)), fc = add(kn, mul(fdir, HL * 0.21)), he = 0.006 * S;
@@ -1909,7 +1910,7 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 58, chest: 1.1, waist: 1.1, rSh: 1.08, sy: 0.072, nb: 0.13, neckUp: 63, chairUp: 0.16, chairCol: ["#b0a291", "#857767"],
+const TUT0 = { sw: 58, chest: 1.1, waist: 1.1, rSh: 1.08, sy: 0.072, nb: 0.13, neckUp: 63, chairUp: 0.16, fwd: 0.4, palmHd: [0.25, -0.3, 0.92], palmPn: [-0.1, 0.8, 0.6], palmOut: 16, chestDy: -14, chestRot: -148, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
@@ -1994,7 +1995,7 @@ function tutor(c, o){
     let z = zc + d * Math.sqrt(Math.max(0, 1 - (xb / a) * (xb / a))) + 0.016;                                 // on the trunk
     z += (0.135 - z) * sm01((yr + 0.1 - yb) / 0.07);                                                          // on the lap
     z += (J.head[2] - 0.03 - z) * sm01((yb - ysh - 0.015) / 0.06);                                            // beside the head
-    return z + (1 - (fs == null ? 1 : fs)) * 0.2;
+    return z + (1 - (fs == null ? 1 : fs)) * TUT.fwd;
   }
   function reach(sh, X, Y, z){                                 // the place of the wrist: on the line of sight through X, Y, as near depth z as the arm's length allows
     const W0 = unproj(X, Y, 0), r = [0, sp / cp, 1], mx = (B.ua + B.fa) * 0.985, v = sub(W0, sh), rr = dot(r, r), b = dot(v, r), cc = dot(v, v) - mx * mx, disc2 = b * b - rr * cc;
@@ -2011,7 +2012,7 @@ function tutor(c, o){
   function orient(p, fd, side, sg){
     const sh = p.shape, r = p.rot; let hd, pn;
     if (sh === "cup"){ hd = nrm([sg * 0.16, 1, 0.2]); pn = perp([-sg * 0.62, 0, 1], hd); }                    // behind the ear: fingers up, the palm forward and a little to the head
-    else if (sh === "palmup"){ hd = nrm([-sg * 0.12, -0.44, 0.89]); pn = perp([0, 0.89, 0.44], hd); }            // offered to the learner: fingers toward him, the palm up
+    else if (sh === "palmup"){ const H = TUT.palmHd, N = TUT.palmPn; hd = nrm([H[0] * sg, H[1], H[2]]); pn = perp([N[0] * sg, N[1], N[2]], hd); }            // offered to the learner: fingers toward him and a little out, the palm up
     else if (r === "auto" || r == null){ hd = fd; pn = sh === "relaxed" ? perp([-sg * 0.42, -0.62, -0.66], hd) : perp([sg * 0.2, -0.3, -1], hd); }      // at rest the palm lies on the thigh (down, and turned a little inward, as the capture's hands lie)
     else { const a = r * Math.PI / 180; hd = nrm([-Math.sin(a), -Math.cos(a), sh === "point" ? -0.1 : -0.03]); pn = perp([0, 0, -1], hd); }      // on her chest: the hand lies on it, turned as the page says
     return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([p.scale || 1]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
@@ -2019,8 +2020,10 @@ function tutor(c, o){
   let pose = REST, blendUntil = 0, armsT = 0, lastArmsDraw = 0, armCast = "", castEl = null, headCast = "";
   function armsList(k, t){
     const J = skeleton(k, B), hands = {};
-    for (const ps of ["L", "R"]){ const side = ps === "L" ? "R" : "L", sg = side === "L" ? 1 : -1, off = side === "L" ? 33 : 45, p = pose[ps] || REST[ps], st = ST[ps], sh = J["sh" + side];
-      const wr = reach(sh, p.x, p.y, depth(p.x, p.y, p.fs, J)), E = elbow(sh, wr, sg), O = orient(p, E.fd, side, sg), key = p.shape + "|" + (typeof p.rot === "number" ? "n" : p.rot);
+    for (const ps of ["L", "R"]){ const side = ps === "L" ? "R" : "L", sg = side === "L" ? 1 : -1, off = side === "L" ? 33 : 45, p0 = pose[ps] || REST[ps], st = ST[ps], sh = J["sh" + side];
+      const p = p0.shape === "flat" && typeof p0.rot === "number" && p0.y < 500 && Math.abs(p0.rot + 118) < 20 ? Object.assign({}, p0, { y: p0.y + TUT.chestDy, rot: TUT.chestRot }) : p0;      // the flat hand on her chest lies higher, on the breastbone, its fingers toward the far shoulder: above her name tag, which stays readable
+      const offer = p.shape === "palmup" && (p.fs == null ? 1 : p.fs) < 0.9, px = p.x + (offer ? (ps === "L" ? -1 : 1) * TUT.palmOut : 0);      // the open hand offered: a little out to the side as well as forward
+      const wr = reach(sh, px, p.y, depth(px, p.y, p.fs, J)), E = elbow(sh, wr, sg), O = orient(p, E.fd, side, sg), key = p.shape + "|" + (typeof p.rot === "number" ? "n" : p.rot);
       if (st.key !== key){ const jump = st.x != null && Math.hypot(p.x - st.x, p.y - st.y) > 45; st.from = st.last && !jump && st.key ? st.last : null; st.t = t; st.key = key; }      // a new shape: the hand changes into it over 130 ms (at once if the arm was put there at once)
       st.x = p.x; st.y = p.y;
       let w = st.from ? (t - st.t) / 130 : 1; if (w >= 1){ w = 1; st.from = null; } else blendUntil = Math.max(blendUntil, st.t + 140);

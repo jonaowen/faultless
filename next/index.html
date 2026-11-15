@@ -52,7 +52,7 @@
   --ease-out:cubic-bezier(.22,1,.36,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
   /* the turn frame's three thicknesses, and the room the chrome takes */
-  --f-listen:8px; --f-speak:14px; --f-tap:22px; --top-h:84px; --bot-h:66px;
+  --f-listen:8px; --f-speak:14px; --f-tap:11px; --listen-edge:#A93626; --top-h:84px; --bot-h:66px;
   --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
   /* the old names, still used by the script and the tester panel */
   --bg:var(--paper); --muted:var(--ink-3); --frame:var(--card); --frame-line:var(--line); --go:var(--speak); --stop:var(--listen); --panel:var(--card);
@@ -70,18 +70,21 @@ button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
 
 /* ---------------- the turn frame: one object, three states (signal() sets the classes exactly as before) ----------------
    Three still layers that cross-fade (opacity only: nothing is laid out or repainted when the turn changes).
-   listen: thin, matt.  speak (.on): thick, lit from within, and a tab with the microphone.  tap (.tap): a band of tapping hands. */
+   listen: thin, matt, the paper set into it like a page in a frame.  speak (.on): thick, lit from within, and a tab with the microphone.
+   tap (.tap): a plain blue outline, a little wider than listen, and a tab with the tapping finger (the owner, 15 Nov: no band of hands).
+   Each colour sits on a band of the same hue a shade deeper at the screen's own edge, so the frame reads as an object, not a line. */
 #signal{position:fixed;inset:0;pointer-events:none;z-index:20}
 #signal i{position:absolute;display:block;opacity:0;transition:opacity .12s linear;will-change:opacity}
-#signal .fl{inset:var(--f-listen);border-radius:26px;box-shadow:0 0 0 90px var(--listen), inset 0 0 0 1.5px rgba(var(--shade),.12);opacity:1}
-#signal .fs{inset:var(--f-speak);border-radius:28px;box-shadow:0 0 0 90px var(--speak), inset 0 0 0 1.5px rgba(var(--shade),.14)}
+#signal .fl{inset:var(--f-listen);border-radius:26px;box-shadow:0 0 0 90px var(--listen), 0 0 0 2px var(--listen-edge), inset 0 0 0 1px rgba(255,255,255,.55), inset 0 3px 9px -2px rgba(var(--shade),.20);opacity:1}
+#signal .fs{inset:var(--f-speak);border-radius:28px;box-shadow:0 0 0 90px var(--speak), inset 0 0 0 1px rgba(255,255,255,.6), inset 0 3px 10px -2px rgba(var(--shade),.18)}
 #signal .fg{inset:var(--f-speak);border-radius:28px;box-shadow:inset 0 0 26px 2px var(--speak-glow)}
+#signal .ft{inset:var(--f-tap);border-radius:27px;box-shadow:0 0 0 90px var(--tap), inset 0 0 0 1px rgba(255,255,255,.6), inset 0 3px 10px -2px rgba(var(--shade),.18)}
+#signal.tap .ft{opacity:1}
 #signal.on .fl,#signal.tap .fl{opacity:0}
 #signal.on .fs{opacity:1}
 #signal.on .fg{opacity:1;animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
-#tapBorder{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20;display:none}
-#tapBorder.on{display:block}
+#tapBorder{display:none!important}
 /* the tab at the bottom edge: where the phone's own microphone is. It holds the microphone and bars that move with the voice, or the tapping hand. */
 #turnTab{position:fixed;left:50%;bottom:0;z-index:21;pointer-events:none;transform:translateX(-50%)}
 #turnTab > div{position:absolute;left:50%;bottom:0;display:flex;align-items:center;gap:10px;height:calc(58px + var(--sab));padding:0 22px calc(6px + var(--sab)) 18px;border-radius:26px 26px 0 0;color:#fff;
@@ -139,7 +142,7 @@ svg#scene{display:block;overflow:visible;flex:none;
 svg#scene text{font-family:var(--font-ui)}
 svg#scene text.numeral{font-family:var(--font-display);font-variation-settings:"SOFT" 60}
 @media (max-height:520px){ :root{ --top-h:20px; --bot-h:20px } #chrome{right:auto;width:150px} #turnTab{left:82%} }
-@media (min-width:700px) and (min-height:700px){ :root{ --top-h:104px; --bot-h:80px; --f-listen:10px; --f-speak:18px; --f-tap:28px }
+@media (min-width:700px) and (min-height:700px){ :root{ --top-h:104px; --bot-h:80px; --f-listen:10px; --f-speak:18px; --f-tap:14px }
   #chrome{left:calc(44px + var(--sal));right:calc(52px + var(--sar));top:calc(40px + var(--sat))} #leave{width:56px;height:56px} #leave .icon{width:32px;height:32px} #bar{height:16px;border-radius:8px} }
 .fade{transition:opacity .25s}
 .limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
@@ -441,7 +444,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
   </g>
 </svg>
 </div>
-<div id="signal"><i class="fl"></i><i class="fs"></i><i class="fg"></i></div>
+<div id="signal"><i class="fl"></i><i class="fs"></i><i class="fg"></i><i class="ft"></i></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-play" viewBox="0 0 28 28"><path d="M10 6.2v15.6a1 1 0 0 0 1.5.86l13-7.8a1 1 0 0 0 0-1.72l-13-7.8A1 1 0 0 0 10 6.2z" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-close" viewBox="0 0 28 28"><path d="M8 8l12 12M20 8L8 20"/></symbol>
@@ -1182,7 +1185,7 @@ function removeUser(id){
 const UI = (()=>{
   const KEY="frDIn.ui", def={red:"quiet", mic:true, tester:false, haptics:true, sound:true, motion:"auto"};
   let pref=Object.assign({}, def); try{ Object.assign(pref, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){}
-  try{ const q=new URLSearchParams(location.search); if(q.has("red")) pref.red = q.get("red")==="loud" ? "loud" : "quiet"; if(q.has("mic")) pref.mic = q.get("mic")!=="off";
+  try{ const q=new URLSearchParams(location.search); if(q.has("red")) pref.red = q.get("red")==="loud" ? "loud" : "quiet"; pref.mic=true;      /* (the owner, 15 Nov) the microphone tab stays: no flag */
     if(q.has("tester")) pref.tester = q.get("tester")!=="off"; if(q.has("motion")) pref.motion = q.get("motion")==="less" ? "less" : "auto"; }catch(e){}
   const apply=()=>{ const h=document.documentElement; h.dataset.red=pref.red; h.dataset.mictab=pref.mic?"on":"off"; h.dataset.tester=pref.tester?"on":"off"; h.dataset.motion=pref.motion; };
   const savePref=()=>{ try{ localStorage.setItem(KEY, JSON.stringify(pref)); }catch(e){} apply(); };
@@ -1659,7 +1662,7 @@ const signalEl = document.getElementById("signal");
    tapping hands all the way round the screen: the same hand as the tap signal on the pictures. Not red, which says "listen, say nothing"
    and left a tester waiting on 13 Nov (.40), and not green. */
 const TAPBORDER = (()=>{ const el=document.createElementNS("http://www.w3.org/2000/svg","svg"); el.id="tapBorder"; el.setAttribute("aria-hidden","true"); document.body.appendChild(el); return el; })();
-function tapBorderDraw(){
+function tapBorderDraw(){ if(!TAPBORDER) return; TAPBORDER.innerHTML=""; return;      // (next, the owner 15 Nov) no band of hands: the tap frame is a plain blue outline with the tab (CSS)
   /* (next) the same band of tapping hands, in the new language: the band is the frame's tap state (rounded inside like the other two),
      the hands a little larger and further apart, none where the tab with the hand stands at the bottom */
   const W=window.innerWidth, H=window.innerHeight, T=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--f-tap"))||22, R=22, k=(T-3)/57, r1=n=>n.toFixed(1);

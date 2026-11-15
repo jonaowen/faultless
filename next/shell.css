@@ -209,3 +209,44 @@ body.inLesson #upd{display:none}
 /* text size: the shell's words scale; the stage scales with the screen, not with this */
 html[data-text="2"]{--tz:1.12} html[data-text="3"]{--tz:1.25}
 #home, .over > *, #sheet .sh, #nav .tab{zoom:var(--tz,1)}
+
+/* ---- (the owner's rules of 15 Nov, late) perfect exercises, the lesson's view, badges, the levels ---- */
+#bar.perfect:after{content:"";position:absolute;inset:-6px -8px;border-radius:14px;background:radial-gradient(60% 120% at var(--px,90%) 50%, rgba(243,179,61,.55), rgba(243,179,61,0) 70%);animation:barShine 1100ms var(--ease-out) forwards;pointer-events:none}
+@keyframes barShine{0%{opacity:0;transform:scaleX(.6)}25%{opacity:1}100%{opacity:0;transform:scaleX(1.05)}}
+#bar .cheer{position:absolute;right:-6px;top:20px;display:flex;align-items:center;gap:4px;padding:4px 10px 4px 6px;border-radius:14px;background:var(--sun);color:#3d2600;font:800 16px/1 var(--font-ui);box-shadow:var(--e1);animation:cheer 1400ms var(--ease-out) forwards;pointer-events:none}
+#bar .cheer .icon{width:18px;height:18px;color:#7a4b00}
+@keyframes cheer{0%{opacity:0;transform:translateY(8px) scale(.6)}18%{opacity:1;transform:translateY(0) scale(1.08)}30%{transform:scale(1)}78%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+html[data-motion="less"] #bar.perfect:after, html[data-motion="less"] #bar .cheer{display:none}
+#done .perfect-tag{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px auto 0;width:max-content;padding:6px 14px;border-radius:16px;background:var(--sun);color:#3d2600;font:800 16px/1 var(--font-ui)} #done .perfect-tag .icon{width:18px;height:18px}
+#done .tile{margin-top:12px} #done .tile b{display:block;font:var(--t-head)}
+.card.exstrip{margin-top:12px;padding:14px 16px;display:grid;gap:10px} .exstrip .row{display:flex;justify-content:space-between;align-items:center;gap:8px} .exstrip b{font:var(--t-head)}
+.exstrip .pts{display:inline-flex;align-items:center;gap:4px;padding:6px 12px 6px 8px;border-radius:16px;background:var(--sun-tint);font:600 24px/1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink)} .exstrip .pts .icon{width:20px;height:20px;color:var(--sun-deep)}
+.exstrip small{font:500 15px/1.35 var(--font-ui);color:var(--ink-2)}
+.exdots{display:flex;flex-wrap:wrap;gap:5px} .exdots i{width:16px;height:16px;border-radius:5px;background:var(--paper-2);box-shadow:inset 0 0 0 2px var(--line-strong)}
+.exdots i.g{background:var(--speak);box-shadow:none} .exdots i.y{background:#F6D57A;box-shadow:inset 0 0 0 2px #C99A12} .exdots i.me{outline:2.5px solid var(--ink);outline-offset:2px}
+.card.badgec{margin-top:12px;display:flex;gap:16px;align-items:center;padding:14px 16px;background:linear-gradient(180deg,#FFF8E6,var(--card))} .badge.big{width:68px;height:85px;flex:none;filter:drop-shadow(0 6px 8px rgba(var(--shade),.25))}
+.badgec small{display:block;font:var(--t-label);color:var(--sun-deep)} .badgec b{display:block;margin-top:2px;font:600 24px/1.1 var(--font-display);font-variation-settings:"SOFT" 100} .badgec p{margin:4px 0 0;font:500 16px/1.35 var(--font-ui);color:var(--ink-2)}
+.okmark.star{background:var(--sun);color:#3d2600;box-shadow:0 0 0 12px var(--sun-tint)} .okmark.star .icon{width:58px;height:58px}
+#done .okmark + h1{text-align:center}
+.ms .badge{width:42px;height:52px} .ms.next{opacity:.62;background:transparent;border-style:dashed;box-shadow:none} .ms.next .badge{filter:grayscale(1)}
+/* the path: a done lesson opens its exercises */
+.again .pf{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:14px;background:var(--sun-tint);color:#6b4300;font:800 14px/1 var(--font-ui)} .again .pf .icon{width:16px;height:16px}
+.again .pp{font:700 15px/1 var(--font-ui);color:var(--ink-2)}
+/* the lesson's view */
+#lessonV .mk-bar h2{font:var(--t-title-s)}
+.card.lvsum{display:flex;gap:16px;align-items:center;padding:14px 16px;margin:6px 0 14px} .lvsum b{display:block;font:var(--t-head)} .lvsum small{display:block;margin-top:4px;font:500 15px/1.35 var(--font-ui);color:var(--ink-2)} .lvsum .badge{width:52px;height:65px;flex:none}
+.ring{flex:none;width:60px;height:60px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--speak) var(--p), var(--paper-3) 0)} .ring b{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--card);font:600 22px/1 var(--font-display)!important;font-variation-settings:"SOFT" 100}
+.exgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.extile{position:relative;aspect-ratio:1/1.12;border-radius:14px;background:var(--card);border:3px solid var(--line-strong);box-shadow:0 3px 0 var(--line-strong);padding:0;cursor:pointer;overflow:hidden;transition:transform var(--d-press) var(--ease-out)}
+.extile:active{transform:translateY(3px)} .extile.g{border-color:var(--speak);box-shadow:0 3px 0 var(--speak-deep)} .extile.y{border-color:#E2B022;box-shadow:0 3px 0 #B58A0C;background:#FFFBEF}
+.extile .k{position:absolute;left:6px;top:4px;z-index:1;font:700 15px/1 var(--font-ui);color:var(--ink-2)} .extile .mini{position:absolute;inset:14px 6px 2px;width:auto;height:auto;border:0;box-shadow:none;background:none}
+.extile .st{position:absolute;right:4px;top:3px;color:var(--speak-deep)} .extile .st .icon{width:18px;height:18px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:14px 2px;font:600 15px/1 var(--font-ui);color:var(--ink-2)} .legend span{display:flex;align-items:center;gap:6px} .legend i{width:16px;height:16px;border-radius:5px;border:3px solid var(--line-strong)} .legend i.g{border-color:var(--speak)} .legend i.y{border-color:#E2B022;background:#FFFBEF}
+.exprev{display:grid;place-items:center;margin:4px 0 10px} .exprev .mini.big{width:120px;height:142px;border-radius:14px}
+/* the levels (CEFR) */
+.card.cefr{margin-top:12px;padding:14px 16px;display:grid;gap:12px} .cefr .row{display:flex;justify-content:space-between;align-items:baseline} .cefr b{font:var(--t-head)} .cefr small{font:700 15px/1 var(--font-ui);color:var(--ink-2)} .cefr p{margin:0;font:500 16px/1.4 var(--font-ui);color:var(--ink-2)}
+.lv{display:grid;grid-template-columns:repeat(6,1fr);gap:6px} .lvc{display:grid;gap:6px;justify-items:center} .lvc span{font:600 17px/1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink-3)}
+.lvc i{width:100%;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--speak) var(--p),var(--paper-3) 0)} .lvc.now span{color:var(--ink)} .lvc.done span{color:var(--speak-deep)}
+#lvl{background:radial-gradient(120% 60% at 50% 10%, var(--speak-tint) 0%, rgba(220,239,226,0) 100%), var(--paper)} #lvl h1{text-align:center;margin:16px 0 8px;font:600 36px/1.08 var(--font-display);font-variation-settings:"SOFT" 100}
+.lvbig{width:168px;height:168px;margin:40px auto 0;border-radius:50%;display:grid;place-items:center;background:var(--speak-deep);box-shadow:0 0 0 12px var(--speak-tint), 0 0 0 22px rgba(220,239,226,.5), var(--e2)} .lvbig span{font:600 72px/1 var(--font-display);font-variation-settings:"SOFT" 100;color:#fff}
+#lvl .lede{font:var(--t-body-l);text-align:center;margin:0 0 14px} .card.trip{display:flex;gap:12px;padding:16px;align-items:flex-start} .trip .icon{flex:none;color:var(--sun-deep)} .trip p{margin:0;font:600 18px/1.4 var(--font-ui)}
