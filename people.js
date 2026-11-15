@@ -1223,7 +1223,8 @@ function car(spec){
 const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump", smiling: "smile", smile: "smile", "not smiling": "not smiling", standing: "stand up", stand: "stand up",
   sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
   talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave",
-  working: "work", work: "work", calling: "call", call: "call", phoning: "call", "go out": "go out", playing: "play", play: "play", listening: "listen", listen: "listen" };
+  working: "work", work: "work", calling: "call", call: "call", phoning: "call", "go out": "go out", playing: "play", play: "play", listening: "listen", listen: "listen",
+  running: "run", run: "run", runs: "run", falling: "fall", fall: "fall", falls: "fall" };      // (.60) courir, tomber
 const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink", sleep: "sleep", sleeping: "sleep", sing: "sing", singing: "sing", read: "read", reading: "read", write: "write", writing: "write", writes: "write" };
 const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
 const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
@@ -1288,6 +1289,20 @@ MOVES.play = { dur: 1.6, kt: [0, 0.14, 0.5, 1], poses: [P_K, P_K2, P_U, P_K], si
 MOVES.listen = { dur: 1.6, kt: [0, 0.25, 0.5, 0.75, 1], poses: [{ hr: 0 }, { hr: -8 }, { hr: 0 }, { hr: 8 }, { hr: 0 }].map(p => Object.assign(p, A_DOWN)), still: 1, scale: 1.1, cans: true };
 MOVES["go out"] = { dur: 3.4, kt: [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 1], linear: true, side: true, fade: true, door: true, still: 4, scale: 0.8, ox: -40,
   poses: [0, 1, 2, 3, 4, 5, 6, 7].map(i => Object.assign({}, GO[i % 4], { rx: r2(GO_D * i / 8) })).concat([{ rx: GO_D, aL: [3, 0], aR: [-3, 0] }, { rx: GO_D, aL: [3, 0], aR: [-3, 0] }]) };
+/* (.60) the verbs of Lessons 9-10, each drawn so that it cannot be read as another action of the course.
+   run (courir): seen from the side, leaning forward, the knees coming high, the arms bent and pumping, both feet off the ground between
+     strides, the ground racing back and speed lines behind (walking is upright, a short stride, the arms low and straight, one foot always
+     down; jumping goes straight up from both feet, arms up);
+   fall (tomber): seen from the side, walking, the foot catches on a stone, the whole figure pitches forward, the arms thrown out to break
+     the fall, and lands flat on the ground, with a puff of dust; it lies a moment, fades, and walks in again (jumping goes up and lands on
+     its feet, upright; lying down / sleeping is a head on a pillow, still). The frozen frame (the card) is the middle of the fall: the body
+     slanting forward, arms out, one foot still on the stone, arcs behind it. */
+const R_A = { ry: -6, br: 20, bx: 3, lR: [-70, 82], lL: [42, 34], aL: [-72, -70], aR: [54, -62] }, R_B = { ry: -6, br: 20, bx: 3, lL: [-70, 82], lR: [42, 34], aR: [-72, -70], aL: [54, -62] },
+      R_M = { ry: 2, br: 20, bx: 3, lR: [-6, 10], lL: [28, 104], aL: [-10, -80], aR: [14, -80] }, R_N = { ry: 2, br: 20, bx: 3, lL: [-6, 10], lR: [28, 104], aR: [-10, -80], aL: [14, -80] };
+MOVES.run = { dur: 0.9, kt: [0, 0.25, 0.5, 0.75, 1], poses: [R_A, R_M, R_B, R_N, R_A], side: true, still: 0, scale: 1.04, ox: -2, run: true };
+const F_W = { lR: [-20, 10], lL: [20, 22], aL: [22, -12], aR: [-24, -18], fr: 0 }, F_T = { br: 8, lR: [28, 60], lL: [-16, 12], aL: [-40, -20], aR: [-60, -24], fr: 12 },
+      F_F = { br: 8, lR: [30, 50], lL: [4, 22], aL: [-96, -20], aR: [-112, -16], fr: 40 }, F_L = { br: 4, lR: [8, 30], lL: [2, 24], aL: [-128, 8], aR: [-140, 6], fr: 76 };
+MOVES.fall = { dur: 3.6, kt: [0, 0.12, 0.26, 0.4, 0.5, 1], poses: [F_W, F_W, F_T, F_F, F_L, F_L], side: true, still: 3, scale: 0.74, ox: -50, fade: true, fall: true, pivot: "84 178" };
 const ACT_SPEED = 2;
 function action(act, who, opts){
   opts = opts || {};
@@ -1412,13 +1427,27 @@ function action(act, who, opts){
       [30, 56, 82, 108, 134, 160].map(x => `<path d="M${x} 186.5 h11" stroke="#b9bec6" stroke-width="3" stroke-linecap="round"/>`).join("") + `</g></g>`;
     if (still && K.house !== "left") front += `<path d="M22 112 h14 M16 126 h18 M22 140 h14" stroke="#b9bec6" stroke-width="3.4" stroke-linecap="round"/>`;
   }
+  if (K.run){                                              // (.60) running: the ground races back, speed lines behind the runner
+    back += `<clipPath id="${u}g"><rect x="18" y="176" width="124" height="14"/></clipPath><g clip-path="url(#${u}g)"><g>` + loop(`type="translate" values="0 0;-26 0"`, 0.3) +
+      [22, 48, 74, 100, 126, 152].map(x => `<path d="M${x} 186.5 h13" stroke="#b9bec6" stroke-width="3" stroke-linecap="round"/>`).join("") + `</g></g>`;
+    front += `<g>` + (still ? "" : `<animate attributeName="opacity" values="1;0.35;1;0.35;1" keyTimes="0;0.25;0.5;0.75;1" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"/>`) +
+      `<path d="M14 82 h22 M8 100 h26 M14 118 h20 M20 136 h14" stroke="#9aa3ae" stroke-width="3.6" stroke-linecap="round"/></g>`;
+  }
+  if (K.fall){                                             // (.60) falling: the stone it trips on, the dust where it lands, arcs of the fall in the frozen frame
+    const fx = r2(80 + K.ox + 4 * S + 7), D2 = r2(K.dur / ACT_SPEED);
+    back += `<ellipse cx="96" cy="182" rx="62" ry="4" fill="#000" opacity=".1"/><path d="M${r2(fx - 9)} 179 Q${r2(fx - 8)} 170 ${fx} 169 Q${r2(fx + 9)} 170 ${r2(fx + 10)} 179Z" fill="#9b9488" stroke="#6f695f" stroke-width="1.4"/><path d="M${r2(fx - 4)} 173 q3 -2 6 -1" stroke="#c2bcb1" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+    const puff = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#d9d2c4" stroke="#b8ae9c" stroke-width="1.2"/>`;
+    front += still ? `<path d="M30 62 Q50 50 72 58 M24 80 Q44 70 62 78" stroke="#9aa3ae" stroke-width="3.4" fill="none" stroke-linecap="round"/>`
+      : `<g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.48;0.51;0.72;0.82;1" dur="${D2}s" repeatCount="indefinite"/>` + puff(132, 176, 6) + puff(144, 172, 4.6) + puff(120, 179, 4) + puff(152, 178, 3.4) +
+        `<path d="M136 160 l-3 -8 M146 162 l4 -7 M126 163 l-6 -5" stroke="#9aa3ae" stroke-width="2.6" stroke-linecap="round"/></g>`;
+  }
   if (act === "jump" && still) front += `<path d="M62 160 Q80 169 98 160 M68 170 Q80 175.5 92 170" stroke="#b9bec6" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
   if (act === "dance"){                                     // music in the air: two notes that bob
     const note = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="0" rx="6" ry="4.4" fill="#6a55b8" transform="rotate(-20)"/><path d="M5.4 -1 V-22 q9 2 11 10" stroke="#6a55b8" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
     front += `<g>` + loop(`type="translate" values="0 0;0 -5;0 0"`, 0.6) + note(24, 62, 1) + `</g><g>` + loop(`type="translate" values="0 -5;0 0;0 -5"`, 0.6) + note(128, 50, 0.85) + `</g>`;
   }
   /* the figure itself; for the movements that are played once (K.fade) it fades out at the end and is back, in its first pose, when the loop begins again */
-  const fig = `<g>` + (K.fade && !still ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"/>` : "") + G("translate", P.map(p => `${p.rx} ${p.ry}`), body) + `</g>`;
+  const fig = `<g>` + (K.fade && !still ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"/>` : "") + G("translate", P.map(p => `${p.rx} ${p.ry}`), K.fall ? G("rotate", P.map(p => `${p.fr || 0} ${K.pivot}`), body) : body) + `</g>`;
   let ballG = "";
   if (K.ball){                                             // (.55) playing: the ball goes up from the foot and comes down on it again (it slows as it rises, as a thrown ball does)
     ballG = `<g transform="translate(${P[si].ball.join(" ")})">` + (still ? `<path d="M-6 16 v8 M6 16 v8 M0 19 v9" stroke="#b9bec6" stroke-width="2.8" stroke-linecap="round"/>`
@@ -2740,7 +2769,29 @@ function newspaperOpen(k){
     `<path d="M88 55 L144 62.500 M88 64 L126 69" stroke="#55585f" stroke-width="5"/>` + col(88, 76, 24, 9, 0.135) + `<path d="M118 80 L144 83.500 V112 L118 108.500Z" fill="#e3c9a0" stroke="#6d737c" stroke-width="1.2"/>` + col(118, 122, 26, 3, 0.135) + `<path d="M80 44 V148" stroke="#8a867a" stroke-width="2.2"/>`;
 }
 /* --- every kind of thing, by name --- */
-const THING = { cake, pizza, coffee, glass, banana, plate, bus, table, chair, bag, box, house, door, window: windowPic, cat, tree, bicycle,
+/* (.60) a horse (un cheval, Lesson 10): seen from the side, facing left, standing on its four long legs with dark hooves; a long neck and
+   head (the long face and the muzzle, the pointed ears up), a dark mane down the neck and a long dark tail. Not the dog (a round head,
+   short legs, a short tail) nor the cat (always the face to the viewer). looks: brown (the default), black, white, grey; "small": a foal. */
+const HORSE = { brown: { a: "#a8703c", b: "#8a5a2c", d: "#5e3a1a", m: "#3b2614" }, black: { a: "#3a3a40", b: "#2a2a2f", d: "#121216", m: "#0c0c0f" },
+  white: { a: "#f4f1ea", b: "#ddd7cb", d: "#8f877a", m: "#b9b2a5" }, grey: { a: "#a9adb3", b: "#8c9097", d: "#5a5e65", m: "#4a4d53" } };
+function horse(k){
+  const C = HORSE[["black", "white", "grey"].find(x => k.has(x)) || "brown"], st = `stroke="${C.d}" stroke-width="1.6" stroke-linejoin="round"`;
+  const leg = (x, y0, far) => `<path d="M${x} ${y0} L${x - 1} 150 L${x} 166" stroke="${C.d}" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M${x} ${y0} L${x - 1} 150 L${x} 166" stroke="${far ? C.b : C.a}" stroke-width="9" fill="none" stroke-linecap="round"/>` +
+    `<rect x="${x - 6.5}" y="164" width="13" height="8" rx="2" fill="#2b2420" stroke="#15110e" stroke-width="1"/>`;
+  return `<ellipse cx="84" cy="173" rx="62" ry="5" fill="#000" opacity=".12"/>` +
+    `<path d="M126 92 Q146 104 140 148 Q138 154 134 148 Q136 116 122 102Z" fill="${C.m}" stroke="${C.d}" stroke-width="1.2"/>` +      // the tail
+    leg(60, 110, 1) + leg(114, 110, 1) +
+    `<path d="M54 98 Q48 74 38 52 L30 40 Q34 32 44 34 Q60 50 74 86Z" fill="${C.a}" ${st}/>` +       // the neck
+    `<path d="M41 33 Q34 30 28 36 L12 66 Q10 74 18 76 Q24 77 28 72 L44 50 Q48 40 41 33Z" fill="${C.a}" ${st}/>` +      // the head, the long face
+    `<ellipse cx="17" cy="70" rx="7.4" ry="6.4" fill="${C.b}" ${st}/><ellipse cx="15" cy="69" rx="1.6" ry="2.2" fill="${C.d}"/>` +      // the muzzle and a nostril
+    `<path d="M38 34 L37 18 L45 30Z M44 36 L48 22 L52 37Z" fill="${C.a}" ${st}/>` +      // the ears
+    `<circle cx="34" cy="45" r="3" fill="#1b1410"/><circle cx="35" cy="44" r="1" fill="#fff"/>` +      // the eye
+    `<path d="M44 34 Q56 46 64 66 Q70 78 78 86 L84 84 Q74 70 68 56 Q60 40 50 32Z" fill="${C.m}" stroke="${C.d}" stroke-width="1"/>` +      // the mane
+    `<path d="M48 96 Q52 82 76 82 L112 84 Q132 84 132 104 Q132 122 112 124 L64 124 Q48 122 48 108Z" fill="${C.a}" ${st}/>` +      // the body, over the foot of the neck
+    `<path d="M52 92 Q58 84 70 84" stroke="${C.a}" stroke-width="6" fill="none" stroke-linecap="round"/>` +
+    leg(56, 116) + leg(118, 116);
+}
+const THING = { cake, pizza, coffee, glass, banana, plate, bus, table, chair, bag, box, house, door, window: windowPic, cat, tree, bicycle, horse,
   face: faceCard, "french flag": flag, flag, "picture card": card, card, newspaper, letter, weather, book: bookS, apple: appleS, pen: penS, shoe: shoeS,
   ball, hat, phone, bread, flower, lamp, shirt, trousers, dress, fish, cheese, tomato, plane, motorbike, boy: kid, girl: kid, baby,
   heart, foot, hand: handPic, head: headPic, town, street, restaurant,
