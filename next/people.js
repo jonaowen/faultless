@@ -1911,7 +1911,7 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 58, chest: 1.1, waist: 1.1, rSh: 1.08, sy: 0.072, nb: 0.142, neckUp: 63, chairUp: 0.16, fwd: 0.4, palmHd: [0.25, -0.3, 0.92], palmPn: [-0.1, 0.8, 0.6], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, chestDx: -10, chestDy: -8, chestRot: -112, rNeck: 1.15, chairCol: ["#b0a291", "#857767"],
+const TUT0 = { sw: 61, chest: 1.16, waist: 1.15, rSh: 1.1, sy: 0.088, nb: 0.168, neckUp: 63, chairUp: 0.16, fwd: 0.4, palmHd: [0.25, -0.3, 0.92], palmPn: [-0.1, 0.7, 0.72], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 20, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 1.15, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
@@ -1981,7 +1981,7 @@ function tutor(c, o){
     M.tg.setAttribute("cy", f2s(cy + H - 1.5 - 3.5 * tongue * open)); M.tg.setAttribute("rx", f2s(Wd * 0.7)); M.tg.setAttribute("opacity", (open > 0.15 ? 0.55 + 0.45 * tongue : 0).toFixed(2));
     M.tf.setAttribute("opacity", fv > 0.5 ? 1 : 0);
   }
-  const W = wearer(c, { legs: o.legs || ["#5a6272", "#3f4654"], tag: o.tag == null ? "Marie" : o.tag, tagAt: [0.033, 0.047], tagBox: [50 / S, 23 / S], tagId: "claireTag", live: true, mouthInner, smile: 0.5 }, u);
+  const W = wearer(c, { legs: o.legs || ["#5a6272", "#3f4654"], tag: o.tag == null ? "Marie" : o.tag, tagAt: [0.033, TUT.tagY], tagBox: [50 / S, 23 / S], tagId: "claireTag", live: true, mouthInner, smile: 0.5 }, u);
   /* ----- the body: the seated pose; the small sway of sitting still (x: 0 .. 1 along the captured two seconds; only the trunk's part of
      it: the head stays level and the hands stay where they are); the head bent forward for a nod (a: radians) ----- */
   const keyOf = (x, a) => { const k = Float32Array.from(base);
@@ -2026,7 +2026,8 @@ function tutor(c, o){
   function armsList(k, t){
     const J = skeleton(k, B), hands = {};
     for (const ps of ["L", "R"]){ const side = ps === "L" ? "R" : "L", sg = side === "L" ? 1 : -1, off = side === "L" ? 33 : 45, p0 = pose[ps] || REST[ps], st = ST[ps], sh = J["sh" + side];
-      const p = p0.shape === "flat" && typeof p0.rot === "number" && p0.y < 500 && Math.abs(p0.rot + 118) < 20 ? Object.assign({}, p0, { x: p0.x + (ps === "L" ? 1 : -1) * TUT.chestDx, y: p0.y + TUT.chestDy, rot: TUT.chestRot }) : p0;      // the flat hand on her chest lies higher, on the breastbone, its fingers toward the far shoulder: above her name tag, which stays readable
+      const p = p0.shape === "flat" && typeof p0.rot === "number" && p0.y < 500 && Math.abs(p0.rot + 118) < 20 ? Object.assign({}, p0, { x: p0.x + (ps === "L" ? 1 : -1) * TUT.chestDx, y: p0.y + TUT.chestDy, rot: TUT.chestRot })
+        : p0.shape === "point" && typeof p0.rot === "number" && Math.abs(Math.abs(p0.rot) - 90) < 15 && p0.y > 440 && p0.y < 500 && Math.abs(p0.x - 200) < 60 ? Object.assign({}, p0, { y: p0.y + TUT.selfDy }) : p0;      // her finger on her own name tag: on the tag where this body wears it      // the flat hand on her chest lies higher, on the breastbone, its fingers toward the far shoulder: above her name tag, which stays readable
       const offer = p.shape === "palmup" && (p.fs == null ? 1 : p.fs) < 0.9, px = p.x + (offer ? (ps === "L" ? -1 : 1) * TUT.palmOut : 0);      // the open hand offered: a little out to the side as well as forward
       const wr = reach(sh, px, p.y, depth(px, p.y, p.fs, J)), E = elbow(sh, wr, sg), O = orient(p, E.fd, side, sg), key = p.shape + "|" + (typeof p.rot === "number" ? "n" : p.rot);
       if (st.key !== key){ const jump = st.x != null && Math.hypot(p.x - st.x, p.y - st.y) > 45; st.from = st.last && !jump && st.key ? st.last : null; st.t = t; st.key = key; }      // a new shape: the hand changes into it over 130 ms (at once if the arm was put there at once)
