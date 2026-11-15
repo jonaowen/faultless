@@ -918,9 +918,16 @@ function migrate62(){
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
   S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
   const old=(S.delayed||[]).filter(d=>ch(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
-  if(done) for(const e of L.exercises) S.finished[e.id]=true;      // the lesson the learner had finished stays finished
-  if(had.length || old.length)
-    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": il / elle made anew on men and women with no name (R-154); records dropped of "+(had.length ? had.join(", ") : "no finished exercise")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  const TEACH = ["L4E8","L4E9","L4E10"];
+  if(done) for(const e of L.exercises) if(!TEACH.includes(e.id)) S.finished[e.id]=true;      // the lesson the learner had finished stays finished (but the new teaching of il / elle)
+  /* (.62; the delta reader's N8, the coordinator's ruling) a learner saved after L4E7 did the OLD teaching of il / elle and would meet men and
+     women with no name first in tests with no model: such a learner is sent once to the new teaching, L4E8-E10, and then goes back to the
+     place they were at (main: S.detour). A learner in Lesson 4 itself needs no detour: E8-E10 are no longer finished, and the lesson runs
+     every exercise not finished from its first, so they come before the learner's place. */
+  let sent=false;
+  if(S.lesson>3){ S.detour={lesson:3, ids:TEACH.slice(), back:{lesson:S.lesson, ex:S.ex}}; S.lesson=3; S.ex=7; sent=true; }
+  if(had.length || old.length || sent)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": il / elle made anew on men and women with no name (R-154); records dropped of "+(had.length ? had.join(", ") : "no finished exercise")+(old.length?"; delayed tests dropped: "+old.length:"")+(sent?"; this learner does the new teaching (L4E8-E10) once, then goes back to Lesson "+(S.detour.back.lesson+1)+", exercise "+(S.detour.back.ex+1):""), heard:[]});
   S.courseRev=62;
 }
 /* (.61) Lesson 8 is new; Lessons 1-7 are as .60 (their files are the same). A place anywhere in Lessons 1-7 stands, with its delayed
@@ -4280,6 +4287,15 @@ async function runDelayed(d, anchor){
 }
 
 async function main(){
+  /* (.62) a detour (migrate62): the exercises it names are done first, from the lesson it names; then the learner goes back to the place
+     they were at. It is kept in the saved state until it is over, so that a lesson stopped half way through it comes back to it. */
+  if(S.detour){ const d=S.detour, DL=LESSONS[d.lesson];
+    trace("detour: "+d.ids.join(", ")+", then back to Lesson "+(d.back.lesson+1)+", exercise "+(d.back.ex+1));
+    for(const id of d.ids){ const ei=DL ? DL.exercises.findIndex(e=>e.id===id) : -1; if(ei>=0 && !S.finished[id]) await runExercise(d.lesson, ei); }
+    S.detour=null; S.lesson=Math.min(d.back.lesson, LESSONS.length-1); S.ex=d.back.ex;
+    const B=LESSONS[S.lesson];
+    if(B.exercises.every(e=>S.finished[e.id]) && S.lesson+1<LESSONS.length){ S.lesson++; S.ex=0; LESSONS[S.lesson].exercises.forEach(e=>delete S.finished[e.id]); }      // they had finished that lesson: on to the next
+    logEntry({result:"DETOUR OVER: back to Lesson "+(S.lesson+1)+", exercise "+(S.ex+1), heard:[]}); save(); lessonTag(); }
   const lesson=LESSONS[S.lesson];
   // start of a lesson: delayed tests due at the start of this lesson
   if(S.ex===0 && !S.finished[lesson.exercises[0].id]){
