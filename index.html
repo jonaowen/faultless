@@ -3304,10 +3304,13 @@ const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; con
   return n; };
 const slotsShown = t => { const row=(t.scene && t.scene.row)||[], out=row.map((x,i)=>"s"+i+": "+slotName(t.scene, "s"+i)); if((t.targets||[]).includes("self")) out.push("self: "+VOCAB.claire.name); return out; };
 // the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
+/* (.62; R-154, L4E10: either man is right for "Il.", either woman for "Elle.") slot may be a list: her hand taps each right picture in turn,
+   so that a correction does not show one of two right answers as if it were the only one */
 async function tapModel(t, by, slot){
+  const slots=[].concat(slot);
   await setPortraits(t.scene); gestureEar();
-  if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); await handTap(by, slot); }
-  else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); await handTap(by, slot); })()]);
+  if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); for(const s1 of slots) await handTap(by, s1); }
+  else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); for(const s1 of slots) await handTap(by, s1); })()]);
   const done = actx ? actx.currentTime : 0;      // (.45) the end of the model, for the pause after it in a correction (corrModel)
   await sleep(250); handHide(); rest();
   return done;
@@ -4036,7 +4039,7 @@ async function ownNameCorrection(task, o={}){
    the next (clipGap). Her hand is at her ear from "Non, écoute." to the end of the model; the open palm comes with "Vas-y.". */
 async function corrModel(task){
   if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : "", framed:true}); return; }
-  if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct[0]); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
+  if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
   /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
      the border on the single card and then on the card asked about (course field correction). */
   if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart;
