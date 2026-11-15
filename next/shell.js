@@ -170,7 +170,7 @@ const SHELL = (()=>{
      passed since the last level over the lessons between the two; inside it, brighter, the share of those lessons that are perfect (it never
      holds a level back). ---- */
   const LEVELS = (CW.levels||[]).map(x=>({id:x.id, lesson:x.lesson, canDo:[].concat(x.canDo||[])}));
-  const perfectIn = (a,b)=>LESSONS.filter((L,i)=>i>=a && i<b && G.lp[L.id]).length;      // lesson indexes a..b-1
+  const perfectIn = (a,b)=>LESSONS.filter((L,i)=>i>=a && i<b && G.lp[L.id]).length;      // lesson indexes a..b-1; a lesson made all green by repairs counts (the gold share grows with repairs)
   function levelNow(){ if(!LEVELS.length) return null; let from=0; const passed=G.furthest;
     for(let k=0;k<LEVELS.length;k++){ const Lv=LEVELS[k], span=Lv.lesson-from;
       if(passed<Lv.lesson){ const done=Math.max(0, passed-from); return {k, Lv, from, span, done, pct:Math.max(0, Math.min(100, Math.floor(100*done/span))), perf:Math.floor(100*perfectIn(from, passed)/span)}; }
@@ -181,7 +181,7 @@ const SHELL = (()=>{
     return `<div class="card cefr"><div class="row"><b>Your French</b><small>in speaking and listening</small></div>
       <div class="lv">${LEVELS.map((Lv,k)=>`<div class="lvc${k<n.k?" done":k===n.k?" now":""}"><span>${k<n.k?ic("check"):""}${Lv.id}</span><i style="--p:${k<n.k?100:k===n.k?Math.max(n.pct,2):0}%;--q:${k<n.k?100:k===n.k?n.perf:0}%"></i></div>`).join("")}</div>
       ${n.Lv ? `<div class="lvnow"><b class="num">${n.pct}%</b><span>of the way to <b>${n.Lv.id}</b><small>${n.done} of ${n.span} lessons${n.perf?` · ${perfectIn(n.from, G.furthest)} of them perfect`:""}</small></span></div>
-        ${full ? `<div class="lvwill"><small>At ${n.Lv.id}</small>${n.Lv.canDo.slice(0,full?3:1).map(t=>`<p>${esc(t)}</p>`).join("")}</div><p class="lvnote">${esc((CW.levelLimits||[])[1] ? "Where the levels fall may move a little as the course is built." : "")}</p>` : ""}` : `<div class="lvnow"><b class="num">C2</b><span>reached</span></div>`}</div>`; }
+        ${full ? `<div class="lvwill"><small>At ${n.Lv.id}</small>${n.Lv.canDo.slice(0,full?3:1).map(t=>`<p>${esc(t)}</p>`).join("")}</div>` : ""}<p class="lvnote">Levels as planned</p>` : `<div class="lvnow"><b class="num">C2</b><span>reached</span></div>`}</div>`; }
   function levelParty(Lv, then){ const o=$("lvl"); o.innerHTML=`<div class="lvbig" aria-hidden="true"><span>${Lv.id}</span></div><h1>You have reached ${Lv.id}</h1><div class="sub center">in speaking and listening</div>
       <div class="card trip">${Lv.canDo.map(t=>`<div>${ic("check")}<p>${esc(t)}</p></div>`).join("")}</div><div class="spacer"></div><button class="btn" id="lvGo">Continue</button>`;
     o.hidden=false; o.scrollTop=0; fete(o, true); $("lvGo").onclick=()=>{ tick(); o.hidden=true; stopFete(); if(then) then(); }; }

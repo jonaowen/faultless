@@ -260,3 +260,5 @@ html[data-motion="less"] #bar.perfect:after, html[data-motion="less"] #bar .chee
 .slots{grid-template-columns:repeat(auto-fit,minmax(152px,1fr))} .slots.one{grid-template-columns:1fr} .slot .k,.slot .v{overflow-wrap:anywhere}
 /* lesson complete: Continue is always in reach (the screen can be long: a badge, new words, the stage and the levels) */
 #done #doneBtn{position:sticky;bottom:calc(10px + var(--sab));z-index:2;box-shadow:0 4px 0 var(--accent-press), 0 -14px 22px 6px var(--paper)}
+/* (the owner, §13) the perfected share inside the level's bar is GOLD: it grows when old exercises are perfected */
+.lvc i{background:linear-gradient(90deg,var(--sun) var(--q),#8DCB9F var(--q),#8DCB9F var(--p),var(--paper-3) var(--p))}
