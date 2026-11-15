@@ -1455,7 +1455,7 @@ const FRINGE = [[-180, -50], [-112, -50], [-84, -44], [-70, -18], [-58, 6], [-34
    (a = where it hangs from, in half head-heights in the head's frame; drop = how far below that its middle is; r = its half-sizes: across,
    down, front to back); tail = a ponytail; ears: false = the hair covers them */
 const STYLE = {
-  short: { v: 0.1, top: 0.12, quiff: 0.16, at: SHORT },
+  short: { v: 0.09, top: 0.07, quiff: 0.07, at: SHORT },
   side:  { v: 0.1, top: 0.1, quiff: 0.14, at: SHORT.map(q => [-q[0], q[1]]).reverse(), flip: -1 },
   crop:  { v: 0.05, top: 0.02, quiff: 0, at: TIGHT },
   kid:   { v: 0.13, top: 0.12, quiff: 0.2, at: SHORT },
@@ -1475,9 +1475,9 @@ function lineAt(L, az){ const a = L.at, n = a.length; let i = 1; while (i < n - 
 function head(J, B, cam, c, out, zb){
   const hh = B.hh, Bh = J.Bh, o = J.head, S = cam.scale, sk = c.skinM, hr = c.hairM, px = hh * S, big = px >= 30;
   const ax = (r) => [cam.lin(mul(Bh.x, r[0] * hh)), cam.lin(mul(Bh.y, r[1] * hh)), cam.lin(mul(Bh.z, r[2] * hh))];
-  const crC = [0, 0.12, -0.04], crR = [0.84, 0.88, 0.9], cr0 = at(o, Bh, mul(crC, hh)), jw0 = at(o, Bh, [0, -0.36 * hh, 0.17 * hh]), jwR = [0.64, 0.62, 0.6];
+  const crC = [0, 0.12, -0.04], crR = [0.84, 0.88, 0.9], cr0 = at(o, Bh, mul(crC, hh)), jw0 = at(o, Bh, [0, -0.31 * hh, 0.13 * hh]), jwR = [0.72, 0.69, 0.66];
   const Ecr = ellipse(cam.pt(cr0), ax(crR)), Ejw = ellipse(cam.pt(jw0), ax(jwR)); Ecr.n = 44; Ejw.n = 36;
-  const z = cam.pt(o)[2] + zb, e = 0.07 * px, rim = Math.min(1.1, 0.045 * px);
+  const z = cam.pt(o)[2] + zb, e = 0.05 * px, rim = Math.min(0.9, 0.035 * px);
   const vl = [dot(Bh.x, cam.view), dot(Bh.y, cam.view), dot(Bh.z, cam.view)];                    // the way to the viewer, in the head's own frame
   /* the hair lies on the skull, proud of it (v), prouder on top and at the front (the quiff), thinning to nothing at its edge behind the
      ears and at the nape. It is laid on as small patches from its edge to the crown; each patch is cut where the surface turns away from
@@ -1523,10 +1523,10 @@ function head(J, B, cam, c, out, zb){
       <path d="M-.19 0Q0 -.177 .19 -.013" stroke="${lid}" stroke-width="${c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8"/>` + (c.fem ? `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
   const browArt = sg => big ? `<path d="M${-0.21 * sg} .03q${0.21 * sg} -.13 ${0.42 * sg} -.04q${-0.21 * sg} -.04 ${-0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${-0.15 * sg} .03Q${-0.02 * sg} -.07 ${0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
-  const sm2 = c.smile || 0, mouthArt = big ? `<path d="M-.27 ${f2(-0.05 - 0.04 * sm2)}Q0 ${f2(0.135 + 0.1 * sm2)} .27 ${f2(-0.05 - 0.04 * sm2)}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${f2(-0.05 - 0.04 * sm2)}Z" fill="${c.lip}"/><path d="M-.27 ${f2(-0.05 - 0.04 * sm2)}Q0 ${f2(0.03 + 0.03 * sm2)} .27 ${f2(-0.05 - 0.04 * sm2)}" stroke="${c.lipC}" stroke-width=".018" fill="none" opacity=".7"/>`
-    : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.08 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
+  const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
+    : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.06 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
   const noseArt = `<path d="M-.05 -.2Q-.09 .03 -.11 .15Q-.07 .2 -.01 .19" stroke="${sk.n[1]}" stroke-width=".034" fill="none" opacity=".75" stroke-linecap="round"/><ellipse cx="-.078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/><ellipse cx=".078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/>`;
-  const nb = cam.pt(at(o, Bh, [0, -0.2 * hh, 0.78 * hh])), nt = cam.pt(at(o, Bh, [0, -0.38 * hh, 0.9 * hh])), nr = 0.08 * px, side = Math.abs(vl[0]) > 0.5;
+  const nb = cam.pt(at(o, Bh, [0, -0.2 * hh, 0.74 * hh])), nt = cam.pt(at(o, Bh, [0, -0.38 * hh, 0.83 * hh])), nr = 0.075 * px, side = Math.abs(vl[0]) > 0.5;
   const parts = [];
   parts.push({ id: "earF", z: z - 0.02, mat: "earF", layers: [[farEars, sk.f[0]]] });
   parts.push({ id: "skull", z, mat: "skin", layers: [[skullD, sk.n[2]], [hullOf(skull, -rim / 2, -LIGHT[0] * rim / 2, -LIGHT[1] * rim / 2), sk.n[1]], [hullOf(skull, -e, LIGHT[0] * (e - rim), LIGHT[1] * (e - rim)), sk.n[0]]], cast: (dx, dy) => hullOf(skull, 0, dx, dy) });
@@ -1538,7 +1538,7 @@ function head(J, B, cam, c, out, zb){
   if (L.ears !== false) nearEars.forEach((x, i) => parts.push({ id: "earN" + i, z: z + 0.003, mat: "ear", layers: [[x.d, sk.n[1]], [x.d2, sk.n[0]]] }));
   parts.push({ id: "skc", z: z + 0.0035, tag: "cp", d: skullD });
   const blush = `<ellipse rx=".23" ry=".13" fill="url(#${c.u}bl)"/>`;
-  const shine = `<path d="M-.3 .05Q0 -.12 .3 .02Q0 -.03 -.3 .05Z" fill="${hr.hi}" opacity=".5"/>`;
+  const shine = `<path d="M-.24 .04Q0 -.09 .24 .02Q0 -.03 -.24 .04Z" fill="${hr.hi}" opacity=".3"/>`;
   const F = [{ id: "shine", tag: "g", m: (() => { const f = feat("x", [-0.25 * (vl[0] > 0 ? -1 : 1), 0.86 + L.top * 0.6, 0.32], vl[0] > 0 ? 30 : -30, "", -9); return f.m; })(), inner: shine, hide: L.v < 0.04 },
     feat("chkL", [0.42, -0.38, 0.6], 38, blush, 0.5), feat("chkR", [-0.42, -0.38, 0.6], -38, blush, 0.5),
     feat("eyeL", [0.34, -0.015, 0.73], 24, eyeArt(1)), feat("eyeR", [-0.34, -0.015, 0.73], -24, eyeArt(-1)), feat("browL", [0.34, 0.25, 0.74], 24, browArt(1)), feat("browR", [-0.34, 0.25, 0.74], -24, browArt(-1)),
@@ -1584,7 +1584,7 @@ function frame(k, B, cam, c, floor, o){
   parts.push({ id: "hemS", z: zt - 0.001, mat: "hemS", layers: [[ellPath(Ehm, -0.004 * S, 0.006 * S, 0.02 * S), G.f[1]]] });
   const Ecl = ellipse(P(at(J.nb, J.Bc, [0, -0.01, 0.004])), lax(J.Bc, [B.rNeck * 1.5, 0.02, B.rNeck * 1.42])), nk = (a, b) => capsule(a[0], a[1], B.rNeck * S, b[0], b[1], B.rNeck * 0.97 * S);
   parts.push({ id: "collar", z: zt + 0.001, mat: "collar", layers: [[ellPath(Ecl, 0, 0, 0), T.f[1]]] });
-  parts.push({ id: "neck", z: zt + 0.002, mat: "neck", layers: [[nk(P(add(J.nb, mul(sub(J.nb, J.skull), 0.25))), P(J.skull)), sk.n[1]]] });
+  parts.push({ id: "neck", z: zt + 0.002, mat: "neck", layers: [[nk(P(add(J.nb, mul(sub(J.nb, J.skull), 0.05))), P(J.skull)), sk.n[1]]] });
   { const w = 0.016 * S, a = Math.max(1, Ecl.a - w / 2), b = Math.max(0.4, Ecl.b - w / 2), ct = Math.cos(Ecl.th), st = Math.sin(Ecl.th); let d = "";
     for (let i = 0; i <= 10; i++){ const t = (0.02 + 0.96 * i / 10) * Math.PI, x = a * Math.cos(t), y = b * Math.sin(t); d += (i ? "L" : "M") + f1(Ecl.c[0] + x * ct - y * st) + " " + f1(Ecl.c[1] + x * st + y * ct); }
     parts.push({ id: "collarF", z: zt + 0.0025, mat: "collarF", stroke: [d, T.rib, f1(w)] }); }
@@ -1662,7 +1662,7 @@ function wearer(c, o, u){
   defs.push(`<radialGradient id="${u}sh"><stop offset="0" stop-color="#1d2233" stop-opacity=".34"/><stop offset=".55" stop-color="#1d2233" stop-opacity=".16"/><stop offset="1" stop-color="#1d2233" stop-opacity="0"/></radialGradient>`);
   defs.push(`<radialGradient id="${u}bl"><stop offset="0" stop-color="#e98a7a" stop-opacity="${c.kid ? 0.5 : 0.34}"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>`);
   const top = material(c.top[0], c.top[1]); top.rib = mixc(c.top[0], c.top[1], 0.55);
-  return { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.5), mixc(c.skin[1], c.skin[2], 0.55)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
+  return { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.62), mixc(c.skin[1], c.skin[2], 0.3)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
     shoeM: { n: ["#4a4340", "#2c2623"], f: ["#3a3431", "#231e1c"], sole: "#e6dfd2", soleF: "#bdb6aa" }, style: c.style, ink: "#2a2422", browC: c.brow || c.hair[2], lip: c.lip || "#bf6660", lipC: mixc(c.lip || "#bf6660", "#7a3030", 0.3), iris: c.iris,
     curl: o.curl, smile: o.smile, shadow: `url(#${u}sh)`, defs: defs.join(""), fem: c.fem, kid: c.kid, beard: c.beard, bow: c.bow, tag: o.tag };
 }
@@ -1712,7 +1712,7 @@ function act(name, c, o){
   const C = clipOf(name), B = bodyOf(c, o), still = !!o.still, x = 80 + (o.ox || 0), k = o.k || 1, g = mk(""), u = "fg" + (seq++) + "_";
   let back = "", front = "";
   if (C.trav){                                              // the ground goes by: marks on it, one stride's length to the loop, so that a foot on the ground does not slide
-    const yaw = C.yaw * Math.PI / 180, cam = camera(yaw, 7 * Math.PI / 180, B.H * k, x, GY), T = C.trav * (B.thigh + B.shin), m = Math.max(1, Math.round(T * B.H * k * Math.sin(yaw) / 24)), sp = T / m;
+    const yaw = C.yaw * Math.PI / 180, cam = camera(yaw, 7 * Math.PI / 180, B.H * k, x, o.y != null ? o.y : GY), T = C.trav * (B.thigh + B.shin), m = Math.max(1, Math.round(T * B.H * k * Math.sin(yaw) / 24)), sp = T / m;
     const a = cam.pt([-0.2, 0, 0]), b = cam.pt([-0.2, 0, 0.07]), d = cam.lin([0, 0, -sp]); let marks = "";
     for (let i = -8; i <= 8; i++) marks += `M${f1(a[0] - d[0] * i)} ${f1(a[1] - d[1] * i)}L${f1(b[0] - d[0] * i)} ${f1(b[1] - d[1] * i)}`;
     back += `<clipPath id="${u}g"><rect x="12" y="146" width="136" height="44"/></clipPath><g clip-path="url(#${u}g)"><g>` + (still ? "" : `<animateTransform attributeName="transform" type="translate" values="0 0;${f2(d[0])} ${f2(d[1])}" dur="${f2(C.dur / m)}s" repeatCount="indefinite"/>`) +
@@ -1720,7 +1720,7 @@ function act(name, c, o){
   }
   if (name === "run") front += `<g>` + (still ? "" : `<animate attributeName="opacity" values="1;0.4;1;0.4;1" keyTimes="0;0.25;0.5;0.75;1" dur="${C.dur}s" repeatCount="indefinite"/>`) + `<path d="M16 92h20M9 108h24M18 124h15" stroke="#414B5E" stroke-opacity=".3" stroke-width="2.8" stroke-linecap="round"/></g>`;
   if (name === "jump" && still) front += `<path d="M64 162Q80 169 96 162M70 169.5Q80 173.5 90 169.5" stroke="#414B5E" stroke-opacity=".26" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
-  g.innerHTML = back; g.appendChild(figure(c, Object.assign({}, o, { clip: name, x, y: GY, k }))); const f = mk(front); while (f.firstChild) g.appendChild(f.firstChild);
+  g.innerHTML = back; g.appendChild(figure(c, Object.assign({}, o, { clip: name, x, y: o.y != null ? o.y : GY, k }))); const f = mk(front); while (f.firstChild) g.appendChild(f.firstChild);
   return g;
 }
 return { figure, act, CLIPS, clipOf, STAT };
@@ -1742,7 +1742,7 @@ function action(act, who, opts){
   if (act === "sing"){ spec.doing = "singing"; spec._act = still ? "still" : "anim"; return bust(spec, name); }       // chanter: a microphone, the mouth wide open, notes
   if (act === "write"){ spec.doing = "writing"; return writer(spec, name, !still); }                                  // (.59) écrire: a sheet flat on a table, the pen moving along a line, the ink behind it
   if (act === "read"){ spec.doing = "reading"; return reader(spec, name); }                                            // lire: the open book held in both hands, eyes down on it      // dormir: the head on a pillow, the eyes shut, z z z
-  if (act === "stop" && !opts.card && !opts.size && !opts.old && who === "you" && opts.sex !== "f" && !(opts.spec && opts.spec.is) && !(opts.looks && opts.looks.length)) return FIG.act("stand", traits(spec), { still: true, k: opts.k || 1, ox: opts.ox || 0, yaw: opts.yaw, heads: opts.heads, smile: 1, y: opts.y });
+  if (act === "stop" && !opts.card && !opts.size && !opts.old && who === "you" && opts.sex !== "f" && !(opts.spec && opts.spec.is) && !(opts.looks && opts.looks.length)) return FIG.act("stand", traits(spec), { still: true, k: opts.k || 1, ox: opts.ox || 0, yaw: opts.yaw, heads: opts.heads, smile: 0.5, y: opts.y });
   if (FIG.CLIPS[act] && !opts.card && !opts.size && !opts.old && !opts.bare && who === "you" && opts.sex !== "f" && !(opts.spec && opts.spec.is) && !(opts.looks && opts.looks.length)){      // so far: the learner as a man (the others follow, each with their own hair and build)      // (the overhaul) the actions keyed from motion capture: one body, one camera
     const c0 = traits(spec), L0 = c0.L, lg = L0.suit ? COL[c0.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
     return FIG.act(opts.clip || act, c0, { still, legs: lg, heads: opts.heads, y: opts.y, k: opts.k || { jump: 0.88 }[act] || 1, ox: opts.ox != null ? opts.ox : (MOVES[act].ox || 0) + ({ run: -2, walk: -2 }[act] || 0), phase: opts.phase, yaw: opts.yaw }); }
