@@ -258,3 +258,5 @@ html[data-motion="less"] #bar.perfect:after, html[data-motion="less"] #bar .chee
 #lvl .sub{font:var(--t-body-l);color:var(--ink-2);margin-bottom:16px} .card.trip{display:grid;gap:12px} .trip > div{display:flex;gap:12px;align-items:flex-start} .trip .icon{color:var(--speak-deep)!important}
 /* large text on a narrow phone: the two moments stack rather than cut their words */
 .slots{grid-template-columns:repeat(auto-fit,minmax(152px,1fr))} .slots.one{grid-template-columns:1fr} .slot .k,.slot .v{overflow-wrap:anywhere}
+/* lesson complete: Continue is always in reach (the screen can be long: a badge, new words, the stage and the levels) */
+#done #doneBtn{position:sticky;bottom:calc(10px + var(--sab));z-index:2;box-shadow:0 4px 0 var(--accent-press), 0 -14px 22px 6px var(--paper)}
