@@ -204,6 +204,7 @@
 "use strict";
 const NS = "http://www.w3.org/2000/svg";
 let seq = 0;
+let LEARNER = null;                      // the learner's own figure, when one has been made (PICS.setLearner)
 const mk = html => { const g = document.createElementNS(NS, "g"); if (html) g.innerHTML = html; return g; };
 const r2 = v => Math.round(v * 100) / 100;
 
@@ -322,7 +323,14 @@ function traits(spec, variant){
       top: M ? ["#4a6b86", "#36536b"] : COL.green, topName: M ? "slate" : "green", iris: M ? "#5e3f27" : "#4a3524", style: M ? "marie" : "you", beard: false,
       brow: M ? "#4a3326" : "#2a2422", lip: M ? "#c4626a" : "#bf6660", cap: "orange", hat: "felt", band: "#2b2b30", pack: "orange", umb: "yellow", scarf: "mustard",
       coat: "camel", suit: "charcoal", tie: null, glasses: "#26262b", round: false, bag: "mustard" };
-    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
+    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });
+    /* (the overhaul) the learner's own figure (PICS.setLearner): "you" is the person the learner made, in every picture. On the new figure
+       the whole spec is drawn (c.av); the pictures still on the older drawing take from it what they can show: man or woman, skin, hair
+       (its colour and the nearest of their own cuts), eyes, beard, glasses, the colour of the top */
+    if (!M && LEARNER){ const A = FIG.person(LEARNER), sp = FIG.specParse(FIG.specString(LEARNER)), tn = FIG.AV.top[Math.min(FIG.AV.top.length - 1, sp.top | 0)];
+      Object.assign(c, { kind: A.fem ? "woman" : "man", skin: A.skin, hair: A.hair, top: A.top, topName: tn, iris: A.iris, beard: !!A.beard, brow: A.brow, lip: A.lip, bow: A.bow,
+        style: A.headwear ? (A.fem ? "bun" : "crew") : ({ short: "you", side: "sidepart", crop: "crew", bald: "bald", pony: "pony", long: "long", loose: A.fem ? "marie" : "longM", wavy: "wavy", bob: "bob", tucked: "marie" })[A.style] || (A.fem ? "pony" : "you"), av: A });
+      if (A.glassesOn) L.glasses = 1; }      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
   } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
@@ -2070,7 +2078,7 @@ function action(act, who, opts){
      stands by the measuring post, and falling, working, calling, playing, listening, going out: those are still the older drawing. */
   const FIGCLIP = { run: "run", walk: "walk", jump: "jump", dance: "dance", talk: "talk", "stand up": "standup", "sit down": "sitdown", arrive: "walk", leave: "walk", stop: "stand" };
   if (FIGCLIP[act] && !opts.card && !opts.size && !opts.old && !opts.bare && !opts.shift && !(opts.looks && opts.looks.length)){
-    const c0 = traits(spec), L0 = c0.L, lg = L0.suit ? COL[c0.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
+    const cT = traits(spec), c0 = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT, L0 = c0.L, lg = cT.av ? cT.av.legs : L0.suit ? COL[c0.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
     const ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[spec.person];       // the three identity colours (the design language, 9.1), as the middle tone of the jumper
     if (ID) c0.top = [tone(ID, 0.14), tone(ID, -0.2)];
     const P = { talk: { speaks: 1 }, arrive: { house: "right" }, leave: { house: "left" }, stop: { smile: 0.5, kmax: 1.12 } }[act];
@@ -2826,7 +2834,7 @@ function placePic(spec, draw){
   spec = spec || {};
   const D = draw || oneThing, rel = String(spec.rel || "on").toLowerCase().replace(/[^a-z]+/g, " ").trim(), G = spec.ground || {}, gk = String(G.is || "table").toLowerCase().trim(), ghost = !!spec.was;
   const T = bare(D(Object.assign({}, spec.thing, { count: 1 }))), put = (cx, yb, mw, mh) => fitted(T, cx, yb, mw, mh, ghost, 0.8);
-  const gl = lookOf({ looks: G.looks }), gc = gl.cn ? [gl.cn] : [], own = (kind, more, hook) => { const k = lookOf({ looks: gc.concat(more || []) }); Object.assign(k, hook); return THING[kind](k, {}); };
+  const gl = lookOf({ looks: G.looks }), gc = gl.cn ? [gl.cn] : [], own = (kind, more, hook) => { const k = lookOf({ looks: gc.concat(more || []) }); Object.assign(k, hook); const t = window.THINGS && THINGS.ground && THINGS.ground(kind, k); return t != null ? t : THING[kind](k, {}); };      // things.js: the new drawing of the ground (table, chair, box), when it has one
   const lay = (cx, cy, s, inner) => `<g transform="translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})">${inner}</g>`;
   if (gk === "table" && (rel === "on" || rel === "under"))
     return mk(rel === "on" ? lay(80, 172, 0.9, own("table")) + put(80, 97, 86, 80).s : lay(80, 172, 0.9, own("table", [], { under: put(80, 161, 66, 44).s })));
@@ -3606,7 +3614,10 @@ function together(act, opts){
   return g;
 }
 /* the teacher on the stage (see FIG.tutor): Marie as the course knows her (her skin, her brown hair to the shoulder, her navy) */
+/* PICS.setLearner(spec): the learner's own figure (the spec of the avatar maker: an object, or the string PICS.avatarString gives; null:
+   the usual learner again). From then on every picture of "you" is that person. PICS.learner(): the spec now set, or null */
+function setLearner(spec){ LEARNER = spec ? (typeof spec === "string" ? FIG.specParse(spec) : Object.assign({}, spec)) : null; return LEARNER; }
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
-window.PICS = { _fig: FIG, _thingsHook: true, tutor: tutorFig, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
+window.PICS = { _fig: FIG, _thingsHook: true, tutor: tutorFig, setLearner, learner: () => LEARNER, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
   things: Object.keys(THING).filter(k => !/^(book|apple|pen|shoe|flag|card|boy|girl)$/.test(k)) };
 })();
