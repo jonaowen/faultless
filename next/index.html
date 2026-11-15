@@ -2766,7 +2766,7 @@ async function setPortraits(sc){
   const first = curSceneKey===null;
   goldOff(); tagLit(null); lastPoint=null;
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
-  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
+  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : (BOARD_TALL && sc.row.length<=2) ? {y:24, h:166} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
@@ -3128,6 +3128,7 @@ async function cueAs(voice, units, at, item){
    ============================================================ */
 const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
 const BOARD = {key:null, b:null, boxes:[]};
+let BOARD_TALL = false;      // (next) this exercise has a board of four lines or more (set by runExercise)
 let BOARD_EX = null;      // (.28) the id of the exercise being run (null: no lesson running, as in the screen tools): a board shows only on its own items      // (.26) the DISE-style board shown now (boardShow)
 const TXT_Y = 250, TXT_SIZE = 24, TXT_BLUE = "#1F6FD6", TXT_INK = "#1B2433", TXT_HI = "#FFF1B8";
 const mkLayer = (id, parent) => { const g=document.createElementNS(svgNS,"g"); g.id=id; document.getElementById(parent).appendChild(g); return g; };
@@ -3227,10 +3228,10 @@ function boardShow(b){
   const key=JSON.stringify(b)+"|"+(learnerTagName()||"");
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
-  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
+  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE;      // (next) four lines keep 17: the cards above make room (BOARD_TALL) { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
   /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
      overlapped the bottom of the cards and the learner's name tag in the action box */
-  const lh=fs*1.25, y0 = n===1 ? TXT_Y : (n===2 ? 223 : 219) + fs*1.15;
+  const lh=fs*1.25, y0 = n===1 ? TXT_Y : (n>=4 && BOARD_TALL ? 196 : n===2 ? 223 : 219) + fs*1.15;
   const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
   const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
   let at=0, svg="", boxes=[]; const widths=lines.map(l=>MEAS(l, fs)), W=Math.max(...widths), X0=200-W/2;
@@ -4410,6 +4411,9 @@ async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
   ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
   BOARD_EX=ex.id; textHide();      // (.28) a new exercise: whatever was written goes; only this exercise's board can come up
+  /* (next) a board of four lines at full letter size needs room over Marie's head: in an exercise that has one, a row of one or two cards is
+     drawn a little lower in height (166 for 190), and the board starts higher. Places in the row and what is shown do not change. */
+  BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
   S.lesson=li; S.ex=ei; save();
   curSceneKey=null;
   const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};

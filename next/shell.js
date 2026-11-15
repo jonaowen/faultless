@@ -60,8 +60,12 @@ const SHELL = (()=>{
   function syncNext(){ if(G.next==null || G.next>last || !allDone(S.lesson)){ G.next=natural(); if(!allDone(S.lesson)) {/* a lesson in progress is carried on */} }
     G.furthest=Math.max(G.furthest||0, G.next, ...Object.keys(G.lessons).filter(k=>(G.lessons[k]||[]).some(r=>r.passed)).map(k=>LESSONS.findIndex(l=>l.id===k)+1).filter(n=>n>=0 && n<=last)); }
   let pendingAgain=null;      // a done lesson the learner asked to do again (index)
+  // the place as the shell last saw it: if the page's own place has been changed since by something else (the tester's jump, a scripted run),
+  // that place stands and the rules start again from it
+  let seen=""; const mark=()=>S.lesson+":"+allDone(S.lesson)+":"+S.ex, look=()=>{ seen=mark(); };
   // before the page's own start handler: put the place where the rules say, only when that differs from what the page would do by itself
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || b.classList.contains("loading")) return;
+    if(mark()!==seen){ G.next=natural(); G.why=""; pendingAgain=null; look(); }
     const T = pendingAgain!=null ? pendingAgain : G.next; const kind = pendingAgain!=null ? "again" : (G.why||"");
     if(T!=null && T!==natural()){ S.lesson=T; S.ex=0; LESSONS[T].exercises.forEach(x=>{ delete S.finished[x.id]; });
       logEntry({result:"LESSON AGAIN: Lesson "+(T+1)+(kind==="again" ? " (the learner's own choice)" : kind==="back" ? " (a step back before Lesson "+(T+2)+")" : " (once more: below "+RULES.PASS_MARK+" %)"), heard:[]}); save(); }
@@ -97,7 +101,7 @@ const SHELL = (()=>{
       if(G.daysLearned-G.restEarnedAt>=RULES.REST_DAY_EARNED_EVERY && G.rest<RULES.REST_DAYS_MAX){ G.rest++; G.restEarnedAt=G.daysLearned; } }
     d.n++; G.points+=pts+bonus+back;
     (G.lessons[L.id]=G.lessons[L.id]||[]).push({date:today, x:sc.x, y:sc.y, passed, pts:pts+bonus+back});
-    G.cur=null; store();
+    G.cur=null; store(); look();
     try{ trace("lesson complete: Lesson "+(li+1)+": "+sc.x+" correct responses, "+sc.y+" % first time ("+sc.first+" of "+sc.scored+" scored); "+(passed?"passed":"below "+RULES.PASS_MARK+" %: "+why)+"; next: Lesson "+(G.next+1)); }catch(e){}
     showDone({li, sc, passed, why, pts, bonus, back}); }
   function showDone(r){ const name=esc(S.learnerName||""), n=r.li+1, o=document.getElementById("done"), first=Object.values(G.lessons).reduce((a,b)=>a+b.length,0)<=1;
@@ -121,7 +125,7 @@ const SHELL = (()=>{
         const k=x.person ? "p:"+x.person+(x.doing||"") : (x.is||"")+":"+(x.doing||x.value||""); if(x.person==="you" || seen.has(k)) continue; seen.add(k); out.push(Object.assign({}, x, {count:1})); } }
       return (memo[i]=out); }; })();
   const newPics = i=>{ const before=new Set(); for(let k=0;k<i;k++) picsOf(k).forEach(x=>before.add(JSON.stringify([x.person,x.is,x.doing,x.value]))); const fresh=picsOf(i).filter(x=>!before.has(JSON.stringify([x.person,x.is,x.doing,x.value]))); return (fresh.length?fresh:picsOf(i)).slice(0,5); };
-  function home(){ const play=document.getElementById("play"); if(!play || play.hidden) return; syncNext(); store();
+  function home(){ const play=document.getElementById("play"); if(!play || play.hidden) return; syncNext(); store(); look();
     let h=document.getElementById("home"); if(!h){ h=el(`<div id="home" lang="en"></div>`); play.insertBefore(h, play.firstChild);
       play.parentNode.insertBefore(el(`<nav id="nav" lang="en"><button class="tab on" id="tabToday"><div class="pillbg">${ic("today")}</div>Today</button><button class="tab" id="tabYou"><div class="pillbg">${ic("you")}</div>You</button></nav>`), play.nextSibling);
       document.getElementById("tabYou").onclick=()=>you(); }

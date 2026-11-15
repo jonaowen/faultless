@@ -194,9 +194,10 @@ function house(k){
    Coming toward us along its rails from the upper left: the long nose of a fast train, a dark windscreen, a row of windows, a
    carriage behind, a pantograph, rails and sleepers. Against a bus and a car: rails, no road wheels, several carriages, the nose.
    looks: a colour (blue, red ...) | "old" (a square-fronted railcar, green and cream) ; "steam" is not drawn here yet */
-function train(k){
+function train(k, spec){
   if (k.has("steam")) return null;
-  const old = k.has("old"), B = old ? C.green : colour(k, "blue"), S = scene(-68, 18, 270), W = 32, hz = W / 2, yb = 7, ys = 34, yr = 40, zr = hz - 6;
+  const v = (spec && spec._v) || {}, Lp = v.lp || 58, Lc = v.lc || 62;
+  const old = k.has("old"), B = old ? C.green : colour(k, "blue"), S = scene(v.yaw || -68, v.pitch || 18, v.D || 270), W = 32, hz = W / 2, yb = 7, ys = 34, yr = 40, zr = hz - 6;
   const CR = P("#FBF3E0", "#D9CDB4"), GL = "#2B3850", GL2 = "#55708F", RF = C.steel;
   const car = (x0, x1, front, lead) => {
     S.face([[x0, yb, hz], [x1, yb, hz], [x1, ys, hz], [x0, ys, hz]], B, { t: "l", r: 0.5 });                                    // the side
@@ -213,20 +214,20 @@ function train(k){
     [x0 + 11, x0 + 21, x1 - 21, x1 - 11].forEach(x => { S.disc([x, 4.6, hz - 1], 4.4, "z", C.dark.l, { layer: 1, t: "l", z: 0.2 }); S.disc([x, 4.6, hz - 0.8], 2, "z", C.steel.l, { layer: 1, t: "l", z: 0.4 }); });
   };
   // the track: ballast, sleepers, two rails
-  const X0 = -76, X1 = old ? 82 : 116;
+  const X0 = -Lc - 12, X1 = Lp + (old ? 20 : 54);
   S.face([[X0, 0, 21], [X1, 0, 21], [X1, 0, -21], [X0, 0, -21]], C.paving, { layer: -9, t: "l", r: 5 });
   for (let x = X0 + 6; x < X1 - 4; x += 13) S.face([[x, 0.2, 16], [x + 5, 0.2, 16], [x + 5, 0.2, -16], [x, 0.2, -16]], "#A98C69", { layer: -8, r: 0.6 });
   [10, -10].forEach(z => { S.face([[X0 + 2, 0.5, z + 1.1], [X1 - 2, 0.5, z + 1.1], [X1 - 2, 0.5, z - 1.1], [X0 + 2, 0.5, z - 1.1]], "#7F8796", { layer: -7, r: 0 }); S.line([[X0 + 2, 0.6, z + 0.6], [X1 - 2, 0.6, z + 0.6]], "#D5DAE2", 0.6, { layer: -7, z: 1 }); });
-  cast(S, -66, old ? 58 : 90, -hz, hz, { g: 5, op: 0.12 });
+  cast(S, -Lc - 4, Lp + (old ? 0 : 32), -hz, hz, { g: 5, op: 0.12 });
   // the carriages, the far one first
-  car(-66, -4, true, false);
-  if (old){ car(0, 58, true, true);
-    const fr = (z0, y0, z1, y1, m, oo) => S.face([[58.3, y0, z0], [58.3, y0, z1], [58.3, y1, z1], [58.3, y1, z0]], m, Object.assign({ layer: 2, r: 0.8 }, oo));
+  car(-Lc - 4, -4, true, false);
+  if (old){ car(0, Lp, true, true);
+    const fr = (z0, y0, z1, y1, m, oo) => S.face([[Lp + 0.3, y0, z0], [Lp + 0.3, y0, z1], [Lp + 0.3, y1, z1], [Lp + 0.3, y1, z0]], m, Object.assign({ layer: 2, r: 0.8 }, oo));
     fr(hz, 20, -hz, ys, CR.s, { r: 0, t: "s" }); fr(hz - 3, 22, 1.5, 32, GL); fr(-1.5, 22, -hz + 3, 32, GL); fr(hz - 3, 28, 1.5, 32, GL2, { op: 0.5, z: 0.2 });
-    S.disc([58.6, 13, 8], 2.6, "x", "#FFF1B8", { layer: 2, z: 0.4, t: "l" }); S.disc([58.6, 13, -8], 2.6, "x", "#FFF1B8", { layer: 2, z: 0.4, t: "l" });
+    S.disc([Lp + 0.6, 13, 8], 2.6, "x", "#FFF1B8", { layer: 2, z: 0.4, t: "l" }); S.disc([Lp + 0.6, 13, -8], 2.6, "x", "#FFF1B8", { layer: 2, z: 0.4, t: "l" });
     fr(hz - 2, 2, -hz + 2, yb, C.dark.s, { t: "s" }); }
-  else { car(0, 58, false, true);
-    const c = 58, sideTop = [[c, ys, hz], [c + 10, 33, 14.5], [c + 26, 22, 12.5], [c + 38, 13, 9]];
+  else { car(0, Lp, false, true);
+    const c = Lp, sideTop = [[c, ys, hz], [c + 10, 33, 14.5], [c + 26, 22, 12.5], [c + 38, 13, 9]];
     S.face([[c, yb, hz], [c + 38, yb, 9], sideTop[3], sideTop[2], sideTop[1], sideTop[0]], B, { t: "l", r: 1.2, layer: 1 });                                 // the nose's side
     S.face([[c, ys, hz], [c + 10, 33, 14.5], [c + 10, 38, zr], [c, yr, zr]], { l: B.r }, { t: "l", r: 0.3, layer: 1 });
     S.face([[c, yr, zr], [c + 10, 38, zr], [c + 10, 38, -zr], [c, yr, -zr]], RF, { t: "l", r: 0.5, layer: 1 });
