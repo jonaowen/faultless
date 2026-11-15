@@ -18,7 +18,7 @@ const SHELL = (()=>{
     POINTS_PERFECT_LESSON: 5,         // (owner) a lesson perfect FIRST TIME through (every exercise perfect the first time it was done); a lesson made perfect later by repairs earns no +5 (it still counts for the badges)
     // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
     BADGES: [5,10,20,50,100,200,500,1000,2000],      // (owner) perfect lessons; never a badge for lessons merely finished
-    BEAD_SOUND: "B",                  // (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
+    BEAD_SOUND: "A",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
     REST_DAYS_MAX: 2, REST_DAY_EARNED_EVERY: 5,      // (work)
     RETURN_AFTER_DAYS: 2,             // (work) whole days with no lesson before the welcome back and its bonus
     AWAY_STEPS: [[3,0],[7,3],[14,5],[30,8],[1e9,12]],      // (owner R-151: the step back scales with the absence; these numbers are the working table) [days away up to, lessons back]
