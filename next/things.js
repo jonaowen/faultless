@@ -219,7 +219,7 @@ function train(k, spec){
     [x0 + 11, x0 + 21, x1 - 21, x1 - 11].forEach(x => { S.disc([x, 4.6, hz - 1], 4.4, "z", C.dark.l, { layer: 1, t: "l", z: 0.2 }); S.disc([x, 4.6, hz - 0.8], 2, "z", C.steel.l, { layer: 1, t: "l", z: 0.4 }); });
   };
   // the track: ballast, sleepers, two rails
-  const X0 = -Lc - 12, X1 = Lp + (old ? 20 : 54);
+  const X0 = -Lc - 8, X1 = Lp + (old ? 10 : 46);
   S.face([[X0, 0, 21], [X1, 0, 21], [X1, 0, -21], [X0, 0, -21]], C.paving, { layer: -9, t: "l", r: 5 });
   for (let x = X0 + 6; x < X1 - 4; x += 13) S.face([[x, 0.2, 16], [x + 5, 0.2, 16], [x + 5, 0.2, -16], [x, 0.2, -16]], "#A98C69", { layer: -8, r: 0.6 });
   [10, -10].forEach(z => { S.face([[X0 + 2, 0.5, z + 1.1], [X1 - 2, 0.5, z + 1.1], [X1 - 2, 0.5, z - 1.1], [X0 + 2, 0.5, z - 1.1]], "#7F8796", { layer: -7, r: 0 }); S.line([[X0 + 2, 0.6, z + 0.6], [X1 - 2, 0.6, z + 0.6]], "#D5DAE2", 0.6, { layer: -7, z: 1 }); });
@@ -248,7 +248,7 @@ function train(k, spec){
     S.face([[c - 40, 14, hz + 0.3], [c + 30, 14, 11.4], [c + 37.6, 13.4, 9.3], [c + 37.6, 16, 9.3], [c + 24, 17.5, 12.6], [c - 40, 16.5, hz + 0.3]], CR.l, { layer: 2, r: 0.3, t: "l" });       // the pale line runs on to the nose
     S.line([[16, yr, 0], [28, yr + 8, 0], [20, yr + 15, 0]], "#414B5E", 1.5, { layer: 3 }); S.line([[20, yr + 15, -8], [20, yr + 15, 8]], "#414B5E", 1.8, { layer: 3, z: 1 });       // the pantograph
   }
-  return S.out({ y1: 172, y0: 18, mid: true });
+  return S.out({ y1: 176, y0: 14, x0: 9, x1: 151, mid: true });
 }
 
 function steam(){
@@ -278,7 +278,7 @@ function steam(){
   S.box([55, 7, 13], [65, 13, hz + 1.2], B, { layer: 2, z: -2, r: 1 });                                                         // the cylinder
   S.box([67, 5, -15], [70, 11.5, 15], RD, { show: "frt", layer: 1, r: 0.8 }); [9, -9].forEach(z => S.disc([70.3, 8.4, z], 2.3, "x", C.steel.l, { layer: 2, t: "l" }));      // the buffer beam
   S.puff([55, 60, 0], 6.5, "#DDE0E7", "#C3C8D3", { layer: 4 }); S.puff([48, 73, 0], 9.5, "#DDE0E7", "#C3C8D3", { layer: 4 }); S.puff([37, 86, 0], 7.5, "#E4E6EC", "#CDD1DA", { layer: 4 });      // smoke
-  return S.out({ y1: 172, y0: 16, mid: true });
+  return S.out({ y1: 176, y0: 12, x0: 9, x1: 151, mid: true });
 }
 
 /* ================================================================ a book (un livre) ================================================================
