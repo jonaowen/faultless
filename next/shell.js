@@ -228,9 +228,9 @@ const SHELL = (()=>{
       ${C.map(([k,r,v])=>`<circle class="trk ${k}" cx="70" cy="70" r="${r}"/>${arc(r, v.f, k)}${arc(r, v.gold||0, "gold "+k)}`).join("")}</g>
       ${R.day.closed && R.week.closed ? `<g class="mid" transform="translate(70 70)"><circle r="9" class="midc"/><path d="M-4.2 .3l2.8 2.8 5.6-6" class="midt"/></g>` : ""}</svg>`; }
   function ringRows(R, compact){ const tick2=ic("check");
-    const day = R.day.n>=2 ? `<b>Goal met${tick2}</b><small class="gold">${ic("star")} and a second lesson</small>` : R.day.n>=1 ? `<b>Goal met${tick2}</b><small>${G.goal===1?"One lesson a day":"A second one fills it in gold"}</small>` : `<b>One lesson</b><small>${R.day.f>0?"under way":"is today's goal"}</small>`;
-    const week = R.week.closed ? `<b>${R.week.n} lesson${R.week.n===1?"":"s"}${tick2}</b><small>Goal met: ${R.week.goal}</small>` : `<b>${R.week.n} of ${R.week.goal} lessons</b><small>this week's goal</small>`;
-    const lvl = R.lvl.top ? `<b>C2</b><small>reached</small>` : `<b>${R.lvl.pct}% to ${R.lvl.id}</b><small>${R.lvl.perf ? `<span class="gold">${R.lvl.perf} perfect</span> · ` : ""}${R.lvl.done} of ${R.lvl.span} lessons</small>`;
+    const day = R.day.n>=2 ? `<b>Goal met${tick2}</b><small class="gold">${ic("star")} Two lessons</small>` : R.day.n>=1 ? `<b>Goal met${tick2}</b>${compact||G.goal===1?"":`<small>A second adds gold</small>`}` : `<b>One lesson</b><small>${R.day.f>0?"under way":"today's goal"}</small>`;
+    const week = R.week.closed ? `<b>${R.week.n} lesson${R.week.n===1?"":"s"}${tick2}</b><small>Goal met: ${R.week.goal}</small>` : `<b>${R.week.n} of ${R.week.goal} lessons</b><small>the week's goal</small>`;
+    const lvl = R.lvl.top ? `<b>C2</b><small>reached</small>` : `<b>${R.lvl.pct}% to ${R.lvl.id}</b><small>${R.lvl.done} of ${R.lvl.span} lessons${R.lvl.perf ? ` · <em class="gold">${R.lvl.perf} perfect</em>` : ""}</small>`;
     return `<div class="rrows${compact?" c":""}"><div class="rr day"><i></i><div><span>Today</span>${day}</div></div><div class="rr week"><i></i><div><span>This week</span>${week}</div></div><div class="rr lvl"><i></i><div><span>Your French</span>${lvl}</div></div></div>`; }
   // a draw-on from the values last shown (on home, after a lesson) to the values now
   function ringsAnimate(root, from, to){ if(!root) return; const svg=root.querySelector("svg.rings"); if(!svg || lessMotion() || !from) return;
@@ -289,7 +289,7 @@ const SHELL = (()=>{
   function rankBar(p0, p1){ const k=rankOf(p1), last=k>=RULES.RANKS.length, lo=k ? RULES.RANKS[k-1] : 0, hi=last ? lo : RULES.RANKS[k], f=x=>last ? 1 : Math.max(0, Math.min(1, (x-lo)/(hi-lo)));
     const from = rankOf(p0)<k ? 0 : f(p0);
     return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" points to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${esc(rankName(k))}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankName(k+1))}`}</span></span>
-      <span class="rb-track"><i style="--a:${(from*100).toFixed(1)}%;--b:${(f(p1)*100).toFixed(1)}%"></i></span></span></div>`; }
+      <span class="rb-track"><i style="--a:${from.toFixed(3)};--b:${Math.max(0.02, f(p1)).toFixed(3)}"></i></span></span></div>`; }
 
   /* ---- the wardrobe (design B with price tiers, brief 15): things for the learner's figure, bought with tokens, worn on home, on You and on
      the celebrations, NEVER in a lesson's pictures; nothing of likeness is sold (that is all free in the maker). Each item is a stub: its name,
@@ -516,7 +516,7 @@ const SHELL = (()=>{
     const eyebrow = G.why==="once" ? `<div class="eyebrow sun">${ic("redo")} Once more</div>` : G.why==="back" || G.why==="warm" ? `<div class="eyebrow sun">${ic("redo")} A warm-up</div>` : d.n>=1 ? `<div class="eyebrow moon">${ic("moon")} ${two?"Your second lesson today":"Another lesson"}</div>` : `<div class="eyebrow">${ic("sun")} Today's lesson</div>`;
     const L=LESSONS[T], mins=minutesFor(L), st=stageLine(Math.min(G.furthest+1, LESSONS.length));
     const R=ringsNow(now), k=G.rank||0;
-    h.innerHTML=`<div class="h-top"><button class="h-me" id="hMe" aria-label="You">${avOut("portrait", "t")}</button><div class="h-hello">${greet},<b>${esc(S.learnerName||"")}</b></div>
+    h.innerHTML=`<div class="h-top"><button class="h-me" id="hMe" aria-label="You">${avOut("portrait", "t").replace('viewBox="0 0 160 190"','viewBox="27 24 106 106"')}</button><div class="h-hello">${greet},<b>${esc(S.learnerName||"")}</b></div>
         <button class="h-rank" id="hRank" aria-label="${esc(rankLabel(k))}. Your wardrobe${G.tokens?": "+G.tokens+" token"+(G.tokens===1?"":"s"):""}">${rankEmblem(k, "emb s")}<span class="hr-t"><b>${esc(rankName(k, false))}</b><span>${G.tokens ? `${tokenIcon()}<b class="num">${G.tokens}</b> to spend` : "Wardrobe"}</span></span></button></div>
       <section class="card rhythm" aria-label="Today, this week, your French"><div class="rbody">${ringsSvg(R)}${ringRows(R)}</div>
         <div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>
@@ -577,7 +577,7 @@ const SHELL = (()=>{
     sh.hidden=false; const close=()=>{ sh.hidden=true; sh.innerHTML=""; }; $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
 
   /* ---- the avatar maker: built from the picture library's own lists (PICS.avatarOptions), so options can be added without touching this ---- */
-  const FIELDS = { body:{label:"Body", vals:["m","f"]}, age:{label:"Age", vals:["c","a","o"]}, girth:{label:"Build", n:4}, skin:{label:"Skin", opt:"skin"}, face:{label:"Face", n:5}, eyes:{label:"Eyes", opt:"eyes"},
+  const FIELDS = { body:{label:"Body", vals:["m","f"]}, age:{label:"Age", vals:["c","t","a","o"], names:{c:"Child", t:"Teen", a:"Adult", o:"Older"}}, girth:{label:"Build", n:4}, skin:{label:"Skin", opt:"skin"}, face:{label:"Face", n:5}, eyes:{label:"Eyes", opt:"eyes"},
     freckles:{label:"Freckles", n:2}, hair:{label:"Hair", opt:"hair"}, hairc:{label:"Hair colour", opt:"hairc"}, beard:{label:"Beard", n:2}, glasses:{label:"Glasses", n:2}, head:{label:"Headscarf", n:2}, scarf:{label:"Scarf colour", opt:"top"},
     top:{label:"Jumper", opt:"top"}, legs:{label:"Trousers", opt:"legs"} };
   const CATS = [["You",["body","age","girth"]],["Skin",["skin"]],["Face",["face","eyes","freckles"]],["Hair",["hair","hairc","beard"]],["Glasses",["glasses","head","scarf"]],["Clothes",["top","legs"]]];
@@ -585,11 +585,14 @@ const SHELL = (()=>{
   function maker(firstRun, done){ const o=$("maker"); if(!o || !AV.has()){ if(done) done(); return; }
     let spec; try{ spec=PICS.avatarParse(AV.get() || PICS.avatarString({})); }catch(e){ spec={}; } const hist=[]; let cat=3, step = firstRun ? 1 : 0;
     const starters=[["A man",{body:"m",age:"a"}],["A woman",{body:"f",age:"a",hair:6}],["A boy",{body:"m",age:"c"}],["A girl",{body:"f",age:"c",hair:4}]];
-    const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if((typeof f==="object" ? f.age : f==="age" && v)==="c") spec.beard=0; draw(); tick(); };
+    const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if(["c","t"].includes(typeof f==="object" ? f.age : f==="age" && v)) spec.beard=0; draw(); tick(); };
     const finish=()=>{ AV.set(PICS.avatarString(spec)); S.learnerGender = spec.body==="f" ? "f" : "m"; save(); G.makerOffer=false; store(); o.hidden=true; try{ trace("the learner's figure made"); }catch(e){} if(done) done(); else home(); };
     function draw(){
       if(step===1){ o.innerHTML=`<div class="mk-step">Step 1 of 3</div><h1>Who will you be?</h1><div class="lede">Pick the one nearest to you. You will make it yours next.</div><div class="big4">${starters.map(([lab,sp],i)=>`<button class="pcard" data-s="${i}">${AV.svg(Object.assign({}, spec, sp), "standing")}<span>${lab}</span></button>`).join("")}</div>`;
-        o.querySelectorAll("[data-s]").forEach(b=>{ b.onclick=()=>{ spec=Object.assign({}, spec, starters[+b.dataset.s][1]); step = spec.age==="c" ? 3 : 2; draw(); }; }); return; }
+        o.querySelectorAll("[data-s]").forEach(b=>{ b.onclick=()=>{ spec=Object.assign({}, spec, starters[+b.dataset.s][1]); step = spec.age==="c" ? 4 : 2; draw(); }; }); return; }
+      if(step===4){ const kids=[["A child",{age:"c"}],["A teen",{age:"t"}]];
+        o.innerHTML=`<div class="mk-step">Step 2 of 3</div><h1>Nearer to you?</h1><div class="lede">You can change everything afterwards.</div><div class="big4">${kids.map(([lab,sp],i)=>`<button class="pcard" data-s="${i}">${AV.svg(Object.assign({}, spec, sp), "standing")}<span>${lab}</span></button>`).join("")}</div>`;
+        o.querySelectorAll("[data-s]").forEach(b=>{ b.onclick=()=>{ spec=Object.assign({}, spec, kids[+b.dataset.s][1]); step=3; draw(); }; }); return; }
       if(step===2){ const olds=[["Younger",{age:"a"}],["Older",{age:"o",hairc:7}],["White hair",{age:"o",hairc:8}],["With glasses",{age:"o",hairc:7,glasses:1}]];
         o.innerHTML=`<div class="mk-step">Step 2 of 3</div><h1>Nearer to you?</h1><div class="lede">You can change everything afterwards.</div><div class="big4">${olds.map(([lab,sp],i)=>`<button class="pcard" data-s="${i}">${AV.svg(Object.assign({}, spec, sp), "portrait")}<span>${lab}</span></button>`).join("")}</div>`;
         o.querySelectorAll("[data-s]").forEach(b=>{ b.onclick=()=>{ spec=Object.assign({}, spec, olds[+b.dataset.s][1]); step=3; draw(); }; }); return; }
@@ -599,7 +602,7 @@ const SHELL = (()=>{
       o.innerHTML=`<div class="mk-bar">${firstRun?"":`<button class="rb plain" id="mkBack" aria-label="Back">${ic("chev")}</button>`}<h2>This is you</h2><button class="rb" id="mkUndo" aria-label="Undo">${ic("undo")}</button><button class="rb" id="mkRnd" aria-label="Surprise me">${ic("shuffle")}</button></div>
         <div class="mk-stage">${AV.svg(spec, "portrait", "big")}<div class="mk-small"><div class="mini">${AV.svg(spec, {view:"doing", doing:"walk", still:true}, "s")}</div><div class="lab">You, in<br>the lessons</div><div class="mini">${AV.svg(spec, "standing", "s")}</div></div></div>
         <div class="mk-tabs">${CATS.map(([lab],i)=>`<button class="${i===cat?"on":""}" data-c="${i}">${lab}</button>`).join("")}</div>
-        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.age==="c")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-label="${FIELDS[f].label} ${v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}</button>`).join("")}</div>`).join("")}</div>
+        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
         <div class="mk-foot"><button class="btn" id="mkDone">That's me</button></div>`;
       o.querySelectorAll("[data-c]").forEach(b=>{ b.onclick=()=>{ cat=+b.dataset.c; draw(); }; });
       o.querySelectorAll("[data-f]").forEach(b=>{ b.onclick=()=>{ const f=b.dataset.f, raw=b.dataset.v; set(f, FIELDS[f].vals ? raw : +raw); }; });
@@ -684,8 +687,9 @@ const SHELL = (()=>{
   const row = (id, label, sub, icon, val="")=>`<button class="grow" id="${id}"><div class="ic">${ic(icon)}</div><div class="l">${label}${sub?`<small>${sub}</small>`:""}</div><div class="v">${val}${ic("chev")}</div></button>`;
   function you(){ const o=$("you"); if(!o) return; const own=ownedCards().length, st=stageLine(Math.max(1, G.furthest)), bs=RULES.BADGES.filter(n=>G.badges[n]), nextB=RULES.BADGES.find(n=>!G.badges[n]), tz=UI.pref.text||1, A=G.anchors;
     o.innerHTML=`<div class="tabhead"><h1>You</h1></div>
-      <button class="card me" id="youAv"><div class="face">${AV.svg(AV.get(), "portrait", "t")}</div><div class="l"><b>${esc(S.learnerName||"")}</b><small>Change how you look ${ic("chev")}</small></div></button>
+      <button class="card me" id="youAv"><div class="face">${avOut("portrait", "t")}</div><div class="l"><b>${esc(S.learnerName||"")}</b><small>Change how you look ${ic("chev")}</small></div></button>
       <div class="card stats"><div><b class="num">${G.points}</b><small>points</small></div><div><b class="num">${perfectCount()}</b><small>perfect lesson${perfectCount()===1?"":"s"}</small></div><div><b class="num">${own}</b><small>words</small></div><div><b class="num">${G.daysLearned}</b><small>days learned</small></div></div>
+      <button class="card rankc" id="youRank">${rankEmblem(G.rank||0, "emb m")}<div class="l"><small>Your rank</small><b>${esc(rankName(G.rank||0))}</b><span>${(G.rank||0)<RULES.RANKS.length ? `<b class="num">${(RULES.RANKS[G.rank||0]-G.points).toLocaleString("en-GB")}</b> points to ${esc(rankName((G.rank||0)+1))}` : "The highest rank"}</span></div><div class="wtok">${tokenIcon()}<b class="num">${G.tokens||0}</b><small>Wardrobe</small></div></button>
       ${levelCard(true)}
       <h3 class="gh">Badges</h3><div class="miles">${bs.map(n=>`<div class="ms">${badgeSvg(n)}<span>${badgeName(n)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${perfectCount()} of ${nextB} perfect lessons</span></div>` : ""}</div>
       ${st ? `<div class="sline">${st.text} lessons · best run ${G.bestRun} day${G.bestRun===1?"":"s"}</div>` : ""}
@@ -697,7 +701,7 @@ const SHELL = (()=>{
       <h3 class="gh">The course</h3><div class="card grp">${row("setAbout","About Faultless French", "Version "+esc(APP_VERSION),"info")}${row("youTester","For testers","","tool")}</div>
       <div class="card grp">${row("youRemove","Remove "+esc(currentUser().name)+" from this phone","Asked twice. Everything of this learner is deleted.","redo")}</div>`;
     o.hidden=false;
-    $("youAv").onclick=()=>maker(false, ()=>you());
+    $("youAv").onclick=()=>maker(false, ()=>you()); $("youRank").onclick=()=>{ tick(); wardrobe(()=>you()); };
     $("youWho").onclick=()=>who(true);
     $("setA1").onclick=$("setA2").onclick=()=>anchors(false, ()=>you());
     const flip=(id, f)=>{ $(id).onclick=()=>{ f(); UI.savePref(); tick(); you(); }; };
@@ -738,10 +742,10 @@ const SHELL = (()=>{
     if(S.learnerGender && !AV.get() && AV.has()){ try{ AV.set(PICS.avatarString({body:S.learnerGender==="f"?"f":"m"})); G.makerOffer=true; }catch(e){} } }
 
   /* ---- start ---- */
-  for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
+  for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl","ward"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); syncNext(); store(); home(); MIC.init();
+  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); rankSync(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
     firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));
@@ -750,7 +754,7 @@ const SHELL = (()=>{
     if(document.readyState==="complete") offline(); else window.addEventListener("load", offline);
     // the first screen is drawn (home, who is learning, the first run's name or the welcome back): the loading screen hands over once the faces are in
     try{ UI.fonts().then(()=>window.SPLASH && SPLASH.done()); }catch(e){ try{ SPLASH.done(); }catch(x){} } }
-  return {RULES, get G(){ return G; }, home, lessonDone, who, maker, you, words, anchors, score, init, AV, MIC, welcome, offerUpdate};
+  return {RULES, get G(){ return G; }, rankOf, rankName, ringsNow, weekGoal, wardrobe, WARDROBE, TIERS, home, lessonDone, who, maker, you, words, anchors, score, init, AV, MIC, welcome, offerUpdate};
 })();
 window.SHELL = SHELL;      // the page's hooks look for it there
 SHELL.init();

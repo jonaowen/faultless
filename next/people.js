@@ -1347,12 +1347,16 @@ const f1 = v => Math.round(v * 10) / 10, f2 = v => Math.round(v * 100) / 100;
 const MAN = { hw: 0.058, sw: 0.118, sy: 0.08, sz: -0.008, thigh: 0.236, shin: 0.238, ankle: 0.042, foot: 0.104, toe: 0.046, spine: 0.2, nb: 0.1, neck: 0.05,
   ua: 0.178, fa: 0.146, hand: 0.108, chest: [0.115, 0.112, 0.086], waist: [0.102, 0.06, 0.08], hem: [0.107, 0.05, 0.083],
   rHip: 0.064, rTh: 0.06, rKnee: 0.048, rCalf: 0.047, rCuff: 0.041, rSh: 0.049, rUa: 0.043, rEl: 0.037, rFa: 0.038, rWr: 0.03, rNeck: 0.039, palm: 0.048, shoe: 1.28 };
-const WOMAN = Object.assign({}, MAN, { hw: 0.06, sw: 0.1, chest: [0.098, 0.108, 0.08], waist: [0.084, 0.06, 0.07], hem: [0.106, 0.05, 0.083], rHip: 0.064, rTh: 0.057, rKnee: 0.044, rCalf: 0.042, rCuff: 0.036,
+const WOMAN = Object.assign({}, MAN, { hw: 0.058, sw: 0.088, sy: 0.078, nb: 0.098, neck: 0.04, chest: [0.086, 0.108, 0.078], waist: [0.064, 0.06, 0.062], hem: [0.1, 0.05, 0.08], rHip: 0.062, rTh: 0.054, rKnee: 0.04, rCalf: 0.039, rCuff: 0.033,
+  rSh: 0.035, rUa: 0.031, rEl: 0.027, rFa: 0.028, rWr: 0.021, rNeck: 0.03, palm: 0.036, hand: 0.1, shoe: 1.08 });
+/* (the teacher: her round-three proportions were set from these, the earlier woman's; TUT0 scales them) */
+const TWOMAN = Object.assign({}, MAN, { hw: 0.06, sw: 0.1, chest: [0.098, 0.108, 0.08], waist: [0.084, 0.06, 0.07], hem: [0.106, 0.05, 0.083], rHip: 0.064, rTh: 0.057, rKnee: 0.044, rCalf: 0.042, rCuff: 0.036,
   rSh: 0.041, rUa: 0.036, rEl: 0.032, rFa: 0.032, rWr: 0.025, rNeck: 0.033, palm: 0.042, shoe: 1.14 });
 /* the whole figure is `tall` units of the picture box at size 1 and `heads` heads high (the head is drawn larger than life so that the face
    can be known on a phone: an adult here is four and a half heads, a child four) */
-function build(kind, heads, girth){ const b0 = kind === "woman" ? WOMAN : MAN, gw = [0.9, 1, 1.09, 1.2][girth == null ? 1 : girth], gl = [0.92, 1, 1.06, 1.14][girth == null ? 1 : girth], b = Object.assign({}, b0, { sw: b0.sw * (0.94 + 0.06 * gw), chest: [b0.chest[0] * gw, b0.chest[1], b0.chest[2] * gw], waist: [b0.waist[0] * (girth === 3 ? 1.36 : gw), b0.waist[1] * (girth === 3 ? 1.3 : 1), b0.waist[2] * (girth === 3 ? 1.5 : gw)], hem: [b0.hem[0] * (girth === 3 ? 1.22 : gw), b0.hem[1], b0.hem[2] * (girth === 3 ? 1.3 : gw)] }), n = heads || (kind === "kid" ? 4 : 4.5), hh = 0.866 / (2 * n - 1.84), tall = kind === "kid" ? 112 : kind === "woman" ? 138 : 146;
+function build(kind, heads, girth){ const b0 = kind === "woman" ? WOMAN : kind === "teacher" ? TWOMAN : MAN, gw = [0.9, 1, 1.09, 1.2][girth == null ? 1 : girth], gl = [0.92, 1, 1.06, 1.14][girth == null ? 1 : girth], b = Object.assign({}, b0, { sw: b0.sw * (0.94 + 0.06 * gw), chest: [b0.chest[0] * gw, b0.chest[1], b0.chest[2] * gw], waist: [b0.waist[0] * (girth === 3 ? 1.36 : gw), b0.waist[1] * (girth === 3 ? 1.3 : 1), b0.waist[2] * (girth === 3 ? 1.5 : gw)], hem: [b0.hem[0] * (girth === 3 ? 1.22 : gw), b0.hem[1], b0.hem[2] * (girth === 3 ? 1.3 : gw)] }), n = heads || (kind === "kid" ? 4 : 4.5), hh = 0.866 / (2 * n - 1.84), tall = kind === "kid" ? 112 : kind === "woman" || kind === "teacher" ? 138 : 146;
   for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff", "rSh", "rUa", "rEl", "rFa", "rWr", "rNeck"]) b[r] = b0[r] * gl;
+  if (n > 4.5) b.neck = b0.neck * hh / (0.866 / 7.16);          // (a figure of more heads, as the portraits are: the neck keeps its length against the head, not the body)
   return Object.assign({}, b, { hh, H: tall / (0.866 + 1.84 * hh), key: kind + n + "g" + girth }); }
 const BUILDS = {}, bodyOf = (c, o) => { const kind = c.kid ? "kid" : c.fem ? "woman" : "man", k = kind + (o && o.heads || "") + "g" + c.girth; return BUILDS[k] || (BUILDS[k] = build(kind, o && o.heads, c.girth)); };
 
@@ -1485,6 +1489,8 @@ const STYLE = {
   long:  { v: 0.09, top: 0.05, quiff: 0, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.98, r: [0.9, 1.32, 0.5] }, { a: [0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }, { a: [-0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }] },
   loose: { v: 0.1, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.62, r: [0.93, 0.96, 0.52] }, { a: [0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }, { a: [-0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }] },
   wavy:  { v: 0.12, top: 0.06, quiff: 0.04, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.8, r: [1.02, 1.12, 0.56] }, { a: [0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }, { a: [-0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }] },
+  sylvie: { v: 0.1, top: 0.06, quiff: 0.06, at: [[-180, -52], [-112, -52], [-84, -46], [-68, -22], [-56, 6], [-36, 22], [-10, 28], [20, 38], [46, 26], [62, 2], [74, -30], [88, -48], [112, -52], [180, -52]], ears: false,      // long and straight, a side parting, the forehead framed (Sylvie)
+    mass: [{ a: [0, -0.1, -0.3], drop: 1.0, r: [0.9, 1.34, 0.5] }, { a: [0.76, -0.2, -0.06], drop: 0.66, r: [0.19, 0.92, 0.27] }, { a: [-0.76, -0.2, -0.06], drop: 0.66, r: [0.19, 0.92, 0.27] }] },
   tucked: { v: 0.1, top: 0.06, quiff: 0.05, at: [[-180, -52], [-128, -50], [-108, -34], [-97, -2], [-86, -6], [-75, 4], [-60, 16], [-36, 30], [-10, 34], [20, 42], [46, 30], [62, 14], [75, 4], [86, -6], [97, -2], [108, -34], [128, -50], [180, -52]],      // to the shoulder, behind the ears (the teacher on the stage)
     mass: [{ a: [0, -0.1, -0.36], drop: 0.6, r: [0.97, 0.98, 0.5] }] },
   bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.34, r: [0.97, 0.74, 0.62] }, { a: [0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }, { a: [-0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }] },
@@ -1493,7 +1499,7 @@ const STYLE = {
   bald:  { v: 0.02, top: 0, quiff: 0, at: [[-180, -30], [-120, -24], [-97, 6], [-80, 10], [-60, 40], [0, 88], [60, 40], [80, 10], [97, 6], [120, -24], [180, -30]] }
 };
 const HAIR_OF = { you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "tucked", longM: "loose",
-  julie: "long", long: "long", xlong: "long", klong: "long", wavy: "wavy", curlyF: "wavy", bob: "bob", kbob: "bob", kmid: "bob", kpig: "bob", pig: "bob", bald: "bald" };
+  julie: "sylvie", long: "long", xlong: "long", klong: "long", wavy: "wavy", curlyF: "wavy", bob: "bob", kbob: "bob", kmid: "bob", kpig: "bob", pig: "bob", bald: "bald" };
 /* the edge of the hair at an angle round the head: a smooth curve through the points (Catmull-Rom) */
 function lineAt(L, az){ const a = L.at, n = a.length; let i = 1; while (i < n - 1 && az > a[i][0]) i++;
   const p0 = a[Math.max(0, i - 2)], p1 = a[i - 1], p2 = a[i], p3 = a[Math.min(n - 1, i + 1)], u = Math.max(0, Math.min(1, (az - p1[0]) / (p2[0] - p1[0]))), m1 = (p2[1] - p0[1]) / Math.max(1, p2[0] - p0[0]) * (p2[0] - p1[0]), m2 = (p3[1] - p1[1]) / Math.max(1, p3[0] - p1[0]) * (p2[0] - p1[0]), u2 = u * u, u3 = u2 * u;
@@ -1525,7 +1531,8 @@ function head(J, B, cam, c, out, zb){
   const hair = patches(cr0, crR, -180, 180, 44, 6, az => lineAt(L, az), () => 90, (u, t) => { const up = Math.max(0, u[1]), back = Math.max(L.mass ? 0 : sm((0.25 - u[2]) / 0.5), big ? sm((Math.abs(u[0]) - 0.5) / 0.3) : 0);      // (large: thin at its edge at the temples too, so that it meets the head there)
     return 1 + (L.v * (1 - back * (1 - sm(t * 2.6))) + L.top * up * up + L.quiff * Math.max(0, u[2]) * up * (1 + 0.5 * fl * u[0])); });
   /* a beard: the same, on the jaw, from under the nose down and back to the ears */
-  const beard = c.beard ? patches(jw0, jwR, -112, 112, 24, 4, () => -90, az => { const t = Math.min(1, Math.abs(az) / 100); return -4 + 34 * t * t; }, () => 1.07) : "";
+  const BEARD = { at: [[-112, 28], [-100, 20], [-85, 6], [-65, -6], [-45, -14], [-26, -16], [-14, -9], [0, -7], [14, -9], [26, -16], [45, -14], [65, -6], [85, 6], [100, 20], [112, 28]] };      // a trimmed full beard: the moustache, the cheek line rising from the corners of the mouth to the sideburns
+  const beard = c.beard ? patches(jw0, jwR, -112, 112, 28, 4, () => -90, az => lineAt(BEARD, az), (u, t) => 1.035 + 0.025 * Math.min(1, t * 3)) : "";
   /* hair that hangs: each mass hangs straight down from the head (it keeps to the upright when the head tilts), turned with the head */
   const hx = nrm([Bh.x[0], 0, Bh.x[2]]), hz = [-hx[2], 0, hx[0]], extra = [];
   (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
@@ -1545,15 +1552,16 @@ function head(J, B, cam, c, out, zb){
   const feat = (id, p, az, inner, min) => { const a = az * Math.PI / 180, U = cam.lin(at([0, 0, 0], Bh, [Math.cos(a), 0, -Math.sin(a)])), Vv = cam.lin(Bh.y), q = cam.pt(at(o, Bh, mul(p, hh)));
     const facing = dot(at([0, 0, 0], Bh, [Math.sin(a), 0, Math.cos(a)]), cam.view);
     return { id, tag: "g", clip: "skc", m: [U[0] * hh, U[1] * hh, -Vv[0] * hh, -Vv[1] * hh, q[0], q[1]].map(x => Math.round(x * 1000) / 1000), inner, hide: facing < (min == null ? 0.42 : min) }; };
-  const iris = c.iris || "#4a3524", lid = "#2a1c15";
+  const iris = c.iris || "#4a3524", lid = "#2a1c15", fine = c.live || big;          // fine: the face as the teacher's is drawn (lashes, a firm lid line, a tapered brow) wherever a face is large
   /* (c.live: the teacher's eyes: the irises in a group that can look down, the upper lid in a group that comes down with them, and a shut lid for a blink) */
   const LV = c.live ? ` style="transition:transform .25s ease-in-out"` : "";
   const eyeArt0 = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><g class="pup"${LV}><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g></g>
-      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${c.live ? "#2e1f18" : lid}" stroke-width="${c.live ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.13 * sg} -.084Q${0.2 * sg} -.064 ${0.212 * sg} -.008" stroke="#2e1f18" stroke-width=".044" fill="none" stroke-linecap="round"/><path d="M${0.2 * sg} -.03q${0.04 * sg} -.008 ${0.052 * sg} -.034M${0.165 * sg} -.064q${0.03 * sg} -.014 ${0.034 * sg} -.04" stroke="${lid}" stroke-width=".017" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity="${c.live ? 0.4 : 0.8}"/>`
+      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${fine ? "#2e1f18" : lid}" stroke-width="${fine ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (fine ? `<path d="M${0.13 * sg} -.084Q${0.2 * sg} -.064 ${0.212 * sg} -.008" stroke="#2e1f18" stroke-width=".044" fill="none" stroke-linecap="round"/><path d="M${0.2 * sg} -.03q${0.04 * sg} -.008 ${0.052 * sg} -.034M${0.165 * sg} -.064q${0.03 * sg} -.014 ${0.034 * sg} -.04" stroke="${lid}" stroke-width=".017" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity="${fine ? 0.4 : 0.8}"/>`
       + (c.live ? `<g class="blk" visibility="hidden"><path d="M-.2 0Q0 -.19 .2 -.01Q0 .15 -.2 0Z" fill="${sk.n[0]}"/><path d="M-.18 .012Q0 .1 .18 .004" stroke="${lid}" stroke-width=".04" fill="none" stroke-linecap="round"/></g>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
-  const eyeArt = sg => c.live ? `<g transform="scale(.9 .95)">${eyeArt0(sg)}</g>` : eyeArt0(sg);      // (the teacher's eyes a little narrower than the cards' faces: calm, not wide)
-  const browArt = sg => c.live ? `<path d="M${0.24 * sg} .055Q${0.08 * sg} -.13 ${-0.19 * sg} -.04Q${-0.225 * sg} -.015 ${-0.2 * sg} .008Q${0.07 * sg} -.065 ${0.24 * sg} .055Z" fill="${mixc(c.browC, "#1d1410", 0.25)}"/>` : big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
+  const eyeArt = sg => fine ? `<g transform="scale(.9 .95)">${eyeArt0(sg)}</g>` : eyeArt0(sg);      // (the teacher's eyes a little narrower than the cards' faces: calm, not wide)
+  const browArt = sg => fine && (c.fem || c.kid) ? `<path d="M${0.24 * sg} .055Q${0.08 * sg} -.13 ${-0.19 * sg} -.04Q${-0.225 * sg} -.015 ${-0.2 * sg} .008Q${0.07 * sg} -.065 ${0.24 * sg} .055Z" fill="${mixc(c.browC, "#1d1410", 0.25)}"/>`
+    : fine ? `<path d="M${0.25 * sg} .05Q${0.06 * sg} -.11 ${-0.2 * sg} -.065Q${-0.24 * sg} -.02 ${-0.21 * sg} .035Q${0.05 * sg} -.025 ${0.25 * sg} .05Z" fill="${mixc(c.browC, "#1d1410", 0.2)}"/>`      /* (a man's: heavier, flatter) */ : big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
   const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = c.mouthInner ? c.mouthInner(px) : big && c.speaks ? `<ellipse cy=".05" rx=".2" ry=".13" fill="#5a2326"/><path d="M-.2 .05A.2 .13 0 0 1 .2 .05" stroke="${c.lip}" stroke-width=".05" fill="none"/><path d="M-.2 .05A.2 .13 0 0 0 .2 .05" stroke="${c.lip}" stroke-width=".06" fill="none"/>` : big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
     : c.speaks ? `<ellipse cy=".04" rx=".15" ry=".12" fill="#5a2326"/><path d="M-.15 .04A.15 .12 0 0 1 .15 .04" stroke="${c.lipC}" stroke-width=".05" fill="none"/>`
     : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.06 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
@@ -1564,7 +1572,7 @@ function head(J, B, cam, c, out, zb){
   parts.push({ id: "skull", z, mat: "skin", layers: [[skullD, sk.n[2]], [hullOf(skull, -rim / 2, -LIGHT[0] * rim / 2, -LIGHT[1] * rim / 2), sk.n[1]], [hullOf(skull, -e, LIGHT[0] * (e - rim), LIGHT[1] * (e - rim)), sk.n[0]]], cast: (dx, dy) => hullOf(skull, 0, dx, dy) });
   /* the nose stands out of the face: seen from the front it is the colour of the face (its line and nostrils are drawn on it); from the side it is the outline */
   parts.push({ id: "nose", z: z + 0.001, mat: "nose", layers: side ? [[capsule(nb[0], nb[1] + 0.02 * px, nr * 0.6, nt[0] + 0.02 * px, nt[1] + 0.03 * px, nr), sk.n[1]], [capsule(nb[0], nb[1], nr * 0.6, nt[0], nt[1], nr), sk.n[0]]] : [[capsule(nb[0], nb[1], nr * 0.6, nt[0], nt[1], nr), sk.n[0]]] });
-  if (beard) parts.push({ id: "beard", z: z + 0.0015, mat: "beard", layers: [[beard, hr.n[0]]] });
+  if (beard) parts.push({ id: "beard", z: z + 0.0015, mat: "beard", layers: [[beard, big ? hr.gh : hr.n[0]]] });
   parts.push({ id: "hair", z: z + 0.002, mat: "hair", layers: [[hair, hr.gh]] });
   for (const x of extra) parts.push(x);
   if (L.ears !== false) nearEars.forEach((x, i) => parts.push({ id: "earN" + i, z: z + 0.003, mat: "ear", layers: [[x.d, sk.n[1]], [x.d2, sk.n[0]]] }));
@@ -1658,8 +1666,12 @@ function frame(k, B, cam, c, floor, o){
   const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
   const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = doBody ? trunkFn(0, 0, 0) : "";
+  const trunkL = form(trunkFn, T, 0.03 * S);
   if (doBody){
-  parts.push({ id: "trunk", z: zt, mat: "top", layers: form(trunkFn, T, 0.03 * S) });
+  parts.push({ id: "trunk", z: zt, mat: "top", layers: trunkL });
+  /* the tops of the shoulders face the light from above: lit on both sides (the trunk's shade begins under them), so that the sleeve's top,
+     lit as well, lies on the shoulder without a ring */
+  parts.push({ id: "trunkS", z: zt + 0.0001, mat: "top", layers: [[ellPath(EsL, 0, 0, 0) + ellPath(EsR, 0, 0, 0), T.n[0]]] });
   /* its ribbed hem: a band that follows the lower edge (the lower half of the ring, and the same line again a band's width higher) */
   const band = (E, w) => { const ct = Math.cos(E.th), st = Math.sin(E.th), lo = [], hi = []; for (let i = 0; i <= 14; i++){ const t = i / 14 * Math.PI, x = (E.a + 0.4) * Math.cos(t), y = (E.b + 0.4) * Math.sin(t), X = E.c[0] + x * ct - y * st, Y = E.c[1] + x * st + y * ct; lo.push([X, Y]); hi.push([X, Y - w]); }
     return poly(lo.concat(hi.reverse())); };
@@ -1697,8 +1709,14 @@ function frame(k, B, cam, c, floor, o){
   if (doArms) for (const s of ["L", "R"]){
     const sh = J["sh" + s], el = J["el" + s], wr = J["wr" + s], hd = J["hd" + s], pn = J["pn" + s], Q = chain(sh, el, wr, [B.rSh, B.rUa, B.rEl, B.rFa, B.rWr * 1.08]), e = B.rWr * S * 0.34, mat = "arm" + s;
     const zu = zmid(sh, el), zf = zmid(el, wr), farU = !part && zu < zt - 0.012, far = !part && zf < zt - 0.012;
-    if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 0, 7), T, e, far, true) });
-    else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(sweep(Q, 0, 4), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
+    /* the shoulder is the jumper's, not a ball joint: the sleeve's round top lies under the yoke's own outline (the trunk's shoulder cap is
+       the same round), and it is drawn all in the lit tone (no shade crescent round it), so that no circle shows on the shoulder: the
+       sleeve's shade edge begins below, at the armpit, as the cloth's fold does */
+    const cap = (() => { const c0 = P(sh), rr = B.rSh * S * (B.capK == null ? 1 : B.capK) + 0.5, q1 = Q[1], k = 0;
+      return (g, dx, dy) => g < 0 ? capsule(c0[0] + LIGHT[0] * k, c0[1] + LIGHT[1] * k, rr, q1[0] + dx, q1[1] + dy, Math.max(0.3, q1[2] + g)) : ""; })();
+    const swA = sweep(Q, 0, 7), swU = sweep(Q, 0, 4), withY = fn => B.capK === 0 ? fn : (g, dx, dy) => fn(g, dx, dy) + cap(g, dx, dy);
+    if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(withY(swA), T, e, far, true) });
+    else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(withY(swU), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
     const kz = z => Math.max(1, Math.min(3.2, 1 + (z - zt - 0.03) / 0.035));          // a part held well out from the body throws its shadow further from itself
     if (zu > zt) cast.push(sweep(Q, 0, 4)); if (zf > zt){ const k2 = kz(zf), sw = sweep(Q, 3, 7); cast.push((g, dx, dy) => sw(g, dx * k2, dy * k2)); }
     { const a0 = add(wr, mul(J["fd" + s], -0.026)), A = P(a0), Z = P(wr); parts.push({ id: "cf" + s, z: zf + 0.0005, mat: "cuff" + s, layers: [[capsule(A[0], A[1], B.rWr * 1.2 * S, Z[0], Z[1], B.rWr * 1.2 * S), far ? T.f[1] : T.rib]] }); }
@@ -1911,11 +1929,11 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0.8, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
+const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0.8, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, palmK: 1.2, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
-  const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "woman", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
+  const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "teacher", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
   for (const r of ["rUa", "rEl", "rFa"]) B[r] *= TUT.arm;
   const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
   B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
@@ -2024,7 +2042,7 @@ function tutor(c, o){
     else if (sh === "palmup"){ const H = TUT.palmHd, N = TUT.palmPn; hd = nrm([H[0] * sg, H[1], H[2]]); pn = perp([N[0] * sg, N[1], N[2]], hd); }            // offered to the learner: fingers toward him and a little out, the palm up
     else if (r === "auto" || r == null){ hd = fd; pn = sh === "relaxed" ? perp([-sg * 0.42, -0.62, -0.66], hd) : perp([sg * 0.2, -0.3, -1], hd); }      // at rest the palm lies on the thigh (down, and turned a little inward, as the capture's hands lie)
     else { const a = r * Math.PI / 180; hd = nrm([-Math.sin(a), -Math.cos(a), sh === "point" ? -0.1 : -0.03]); pn = perp([0, 0, -1], hd); }      // on her chest: the hand lies on it, turned as the page says
-    return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([p.scale || 1]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
+    return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([(p.scale || 1) * (sh === "palmup" ? TUT.palmK : 1)]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
   const ST = { L: {}, R: {} }, mixv = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t), TIP = {};
   let pose = REST, blendUntil = 0, armsT = 0, lastArmsDraw = 0, armCast = "", castEl = null, headCast = "";
   function armsList(k, t){
