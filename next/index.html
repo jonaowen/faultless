@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Faultless French</title>
+<title>Flawless French</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#F7F2E8">
 <link rel="preload" href="fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -970,10 +970,13 @@ if(SAVE_NS==="frDIn") (function migrateFromLive(){ try{ const ls=localStorage; i
    - a learner only the preview has (added in the preview): taken into the live app's list with its place, record and figure (under a new id
      if the live app has given that id to someone else);
    - a phone with only the preview: its learners as they are.
-   Nothing is deleted: the preview's own keys (frDIn.users, frDIn.u.<id>) stay as they were. */
+   A copy the preview kept of a place (frDIn.u.<id>) is removed once what it holds is in the live app's keys (taken over) or is not further
+   on than the live place (the live app has all of it): the phone's storage is small (about 5 MB for the site) and a family's places with
+   their logs fill it. A copy that is further on but older than the live app's last work is the one case left in doubt: it is kept as it is.
+   The preview's list of learners (frDIn.users), the records put aside and the figures stay. */
 if(SAVE_NS==="frDI") (function switchOver(){ try{ const ls=localStorage; if(ls.getItem("frDIn.switched")) return;
   const J=k=>{ try{ return JSON.parse(ls.getItem(k)||"null"); }catch(e){ return null; } }, P=raw=>{ try{ return JSON.parse(raw)||{}; }catch(e){ return {}; } };
-  const now=new Date().toISOString(), note={at:now, version:APP_VERSION, live:[], previewOnly:[], previewAhead:[], recordsAside:[]};
+  const now=new Date().toISOString(), note={at:now, version:APP_VERSION, live:[], previewOnly:[], previewAhead:[], previewAheadOlderKept:[], recordsAside:[], copiesRemoved:[]};
   const hasList=u=>!!(u && Array.isArray(u.list) && u.list.length);
   let lu=J("frDI.users");
   if(!hasList(lu) && ls.getItem("frDI.v1")){ const raw=ls.getItem("frDI.v1"), o=P(raw);      // the live app's own step for a state of before .23 (loadUsers), done first here
@@ -986,10 +989,11 @@ if(SAVE_NS==="frDI") (function switchOver(){ try{ const ls=localStorage; if(ls.g
   const at = s=>{ const L = s.detour && s.detour.back ? Math.max(+s.lesson||0, +s.detour.back.lesson||0) : (+s.lesson||0), re=new RegExp("^L"+(L+1)+"E\\d+$");
     return L*1000 + Object.keys(s.finished||{}).filter(k=>s.finished[k] && re.test(k)).length; };
   const when = s=>[((s.log||[]).slice(-1)[0]||{}).t||"", ((s.trace||[]).slice(-1)[0]||{}).t||""].sort().pop();
+  const drop = id=>{ ls.removeItem("frDIn.u."+id); note.copiesRemoved.push(id); };
   const line = (raw, txt)=>{ const o=P(raw); (o.log=o.log||[]).push({t:now, result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": "+txt, heard:[]}); return JSON.stringify(o); };
   if(hasList(pu)){
     if(!hasList(lu)){      // a phone with only the preview: its learners, places, records and figures as they are
-      for(const p of pu.list){ const raw=ls.getItem("frDIn.u."+p.id); if(raw!=null){ ls.setItem("frDI.u."+p.id, raw); note.previewOnly.push(p.id); } }
+      for(const p of pu.list){ const raw=ls.getItem("frDIn.u."+p.id); if(raw!=null){ ls.setItem("frDI.u."+p.id, raw); note.previewOnly.push(p.id); drop(p.id); } }
       lu={current:pu.current, list:pu.list.map(x=>({id:x.id, name:x.name}))}; ls.setItem("frDI.users", JSON.stringify(lu)); }
     else {
       const ahead=new Set(), nm=x=>String(x||"").trim().toLowerCase();
@@ -997,14 +1001,16 @@ if(SAVE_NS==="frDI") (function switchOver(){ try{ const ls=localStorage; if(ls.g
         if(l && liveIds.includes(p.id) && nm(l.name)===nm(p.name)){      // the same learner in both
           const live=ls.getItem("frDI.u."+p.id);
           if(raw!=null && live!=null){ const A=P(raw), B=P(live);
-            if(at(A)>at(B) && when(A)>when(B)){ ls.setItem("frDI.pre.u."+p.id, live); ls.setItem("frDI.u."+p.id, line(raw, "the place kept by the preview is further on and later than the live app's: it is this learner's place now (the live app's state is kept under frDI.pre.u."+p.id+")")); ahead.add(p.id); note.previewAhead.push(p.id); } }
-          else if(raw!=null && live==null){ ls.setItem("frDI.u."+p.id, raw); ahead.add(p.id); note.previewAhead.push(p.id); } }
+            if(at(A)>at(B) && when(A)>when(B)){ ls.setItem("frDI.pre.u."+p.id, live); ls.setItem("frDI.u."+p.id, line(raw, "the place kept by the preview is further on and later than the live app's: it is this learner's place now (the live app's state is kept under frDI.pre.u."+p.id+")")); ahead.add(p.id); note.previewAhead.push(p.id); drop(p.id); }
+            else if(at(A)>at(B)) note.previewAheadOlderKept.push(p.id);
+            else drop(p.id); }
+          else if(raw!=null && live==null){ ls.setItem("frDI.u."+p.id, raw); ahead.add(p.id); note.previewAhead.push(p.id); drop(p.id); } }
         else if(raw!=null){      // a learner only the preview has
           let id=p.id; if(lu.list.some(x=>x.id===id)){ const n=Math.max(0, ...lu.list.map(x=>+String(x.id).slice(1)||0), ...pu.list.map(x=>+String(x.id).slice(1)||0))+1; id="u"+n; }
           let name=String(p.name||"User"); if(lu.list.some(x=>nm(x.name)===nm(name))) name+=" (2)";
           ls.setItem("frDI.u."+id, raw); lu.list.push({id, name});
           if(id!==p.id) for(const k of ["frDIn.g.","frDIn.a."]){ const v=ls.getItem(k+p.id); if(v!=null){ ls.setItem(k+id, v); ls.removeItem(k+p.id); } }
-          note.previewOnly.push(p.id+(id!==p.id?" as "+id:"")); } }
+          note.previewOnly.push(p.id+(id!==p.id?" as "+id:"")); drop(p.id); } }
       for(const id of liveIds) if(!ahead.has(id)) aside(id);
       note.live=liveIds; ls.setItem("frDI.users", JSON.stringify(lu)); } }
   else note.live=liveIds;
@@ -2189,8 +2195,10 @@ function startParallelRecording(){
     let pk=0; for(let i=0;i<cap.all.length;i++){ const v=Math.abs(cap.all[i]); if(v>pk) pk=v; }
     const clip=await keepClip(cap.all); return {clip, recPeak:+pk.toFixed(3), engine:"chrome", speech:cap.speechStartMs>=0}; }};
 }
+/* (switch-over) the learner's own recordings (their own name, played in the own-name model: S.ownClips) are where the live app kept them
+   once this page is the app at the root (SAVE_NS "frDI": "faultless-clips"); the preview keeps its own ("faultless-next-clips") */
 function clipStore(op, key, val){
-  return new Promise((res,rej)=>{ const r=indexedDB.open("faultless-next-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
+  return new Promise((res,rej)=>{ const r=indexedDB.open(SAVE_NS==="frDI" ? "faultless-clips" : "faultless-next-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
     r.onerror=()=>rej(r.error); r.onsuccess=()=>{ const db=r.result, tx=db.transaction("clips", op==="get"||op==="all"?"readonly":"readwrite"), st=tx.objectStore("clips");
       let q; if(op==="put") q=st.put(val,key); else if(op==="del") q=st.delete(key); else if(op==="get") q=st.get(key); else if(op==="all"){ const out={}; const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; return; } else q=st.clear();
       q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }; });

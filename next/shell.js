@@ -662,7 +662,7 @@ const SHELL = (()=>{
       o.hidden=false; $("micGo").onclick=()=>{ o.hidden=true; $("playBtn").click(); }; },
     help(inLesson, why){ const o=$("mic"), denied = why!=="none";
       o.innerHTML=`<div class="offmark">${ic("micoff")}</div><h1>${denied?"The microphone is off":"No microphone found"}</h1>
-        <div class="lede">${denied ? "Faultless French needs to hear your answers, and your phone is not letting it use the microphone." : "Faultless French needs to hear your answers, and no microphone could be started. Another app may be using it."}</div>
+        <div class="lede">${denied ? "Flawless French needs to hear your answers, and your phone is not letting it use the microphone." : "Flawless French needs to hear your answers, and no microphone could be started. Another app may be using it."}</div>
         ${denied ? `<div class="card steps"><b>To switch it on</b><ol><li>Tap the small icon at the left of the web address (a lock, or two sliders).</li><li>Tap <b>Permissions</b>, then <b>Microphone</b>.</li><li>Choose <b>Allow</b>, then come back here.</li></ol><small>In the installed app: your phone's Settings, then Apps, then Chrome, then Permissions, then Microphone: Allow.</small></div>`
           : `<div class="card steps"><ol><li>Close any other app that is recording or on a call.</li><li>Then tap Try again.</li></ol></div>`}
         <div class="spacer"></div><button class="btn" id="micRetry">Try again</button><button class="btn quiet" id="micLater">${inLesson?"Back to today":"Not now"}</button>`;
@@ -701,7 +701,7 @@ const SHELL = (()=>{
       <h3 class="gh">Seeing</h3><div class="card grp"><div class="grow"><div class="ic">${ic("text")}</div><div class="l">Text size</div></div><div class="seg size" role="group" aria-label="Text size">${[1,2,3].map(k=>`<button class="${tz===k?"on":""}" data-tz="${k}" aria-label="Text size ${k}"><span style="font-size:${[16,20,24][k-1]}px">A</span></button>`).join("")}</div>${sw("setMotion", UI.pref.motion==="less", "Less movement", "Celebrations become still. The lessons do not change.", "eye")}</div>
       <h3 class="gh">You and this phone</h3><div class="card grp">${row("setName","Your first name","",  "you", esc(S.learnerName||""))}${row("youWho","Who is learning?", USERS.list.length>1 ? USERS.list.length+" learners on this phone" : "Add someone", "you")}</div>
       <h3 class="gh">Help improve the course</h3><div class="card grp">${row("setRun","Save the run file","Everything you said and tapped, for the course's makers.","file")}${row("setIntro","See the introduction again","How a lesson works, shown.","play")}</div>
-      <h3 class="gh">The course</h3><div class="card grp">${row("setAbout","About Faultless French", "Version "+esc(APP_VERSION),"info")}${row("youTester","For testers","","tool")}</div>
+      <h3 class="gh">The course</h3><div class="card grp">${row("setAbout","About Flawless French", "Version "+esc(APP_VERSION),"info")}${row("youTester","For testers","","tool")}</div>
       <div class="card grp">${row("youRemove","Remove "+esc(currentUser().name)+" from this phone","Asked twice. Everything of this learner is deleted.","redo")}</div>`;
     o.hidden=false; MV.count(o);
     $("youAv").onclick=()=>maker(false, ()=>you()); $("youRank").onclick=()=>{ tick(); wardrobe(()=>you()); };
@@ -718,7 +718,7 @@ const SHELL = (()=>{
     $("setAbout").onclick=()=>about();
     $("youRemove").onclick=()=>{ if(USERS.list.length<2){ alert("This is the only learner on this phone."); return; } if(!confirm("Remove "+currentUser().name+"? Their place, record and figure will be deleted.")) return; if(!confirm("Are you sure? This cannot be undone.")) return; try{ localStorage.removeItem(GK); localStorage.removeItem(AK(uid)); }catch(e){} const m=removeUser(uid); if(m) alert(m); };
     $("youTester").onclick=()=>{ o.hidden=true; $("panel").hidden=false; try{ renderPanel(); }catch(e){} }; }
-  function about(){ info("About Faultless French", `<p><b>Faultless French</b> teaches French the way a good teacher does: Marie says, shows and asks; you answer out loud or tap a picture; every answer is heard, and a mistake is put right at once.</p>
+  function about(){ info("About Flawless French", `<p><b>Flawless French</b> teaches French the way a good teacher does: Marie says, shows and asks; you answer out loud or tap a picture; every answer is heard, and a mistake is put right at once.</p>
       <p><b>How the course moves on.</b> When you are right the first time in ${RULES.PASS_MARK} answers out of a hundred or more, the next lesson opens. Below that, you do the lesson once more, and it feels easier. You can do any lesson you have done again, at any time.</p>
       <p><b>After a break.</b> If you have been away for some days, you start a few lessons back, so that it all comes back before you go on.</p>
       <p><b>Your voice</b> is listened to only while the border is green, and only to hear your answer.</p>
