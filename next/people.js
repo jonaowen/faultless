@@ -1909,15 +1909,18 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
+const TUT0 = { sw: 58, chest: 1.1, waist: 1.1, rSh: 1.08, sy: 0.072, nb: 0.13, neckUp: 63,
+  legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
-  o = o || {};
+  o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
   const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "woman", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
-  for (const r of ["rSh", "rUa", "rEl", "rFa"]) B[r] *= 0.92;
-  const PX = 50.5, S = PX / B.hh; B.sw = 54 / S; B.hand = 57.8 / S;                 // the shoulders 108 apart and the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist)
+  for (const r of ["rUa", "rEl", "rFa"]) B[r] *= 0.96;
+  const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
+  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * TUT.waist, B.hem[1], B.hem[2]]; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
   const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
-  for (const [i, sg] of [[57, 1], [69, -1]]){ setv(base, i, [0.17 * sg, -0.2, 0.96]); setv(base, i + 3, [-0.05 * sg, -0.95, -0.3]); setv(base, i + 6, [0.1 * sg, -0.3, 0.95]); }      // the thighs as on a chair of ordinary height (CMU 86_15), the knees nearer each other than the men of the captures kept theirs
+  for (const [i, sg] of [[57, 1], [69, -1]]){ const L = TUT.legs[sg > 0 ? 0 : 1]; setv(base, i, [L[0] * sg, L[1], L[2]]); setv(base, i + 3, [L[3] * sg, L[4], L[5]]); setv(base, i + 6, [L[6] * sg, L[7], L[8]]); }      // the thighs as on a chair of ordinary height (CMU 86_15), the knees together and the feet side by side, one a little forward (a composed sitter: see REFERENCES)
   /* the neck's length is set so that the mouth is where the stage's close-up expects it: 63 above the line of the shoulders */
   { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (63 - a) / (b - a) * 0.06; }
   const J0 = skeleton(base, B), floor = lowest(J0), ys0 = (J0.shL[1] + J0.shR[1]) / 2, zs0 = (J0.shL[2] + J0.shR[2]) / 2;

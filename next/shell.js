@@ -13,7 +13,12 @@ const SHELL = (()=>{
     STEP_BACK_LESSONS: 1,             // (owner)
     UNSURE_COUNTS: false,             // (work) an ERROR the app itself doubts (unsure) is left out of the percentage
     SPACING_GAP_HOURS: 6,             // (work) the second lesson of a day starts at least this long after the first ended
-    POINTS_EXERCISE: 10, POINTS_LESSON: 50, POINTS_SPACING: 100, POINTS_RETURN: 50,      // (work) an exercise pays when it is finished, so a lesson left half-way loses nothing
+    POINTS_PERFECT_FIRST: 2,          // (owner, 15 Nov late) an exercise perfect the first time it is done
+    POINTS_PERFECT_REPAIR: 1,         // (owner) an exercise that had an error, done again perfectly (once: it is then perfect)
+    POINTS_PERFECT_LESSON: 5,         // (owner) every exercise of a lesson perfect (once a lesson), however it got there
+    // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
+    BADGES: [5,10,20,50,100,200,500,1000,2000],      // (owner) perfect lessons; never a badge for lessons merely finished
+    BEAD_SOUND: "B",                  // (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
     REST_DAYS_MAX: 2, REST_DAY_EARNED_EVERY: 5,      // (work)
     RETURN_AFTER_DAYS: 2,             // (work) whole days with no lesson before the welcome back and its bonus
     AWAY_STEPS: [[3,0],[7,3],[14,5],[30,8],[1e9,12]],      // (owner R-151: the step back scales with the absence; these numbers are the working table) [days away up to, lessons back]
@@ -28,10 +33,10 @@ const SHELL = (()=>{
   const uid = USERS.current, GK="frDIn.g."+uid, AK=id=>"frDIn.a."+id;
   const blank = ()=>({v:1, points:0, lessons:{}, furthest:0, next:null, why:"", below:{}, days:{}, daysLearned:0, run:{len:0, last:""}, bestRun:0, rest:RULES.REST_DAYS_MAX, restEarnedAt:0,
     anchors:{first:{after:"breakfast", time:"08:00"}, second:{after:"supper", time:"19:00"}, set:false}, goal:2, bonusSaid:0, cur:null, lastSeen:"",
-    lpts:{}, pace:[], milestones:{}, wordsAt:{}, warmTo:null, awaySeen:""});
+    lpts:{}, pace:[], ex:{}, lp:{}, badges:{}, levels:{}, wordsAt:{}, warmTo:null, awaySeen:"", replay:null});
   let G = blank(), fresh = true; try{ const raw=localStorage.getItem(GK); if(raw){ Object.assign(G, JSON.parse(raw)); fresh=false; } }catch(e){}
   G.anchors=Object.assign(blank().anchors, G.anchors||{}); for(const k of ["first","second"]) G.anchors[k]=Object.assign({}, blank().anchors[k], G.anchors[k]);
-  for(const k of ["lpts","milestones","wordsAt"]) if(!G[k]) G[k]={}; if(!Array.isArray(G.pace)) G.pace=[];
+  for(const k of ["lpts","ex","lp","badges","levels","wordsAt"]) if(!G[k]) G[k]={}; if(!Array.isArray(G.pace)) G.pace=[];
   const store = ()=>{ try{ localStorage.setItem(GK, JSON.stringify(G)); }catch(e){} };
   const el = (html)=>{ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; };
   const esc = t=>String(t).replace(/[<&"]/g,c=>({"<":"&lt;","&":"&amp;",'"':"&quot;"}[c]));
@@ -123,8 +128,25 @@ const SHELL = (()=>{
       if(e.first===true && !e.delayed && !lead){ if(e.result==="correct") F++; else if(e.result==="ERROR" && (RULES.UNSURE_COUNTS || !e.unsure)) E++; } }
     const n=F+E; return {x:X, first:F, errors:E, y: n<10 ? 100 : Math.floor(100*F/n), scored:n}; }
 
-  /* ---- points: an exercise pays when it is finished (the page's own end of an exercise), so nothing is lost by leaving a lesson half-way ---- */
-  { const ed0=UI.exerciseDone; UI.exerciseDone=function(){ const r=ed0.apply(this, arguments); try{ const id=LESSONS[S.lesson].id; G.points+=RULES.POINTS_EXERCISE; G.lpts[id]=(G.lpts[id]||0)+RULES.POINTS_EXERCISE; store(); }catch(e){} return r; }; }
+  /* ---- an exercise, at its end (the page's own end of an exercise): perfect or not, counted as the 90 % rule counts (scored answers only;
+     a listener fault or an answer the app itself doubts is not an error; a delayed test belongs to the exercise that caused it). Points only
+     for flawless work (the owner's rule): 2 for an exercise perfect the first time, 1 for one repaired later, 0 otherwise. ---- */
+  let exT0="";      // when the exercise now running started (the start button, or the end of the exercise before)
+  function exResult(exId, t0){ const es=(S.log||[]).filter(e=>e.ex===exId && e.t>=t0 && !e.delayed && !/^lead/.test(e.phase||""));
+    const errs=es.filter(e=>e.result==="ERROR" && (RULES.UNSURE_COUNTS || !e.unsure)).length; return {perfect: errs===0 && es.length>0, errs, n:es.length}; }
+  const lessonPerfect = L=>L.exercises.every(x=>G.ex[x.id] && G.ex[x.id].g);
+  const RUN={ex:[]};      // what this run of a lesson (or this replay) has earned, exercise by exercise
+  { const ed0=UI.exerciseDone; UI.exerciseDone=function(){ const r=ed0.apply(this, arguments);
+      try{ const L=LESSONS[S.lesson], X=L.exercises[S.ex], t0=[exT0, G.cur&&G.cur.t0||""].sort().pop(), res=exResult(X.id, t0), rec=G.ex[X.id]; let p=0;
+        if(!rec){ p = res.perfect ? RULES.POINTS_PERFECT_FIRST : 0; G.ex[X.id]={g:res.perfect, f:res.perfect?"p":"e", n:1, d:dayOf()}; }
+        else { rec.n++; if(!rec.g && res.perfect){ p=RULES.POINTS_PERFECT_REPAIR; rec.g=true; rec.r=dayOf(); } }
+        G.points+=p; G.lpts[L.id]=(G.lpts[L.id]||0)+p; RUN.ex.push({id:X.id, i:S.ex, perfect:res.perfect, p}); exT0=new Date().toISOString(); store();
+        if(res.perfect) barCheer(p);
+        try{ trace("exercise "+X.id+": "+(res.perfect?"perfect":res.errs+" error(s)")+"; points +"+p); }catch(e){} }catch(e){}
+      return r; }; }
+  // a perfect exercise, at its end: the bar shines and the points it earned rise from it, over the first moment of the next exercise (adds no time)
+  function barCheer(p){ const bar=$("bar"); if(!bar || lessMotion()) return; bar.classList.remove("perfect"); void bar.offsetWidth; bar.classList.add("perfect");
+    if(p>0){ const c=el(`<div class="cheer" aria-hidden="true">${ic("star")}<b>+${p}</b></div>`); bar.appendChild(c); setTimeout(()=>c.remove(), 1500); } }
 
   /* ---- the learner's own pace: seconds a task, from lessons done start to end in one sitting ---- */
   const tasksOf = L=>L.exercises.reduce((a,e)=>a+e.parts.reduce((b,p)=>b+p.items.filter(it=>it.type==="task").length,0),0);
@@ -152,29 +174,32 @@ const SHELL = (()=>{
     else if((G.below[L.id]||0)>=RULES.REPEATS_BEFORE_STEP_BACK && li>0){ G.below[L.id]=0; G.next=Math.max(0, li-RULES.STEP_BACK_LESSONS); G.why=why="back"; }
     else { G.below[L.id]=(G.below[L.id]||0)+1; G.next=li; G.why=why="once"; }
     // points: fixed for the lesson (an error neither costs nor pays); the one bonus is for two lessons well apart; a small one for coming back
+    if(G.replay) return replayDone();
     const exPts = G.lpts[L.id] || 0; delete G.lpts[L.id];
-    let pts=RULES.POINTS_LESSON, bonus=0, back=0;
+    let pts=0, bonus=0, back=0, perfectNow=false;
+    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; pts+=RULES.POINTS_PERFECT_LESSON; perfectNow=true; }
+    const runPerfect = RUN.ex.length===L.exercises.length && RUN.ex.every(x=>x.perfect), runEx=RUN.ex.slice(); RUN.ex=[];
     const d=G.days[today]||(G.days[today]={n:0, firstEnd:"", full:false});
-    if(d.n===1 && !d.full && cur.t0 && (new Date(cur.t0)-new Date(d.firstEnd))>=RULES.SPACING_GAP_HOURS*3600e3){ d.full=true; bonus=RULES.POINTS_SPACING; }
+    if(d.n===1 && !d.full && cur.t0 && (new Date(cur.t0)-new Date(d.firstEnd))>=RULES.SPACING_GAP_HOURS*3600e3){ d.full=true; bonus=1; }      // recognised, without points (the owner)
     if(d.n===0){ d.firstEnd=now.toISOString(); d.am = now.getHours()<14;
       const gap = G.run.last ? daysBetween(G.run.last, today) : 0;
       if(!G.run.last) G.run.len=1;
       else if(gap===1) G.run.len++;
       else if(gap>1 && gap-1<=G.rest){ G.rest-=gap-1; G.run.len++; G.restUsed=today; }
       else if(gap>1) G.run.len=1;
-      if(G.run.last && gap-1>=RULES.RETURN_AFTER_DAYS) back=RULES.POINTS_RETURN;
+      if(G.run.last && gap-1>=RULES.RETURN_AFTER_DAYS) back=1;      // recognised, without points
       G.run.last=today; G.daysLearned++; G.bestRun=Math.max(G.bestRun, G.run.len);
       if(G.daysLearned-G.restEarnedAt>=RULES.REST_DAY_EARNED_EVERY && G.rest<RULES.REST_DAYS_MAX){ G.rest++; G.restEarnedAt=G.daysLearned; } }
     else if(d.n===1 && !d.full){ d.soon=true; }
-    d.n++; G.points+=pts+bonus+back;
+    d.n++; G.points+=pts;
     // the pace: only a lesson done from its start in one sitting (under an hour and a half)
     if(cur.fromStart && cur.t0){ const secs=(now-new Date(cur.t0))/1000, t=tasksOf(L); if(t>0 && secs>60 && secs<5400){ G.pace.push(+(secs/t).toFixed(2)); G.pace=G.pace.slice(-9); } }
     const owned = firstPass ? cardsOf(L.id) : []; if(firstPass && !G.wordsAt[L.id]) G.wordsAt[L.id]=today;
-    const miles = newMilestones(today), shownMile = G.mileDay===today ? null : miles[0]||null; if(shownMile) G.mileDay=today;
-    (G.lessons[L.id]=G.lessons[L.id]||[]).push({date:today, x:sc.x, y:sc.y, passed, pts:exPts+pts+bonus+back});
+    const badge = newBadge(today), level = newLevel(today);
+    (G.lessons[L.id]=G.lessons[L.id]||[]).push({date:today, x:sc.x, y:sc.y, passed, pts:exPts+pts, perfect:runPerfect});
     G.cur=null; store(); look();
     try{ trace("lesson complete: Lesson "+(li+1)+": "+sc.x+" correct responses, "+sc.y+" % first time ("+sc.first+" of "+sc.scored+" scored); "+(passed?"passed":"below "+RULES.PASS_MARK+" %: "+why)+"; next: Lesson "+(G.next+1)); }catch(e){}
-    showDone({li, sc, passed, why, pts:exPts+pts, bonus, back, soon: d.soon && d.n===2, owned, mile:shownMile, stageDone: firstPass && stageOf(li+1) && stageOf(li+1).last===li+1 ? stageOf(li+1) : null}); }
+    showDone({li, sc, passed, why, pts:exPts+pts, lessonBonus:pts, perfectNow, runPerfect, runEx, bonus, back, soon: d.soon && d.n===2, owned, badge, level, stageDone: firstPass && stageOf(li+1) && stageOf(li+1).last===li+1 ? stageOf(li+1) : null}); }
   function showDone(r){ const name=esc(S.learnerName||""), n=r.li+1, o=$("done"), first=completions()<=1;
     o.innerHTML = (r.passed ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><h1>Bravo${name?", "+name:""}!</h1><div class="sub">Lesson ${n} is done.</div>`
         : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">You finished Lesson ${n}.</div>`)
