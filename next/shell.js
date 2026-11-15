@@ -22,7 +22,8 @@ const SHELL = (()=>{
     DAY_STARTS_HOUR: 4,               // (work) a lesson at half past midnight belongs to the evening before
     LATE_HOUR: 23,                    // (work) a second lesson that could only start after this hour is "tomorrow"
     PACE_DEFAULT: [5.5, 12],          // (work) seconds a task, seconds an exercise, until the learner's own pace is known
-    GATE_ON: !/[?&]gate=off/.test(location.search),      // the tester's door: ?gate=off runs the lessons straight through (for scripted runs with errors)
+    GATE_ON: !/[?&]gate=off/.test(location.search),
+    LEARNER_FIGURE_ON: /[?&]learner=on/.test(location.search),      // (coordinator) the course's "you" drawn from the learner's own figure (PICS.setLearner): OFF until the picture library draws the close-ups from it too; ?learner=on to preview      // the tester's door: ?gate=off runs the lessons straight through (for scripted runs with errors)
   };
   const uid = USERS.current, GK="frDIn.g."+uid, AK=id=>"frDIn.a."+id;
   const blank = ()=>({v:1, points:0, lessons:{}, furthest:0, next:null, why:"", below:{}, days:{}, daysLearned:0, run:{len:0, last:""}, bestRun:0, rest:RULES.REST_DAYS_MAX, restEarnedAt:0,
@@ -75,11 +76,11 @@ const SHELL = (()=>{
   /* ---- the learner's figure. The course's "you" is drawn from it once the picture library offers PICS.setLearner(spec) ---- */
   const AV = { has: ()=>!!(window.PICS && PICS.avatar && PICS.avatarParse && PICS.avatarString),
     get(id=uid){ let s=""; try{ s=localStorage.getItem(AK(id))||""; }catch(e){} return s; },
-    set(str){ try{ localStorage.setItem(AK(uid), str); }catch(e){} try{ if(PICS.setLearner) PICS.setLearner(PICS.avatarParse(str)); }catch(e){} },
+    set(str){ try{ localStorage.setItem(AK(uid), str); }catch(e){} try{ if(RULES.LEARNER_FIGURE_ON && PICS.setLearner) PICS.setLearner(PICS.avatarParse(str)); }catch(e){} },
     svg(specOrStr, view, cls){ try{ if(this.has() && specOrStr){ const g=PICS.avatar(typeof specOrStr==="string" ? PICS.avatarParse(specOrStr) : specOrStr, typeof view==="string" ? {view} : view);
         return `<svg class="${cls||"av"}" viewBox="0 0 160 190" aria-hidden="true">${g.outerHTML}</svg>`; } }catch(e){}
       return `<svg class="${cls||"av"}" viewBox="0 0 160 190" aria-hidden="true"><circle cx="80" cy="80" r="29" fill="#c9d1da"/><path d="M20 190 v-22 q0-34 38-40 h44 q38 6 38 40 v22z" fill="#aeb9c5"/></svg>`; } };
-  try{ if(AV.has() && AV.get() && PICS.setLearner) PICS.setLearner(PICS.avatarParse(AV.get())); }catch(e){}
+  try{ if(RULES.LEARNER_FIGURE_ON && AV.has() && AV.get() && PICS.setLearner) PICS.setLearner(PICS.avatarParse(AV.get())); }catch(e){}
 
   /* ---- the course's words and stages (next/words.js, made from the plan) ---- */
   const CW = window.COURSE_WORDS || {lessons:{}, stages:[]};
@@ -98,7 +99,7 @@ const SHELL = (()=>{
 
   /* ---- which lesson is next (R-152, R-153, R-151). G.next: the lesson to do next (index); G.why: "" | "once" | "back" | "warm" ---- */
   function natural(){ return allDone(S.lesson) ? Math.min(S.lesson+1, last) : S.lesson; }
-  function syncNext(){ if(G.next==null || G.next>last || !allDone(S.lesson)){ G.next=natural(); if(G.why==="warm" && G.next!==natural()) G.why=""; }
+  function syncNext(){ if(G.next==null || G.next>last || (!allDone(S.lesson) && !(G.why==="warm" && G.next<S.lesson))) G.next=natural();
     G.furthest=Math.max(G.furthest||0, ...Object.keys(G.lessons).filter(k=>(G.lessons[k]||[]).some(r=>r.passed)).map(k=>LESSONS.findIndex(l=>l.id===k)+1).filter(n=>n>0 && n<=last+1));
     G.furthest=Math.max(G.furthest, Math.min(G.next, last)); }
   let pendingAgain=null;      // a done lesson the learner asked to do again (index)
@@ -238,7 +239,7 @@ const SHELL = (()=>{
       week+=`<div class="day${isToday?" today":""}"><span>${wd[k]}</span><div class="pair">${rec ? (rec.full ? `<i class="dot s"></i><i class="dot m"></i>` : `<i class="dot ${rec.am===false?"m":"s"}"></i>`+(isToday&&two&&rec.n<2?`<i class="dot o"></i>`:"")) : (future||isToday ? `<i class="dot o"></i>`+(two?`<i class="dot o"></i>`:"") : "")}</div></div>`; }
     const sl=slots(d, now), two=G.goal!==1;
     const eyebrow = G.why==="once" ? `<div class="eyebrow sun">${ic("redo")} Once more</div>` : G.why==="back" || G.why==="warm" ? `<div class="eyebrow sun">${ic("redo")} A warm-up</div>` : d.n>=1 ? `<div class="eyebrow moon">${ic("moon")} ${two?"Your second lesson today":"Another lesson"}</div>` : `<div class="eyebrow">${ic("sun")} Today's lesson</div>`;
-    const L=LESSONS[T], mins=minutesFor(L), st=stageLine(Math.max(1, Math.min(n, G.furthest+1)));
+    const L=LESSONS[T], mins=minutesFor(L), st=stageLine(Math.min(G.furthest+1, LESSONS.length));
     const restLine = G.restUsed===today ? `<div class="life">Yesterday was a rest day. Your run continues.</div>` : "";
     h.innerHTML=`<div class="h-top"><div class="h-hello">${greet},<b>${esc(S.learnerName||"")}</b></div>${G.daysLearned ? `<div class="h-run"><svg viewBox="0 0 56 70"><use href="#i-rosette"/></svg><div>${alive ? `<span class="n">${G.run.len}</span><small>${G.run.len===1?"day":"days in a row"}</small>` : `<span class="n">${G.daysLearned}</span><small>days learned</small>`}</div></div>`:""}</div>
       <section class="card rhythm" aria-label="Today"><div class="slots${two?"":" one"}">
@@ -256,7 +257,7 @@ const SHELL = (()=>{
     const sm=$("setMoments"); if(sm) sm.onclick=()=>{ tick(); anchors(false); };
     const om=$("offerMaker"); if(om) om.onclick=()=>{ tick(); G.makerOffer=false; store(); maker(false, ()=>home()); };
     h.querySelectorAll("[data-again]").forEach(b=>{ b.onclick=()=>{ pendingAgain=+b.dataset.again; tick(); const lb=btn.querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(pendingAgain+1)+" again"; h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(pendingAgain+1); }; }); }
-  function pathRows(T, st){ const upto = st ? Math.max(st.s.last, LESSONS.length) : LESSONS.length, from = st ? st.s.first-1 : 0; let out="";
+  function pathRows(T, st){ const upto = st ? st.s.last : LESSONS.length, from = st ? st.s.first-1 : 0; let out="";
     for(let i=from;i<upto;i++){ const Lk=LESSONS[i], recs=Lk ? (G.lessons[Lk.id]||[]) : [], pass=i<G.furthest, bestRec=recs.filter(r=>r.passed).slice(-1)[0];
       const cls = i===T ? (G.why ? "once" : "now") : pass ? "done" : "later";
       out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" data-again="${i}">Do it again ${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(mini).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
@@ -391,7 +392,7 @@ const SHELL = (()=>{
   function stepFor(days){ for(const [upto,n] of RULES.AWAY_STEPS) if(days<=upto) return n; return 0; }
   function welcome(){ const days=away(); if(days==null || days<RULES.RETURN_AFTER_DAYS || G.awaySeen===G.run.last) return false;
     G.awaySeen=G.run.last; let to=null;
-    if(RULES.AWAY_ON && allDone(S.lesson)===allDone(S.lesson)){ const n=stepFor(days); if(n>0){ const from=G.next; to = G.furthest<RULES.AWAY_MIN_DONE ? 0 : Math.max(0, from-n);
+    if(RULES.AWAY_ON){ const n=stepFor(days); if(n>0){ const from=G.next; to = G.furthest<RULES.AWAY_MIN_DONE ? 0 : Math.max(0, from-n);
         if(to<from){ G.warmTo=from; G.next=to; G.why="warm"; try{ trace("welcome back after "+days+" days away: a warm-up from Lesson "+(to+1)+" back to Lesson "+(from+1)); }catch(e){} } else to=null; } }
     store(); const o=$("back"), name=esc(S.learnerName||"");
     o.innerHTML=`<div class="wb-art" aria-hidden="true">${AV.svg(AV.get(), "portrait", "av")}</div><h1>Welcome back${name?", "+name:""}.</h1><div class="sub">Let's warm up.</div>

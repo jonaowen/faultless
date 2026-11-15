@@ -532,7 +532,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.60-next.1";   // next/: the preview has its own version line (next/version.json); the part before "-next" is the live version it was copied from
+const APP_VERSION="2026-11-15.60-next.2";   // next/: the preview has its own version line (next/version.json); the part before "-next" is the live version it was copied from
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -928,6 +928,16 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    are carried over at every switch. Recordings are in IndexedDB under ids that begin with the user's id, and a run file has
    only the recordings of its own session (a switch reloads the page, which starts a new session), so one user's recordings
    never get into another's run file. */
+/* (next) At its first start on a phone the preview takes a copy of the live app's learners (frDI.users and each frDI.u.<id>, or the single
+   state frDI.v1 of before .23) into its own keys, so that a family keeps its places and names. It only READS the live app's keys: it never
+   writes, changes or removes them. Done once (frDIn.migrated); a phone that already has the preview's own learners is left as it is.
+   A place in a lesson this copy does not serve yet goes to the start of the last lesson it serves. */
+(function migrateFromLive(){ try{ const ls=localStorage; if(ls.getItem("frDIn.users") || ls.getItem("frDIn.v1") || ls.getItem("frDIn.migrated")) return;
+  const served=Object.keys(window.COURSE||{}).length, fit=raw=>{ try{ const o=JSON.parse(raw); if(o && served && o.lesson>=served){ o.lesson=served-1; o.ex=0; } return JSON.stringify(o); }catch(e){ return raw; } };
+  let u=null; try{ u=JSON.parse(ls.getItem("frDI.users")||"null"); }catch(e){} let n=0;
+  if(u && Array.isArray(u.list) && u.list.length){ for(const x of u.list){ const raw=ls.getItem("frDI.u."+x.id); if(raw){ ls.setItem("frDIn.u."+x.id, fit(raw)); n++; } } ls.setItem("frDIn.users", JSON.stringify(u)); }
+  else { const old=ls.getItem("frDI.v1"); if(old){ ls.setItem("frDIn.v1", fit(old)); n=1; } }
+  ls.setItem("frDIn.migrated", JSON.stringify({at:new Date().toISOString(), learners:n})); }catch(e){} })();
 const USERS_KEY="frDIn.users", OLD_KEY="frDIn.v1";   // next/: its own saved-progress namespace (frDIn.*), so the preview never touches a place saved by the live app
 function loadUsers(){
   let u=null; try{ u=JSON.parse(localStorage.getItem(USERS_KEY)||"null"); }catch(e){}
@@ -2781,7 +2791,7 @@ async function setPortraits(sc){
    ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
    the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
    ============================================================ */
-const ARMS = (()=>{
+const ARMS = (()=>{ const API = {};      // (next) API.draw: a new rig draws the arms (TUTOR.adopt gives it); go, the easing, the hand shapes' change and the gold border stay the page's
   const SH = {L:{x:146,y:448}, R:{x:254,y:448}}, UP=72, FORE0=66;
   const svgns="http://www.w3.org/2000/svg";
   const hands = {L:document.getElementById("hand_L"), R:document.getElementById("hand_R")};
@@ -2801,7 +2811,7 @@ const ARMS = (()=>{
     const out = s==="L" ? (e1.x<e2.x?e1:e2) : (e1.x>e2.x?e1:e2);          // the elbow bends away from the body
     return {E:out, W};
   }
-  function draw(){
+  function draw(){ if(API.draw){ API.draw(cur); return; }
     for(const s of ["L","R"]){
       const p=cur[s], {E,W}=solve(s,p);
       const dpath=`M${SH[s].x} ${SH[s].y} L${E.x.toFixed(1)} ${E.y.toFixed(1)} L${W.x.toFixed(1)} ${W.y.toFixed(1)}`;
@@ -2830,7 +2840,7 @@ const ARMS = (()=>{
     return new Promise(res=>{ done=res; raf=requestAnimationFrame(frame); });
   }
   draw();
-  return { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } };
+  return Object.assign(API, { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } });
 })();
 // Poses (the teacher's right hand is on the viewer's left)
 const POSE = {
@@ -4754,6 +4764,7 @@ $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, setScene, gestureLead};
 </script>
+<script src="words.js"></script>
 <script src="shell.js"></script>
 </body>
 </html>
