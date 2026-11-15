@@ -3942,7 +3942,18 @@ const isReply = (it, prev) => it && prev && prev.type==="task" && prev.kind==="t
 const isFigureAfterTap = (it, prev) => it && it.type==="act" && it.kind==="figure" && prev && prev.tapTask;
 // (.32) a silent count goes with the question about it ("Il y en a combien ?") whenever that question is asked again
 const isCountBefore = (it, next) => it && it.type==="say" && it.touch && it.touch.silent && next && next.type==="task";
-const goesWith = (it, i, a) => isCountBefore(it, a[i+1]) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]);
+/* (.59; Jon's naming stage of an action word: Marie says "Dis." with one action card lit, the learner says the word alone, "Danse.", and
+   the learner's own figure then does it) the figure after a SPOKEN "Dis." test goes with that test, as the figure after a tap does: on a
+   correction that asks the test again, its figure comes again after it. (Not after a model: a model is not asked again, and its figure
+   with it.) */
+const isNaming = t => t && t.type==="task" && t.kind==="test" && !t.tapTask && (t.questionUnits||[]).length===1 && /^dis\.$/i.test(String(t.questionUnits[0]).trim());
+const isFigureAfterNaming = (it, prev) => it && it.type==="act" && it.kind==="figure" && isNaming(prev);
+/* (.59) what goes with the task AFTER it (taken when that task is asked again, walking back from it), and what goes with the task BEFORE
+   it (walking on). Until .58 both walks asked goesWith, so step 5 and step 3 also took, before a task, the figure of the tap before it
+   (a figure doing an action nobody had asked for); with a figure after every "Dis." test that would have come before every one. */
+const goesBefore = (it, i, a) => isCountBefore(it, a[i+1]) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it);
+const goesAfter = (it, i, a) => isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]) || isFigureAfterNaming(it, a[i-1]);
+const goesWith = (it, i, a) => goesBefore(it, i, a) || goesAfter(it, i, a);
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
@@ -3952,8 +3963,8 @@ function itemsFor(part, run, shown){
      a model learner's own answer before "Et toi ?", the figure after a tap). */
   if(run && run.only){ const keep=new Set(), a=part.items;
     a.forEach((it,i)=>{ if(it.type!=="task" || !run.only.has(it.id)) return; keep.add(it);
-      for(let j=i-1; j>=0 && goesWith(a[j], j, a); j--) keep.add(a[j]);
-      for(let j=i+1; j<a.length && goesWith(a[j], j, a); j++) keep.add(a[j]); });
+      for(let j=i-1; j>=0 && goesBefore(a[j], j, a); j--) keep.add(a[j]);
+      for(let j=i+1; j<a.length && goesAfter(a[j], j, a); j++) keep.add(a[j]); });
     return a.filter(x=>keep.has(x)); }
   if(run==="first")  return part.items;                                            // models, leads and tests
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
@@ -4075,7 +4086,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
          the error, with what goes with the first of them; within the first two tasks of the part, back to its start */
       { let j=i, back=0; while(j>0 && back<2){ j--; if(items[j].type==="task") back++; }
         if(back<2){ items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; trace("step 3: back to the start of the part"); }
-        else { while(j>0 && goesWith(items[j-1], j-1, items)) j--; i=j; rewound=true; trace("step 3: back two tasks, to "+(items[j].id||items[j].type)); } }
+        else { while(j>0 && goesBefore(items[j-1], j-1, items)) j--; i=j; rewound=true; trace("step 3: back two tasks, to "+(items[j].id||items[j].type)); } }
       prevTest=false; prevTarget=null; prevItem=null;
     }
   }
