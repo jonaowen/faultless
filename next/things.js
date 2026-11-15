@@ -302,7 +302,7 @@ function car(k){
   const wheel = (cx, cy, r, spoke) => circ(cx, cy, r, TY) + line(`M${r1(cx - r * 0.74)} ${r1(cy - r * 0.6)}A${r} ${r} 0 0 1 ${r1(cx + r * 0.3)} ${r1(cy - r * 0.95)}`, "#5A6274", 1.4) +
     (spoke ? circ(cx, cy, r * 0.72, "#EFE7D4") + [0, 45, 90, 135].map(a => line(`M${r1(cx - Math.cos(a * RAD) * r * 0.66)} ${r1(cy - Math.sin(a * RAD) * r * 0.66)}L${r1(cx + Math.cos(a * RAD) * r * 0.66)} ${r1(cy + Math.sin(a * RAD) * r * 0.66)}`, "#8B8472", 1.2)).join("") + circ(cx, cy, r * 0.24, TY)
       : solid(cd(cx, cy, r * 0.6), P("#E3E7EE", "#A9B1BF"), { k: 3, rim: 0 }) + circ(cx, cy, r * 0.2, "#7C8494"));
-  const glint = d => clipped(d, fill("M0 0L22 0L-8 60L-30 60Z", "#FFFFFF", 'opacity=".5" transform="translate(64 60)"') + fill("M0 0L7 0L-23 60L-30 60Z", "#FFFFFF", 'opacity=".5" transform="translate(96 60)"'));
+  const glint = d => clipped(d, fill("M0 0L11 0L-1 30L-12 30Z", "#FFFFFF", 'opacity=".5" transform="translate(52 90)"') + fill("M0 0L4 0L-8 30L-12 30Z", "#FFFFFF", 'opacity=".5" transform="translate(90 90)"'));      // kept inside the car's own extent: the caller measures the picture
   let s, w1, w2, r, wy, up;
   if (old){ w1 = 38; w2 = 118; r = 13; wy = 147; up = -30;
     const shell = "M22 140L22 110Q22 96 31 89Q36 84 46 84L82 84Q90 84 92 92L96 105L124 107Q134 108 134 116L134 140Z", g1 = "M31 93L53 93L53 108L28 108Q28 98 31 93Z", g2 = "M58 93L82 93Q85 93 86 97L89 108L58 108Z";
