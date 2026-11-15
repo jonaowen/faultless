@@ -3063,15 +3063,18 @@ function boardShow(b){
    (BOARD_FLOOR: the top of her hair, measured on the screen at 291), and between the side portraits when they are shown (their top at 258,
    their inner edges at 86 and 314: BOARD_SIDES) */
 const BOARD_FLOOR = 291, BOARD_SIDES = {top:254, x0:88, x1:312};
-const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||""); };
+const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||"")+":"+(HAND.at||""); };
+/* the bottom of an element in the board's own coordinates (the hand resting on a picture is drawn in another layer) */
+const bottomInBoard = el => { try{ const r=el.getBoundingClientRect(), m=TXT.g.getScreenCTM(); return r.height ? (r.bottom - m.f)/m.d : 0; }catch(e){ return 0; } };
 function boardFit(n, lines, fs0){
   const H = f => f*(1.15 + 0.6 + (n-1)*1.25), W = f => Math.max(...lines.map(l=>MEAS(l, f))) + 48;
   const sides = !!document.querySelector("#sideBadges > g");
   const fits = (top, f) => top + H(f) <= BOARD_FLOOR && (!sides || top + H(f) <= BOARD_SIDES.top || W(f) <= BOARD_SIDES.x1 - BOARD_SIDES.x0);
-  if(fits(218, fs0)) return {fs:fs0, top:218};
+  let hand=0; { const hd=document.getElementById("theHand"); if(hd && hd.getAttribute("opacity")==="1") hand=bottomInBoard(hd); }      // a hand resting on a picture
+  if(fits(218, fs0) && hand+6<=218) return {fs:fs0, top:218};
   let pics = 0;      // the bottom of what is shown above the board: the row of pictures, or the action box
   for(const el of [frameRow, document.getElementById("actBox")]){ try{ const op = el && (el.style.opacity!=="" ? el.style.opacity : el.getAttribute("opacity")); if(el && el.childNodes.length && op!=="0" && String(op)!=="0"){ const b=el.getBBox(); if(b.height) pics=Math.max(pics, b.y+b.height); } }catch(e){} }
-  const top = Math.min(218, Math.max(pics ? pics + 6 : 218, 60));
+  const top = hand ? Math.max(hand + 6, pics + 6) : Math.min(218, Math.max(pics ? pics + 6 : 218, 60));
   let fs = fs0; while(fs > 12 && !fits(top, fs)) fs -= 0.5;
   trace("board of "+n+" lines placed at "+Math.round(top)+", letters "+fs+(fits(top, fs) ? "" : " (FAULT LAYOUT: it still does not fit)"));
   return {fs, top};
@@ -3180,13 +3183,16 @@ const HAND_LEN = 56*HAND_K, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
 const boundsOf = slot => slot==="self" ? SELF_BOUNDS : BOUNDS[slot==="strip" ? "strip" : sideOf(slot)] || BOUNDS[slot];
 const handName = by => by==="teacher"||by==="both" ? VOCAB.claire.name : by==="paul"||by==="julie" ? VOCAB[by].name : by==="you" ? "You" : "";
 const SLEEVE = {teacher:"#3d5a7a", both:"#3d5a7a", paul:"#3f6fb5", julie:"#c0453b", you:"#4f9a61"};
-function handTo(x, y, by){
+function handTo(x, y, by, k=1){
   const h=document.getElementById("theHand"), tag=document.getElementById("handTag"), name=handName(by);
+  /* (.62) k < 1: the hand resting on a picture made smaller, its name tag on its sleeve instead of below it, so that a board of several
+     lines fits under the row (L9E18: the hand and its tag had covered the board's first line) */
+  if(tag) tag.setAttribute("transform", k<1 ? "translate(0,-12)" : `translate(0,${(22.8*HAND_K-20).toFixed(1)})`);
   /* (.58; Jon, 15 Nov: "when Pierre or Sylvie touch things and their hands are shown, the colour of their sleeve should match what they
      normally wear") the sleeve of the hand is the colour of its owner's top: Marie slate, Pierre blue, Sylvie red, the learner green. */
   if(by!==undefined){ const sl=document.getElementById("handSleeve"); if(sl) sl.setAttribute("fill", SLEEVE[by] || SLEEVE.teacher); }
   if(by!==undefined) tag.innerHTML = name ? `<rect x="${-name.length*3.4-5}" y="15" width="${name.length*6.8+10}" height="15" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.2"/><text x="0" y="26.5" text-anchor="middle" font-size="11.5" font-weight="700" font-family="system-ui,sans-serif" fill="#2b2f36">${escX(name)}</text>` : "";
-  h.setAttribute("transform",`translate(${x.toFixed(1)},${(y+HAND_LEN).toFixed(1)})`); h.setAttribute("opacity",1);
+  h.setAttribute("transform",`translate(${x.toFixed(1)},${(y+HAND_LEN*k).toFixed(1)})`+(k<1 ? ` scale(${k})` : "")); h.setAttribute("opacity",1);
 }
 function handHide(){ const h=document.getElementById("theHand"); if(h) h.setAttribute("opacity",0); document.getElementById("tapRing").setAttribute("opacity",0); HAND.at=null; }
 const HAND = {at:null};
@@ -3199,7 +3205,10 @@ const tipOf = slot => { const b=boundsOf(slot); return slot==="self" ? {x:200, y
 function ringSlot(slot, on){ const g=document.getElementById("tapRing"), b=on && boundsOf(slot); if(!b){ g.setAttribute("opacity",0); return; }
   const m=6; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",(b.r||10)+m); g.setAttribute("opacity",1); }
 // a hand resting on a picture (scene.touching), or a tap being shown: the labelled hand with its finger on the picture
-function handAt(by, slot){ const p=tipOf(slot); if(!boundsOf(slot)) return; handTo(p.x, p.y, by); HAND.at=slot; }
+function handAt(by, slot){ const p=tipOf(slot); if(!boundsOf(slot)) return;
+  const board = TXT.cur==="board" && BOARD.b && /\n/.test(String(BOARD.b.text||""));      // (.62) a board of several lines is up: the smaller hand, and the board laid out again under it
+  handTo(p.x, p.y, by, board ? 0.78 : 1); HAND.at=slot;
+  if(board){ BOARD.key=null; boardShow(BOARD.b); } }
 async function handTap(by, slot){ const p=tipOf(slot), b=boundsOf(slot); if(!b){ trace("FAULT TAP: no picture at "+slot); return; }
   handTo(p.x+26, p.y+46, by); await sleep(260); handTo(p.x, p.y, by); await sleep(210); pulse(p.x, p.y); ringSlot(slot, true); HAND.at=slot;
   trace("tap shown: "+(handName(by)||"the hand")+" on "+slot); await sleep(650); ringSlot(slot, false); }
