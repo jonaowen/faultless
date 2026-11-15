@@ -773,6 +773,13 @@ function bust(spec, name, variant){
          ${[-10.6, -5.2, 0.2, 5.6].map((y, i) => `<rect x="10" y="${y}" width="${[17, 20, 20, 17][i]}" height="5.6" rx="2.8" fill="${skin[0]}" stroke="${skin[2]}" stroke-width="1"/>`).join("")}
          <path d="M2 -11 q9 -6.5 15 -1.6 q-5 3 -9 4.4z" fill="${skin[1]}" stroke="${skin[2]}" stroke-width="1"/></g>`);
   }
+  if (sleeping && spec._act){
+    /* PICS.action "sleep" (dormir): three z above the sleeper, small to large; in the loop they come one after another and go together.
+       One clock for the three (no begin offsets), so that the loop starts at its first frame wherever it is started. */
+    const Z = [[108, 70, 15, "0;1;1;0", "0;0.12;0.86;1"], [121, 52, 20, "0;0;1;1;0", "0;0.26;0.4;0.86;1"], [137, 31, 26, "0;0;1;1;0", "0;0.52;0.66;0.86;1"]];
+    front += Z.map(z => `<text x="${z[0]}" y="${z[1]}" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-weight="800" font-style="italic" font-size="${z[2]}" fill="#4f6fae" stroke="#fff" stroke-width=".8" paint-order="stroke" opacity="${anim ? 0 : 0.95}">z` +
+      (anim ? `<animate attributeName="opacity" values="${z[3]}" keyTimes="${z[4]}" dur="2.8s" repeatCount="indefinite"/>` : "") + `</text>`).join("");
+  }
   if (drinking && anim){
     /* the loop of PICS.action "drink": the glass comes up to the lips and tips, then comes away again and tips back; the water
        stays level (it is turned back against the glass), and the forearm follows the hand */
@@ -1164,7 +1171,7 @@ const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump"
   sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
   talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave",
   working: "work", work: "work", calling: "call", call: "call", phoning: "call", "go out": "go out", playing: "play", play: "play", listening: "listen", listen: "listen" };
-const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink" };
+const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink", sleep: "sleep", sleeping: "sleep" };
 const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
 const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
 const SEATED = { rx: 2, ry: 26, lL: [-90, 90], lR: [-90, 90], aL: [-4, -70], aR: [-8, -75] },
@@ -1240,6 +1247,7 @@ function action(act, who, opts){
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "not smiling"){ spec._smile = "neutral"; return bust(spec, name); }      // (.50) the face close up, as the smile is, the mouth level and closed: always still
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
+  if (act === "sleep"){ spec.doing = "sleeping"; spec._act = still ? "still" : "anim"; return bust(spec, name); }      // dormir: the head on a pillow, the eyes shut, z z z
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
   const c = traits(spec), L = c.L, K = opts.card ? Object.assign({}, MOVES.stop, { poses: [A_CARD, A_CARD], scale: 0.8, ox: -36 }) : opts.size ? Object.assign({}, MOVES.stop, { scale: opts.size === "short" ? 0.8 : 1.22, ox: 12 })
     : act === "stop" && after ? Object.assign({}, MOVES.stop, { scale: after.scale }) : opts.shift ? Object.assign({}, MOVES[act], { ox: (MOVES[act].ox || 0) + opts.shift }) : MOVES[act], u = "pa" + (seq++) + "_", skin = c.skin;
