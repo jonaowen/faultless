@@ -162,5 +162,13 @@
 "ask_intro": {
 "text": "Next, Marie tells you to ask Pierre or Sylvie how they are. When she says it, say the question to them yourself. When Marie asks you, answer her.",
 "dur": 7.89
+},
+"futur_intro": {
+"text": "Next, somebody holds up a picture of what they are about to do, and then does it. Listen to what is said before they do it.",
+"dur": 6.23
+},
+"futur_q_intro": {
+"text": "Now Marie asks about it before she does it. Watch Pierre and Sylvie answer her. Then she will ask you.",
+"dur": 5.77
 }
 }
