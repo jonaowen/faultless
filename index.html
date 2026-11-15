@@ -370,6 +370,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson3.js"></script>
 <script src="course/lesson4.js"></script>
 <script src="course/lesson5.js"></script>
+<script src="course/lesson6.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script>
@@ -377,7 +378,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.58";
+const APP_VERSION="2026-11-15.59";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -788,7 +789,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:58, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:59, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -814,6 +815,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=56)) migrate56();      // (.56) a state saved before Lessons 1 and 2 were built anew, each format by a constructor
   if(!(s.courseRev>=57)) migrate57();      // (.57) a state saved before Lessons 3 to 5 were built anew from the plan's rows of 15 Nov
   if(!(s.courseRev>=58)) migrate58();      // (.58) a state saved before Lessons 4 and 5 were built anew at DISE's rate (the either/or first)
+  if(!(s.courseRev>=59)) migrate59();      // (.59) a state saved before Lessons 4 and 5 were drawn again with the naming of action words, and Lesson 6 came
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -892,6 +894,24 @@ function migrate58(){
   if(here || had || old.length)
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
   S.courseRev=58;
+}
+/* (.59) Lessons 4 and 5 are drawn again whole (the naming of action words: Marie says "Dis." with an action card lit, the learner says the
+   word, the figure does it; other exercises, other numbers: 26 and 27 exercises), and Lesson 6 is new. A learner saved in Lesson 4 or 5
+   starts the new Lesson 4 from its beginning. Lessons 1-3 are as .58: a place in them stands, and so do their delayed tests. The records
+   and delayed tests of Lessons 4-6 are dropped (their items have changed; anything of Lesson 6 is from a build no longer served). One log
+   line. */
+function migrate59(){
+  const L46 = k => /^L[4-6]E\d+/.test(k), L45 = k => /^L[45]E\d+/.test(k);
+  const here = S.lesson===3 || S.lesson===4;                       // saved in Lesson 4 or 5
+  const had = Object.keys(S.finished||{}).some(L45);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L46(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L46(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  if(here){ S.lesson=3; S.ex=0; }                                  // back to the start of the new Lesson 4
+  for(let i=3;i<Math.min(S.lesson||0, LESSONS.length);i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;   // beyond: the new lessons before the learner's own count as done
+  if(here || had || old.length)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are drawn again (other exercises) and Lesson 6 is new"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  S.courseRev=59;
 }
 /* (.57) Lessons 3 to 5 are built anew: other exercises, other numbers, and another ORDER of what is taught ("Dis :" is Lesson 3, "Je
    m'appelle comment ?" Lesson 4, "Tu fais quoi ?" Lesson 5; il / elle, "Salut !", "Ça va ?" come after Lesson 5). A learner anywhere in the
@@ -1603,7 +1623,21 @@ function judge(text, expect, echoes=[], alsoOk=[]){
          elle 4): accepted as unsure.
        - "elle" + verb for "on" + verb and the reverse (3-4 of 16 for marche): unsure, unless the part being run asks for
          both (judgePart: then the part is there to tell them apart, and the answer is judged as heard). */
+    /* (.59; the reader of Lessons 1-6: in "Je fais quoi ?" -> "Tu danses." the learner's likeliest error is "Je danse.", the person of
+       the question said back, and the rule above passed it as unsure every time: it was never corrected) Where the question itself is
+       about je or tu ("Je fais quoi ?", "Tu fais quoi ?", "Tu vas faire quoi ?": the cue begins with the person) and what was heard is
+       that SAME person, the answer is judged: it is the question's person said back. Only that direction: "je" heard for "tu" after
+       "Répète : tu danses." or after "Tu fais quoi ?" stays unsure as before. Measured 15 Nov 2026 (the app's listener, the word list of
+       L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's, Helen's and
+       Richard's own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
+       other person: the "je" of 240 recordings heard as je 240 times (Jon 131, Helen 36, Richard 20, 53 unnamed), the "tu" of 86 (all
+       Jon's) heard as tu 85 times (once the whole line was heard as "je m'appelle Marie"). So a right "Tu danses." taken for "Je danse."
+       is rare (about one in a hundred on the one voice measured), and then corrected once, while the error itself was never corrected. */
+    const echoed = (e, w) => { const q=String(curCue||"").trim(), cp = /\?\s*$/.test(q) ? (/^(je|j')\s/i.test(q) ? "JE" : /^tu\s/i.test(q) ? "TU" : null) : null;
+      return !!cp && cp!==e && SLOT[cp].includes(w); };
     { const e0=whole[0], e1=whole[1], w0=t[0], w1=t[1], rest=bad.every(([e])=>e===e0 || e===e1);
+      if(bad.length===2 && rest && ((e0==="JE" && e1==="VAIS" && SLOT.VA.includes(w1)) || (e0==="TU" && e1==="VA" && SLOT.VAIS.includes(w1))) && echoed(e0, w0))
+        return {ok:false, reason:"said \""+w0+" "+w1+"\" for \""+SLOT_WORD[e0]+" "+(e0==="TU"?"vas":"vais")+"\": the person of the question said back", person:true};
       if(bad.length===2 && rest && ((e0==="JE" && e1==="VAIS" && SLOT.TU.includes(w0) && SLOT.VA.includes(w1)) || (e0==="TU" && e1==="VA" && SLOT.JE.includes(w0) && SLOT.VAIS.includes(w1))))
         return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+w0+" "+w1+"\" where \""+SLOT_WORD[e0]+" "+(e0==="TU"?"vas":"vais")+"\" was expected; accepted, not judged on the person", unsure:"person"};
       if(bad.length===1 && bad[0][0]===e0 && (e0==="ON" || e0==="ELLE")){
@@ -1611,6 +1645,8 @@ function judge(text, expect, echoes=[], alsoOk=[]){
         if(w0==="un" || (!both && (e0==="ON" ? SLOT.ELLE : SLOT.ON).includes(w0)))
           return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+w0+"\" where \""+SLOT_WORD[e0]+"\" was expected; accepted, not judged on the person", unsure:"person"}; } }
     const otherSubject = w => SLOT.IL.includes(w) || SLOT.ELLE.includes(w) || SLOT.ON.includes(w) || ((nameOf(w)||{}).n && VOCAB[nameOf(w).n].kind==="person" && !nameOf(w).near);
+    if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU") && echoed(bad[0][0], bad[0][1]))
+      return {ok:false, reason:"said \""+bad[0][1]+"\" for \""+SLOT_WORD[bad[0][0]]+"\": the person of the question said back", person:true};
     if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU") && !otherSubject(bad[0][1]))      // whatever short word was heard in its place ("un danses", "pomme danses": 4 of 16 English voices)
       return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+bad[0][1]+"\" where \""+SLOT_WORD[bad[0][0]]+"\" was expected; accepted, not judged on the person", unsure:"person"};
     if(bad.length && bad.length<whole.length && !bad.some(([e])=>VOCAB[e] && VOCAB[e].kind==="person"))
@@ -2244,7 +2280,8 @@ function cardOf(inner, k=0.74){
 }
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", sleeping:"sleep", singing:"sing", reading:"read", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
-  working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen"};      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
+  working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen",      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
+  writing:"write"};      // (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer)
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -2257,7 +2294,7 @@ function thingPicture(e){
   const lib = window.PICS && PICS.thing && (!PICS.things || PICS.things.includes(String(e.is).toLowerCase()));
   if(lib){ try{ const g=PICS.thing(e.is==="picture card" ? Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e) : e); if(g) return g; }catch(err){ trace("FAULT picture "+e.is+": "+err.message); } }
   const L=e.looks||[];
-  if(e.is==="picture card" && !lib){ const act=ACT_NAME[e.doing]||e.doing; return cardOf(picKnows(act) ? PICS.action(act, "you", {still:true}) : placeholder(act)); }
+  if(e.is==="picture card" && !lib){ const act=ACT_NAME[e.doing]||e.doing; return cardOf(picKnows(act) ? PICS.action(act, "you", {still:!e.moving}) : placeholder(act)); }
   if(e.is==="French flag") return cardOf(mkG(`<rect x="14" y="52" width="44" height="86" fill="#2a4b9b"/><rect x="58" y="52" width="44" height="86" fill="#ffffff"/><rect x="102" y="52" width="44" height="86" fill="#d8372e"/><rect x="14" y="52" width="132" height="86" fill="none" stroke="#9aa0a8" stroke-width="1.5"/>`), 0.8);
   if(e.is==="face"){ const m = L.includes("feeling good") ? "M56 110 Q80 136 104 110" : L.includes("feeling bad") ? "M56 124 Q80 100 104 124" : "M58 116 H102";
     const brow = L.includes("feeling bad") ? `<path d="M52 72 L70 78 M108 72 L90 78" stroke="#5a4632" stroke-width="4" stroke-linecap="round"/>` : "";
@@ -2397,13 +2434,14 @@ function buildRow(items, area={y:24, h:190}){
   // one row up to five pictures; six to ten (Lesson 10: ten numerals) in two rows, read left to right, top row first
   // area (.24): the row stands lower and smaller when a line of things to count is above it (counting silently, then the numerals)
   const N=items.length, rows=N>5?2:1, n=Math.ceil(N/rows)||1, gap=n>2?10:24, vg=8, w=Math.min(160,(344-gap*(n-1))/n, ((area.h-(rows-1)*vg)/rows)*160/190), h=w*190/160, y0=area.y+(area.h-(rows*h+(rows-1)*vg))/2, k=w/160;
-  frameRow.replaceChildren();
+  frameRow.replaceChildren(); LIT.slot=null; LIT.g=null;
   items.forEach((spec,i)=>{ const r=Math.floor(i/n), inRow=Math.min(n, N-r*n), x0=200-(inRow*w+(inRow-1)*gap)/2, x=x0+(i-r*n)*(w+gap), y=y0+r*(h+vg);
     if(spec===null){ delete TARGET["s"+i]; delete BOUNDS["s"+i]; return; }       // .24: the place of a card that has not come yet (cards brought in one at a time keep their places)
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     if(spec && spec.appears){ try{ g.animate([{opacity:0},{opacity:1}], {duration:550, easing:"ease-out"}); }catch(e){} }      // the card that is new in this task comes in
     g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
     const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
+    g.dataset.slot="s"+i; inner.classList.add("pic");      // (.59) litPlay finds the picture of a place by these
     frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62}; BOUNDS["s"+i]={x,y,w,h,r:10};
   });
 }
@@ -2742,7 +2780,7 @@ async function askAndListen(task, expect, think=0, alsoOk=[], cued=false){
     await cueAs(task.cueVoice, task.questionUnits, task.cueAt, task);
     return listenT(task, expect, alsoOk);
   }
-  pointAt(task);                          // focus: the gold border comes on as she speaks
+  pointAt(task); litPlay(task);           // focus: the gold border comes on as she speaks (.59: a lit action card moves from here)
   if(think) await sleep(think);
   await say(task.w1 ? w1Units(task) : task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
   return listenT(task, expect, alsoOk);          // signal at 0.5 s, then the learner responds
@@ -3315,7 +3353,7 @@ async function presentGenModel(m){
   // the script's "Écoute." is not said (Jon 9 Nov 14:21: adults who chose the app know to listen; it costs time)
   const listenFirst = m.teacherUnits.length && /^écoute/i.test(m.teacherUnits[0]);
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
-  if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
+  if(m.at==="you"){ offering=true; await pointAt("you"); } else { await pointAt(m); litPlay(m); }      // (.59) a lit action card moves from the cue
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
   if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt, m); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
   // a model learner's own-name answer (.24): their tag lit and their hand on it while they say it (askMark: the who-asks-whom hand)
@@ -3412,6 +3450,41 @@ function actLoopMs(root){
 }
 const wholeLoop = (ms, root) => Math.max(ms, Math.round(actLoopMs(root||document.getElementById("actBox")))+80);      // +80 ms: the first frame is painted a frame or two after the picture is added
 new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) animFromStart(n); }).observe(document.documentElement, {childList:true, subtree:true});
+/* (.59; Jon's naming stage of an action word: Marie says "Dis." with one action card lit among the known action cards, the learner says
+   the word alone, "Danse.", and then the learner's own figure does it; Pierre and Sylvie model it first) The lit card shows its action
+   going on: from the cue until the answer the card the item points at plays its loop, the other cards stay still. Until .58 every
+   picture card was drawn still: a still smiling card beside the face not smiling reads, a still card of walking or talking reads less
+   well. Only a spoken model or test (never a tap) whose point is a picture card of an action. The card is drawn again moving (people.js
+   card, spec.moving): its loop begins at its first frame (animFromStart, as every animation), and it goes still again only when one
+   whole loop has been seen (litStill: the wait, if the answer came sooner, as wholeLoop does for a figure). Its correction lights the
+   same card, so it moves there too. Not the smile: its loop begins and ends on the face not smiling, the very card that stands beside it
+   (.53, Jon's run of 14 Nov 18:09: "Souris." answered by the face not smiling; a smile among pictures to choose from is the still
+   close-up smile), so the lit smiling card stays the still smile; seen on the first screens of .59, the moving one was a level mouth when
+   the turn opened. */
+const LIT={slot:null, g:null, spec:null, t0:0, ms:0};
+function litSlotOf(it){
+  if(!it || it.tapTask || !(it.type==="model" || (it.type==="task" && it.kind==="test"))) return null;
+  const side=sideOf(it); if(!/^s\d+$/.test(side||"")) return null;
+  const x=curScene && curScene.row && curScene.row[+side.slice(1)];
+  return x && typeof x==="object" && x.is==="picture card" && x.doing && ACT_NAME[x.doing] && !/^(not )?smiling$/.test(x.doing) ? side : null;
+}
+function litPlay(it){
+  const slot=litSlotOf(it); if(!slot || (LIT.slot===slot && LIT.g && LIT.g.isConnected)) return;
+  const holder=frameRow.querySelector(`[data-slot="${slot}"] .pic`); if(!holder) return;
+  if(LIT.g && LIT.g!==holder && LIT.g.isConnected && LIT.spec) LIT.g.replaceChildren(picture(LIT.spec));      // another card was moving: still at once
+  const spec=curScene.row[+slot.slice(1)];
+  holder.replaceChildren(picture(Object.assign({}, spec, {moving:true})));
+  Object.assign(LIT, {slot, g:holder, spec, t0:performance.now(), ms:actLoopMs(holder)});
+  trace(LIT.ms ? "the lit card plays its action: "+spec.doing+" ("+slot+", one loop "+Math.round(LIT.ms)+" ms)" : "the lit card has no loop to play: "+spec.doing+" (the picture library draws this action still: reading)");
+}
+async function litStill(){
+  if(!LIT.slot) return; const g=LIT.g, spec=LIT.spec;
+  const w=Math.round(LIT.ms+80-(performance.now()-LIT.t0));
+  if(w>0 && g && g.isConnected){ await sleep(w); trace("the lit card's loop seen whole: "+w+" ms more"); }
+  if(LIT.g!==g) return;      // drawn again meanwhile (a new scene, or another card lit)
+  LIT.slot=null; LIT.g=null; LIT.spec=null;
+  if(g && g.isConnected) g.replaceChildren(picture(spec));
+}
 function actBox(who, act, opt){
   const g=document.getElementById("actBox"); if(!g) return;
   if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); ACTBOX.key=null; return; }
@@ -3546,6 +3619,7 @@ async function presentModel(m){
   await setPortraits(m.scene); itemStart(m); await convIntro(m);
   if(m.gen){ if(goldThingOf(m)) await goldClear(m.at);
     if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m);
+    await litStill();      // (.59) the lit card goes still after the answer, once a whole loop has been seen
     const end=performance.now(), gap=m.pauseAfterMs>0 ? m.pauseAfterMs : COUNT_GAP;
     if(gap>COUNT_GAP){ await sleep(gap-GOLD_BLINK); trace("pause after the model: "+gap+" ms"); }      // the border stays on its card
     if(holdEar) goldOff(); else rest(); MODEL_END.t=end; MODEL_END.gap=gap; MODEL_END.thing=goldThingOf(m); return; }
@@ -3661,6 +3735,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
     r = await askAndListen(t, expect, think, t.alsoOk||[]);
   }
+  await litStill();      // (.59) the answer has come: the lit card goes still (once a whole loop has been seen)
   rest();
   // whichever recogniser listened: the question said back is that error by name, never a right answer
   // (with Chrome's recogniser the question said back looks like the app's own words picked up by the microphone: "echo".
@@ -3853,7 +3928,7 @@ async function corrModel(task){
     if(c.sweep[0]) goldOn(sideOf(c.sweep[0]));
     SAY_SLOW=!!c.slow; try{ await say([c.answer]); } finally{ SAY_SLOW=false; TXT.onPart=on; TXT.ctx=keep; }
     return; }
-  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
+  await pointAt(task.cueVoice ? task.cueAt : task); if(!task.cueVoice) litPlay(task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
 const corrKind = t => isOwnName(t) ? "own name" : t.tapTask ? "tap" : t.corr ? "sound pair" : t.cue==="repeat" ? "Répète" : t.cue==="point" ? "touch-and-name" : t.cueVoice ? "spoken answer, cue by a model learner" : "spoken answer";
 /* (.53; Jon, 14 Nov 2026, after a naive tester had a right "une" refused six times with the same words: "'Non, écoute. Une. Vas-y' obscures what
@@ -3866,7 +3941,7 @@ const oralCorr = t => !t.tapTask;
 const retestOpts = t => oralCorr(t) ? {retest:true, atoi:false, quiet:true} : {retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true};
 async function correction(task, nth, how=""){
   ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task)+(oralCorr(task) ? " (the target only, then the task again)" : ""));
-  if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); rest(); return; }
+  if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); await litStill(); rest(); return; }
   /* (.54; Jon, 15 Nov 2026: "I'd lean towards removing écoute since a truly naive learner doesn't know what it means since we didn't teach it")
      A tap's correction is "Non."  -  0.5 s  -  the cue and her hand's tap  -  0.5 s  -  "Vas-y.". "Écoute." is said nowhere now (a model's
      opening "Écoute." has not been said since 9 Nov: presentGenModel). */
@@ -3904,7 +3979,18 @@ const isReply = (it, prev) => it && prev && prev.type==="task" && prev.kind==="t
 const isFigureAfterTap = (it, prev) => it && it.type==="act" && it.kind==="figure" && prev && prev.tapTask;
 // (.32) a silent count goes with the question about it ("Il y en a combien ?") whenever that question is asked again
 const isCountBefore = (it, next) => it && it.type==="say" && it.touch && it.touch.silent && next && next.type==="task";
-const goesWith = (it, i, a) => isCountBefore(it, a[i+1]) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]);
+/* (.59; Jon's naming stage of an action word: Marie says "Dis." with one action card lit, the learner says the word alone, "Danse.", and
+   the learner's own figure then does it) the figure after a SPOKEN "Dis." test goes with that test, as the figure after a tap does: on a
+   correction that asks the test again, its figure comes again after it. (Not after a model: a model is not asked again, and its figure
+   with it.) */
+const isNaming = t => t && t.type==="task" && t.kind==="test" && !t.tapTask && (t.questionUnits||[]).length===1 && /^dis\.$/i.test(String(t.questionUnits[0]).trim());
+const isFigureAfterNaming = (it, prev) => it && it.type==="act" && it.kind==="figure" && isNaming(prev);
+/* (.59) what goes with the task AFTER it (taken when that task is asked again, walking back from it), and what goes with the task BEFORE
+   it (walking on). Until .58 both walks asked goesWith, so step 5 and step 3 also took, before a task, the figure of the tap before it
+   (a figure doing an action nobody had asked for); with a figure after every "Dis." test that would have come before every one. */
+const goesBefore = (it, i, a) => isCountBefore(it, a[i+1]) || isNameModel(it, a[i+1]) || isActBefore(it, a[i+1]) || isStop(it);
+const goesAfter = (it, i, a) => isStop(it) || isReply(it, a[i-1]) || isFigureAfterTap(it, a[i-1]) || isFigureAfterNaming(it, a[i-1]);
+const goesWith = (it, i, a) => goesBefore(it, i, a) || goesAfter(it, i, a);
 const isNameModel = (it, next) => it && it.type==="model" && it.voice && it.voice!=="teacher" && next && next.type==="task" && next.cue==="you";
 // which items a run of a part presents
 function itemsFor(part, run, shown){
@@ -3914,8 +4000,8 @@ function itemsFor(part, run, shown){
      a model learner's own answer before "Et toi ?", the figure after a tap). */
   if(run && run.only){ const keep=new Set(), a=part.items;
     a.forEach((it,i)=>{ if(it.type!=="task" || !run.only.has(it.id)) return; keep.add(it);
-      for(let j=i-1; j>=0 && goesWith(a[j], j, a); j--) keep.add(a[j]);
-      for(let j=i+1; j<a.length && goesWith(a[j], j, a); j++) keep.add(a[j]); });
+      for(let j=i-1; j>=0 && goesBefore(a[j], j, a); j--) keep.add(a[j]);
+      for(let j=i+1; j<a.length && goesAfter(a[j], j, a); j++) keep.add(a[j]); });
     return a.filter(x=>keep.has(x)); }
   if(run==="first")  return part.items;                                            // models, leads and tests
   // after a correction: the part's tasks; a model only if the learner has not yet seen it (a later item's introduction)
@@ -3938,7 +4024,7 @@ async function trialLimit(it, part, anchor){
   else { await say(["Non."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
   else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
-  rest();
+  await litStill(); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null}, it.id);
 }
@@ -4037,7 +4123,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
          the error, with what goes with the first of them; within the first two tasks of the part, back to its start */
       { let j=i, back=0; while(j>0 && back<2){ j--; if(items[j].type==="task") back++; }
         if(back<2){ items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; trace("step 3: back to the start of the part"); }
-        else { while(j>0 && goesWith(items[j-1], j-1, items)) j--; i=j; rewound=true; trace("step 3: back two tasks, to "+(items[j].id||items[j].type)); } }
+        else { while(j>0 && goesBefore(items[j-1], j-1, items)) j--; i=j; rewound=true; trace("step 3: back two tasks, to "+(items[j].id||items[j].type)); } }
       prevTest=false; prevTarget=null; prevItem=null;
     }
   }

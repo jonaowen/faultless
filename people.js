@@ -54,7 +54,8 @@
         picture card (or "card")    a white card with the learner's figure, frozen, doing spec.doing: dancing | jumping | walking |
                                smiling | eating | drinking | raising a hand (any act of PICS.action); spec.sex "f": the woman.
                                smiling / not smiling (.50): the face close up, eyes to chin filling the card, smiling / with a level
-                               closed mouth: {is: "picture card", doing: "not smiling"} stands beside the smiling card
+                               closed mouth: {is: "picture card", doing: "not smiling"} stands beside the smiling card.
+                               spec.moving (.59): the figure on the card does the action (its loop), not frozen
         newspaper   a folded newspaper               letter      a handwritten sheet and its envelope
         book, apple, pen, shoe      small plain versions of the app's own pictures (the app draws its own; these are for spec.holding);
                                book takes "open". key, dog, car: the same as PICS.key / PICS.dog / PICS.car
@@ -62,6 +63,7 @@
                                book, apple, pen, shoe, key, dog, car (genPicture can test PICS.things.includes(String(e.is).toLowerCase()))
      PICS.person, more:
         spec.doing "reading"   an open book held in both hands, eyes down on it; spec.reading "book" (default) | "newspaper" | "letter".
+        spec.doing "writing"   (.59) at a table, a sheet flat on it, a pen moving along a line of blue writing (PICS.action "write" the same)
                                Any person: paul, julie, man, woman, boy, girl, with any look
         spec.looks may hold ONE look that changes the face and not the person (the same stranger keeps the same features):
            "smiling" (or "likes it") / "pulling a face" (or "does not like it", "doesn't like it"): the eater's verdict. Eyes shut in
@@ -917,6 +919,7 @@ function person(spec, name){
     return action(spec.did ? "stop" : doingOf(spec), spec.person, { looks: spec.looks, name: name, still: !!spec.still, after: spec.did, sex: spec.sex });
   if (spec.holding) return holder(spec, name);
   if (doingOf(spec) === "reading") return reader(spec, name);
+  if (doingOf(spec) === "writing") return writer(spec, name, !spec.still);
   return bust(spec, name);
 }
 /* ---------- somebody reading: the head and shoulders a little smaller, eyes down, and in both hands an open book (its covers
@@ -941,6 +944,43 @@ function reader(spec, name){
   g.querySelector("g.bust").appendChild(bust(spec, name));
   return g;
 }
+/* ---------- (.59) somebody writing (écrire; PICS.action "write", spec.doing "writing"): the head and shoulders as for reading, eyes down,
+   at a table; a white sheet lies FLAT on the table, two lines already written on it in blue ink; one hand holds the sheet at its edge,
+   the other holds a pen whose point is on the paper and moves along the third line while the ink comes out behind it (one clock for the
+   hand, the arm and the ink: a loop of WRITE_DUR; at its end the line starts again). Drawn from the Mulberry and ARASAAC symbols for
+   "write" and photographs of people writing at a desk. Not reading: reading holds a coloured book UP in both hands, its cover to the
+   viewer, and nothing moves; here the paper lies down, white and lined with writing, and a pen moves on it. The still frame: the pen
+   half way along the line, the line half written. ---------- */
+const WRITE_DUR = 1.6;
+function writer(spec, name, anim){
+  const c = traits(spec), L = c.L, sk = c.skin, k = 0.72, u = "pw" + (seq++) + "_";
+  const col = L.coat ? COL[c.coat] : L.suit ? COL[c.suit] : c.top;
+  const K = `keyTimes="0;0.8;0.86;1" dur="${WRITE_DUR}s" repeatCount="indefinite"`;
+  /* the sheet and all on it are drawn about its middle (0 0), then put on the table: turned a little, one and a quarter times */
+  const X0 = -30, X1 = 30, XM = 0, YL = 9;                 // the line being written: from X0 to X1, at YL
+  const xs = [X0, X1, X0, X0];
+  const armD = x => `M62 52 Q${r2(x + 34)} 36 ${r2(x + 13)} ${YL - 9}`, armV = xs.map(armD).join(";");
+  const arm = (cl, w, op) => `<path d="${armD(anim ? X0 : XM)}" stroke="${cl}" stroke-width="${w}" fill="none" stroke-linecap="round"${op}>` + (anim ? `<animate attributeName="d" values="${armV}" ${K}/>` : "") + `</path>`;
+  const ink = "#2f4fb0";
+  let p = `<path d="M-40 -22 H40 L46 22 H-46Z" fill="#000" opacity=".13" transform="translate(1.6 1.8)"/><path d="M-40 -22 H40 L46 22 H-46Z" fill="#fffef9" stroke="#a8a294" stroke-width="1.2" stroke-linejoin="round"/>` +
+    `<g stroke-width="1.6">${scrawl(X0, -12, 58, ink)}${scrawl(X0, -2, 50, ink)}</g>` +
+    `<path d="${scrawlD(X0, YL, X1 - X0)}" pathLength="100" stroke="${ink}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="${anim ? 100 : 50}">` +
+      (anim ? `<animate attributeName="stroke-dashoffset" values="100;0;0;100" ${K}/>` : "") + `</path>`;
+  // the hand that holds the sheet down at its left edge, flat, fingers on the paper (left of the writing)
+  p += armStroke2("M-66 52 Q-60 24 -48 10", 13, col) + `<g transform="translate(-47 8) rotate(-10)"><rect x="-8" y="-6.5" width="17" height="13" rx="6" fill="${sk[1]}" stroke="${sk[2]}" stroke-width="1"/>` +
+    [-5.6, -1.6, 2.4].map(y => `<rect x="7" y="${y}" width="9" height="3.8" rx="1.9" fill="${sk[0]}" stroke="${sk[2]}" stroke-width=".8"/>`).join("") + `</g>`;
+  // the writing arm, the hand and the pen: its point at the end of the ink
+  p += arm(col[1], 13.4, "") + arm(col[0], 10.6, ` opacity=".85"`) +
+    `<g transform="translate(${anim ? X0 : XM} ${YL})">` + (anim ? `<animateTransform attributeName="transform" type="translate" values="${xs.map(x => `${x} ${YL}`).join(";")}" ${K}/>` : "") +
+    `<path d="M0 0 L4.4 -2.6 L22 -22 L18.6 -25 L1.4 -4.6 Z" fill="#1f3f86" stroke="#14295a" stroke-width=".9"/><path d="M0 0 L2.2 -1.3 L1 -2.6 Z" fill="#14295a"/><path d="M17.4 -20.6 L21.6 -24.4" stroke="#c9ced6" stroke-width="2.2" stroke-linecap="round"/>
+     <rect x="5" y="-17" width="15" height="12" rx="5.6" fill="${sk[1]}" stroke="${sk[2]}" stroke-width="1" transform="rotate(-32 12 -11)"/>
+     <rect x="2.4" y="-9.6" width="8" height="3.8" rx="1.9" fill="${sk[0]}" stroke="${sk[2]}" stroke-width=".8" transform="rotate(-42 6 -8)"/><rect x="3.6" y="-13.6" width="9" height="3.8" rx="1.9" fill="${sk[0]}" stroke="${sk[2]}" stroke-width=".8" transform="rotate(-36 8 -12)"/></g>`;
+  const table = `<path d="M-2 135 H162 V192 H-2Z" fill="#c99a62"/><path d="M-2 135 H162" stroke="#a5743f" stroke-width="2.4"/><path d="M-2 152 Q60 149 162 154 M-2 178 Q90 175 162 180" stroke="#b5864f" stroke-width="1.2" fill="none" opacity=".7"/>`;
+  const g = mk(`<defs><clipPath id="${u}x"><rect x="0" y="0" width="160" height="190" rx="12"/></clipPath></defs><g clip-path="url(#${u}x)"><g class="bust" transform="translate(${r2(80 - 80 * k)} 0) scale(${k})"></g>${table}<g transform="translate(80 163) rotate(-4) scale(1.22)">${p}</g></g>`);
+  g.querySelector("g.bust").appendChild(bust(Object.assign({}, spec, { doing: "reading" }), name));      // the face of a reader: eyes down on the page
+  return g;
+}
+const armStroke2 = (d, w, col) => `<path d="${d}" stroke="${col[1]}" stroke-width="${w}" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${col[0]}" stroke-width="${r2(w * 0.8)}" fill="none" stroke-linecap="round" opacity=".85"/>`;
 /* ---------- somebody holding one thing up in one hand, to show it: the person smaller and to the right, the thing big at the
    left, the fingers round the foot of it (ARASAAC "hold", Mulberry "hold") ---------- */
 function holder(spec, name){
@@ -1184,7 +1224,7 @@ const ACT_OF = { dancing: "dance", dance: "dance", jumping: "jump", jump: "jump"
   sitting: "sit down", sit: "sit down", walking: "walk", walk: "walk",
   talking: "talk", talk: "talk", arriving: "arrive", arrive: "arrive", leaving: "leave", leave: "leave",
   working: "work", work: "work", calling: "call", call: "call", phoning: "call", "go out": "go out", playing: "play", play: "play", listening: "listen", listen: "listen" };
-const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink", sleep: "sleep", sleeping: "sleep", sing: "sing", singing: "sing", read: "read", reading: "read" };
+const ACT2 = { raise: "raise hand", raising: "raise hand", raises: "raise hand", stop: "stop", stopped: "stop", stopping: "stop", eat: "eat", eating: "eat", drink: "drink", drinking: "drink", sleep: "sleep", sleeping: "sleep", sing: "sing", singing: "sing", read: "read", reading: "read", write: "write", writing: "write", writes: "write" };
 const WHO_NAME = { paul: "Pierre", julie: "Sylvie", marie: "Marie" };
 const POSE0 = { rx: 0, ry: 0, bx: 0, by: 0, br: 0, aL: [0, 0], aR: [0, 0], lL: [0, 0], lR: [0, 0], sh: 1 };
 const SEATED = { rx: 2, ry: 26, lL: [-90, 90], lR: [-90, 90], aL: [-4, -70], aR: [-8, -75] },
@@ -1262,6 +1302,7 @@ function action(act, who, opts){
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "sleep"){ spec.doing = "sleeping"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "sing"){ spec.doing = "singing"; spec._act = still ? "still" : "anim"; return bust(spec, name); }       // chanter: a microphone, the mouth wide open, notes
+  if (act === "write"){ spec.doing = "writing"; return writer(spec, name, !still); }                                  // (.59) écrire: a sheet flat on a table, the pen moving along a line, the ink behind it
   if (act === "read"){ spec.doing = "reading"; return reader(spec, name); }                                            // lire: the open book held in both hands, eyes down on it      // dormir: the head on a pillow, the eyes shut, z z z
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
   const c = traits(spec), L = c.L, K = opts.card ? Object.assign({}, MOVES.stop, { poses: [A_CARD, A_CARD], scale: 0.8, ox: -36 }) : opts.size ? Object.assign({}, MOVES.stop, { scale: opts.size === "short" ? 0.8 : 1.22, ox: 12 })
@@ -1882,7 +1923,8 @@ function flag(k){
     <g clip-path="url(#${u}f)"><rect x="38" y="14" width="34" height="100" fill="#2f55a8"/><rect x="72" y="14" width="34" height="100" fill="#fdfdfb"/><rect x="106" y="14" width="36" height="100" fill="#dc3b36"/><rect x="38" y="14" width="104" height="100" fill="url(#${u}g)"/></g>
     <path d="${wave}" fill="none" stroke="#4a4f57" stroke-width="1.8" stroke-linejoin="round"/>`;
 }
-const scrawl = (x, y, w, c) => { let d = `M${x} ${y}`; for (let i = 0; i < w / 6; i++) d += ` q1.5 ${i % 2 ? 3.4 : -3.4} 3 0 t3 0`; return `<path d="${d}" stroke="${c || "#3b55b3"}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`; };
+const scrawlD = (x, y, w) => { let d = `M${x} ${y}`; for (let i = 0; i < w / 6; i++) d += ` q1.5 ${i % 2 ? 3.4 : -3.4} 3 0 t3 0`; return d; };
+const scrawl = (x, y, w, c) => `<path d="${scrawlD(x, y, w)}" stroke="${c || "#3b55b3"}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
 const lines = (x, y, w, n, gap) => `<path d="${Array.from({ length: n }, (_, i) => `M${x} ${y + i * gap} h${i === n - 1 ? r2(w * 0.6) : w}`).join(" ")}" stroke="#9a9a94" stroke-width="1.7" stroke-linecap="round"/>`;
 function newspaper(k){
   if (k.has("folded")) return newspaperFolded(k);
@@ -1923,13 +1965,15 @@ function shoeS(k){
   return `<defs>${lgr(u + "s", P.a, P.b)}</defs>` + shad(82, 154, 66) + `<path d="M18 136 Q16 150 30 152 H136 Q148 150 146 138Z" fill="#fbfaf5" stroke="#a9a498" stroke-width="1.5"/><path d="M22 138 Q20 108 34 92 Q44 84 56 88 Q66 100 84 104 Q110 106 128 116 Q146 124 146 138Z" fill="url(#${u}s)" stroke="${P.d}" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M34 92 Q40 86 50 88 Q48 104 40 118" fill="${P.d}" opacity=".6"/><path d="M60 96 L96 112 M64 92 L72 104 M74 98 L82 108 M84 101 L92 112" stroke="#f4f1ea" stroke-width="2.6" stroke-linecap="round"/><path d="M100 120 Q122 122 140 132" stroke="#fff" stroke-width="5" fill="none" opacity=".9" stroke-linecap="round"/>`;
 }
-/* a picture card: a white card with the learner's figure doing spec.doing, frozen: it tells which action to command */
+/* a picture card: a white card with the learner's figure doing spec.doing, frozen: it tells which action to command
+   (.59) spec.moving: the same card with the action going on (the card lit in the naming of an action word: the app draws it so from the
+   cue until the answer) */
 function card(k, spec){
   const u = k.u, w = firstWord(String(spec && spec.doing || "").trim()), a = ACT_OF[w] || ACT2[w] || "smile", close = a === "smile" || a === "not smiling", face = a === "eat" || a === "drink", s = close ? 0.9 : face ? 0.86 : 0.84;
   const sex = spec && spec.sex === "f" ? "f" : "m";        // the learner's own figure, a man or a woman (the app gives spec.sex)
   /* (.50) "smiling" / "not smiling": the face close up fills the card (the smiling frame of the loop; the same face, the mouth level) */
   return `<g transform="rotate(-3 80 95)"><rect x="15" y="14" width="136" height="170" rx="9" fill="#000" opacity=".14"/><rect x="12" y="10" width="136" height="170" rx="9" fill="#fff" stroke="${k.cn ? k.tint().b : "#7d848e"}" stroke-width="${k.cn ? 6 : 2.4}"/>
-    <clipPath id="${u}c"><rect x="14" y="12" width="132" height="166" rx="7"/></clipPath><g clip-path="url(#${u}c)"><g transform="translate(${r2(80 - 80 * s)} ${close ? r2(95 - 95 * s) : face ? r2(181 - 190 * s) : r2(172 - 186 * s)}) scale(${s})">${action(a, "you", { still: true, sex }).outerHTML}</g></g></g>`;
+    <clipPath id="${u}c"><rect x="14" y="12" width="132" height="166" rx="7"/></clipPath><g clip-path="url(#${u}c)"><g transform="translate(${r2(80 - 80 * s)} ${close ? r2(95 - 95 * s) : face ? r2(181 - 190 * s) : r2(172 - 186 * s)}) scale(${s})">${action(a, "you", { still: !(spec && spec.moving), sex }).outerHTML}</g></g></g>`;
 }
 /* --- the weather: a snowy scene and a thermometer low and blue (cold); a blazing sun and a thermometer high and red (hot) --- */
 function weather(k){

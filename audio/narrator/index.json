@@ -154,5 +154,9 @@
 "dis_intro": {
 "text": "Next, Marie sometimes asks you to say a word, and sometimes to do it. First, watch Pierre and Sylvie say a word when she asks. When she asks you to say it, speak. When she asks you to do it, touch its picture.",
 "dur": 11.94
+},
+"mirror_intro": {
+"text": "Next, Marie does something herself, and asks about it while she is doing it. Watch Pierre and Sylvie answer her. Then she will ask you.",
+"dur": 7.8
 }
 }
