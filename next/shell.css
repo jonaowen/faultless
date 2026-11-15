@@ -3,7 +3,7 @@
 #play .panelCard{display:contents}
 #lessonHead,#playNext{display:none!important}
 #play.afterDemo{justify-content:center;padding:24px 20px}
-#play.afterDemo #home > :not(.hero){display:none} #play.afterDemo .hero > :not(#howtoBox):not(#playBtn){display:none} #play.afterDemo #nav{display:none}
+#play.afterDemo #home{flex:none;padding-bottom:20px} #play.afterDemo #home > :not(.hero){display:none} #play.afterDemo .hero > :not(#heroSlot){display:none} #play.afterDemo ~ #nav{display:none}
 #home{flex:1;overflow:auto;padding:calc(18px + var(--sat)) 16px 118px;scrollbar-width:none;max-width:560px;width:100%;margin:0 auto}
 .num{font-family:var(--font-display);font-variation-settings:"SOFT" 100;font-weight:600}
 .h-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 4px 14px}
@@ -14,10 +14,10 @@
 .rhythm{padding:14px 15px 12px;display:grid;gap:10px}
 .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .slot{display:flex;gap:10px;align-items:center;padding:10px;border-radius:var(--r3);min-height:72px;min-width:0}
-.slot .orb,.orb{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center} .orb .icon{width:26px;height:26px}
+.slot .orb{width:40px;height:40px} .slot .orb,.orb{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center} .orb .icon{width:26px;height:26px}
 .slot.am{background:var(--sun-tint)} .slot.am .orb{background:var(--sun);color:#5a3600}
 .slot.pm{background:var(--moon-tint)} .slot.pm .orb{background:var(--moon);color:#fff}
-.slot .k{font:700 14.5px/1.15 var(--font-ui);color:var(--ink-2);white-space:nowrap} .slot .v{font:700 19px/1.15 var(--font-ui);color:var(--ink);margin-top:3px;display:flex;align-items:center;gap:6px}
+.slot .k{font:700 13.5px/1.15 var(--font-ui);color:var(--ink-2)} .slot .v{font:700 19px/1.15 var(--font-ui);color:var(--ink);margin-top:3px;display:flex;align-items:center;gap:6px}
 .slot .v.num{font:600 24px/1.1 var(--font-display);font-variation-settings:"SOFT" 100} .slot .v .icon{width:20px;height:20px;stroke-width:3.4;color:var(--speak-deep)}
 .slot.next{box-shadow:inset 0 0 0 2.5px var(--moon)} .slot.am.next{box-shadow:inset 0 0 0 2.5px var(--sun-deep)}
 .week{display:grid;grid-template-columns:repeat(7,1fr);padding:2px 2px 0}
@@ -54,7 +54,7 @@
 .tab .icon{width:30px;height:30px} .tab.on{color:var(--ink)} .tab.on .pillbg{background:var(--speak-tint)} .pillbg{width:64px;height:36px;border-radius:18px;display:grid;place-items:center}
 /* overlays: lesson complete, who is learning, the maker, you */
 .over{position:fixed;inset:0;z-index:45;background:var(--paper);overflow:auto;display:flex;flex-direction:column;align-items:center;padding:calc(26px + var(--sat)) 18px calc(26px + var(--sab))}
-.over[hidden]{display:none} .over > *{width:100%;max-width:460px}
+.over[hidden]{display:none} .over > *{width:100%;max-width:460px;flex:none}
 #done{background:radial-gradient(120% 46% at 50% 0%, var(--sun-tint) 0%, rgba(251,235,200,0) 100%), var(--paper)}
 #done .seal{width:112px;height:140px;margin:6px auto 0;display:block;filter:drop-shadow(0 8px 10px rgba(var(--shade),.22))}
 #done .sunmark{width:96px;height:96px;margin:22px auto 0;border-radius:50%;background:var(--sun);color:#5a3600;display:grid;place-items:center;box-shadow:0 0 0 10px var(--sun-tint)} #done .sunmark .icon{width:56px;height:56px}
@@ -81,10 +81,11 @@
 .pcard.add{background:transparent;border:2px dashed var(--line-strong);box-shadow:none;align-content:center;gap:10px;color:var(--ink-2)} .pcard.add .icon{width:44px;height:44px} .pcard.add span{background:transparent;font-size:19px}
 .pcard.on{border:3px solid var(--accent);box-shadow:0 0 0 4px var(--accent-tint), var(--e2)}
 .foot{margin-top:18px;text-align:center;font:var(--t-body);color:var(--ink-2)}
-#maker{padding-left:0;padding-right:0;padding-top:calc(10px + var(--sat))}
+#maker{padding-left:0;padding-right:0;padding-top:calc(10px + var(--sat));overflow:hidden}
+#maker .mk-tray{flex:1 1 0;min-height:0;overflow:auto;padding-bottom:10px;scrollbar-width:none} #maker .big4{flex:0 1 auto;overflow:auto}
 .mk-bar{display:flex;align-items:center;gap:4px;padding:8px 12px 6px} .mk-bar h2{flex:1;margin:0;font:var(--t-title-s);font-variation-settings:"SOFT" 100}
 .rb{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);box-shadow:var(--e0);color:var(--ink);margin-left:8px;cursor:pointer;flex:none} .rb.plain{background:none;border:0;box-shadow:none;margin:0} .rb.plain .icon{transform:rotate(180deg);stroke-width:2.8}
-.mk-stage{position:relative;height:292px;margin:4px 16px 0;width:auto;border-radius:var(--r4);background:radial-gradient(90% 80% at 40% 30%, #FFFDF8 0%, var(--paper-2) 100%);border:1px solid var(--line);overflow:hidden}
+.mk-stage{position:relative;height:292px;margin:4px 16px 0;width:calc(100% - 32px)!important;max-width:428px;border-radius:var(--r4);background:radial-gradient(90% 80% at 40% 30%, #FFFDF8 0%, var(--paper-2) 100%);border:1px solid var(--line);overflow:hidden}
 .mk-stage > svg{position:absolute;left:8px;top:6px;width:250px;height:297px}
 .mk-small{position:absolute;right:14px;top:16px;display:grid;gap:8px;justify-items:center} .mk-small .lab{font:700 13px/1.2 var(--font-ui);color:var(--ink-2);text-align:center}
 .mk-small .mini{width:84px;height:100px;border-radius:12px;box-shadow:var(--e1)}
@@ -99,7 +100,7 @@
 .mk-foot{padding:14px 16px 0;margin-top:auto} .mk-foot .btn{width:100%}
 .big4{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 18px}
 .big4 .pcard{height:232px} .big4 .pcard svg.av{top:4px;width:170px;height:202px}
-.mk-step{padding:0 18px;font:var(--t-label);color:var(--ink-2)} #maker h1{text-align:left;margin:6px 18px 6px;font-size:34px} #maker .lede{margin:0 18px 16px;font:var(--t-body-l);color:var(--ink-2)}
+.mk-step{padding:14px 18px 0;font:var(--t-label);color:var(--ink-2)} #maker h1{text-align:left;margin:6px 0;padding:0 18px;font-size:34px} #maker .lede{margin:0 0 16px;padding:0 18px;font:var(--t-body-l);color:var(--ink-2)}
 /* you */
 #you h1{margin:8px 0 14px;font:var(--t-title);font-variation-settings:"SOFT" 100}
 .grp{padding:0 6px 0 14px;margin-bottom:16px} .grow{display:flex;align-items:center;gap:14px;min-height:66px;padding:8px 0;width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer} .grow + .grow{border-top:1px solid var(--line)}
@@ -107,3 +108,6 @@
 /* leaving: no sheet. The cross becomes a "Leave" pill for three seconds; a second tap leaves. */
 #leave.ask{width:auto;padding:0 18px;border-radius:24px;background:var(--ink);color:#fff;font:700 17px/1 var(--font-ui)} #leave .lv{display:none} #leave.ask .lv{display:inline} #leave.ask .icon{display:none}
 @media (min-width:700px){ .pgrid{grid-template-columns:repeat(3,1fr)} }
+
+/* the tester's buttons are behind You > For testers (and ?tester=on) */
+#gear,#userBadge{display:none!important} html[data-tester="on"] body:not(.inLesson) #gear{display:flex!important}

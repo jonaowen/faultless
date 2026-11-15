@@ -241,6 +241,7 @@ html[data-tester="on"] body.inLesson #save{top:auto;bottom:calc(30px + var(--sab
 html[data-motion="less"] #signal .fg{animation:none!important;opacity:1} html[data-motion="less"] #micBars.idle b{animation:none!important;transform:scaleY(.45)}
 html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-motion="less"] .btn, html[data-motion="less"] #turnTab > div{transition-duration:1ms!important}
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
 <div id="stage">
@@ -451,8 +452,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <symbol id="i-tap" viewBox="0 0 28 28"><path d="M11 14.5V6.3a2.1 2.1 0 0 1 4.2 0v6.2l5 1.2a2.6 2.6 0 0 1 2 2.9l-.7 5.1a3.2 3.2 0 0 1-3.2 2.8h-4.4a4 4 0 0 1-3.2-1.6L6.6 17.4a1.9 1.9 0 0 1 2.9-2.4z" fill="#fff" stroke="none"/></symbol>
 </defs></svg>
 <div id="turnTab" aria-hidden="true"><div class="mic"><svg class="icon"><use href="#i-mic"/></svg><div id="micBars" class="idle"><b></b><b></b><b></b><b></b><b></b><b></b></div></div><div class="hand"><svg class="icon"><use href="#i-tap"/></svg></div></div>
-<div id="chrome" lang="en"><button id="leave" aria-label="Leave the lesson"><svg class="icon"><use href="#i-close"/></svg></button><div id="bar" role="progressbar" aria-label="How far through the lesson" aria-valuemin="0" aria-valuemax="100"><div id="barClip"><div id="barFill"></div></div><div id="bead"></div></div></div>
-<div id="leaveSheet" hidden lang="en"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="leaveH"><h2 id="leaveH">Leave the lesson?</h2><p>Next time you will start this exercise again from its beginning.</p><button class="btn" id="leaveStay">Stay in the lesson</button><button class="btn quiet" id="leaveGo">Leave</button></div></div>
+<div id="chrome" lang="en"><button id="leave" aria-label="Leave the lesson"><svg class="icon"><use href="#i-close"/></svg><span class="lv">Leave</span></button><div id="bar" role="progressbar" aria-label="How far through the lesson" aria-valuemin="0" aria-valuemax="100"><div id="barClip"><div id="barFill"></div></div><div id="bead"></div></div></div>
+
 <div id="caption" hidden></div>
 <div id="manual" hidden>
   <input id="manualText" placeholder="typed answer" autocomplete="off">
@@ -525,6 +526,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="../course/lesson7.js"></script>
 <script src="../listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
+<script src="things.js"></script>
 <script>
 "use strict";
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
@@ -2459,6 +2461,7 @@ const PAL = { black:{c:"#2b2b30",d:"#141417",l:"#5b5b63"}, silver:{c:"#a9adb3",d
   yellow:{c:"#e2b23a",d:"#b8862a",l:"#f7d96b"}, white:{c:"#ece7dc",d:"#bdb4a2",l:"#fffdf6"}, brown:{c:"#8a5a36",d:"#5c3a22",l:"#b07a4e"} };
 const PAL_APPLE = { red:{c:"#c9302c",d:"#8f1d1b",l:"#ef6a55"}, green:{c:"#7fb03a",d:"#4f7a1f",l:"#b6d86c"}, yellow:{c:"#e8c23e",d:"#b88a1e",l:"#f8e37a"} };
 function onePicture(e){
+  { const t = window.THINGS && THINGS.one && THINGS.one(e); if(t) return t; }      // things.js: the new book (later apple, pen, shoe)
   const L=e.looks||[], col=L.find(x=>PAL[x]);
   if(e.is==="book"){ const inst = L.includes("open")?3 : L.includes("thin")?2 : 1;
     const g=objectPicture("livre", inst, {pal: col?PAL[col]:undefined});
@@ -4467,6 +4470,7 @@ async function endScreen(){
   await sleep(1200);
   document.getElementById("tick").style.opacity=0;
   S.doneDay=dayKey(); save(); trace("lesson finished: Lesson "+(S.lesson+1)); UI.haptic("done");
+  if(window.SHELL) try{ SHELL.lessonDone(); }catch(e){ trace("FAULT shell lesson complete: "+e.message); }      // (next) the lesson-complete screen, over the home that showPlay brings
   showPlay(true);
 }
 
@@ -4475,7 +4479,7 @@ async function endScreen(){
    ============================================================ */
 let running=false;
 function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); if(on) lessonHead(afterDemo); el.hidden=!on;
-  document.body.classList.toggle("inLesson", !on); if(!on) UI.progDraw(); }
+  document.body.classList.toggle("inLesson", !on); if(!on) UI.progDraw(); if(on && window.SHELL) try{ SHELL.home(); }catch(e){ trace("FAULT shell home: "+e.message); } }
 /* The start screen says which lesson this is. When the lesson was finished today it says so, and that the next lesson is for
    tomorrow (one lesson a day: what was learned has to fade a little before it is practised again); the button is still
    there, smaller and grey, for anyone who has to go on. On a later day the same state shows the next lesson's number. */
@@ -4717,9 +4721,10 @@ $("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise
 $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const n=await saveRun(); b.classList.remove("busy"); b.classList.add("done"); setTimeout(()=>b.classList.remove("done"),1500); };
 function alertish(m){ setStatus(m); }
 
-$("leave").onclick=()=>{ UI.haptic("tick"); trace("leave asked"); $("leaveSheet").hidden=false; };
-$("leaveStay").onclick=()=>{ trace("leave: stayed"); $("leaveSheet").hidden=true; };
-$("leaveGo").onclick=()=>{ trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); };
+{ let leaveT=0; const lv=$("leave");
+  lv.onclick=()=>{ UI.haptic("tick");
+    if(!lv.classList.contains("ask")){ trace("leave asked"); lv.classList.add("ask"); lv.setAttribute("aria-label","Leave the lesson: tap again to leave"); clearTimeout(leaveT); leaveT=setTimeout(()=>{ lv.classList.remove("ask"); lv.setAttribute("aria-label","Leave the lesson"); }, 3000); return; }
+    trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
 /* (next) THE TUTOR'S INTERFACE. Everything the script asks of the teacher's figure goes through these: MOUTH (plan, start, startTimeline, word,
    stop, smile, smiling: the mouth, sound by sound), ARMS (go(pose, ms), SH: the arms and hand shapes), gaze(where), nod(), faceZoom(on),
    tagLit(slot). A new rig (people.js: PICS.tutor() returning {node, rig}) replaces them call for call with TUTOR.adopt(rig); until one is
@@ -4745,5 +4750,6 @@ $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, setScene, gestureLead};
 </script>
+<script src="shell.js"></script>
 </body>
 </html>
