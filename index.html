@@ -374,6 +374,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson7.js"></script>
 <script src="course/lesson8.js"></script>
 <script src="course/lesson9.js"></script>
+<script src="course/lesson10.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script>
@@ -381,7 +382,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.62";
+const APP_VERSION="2026-11-15.63";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -529,12 +530,13 @@ const VOCAB = {
   coeur: {name:"cœur", kind:"object", art:"UN", say:["Un","cœur."], accept:["cœur","cœurs","coeur","coeurs","chœur","choeur"]},
   rue: {name:"rue", kind:"object", art:"UNE", say:["Une","rue."], accept:["rue","rues","ru","roue"]},
   bus: {name:"bus", kind:"object", art:"UN", say:["Un","bus."], accept:["bus","busse"]},
+  photo: {name:"photo", kind:"object", art:"UNE", say:["Une","photo."], accept:["photo","photos"]},      // (.63) Lesson 10: the name "Photo."
   parle: {name:"parle", kind:"word", verb:true, tu:"parles", say:[], accept:["parle","parles","parlent"]},
   arrive: {name:"arrive", kind:"word", verb:true, tu:"arrives", say:[], accept:["arrive","arrives","arrivent"]},
   jarrive: {name:"j'arrive", kind:"word", say:[], accept:["j'arrive","jarrive","j arrive"]},              // one unit, like "j'apprends"
   ouioui: {name:"oui oui", kind:"word", say:[], accept:["oui oui","ouioui","oui, oui"]},              // (.48) one unit: a stutter counts once (stripEcho), "oui oui" is two words on purpose
   part: {name:"part", kind:"word", verb:true, tu:"pars", say:[], accept:["part","pars","par","parts"]},
-  parler: {name:"parler", kind:"word", inf:true, say:[], accept:["parler","parlé","parlez"]},
+  parler: {name:"parler", kind:"word", inf:true, say:[], accept:["parler","parlé","parlez","parlée","parlés"]},      // (.63) after vas / vais (Lesson 10)
   arriver: {name:"arriver", kind:"word", inf:true, say:[], accept:["arriver","arrivé","arrivez","arrivée"]},
   partir: {name:"partir", kind:"word", inf:true, say:[], accept:["partir","parti","partie"]},
   puis: {name:"puis", kind:"word", say:[], accept:["puis","pui","puits"]},
@@ -549,6 +551,8 @@ const VOCAB = {
   ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
   joue: {name:"joue", kind:"word", verb:true, tu:"joues", say:[], accept:["joue","joues","jouent"]},      // (.62) jouer: "Joue." (Lesson 9)
   tombe: {name:"tombe", kind:"word", verb:true, tu:"tombes", say:[], accept:["tombe","tombes","tombent"]},      // (.62) tomber: "Tombe." (Lesson 9)
+  chanter: {name:"chanter", kind:"word", inf:true, say:[], accept:["chanter","chanté","chantez","chantée","chantés"]},      // (.63) after vas / vais (Lesson 10)
+  court: {name:"court", kind:"word", verb:true, tu:"cours", alone:"cours", say:[], accept:["court","cours","courent","cour"]},      // (.63) courir: "Cours." (Lesson 10)
   moi: {name:"moi", kind:"word", say:[], accept:["moi","mois"]},
   jusqua: {name:"jusqu'à", kind:"word", say:[], accept:["jusqu'à","jusqu'a","jusqua"]},
   comment: {name:"comment", kind:"word", say:[], accept:["comment"]},
@@ -795,7 +799,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:62, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:63, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -823,8 +827,9 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=58)) migrate58();      // (.58) a state saved before Lessons 4 and 5 were built anew at DISE's rate (the either/or first)
   if(!(s.courseRev>=59)) migrate59();      // (.59) a state saved before Lessons 4 and 5 were drawn again with the naming of action words, and Lesson 6 came
   if(!(s.courseRev>=60)) migrate60();      // (.60) a state saved before Lesson 7 came (Lessons 1-6 unchanged)
-  if(!(s.courseRev>=61.1)) migrate61(s.courseRev);
-  if(!(s.courseRev>=62)) migrate62();      // (.62) a state saved before il / elle was taught on several men and women (R-154) and Lesson 9 came      // (.61) a state saved before Lesson 8 came (Lessons 1-7 unchanged), or by the first working copy of .61
+  if(!(s.courseRev>=61.1)) migrate61(s.courseRev);      // (.61) a state saved before Lesson 8 came (Lessons 1-7 unchanged), or by the first working copy of .61
+  if(!(s.courseRev>=62)) migrate62();      // (.62) a state saved before il / elle was taught on several men and women (R-154) and Lesson 9 came
+  if(!(s.courseRev>=63)) migrate63();      // (.63) a state saved before Lesson 10 came (Lessons 1-9 unchanged)
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -903,6 +908,23 @@ function migrate58(){
   if(here || had || old.length)
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
   S.courseRev=58;
+}
+/* (.63) Lesson 10 is new; Lessons 1-9 are as .62 (their files are the same). A place anywhere in Lessons 1-9 stands, with its delayed
+   tests and its detour; a learner who has finished Lesson 9 goes on into Lesson 10 at the next start, as at the end of any lesson. Only a
+   record of Lesson 10 from a build no longer served (finished exercises, errors, delayed tests) is dropped, with a log line if there was one;
+   no record of Lessons 1-9 is dropped. */
+function migrate63(){
+  const L10 = k => /^L10E\d+/.test(k);
+  const had = Object.keys(S.finished||{}).some(L10) || Object.keys(S.exHadError||{}).some(L10);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L10(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L10(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  /* a delayed test of an error in Lesson 9 was given no lesson to be checked at the start of (there was no next lesson): it is now checked
+     at the start of Lesson 10, as one made today would be (scheduleDelayed) */
+  for(const d of S.delayed) if(/^L9E\d+/.test(d.ex||"") && !d.dueLessonStart) d.dueLessonStart="L10";
+  if(had || old.length)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lesson 10 is new; records of an older Lesson 10 dropped"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  S.courseRev=63;
 }
 /* (.62) il / elle is taught and asked on several men and several women with no name (R-154): in Lesson 4 the exercises E8, E9, E10 and E24
    are made anew, and so are the returns and the sentence exercises of Lessons 5-8 listed in CHANGED_62; Lesson 9 is new; every other

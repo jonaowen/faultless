@@ -334,7 +334,7 @@ function traits(spec, variant){
   } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
-      top: P ? COL.blue : COL.julieRed, topName: P ? "blue" : "julieRed", iris: P ? "#4b6f8f" : "#5a3a22", style: P ? "paul" : "julie", beard: P,
+      top: P ? COL.blue : COL.julieRed, topName: P ? "blue" : "julieRed", iris: P ? "#4b6f8f" : "#5a3a22", style: P ? "paul" : "julie", beard: P, face: P ? 0 : 4,
       cap: P ? "green" : "yellow", hat: P ? "felt" : "straw", band: P ? "#2b2b30" : "#3fa9a3", pack: P ? "orange" : "green", umb: P ? "yellow" : "purple",
       scarf: P ? "mustard" : "teal", coat: P ? "olive" : "camel", suit: "charcoal", tie: P ? "blue" : null, glasses: "#26262b", round: !P, bag: "mustard" };
   } else {
@@ -3695,13 +3695,13 @@ const flatTag = (lines, w, h, tws, MAXT) => `<g class="nametag"><rect x="${r2(80
   lines.map((t, i) => `<text x="80" y="${166 + i * 16}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522"${tws && tws[i] > MAXT ? ` textLength="${MAXT}" lengthAdjust="spacingAndGlyphs"` : ""}>${String(t).replace(/[<&"]/g, ch => ({ "<": "&lt;", "&": "&amp;", '"': "&quot;" }[ch]))}</text>`).join("") + `</g>`;
 function portraitPic(who, name){ who = who === "julie" || who === "marie" ? who : "paul"; const c = traits({ person: who }), ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[who];
   c.top = [tone(ID, 0.14), tone(ID, -0.2)]; if (who === "marie") c.style = "tucked";
-  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6, heads: 5.6 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
 function learnerCardPic(name, sex){ name = String(name || ""); const cT = traits({ person: "you", sex: sex === "f" ? "f" : "m" }), c = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT;
   let cv = learnerCardPic.cv; const width = t => { try { cv = cv || (learnerCardPic.cv = document.createElement("canvas").getContext("2d")); cv.font = '700 14px "Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return cv.measureText(t).width; } catch (e){ return t.length * 8.4; } };
   const MAXT = 136; let lines = [name];
   if (width(name) > MAXT){ const cuts = [...name.matchAll(/[ -]/g)].map(m => m.index); if (cuts.length){ const q = cuts.reduce((a, b) => Math.abs(b - name.length / 2) < Math.abs(a - name.length / 2) ? b : a); lines = [name.slice(0, name[q] === "-" ? q + 1 : q), name.slice(q + 1)]; } }
   const tws = lines.map(width), w = Math.max(50, Math.min(MAXT + 12, Math.max(...tws) + 14)), h = lines.length > 1 ? 40 : 24;
-  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6, heads: 5.6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
   try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
   return g; }
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
