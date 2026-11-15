@@ -546,6 +546,8 @@ const VOCAB = {
   nage: {name:"nage", kind:"word", verb:true, tu:"nages", say:[], accept:["nage","nages","nagent"]},
   chante: {name:"chante", kind:"word", verb:true, tu:"chantes", say:[], accept:["chante","chantes","chantent"]},      // "Il chante." took the place of "Il nage." (11 Nov, afternoon)
   ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
+  joue: {name:"joue", kind:"word", verb:true, tu:"joues", say:[], accept:["joue","joues","jouent"]},      // (.62) jouer: "Joue." (Lesson 9)
+  tombe: {name:"tombe", kind:"word", verb:true, tu:"tombes", say:[], accept:["tombe","tombes","tombent"]},      // (.62) tomber: "Tombe." (Lesson 9)
   moi: {name:"moi", kind:"word", say:[], accept:["moi","mois"]},
   jusqua: {name:"jusqu'à", kind:"word", say:[], accept:["jusqu'à","jusqu'a","jusqua"]},
   comment: {name:"comment", kind:"word", say:[], accept:["comment"]},
@@ -2999,13 +3001,18 @@ function textUnit(unit, meta, lag){
    onset of the word said in its place. On the learner's turn nothing is outlined. An exercise without a board shows no print.
    ============================================================ */
 function boardShow(b){
-  const key=JSON.stringify(b)+"|"+(learnerTagName()||"");
+  const key=JSON.stringify(b)+"|"+(learnerTagName()||"")+"|"+boardRoomSig();      // (.62) laid out again when the room round it changes (side portraits, the row's height)
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
   let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
   /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
      overlapped the bottom of the cards and the learner's name tag in the action box */
-  const lh=fs*1.25, y0 = n===1 ? TXT_Y : 218 + fs*1.15;
+  /* (.62) a board of three or four lines (L8E15, L9E18) ran down behind Marie's head and over the side portraits of Pierre and Sylvie:
+     where it does not fit as before, it moves up under the pictures as they really are (a row of three or more cards ends well above 214)
+     and, only if it must, its letters get smaller, until it ends above Marie's head and, with the side portraits on the screen, it is
+     narrow enough to pass between them (boardFit). A board that fitted is placed exactly as before. */
+  let top0=218; if(n>1){ const f=boardFit(n, lines, fs); fs=f.fs; top0=f.top; }
+  const lh=fs*1.25, y0 = n===1 ? TXT_Y : top0 + fs*1.15;
   const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
   const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
   let at=0, svg="", boxes=[]; const widths=lines.map(l=>MEAS(l, fs)), W=Math.max(...widths), X0=200-W/2;
@@ -3023,6 +3030,23 @@ function boardShow(b){
   top=y0-fs*1.15, bot=y0+(n-1)*lh+fs*0.6;
   TXT.g.innerHTML=`<rect x="${x0.toFixed(1)}" y="${top.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="8" fill="#f2f6f1" stroke="#9fb3a3" stroke-width="1.6"/><g id="txtBoxes"></g><g id="txtLine">${svg}</g>`;
   TXT.cur="board"; BOARD.key=key; BOARD.b=b; BOARD.boxes=boxes; TXT.g.setAttribute("opacity",1);
+}
+/* (.62) where a board of several lines can stand (the coordinates of the pictures' layer, as TXT.g): below the pictures, above Marie's head
+   (BOARD_FLOOR: the top of her hair, measured on the screen at 291), and between the side portraits when they are shown (their top at 258,
+   their inner edges at 86 and 314: BOARD_SIDES) */
+const BOARD_FLOOR = 291, BOARD_SIDES = {top:254, x0:88, x1:312};
+const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||""); };
+function boardFit(n, lines, fs0){
+  const H = f => f*(1.15 + 0.6 + (n-1)*1.25), W = f => Math.max(...lines.map(l=>MEAS(l, f))) + 48;
+  const sides = !!document.querySelector("#sideBadges > g");
+  const fits = (top, f) => top + H(f) <= BOARD_FLOOR && (!sides || top + H(f) <= BOARD_SIDES.top || W(f) <= BOARD_SIDES.x1 - BOARD_SIDES.x0);
+  if(fits(218, fs0)) return {fs:fs0, top:218};
+  let pics = 0;      // the bottom of what is shown above the board: the row of pictures, or the action box
+  for(const el of [frameRow, document.getElementById("actBox")]){ try{ const op = el && (el.style.opacity!=="" ? el.style.opacity : el.getAttribute("opacity")); if(el && el.childNodes.length && op!=="0" && String(op)!=="0"){ const b=el.getBBox(); if(b.height) pics=Math.max(pics, b.y+b.height); } }catch(e){} }
+  const top = Math.min(218, Math.max(pics ? pics + 6 : 218, 60));
+  let fs = fs0; while(fs > 12 && !fits(top, fs)) fs -= 0.5;
+  trace("board of "+n+" lines placed at "+Math.round(top)+", letters "+fs+(fits(top, fs) ? "" : " (FAULT LAYOUT: it still does not fit)"));
+  return {fs, top};
 }
 // the outline round board parts (a list of indices), or none
 function boardHi(list){
