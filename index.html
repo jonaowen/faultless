@@ -2614,6 +2614,18 @@ async function setPortraits(sc){
   if(TXT.g.firstChild && TXT.cur!=="board") TXT.g.setAttribute("opacity", 0.3);      // (.28) not the exercise's board: it stays as it is       // writing left by the task before, under new pictures: faint until the next thing is said
 
 }
+/* (.63) "C'était quoi ?" (Lesson 10): the thing that was just named is seen to be taken away, not a blank screen that comes as the next
+   item (the reader of Lesson 10, C1 (e)). When an item asks about what WAS there and the pictures on the screen are things, they slide off
+   to the side and fade (0.7 s), and the screen stands empty a moment before the question; then the item's own scene is set as usual. */
+async function thingGoes(it){
+  const q=[].concat(it && (it.teacherUnits || it.teacher) || []).join(" ");
+  if(!/c'était/i.test(q) || !curScene || !curScene.row || !curScene.row.some(x=>x && x.is)) return;
+  const sc=sceneOf(it.scene); if(sc && sc.row && sc.row.some(x=>x && x.is)) return;      // a thing is still there: nothing goes
+  goldOff(); frameRow.style.transition="opacity .7s ease-in, transform .7s ease-in"; frameRow.style.transform="translateX(240px)"; frameRow.style.opacity=0;
+  trace("the thing is taken away before \""+q+"\""); await sleep(750);
+  frameRow.style.transition="none"; frameRow.style.transform=""; void frameRow.getBoundingClientRect(); frameRow.style.transition="";
+  await sleep(350);
+}
 /* ============================================================
    ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
    the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
@@ -3500,7 +3512,12 @@ async function presentGenModel(m){
     trace("own-name model: no recording of the learner's own name yet; Marie's held \"Je m'appelle…\" with the tag lit (fallback)"); }
   if(m.slow && m.voice==="teacher"){ SAY_SLOW=true; try{ await sayAs(m.voice, [m.answerUnits.join(" ")]); } finally{ SAY_SLOW=false; } if(m.text && m.text.reveal==="after"){ textReveal(m); await sleep(700); } return; }      // the slow recording, the border moving over the cards
   if(m.read && m.text && m.text.a){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; textShow(m.text.A, m.text.a, "all"); await sleep(600); }      // reading unaided, modelled: the word is there before Pierre or Sylvie reads it
+  /* (.63) a model learner who says what they are going to do with nothing said before it (L10E9: Pierre, then Sylvie, a card of an action in
+     their hand, "Je vais chanter."): the card is seen before they speak and a moment after, not only for the length of their clip */
+  const holdsCard = !rest_.length && m.voice!=="teacher" && m.scene && ((m.scene.row||[]).some(x=>x && x.card) || m.scene.teacherWill || m.scene.learnerWill);
+  if(holdsCard) await sleep(900+pace());
   await sayAs(m.voice, m.answerUnits);
+  if(holdsCard) await sleep(600);
   if(m.text && m.text.reveal==="after"){ textReveal(m); await sleep(700); }
 }
 /* Actions (Jon, 10 Nov 2026). "The app can assume the user is doing the action. The first several times the action is asked
@@ -3759,7 +3776,7 @@ async function presentModel(m){
   if(!(m.introOnly && S.introSeen)) await listPace("model");
   curTask="model "+m.target;
   if(m.introOnly && S.introSeen) return;
-  await setPortraits(m.scene); itemStart(m); await convIntro(m);
+  await thingGoes(m); await setPortraits(m.scene); itemStart(m); await convIntro(m);
   if(m.gen){ if(goldThingOf(m)) await goldClear(m.at);
     if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m);
     await litStill();      // (.59) the lit card goes still after the answer, once a whole loop has been seen
@@ -3859,7 +3876,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
     await setPortraits(t.scene); await pointAt("self"); await say(["Je m'appelle "+VOCAB.claire.name+"."]); LASTMODEL={t:Date.now(), text:"Je m'appelle"}; trace("before 'Et toi ?' on its own: Marie's own sentence"); }
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
   if(!cued){ const g=goldThingOf(t); if(MODEL_END.gap>COUNT_GAP || (g && MODEL_END.thing && g!==MODEL_END.thing)) await listPace("test"); }      // (.46) straight after a model about another thing, or after a model's pause (not a retest cued by "Vas-y.")
-  curTask=t.id; await setPortraits(t.scene); itemStart(t); await convIntro(t);
+  curTask=t.id; await thingGoes(t); await setPortraits(t.scene); itemStart(t); await convIntro(t);
   if(t.tapTask) return presentTap(t, {retest, firstSeen, cued});
   if(cued){ offering=true; }
   else if(t.gen){ if(t.cue==="repeat") await gesturePalm(t);       // the field-tested script says when "Vas-y" is said
