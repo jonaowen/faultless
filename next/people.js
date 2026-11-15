@@ -1522,7 +1522,7 @@ function head(J, B, cam, c, out, zb){
   const eyeArt = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g>
       <path d="M-.19 0Q0 -.177 .19 -.013" stroke="${lid}" stroke-width="${c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8"/>` + (c.fem ? `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
-  const browArt = sg => big ? `<path d="M${-0.21 * sg} .03q${0.21 * sg} -.13 ${0.42 * sg} -.04q${-0.21 * sg} -.04 ${-0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${-0.15 * sg} .03Q${-0.02 * sg} -.07 ${0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
+  const browArt = sg => big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
   const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
     : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.06 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
   const noseArt = `<path d="M-.05 -.2Q-.09 .03 -.11 .15Q-.07 .2 -.01 .19" stroke="${sk.n[1]}" stroke-width=".034" fill="none" opacity=".75" stroke-linecap="round"/><ellipse cx="-.078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/><ellipse cx=".078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/>`;
@@ -1570,12 +1570,14 @@ function frame(k, B, cam, c, floor, o){
   const Ech = ellipse(P(at(J.chest, J.Bc, [0, 0.012, 0.004])), lax(J.Bc, B.chest)), Ehm = ellipse(P(at(J.root, J.Bp, [0, 0.012, 0])), lax(J.Bp, B.hem)), Ewa = ellipse(P(lerp(J.root, J.chest, 0.45)), lax(J.Bp, B.waist));
   const EsL = disc(P(J.shL), B.rSh * S), EsR = disc(P(J.shR), B.rSh * S), Enb = disc(P(at(J.nb, J.Bc, [0, -0.012, 0])), B.rNeck * S * 1.3);
   Ech.n = 36; Ehm.n = 30; Ewa.n = 26; EsL.n = EsR.n = 18; Enb.n = 12;
-  const trunkFn = (g, dx, dy) => hullOf([Ehm, Ewa], g, dx, dy) + hullOf([Ewa, Ech], g, dx, dy) + hullOf([Ech, EsL, EsR, Enb], g, dx, dy), trunkD = trunkFn(0, 0, 0);
+  const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
+  const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
+  const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = trunkFn(0, 0, 0);
   parts.push({ id: "trunk", z: zt, mat: "top", layers: form(trunkFn, T, 0.03 * S) });
-  /* its ribbed hem: a band that follows the lower edge */
-  { const w = 0.03 * S, a = Math.max(1, Ehm.a - w / 2), b = Math.max(0.5, Ehm.b - w / 2), ct = Math.cos(Ehm.th), st = Math.sin(Ehm.th); let d = "";
-    for (let i = 0; i <= 12; i++){ const t = (0.04 + 0.92 * i / 12) * Math.PI, x = a * Math.cos(t), y = b * Math.sin(t); d += (i ? "L" : "M") + f1(Ehm.c[0] + x * ct - y * st) + " " + f1(Ehm.c[1] + x * st + y * ct); }
-    parts.push({ id: "rib", z: zt + 0.0003, mat: "rib", stroke: [d, T.rib, f1(w)] }); }
+  /* its ribbed hem: a band that follows the lower edge (the lower half of the ring, and the same line again a band's width higher) */
+  const band = (E, w) => { const ct = Math.cos(E.th), st = Math.sin(E.th), lo = [], hi = []; for (let i = 0; i <= 14; i++){ const t = i / 14 * Math.PI, x = (E.a + 0.4) * Math.cos(t), y = (E.b + 0.4) * Math.sin(t), X = E.c[0] + x * ct - y * st, Y = E.c[1] + x * st + y * ct; lo.push([X, Y]); hi.push([X, Y - w]); }
+    return poly(lo.concat(hi.reverse())); };
+  parts.push({ id: "rib", z: zt + 0.0003, mat: "rib", layers: [[band(Ehm, 0.03 * S), T.rib]] });
   /* a name tag on the chest: it lies on the chest and turns with it (it is gone when the chest has turned away) */
   if (c.tag){ const Bc = J.Bc, U = cam.lin(Bc.x), Vv = cam.lin(Bc.y), q = P(at(J.chest, Bc, [0, 0.02, B.chest[2] * 0.96])), w = Math.min(B.chest[0] * 1.5, 0.03 + 0.021 * c.tag.length), h = 0.052, fs = Math.min(0.04, w * 1.7 / c.tag.length), r3 = v => Math.round(v * 1000) / 1000;
     parts.push({ id: "tag", z: zt + 0.0008, tag: "g", m: [U[0], U[1], -Vv[0], -Vv[1], q[0], q[1]].map(r3), hide: dot(Bc.z, cam.view) < 0.3,
@@ -1585,9 +1587,7 @@ function frame(k, B, cam, c, floor, o){
   const Ecl = ellipse(P(at(J.nb, J.Bc, [0, -0.01, 0.004])), lax(J.Bc, [B.rNeck * 1.5, 0.02, B.rNeck * 1.42])), nk = (a, b) => capsule(a[0], a[1], B.rNeck * S, b[0], b[1], B.rNeck * 0.97 * S);
   parts.push({ id: "collar", z: zt + 0.001, mat: "collar", layers: [[ellPath(Ecl, 0, 0, 0), T.f[1]]] });
   parts.push({ id: "neck", z: zt + 0.002, mat: "neck", layers: [[nk(P(add(J.nb, mul(sub(J.nb, J.skull), 0.05))), P(J.skull)), sk.n[1]]] });
-  { const w = 0.016 * S, a = Math.max(1, Ecl.a - w / 2), b = Math.max(0.4, Ecl.b - w / 2), ct = Math.cos(Ecl.th), st = Math.sin(Ecl.th); let d = "";
-    for (let i = 0; i <= 10; i++){ const t = (0.02 + 0.96 * i / 10) * Math.PI, x = a * Math.cos(t), y = b * Math.sin(t); d += (i ? "L" : "M") + f1(Ecl.c[0] + x * ct - y * st) + " " + f1(Ecl.c[1] + x * st + y * ct); }
-    parts.push({ id: "collarF", z: zt + 0.0025, mat: "collarF", stroke: [d, T.rib, f1(w)] }); }
+  parts.push({ id: "collarF", z: zt + 0.0025, mat: "collarF", layers: [[band(Ecl, 0.017 * S), T.rib]] });
   /* legs: thigh and shin in one outline (its root lies under the hem), the shoe; the hips in the colour of the legs */
   const Epv = ellipse(P(at(J.root, J.Bp, [0, -0.012, 0])), lax(J.Bp, [B.hw + B.rHip * 0.92, 0.062, 0.07]));
   parts.push({ id: "hips", z: zt - 0.004, mat: "hips", layers: [[ellPath(Epv, 0, 0, 0), G.n[1]]] });
@@ -1711,15 +1711,15 @@ function figure(c, o){
 function act(name, c, o){
   const C = clipOf(name), B = bodyOf(c, o), still = !!o.still, x = 80 + (o.ox || 0), k = o.k || 1, g = mk(""), u = "fg" + (seq++) + "_";
   let back = "", front = "";
-  if (C.trav){                                              // the ground goes by: marks on it, one stride's length to the loop, so that a foot on the ground does not slide
+  if (C.trav && !o.bare){                                   // the ground goes by: marks on it, one stride's length to the loop, so that a foot on the ground does not slide
     const yaw = C.yaw * Math.PI / 180, cam = camera(yaw, 7 * Math.PI / 180, B.H * k, x, o.y != null ? o.y : GY), T = C.trav * (B.thigh + B.shin), m = Math.max(1, Math.round(T * B.H * k * Math.sin(yaw) / 24)), sp = T / m;
     const a = cam.pt([-0.2, 0, 0]), b = cam.pt([-0.2, 0, 0.07]), d = cam.lin([0, 0, -sp]); let marks = "";
     for (let i = -8; i <= 8; i++) marks += `M${f1(a[0] - d[0] * i)} ${f1(a[1] - d[1] * i)}L${f1(b[0] - d[0] * i)} ${f1(b[1] - d[1] * i)}`;
     back += `<clipPath id="${u}g"><rect x="12" y="146" width="136" height="44"/></clipPath><g clip-path="url(#${u}g)"><g>` + (still ? "" : `<animateTransform attributeName="transform" type="translate" values="0 0;${f2(d[0])} ${f2(d[1])}" dur="${f2(C.dur / m)}s" repeatCount="indefinite"/>`) +
       `<path d="${marks}" stroke="#414B5E" stroke-opacity=".2" stroke-width="2.4" stroke-linecap="round"/></g></g>`;
   }
-  if (name === "run") front += `<g>` + (still ? "" : `<animate attributeName="opacity" values="1;0.4;1;0.4;1" keyTimes="0;0.25;0.5;0.75;1" dur="${C.dur}s" repeatCount="indefinite"/>`) + `<path d="M16 92h20M9 108h24M18 124h15" stroke="#414B5E" stroke-opacity=".3" stroke-width="2.8" stroke-linecap="round"/></g>`;
-  if (name === "jump" && still) front += `<path d="M64 162Q80 169 96 162M70 169.5Q80 173.5 90 169.5" stroke="#414B5E" stroke-opacity=".26" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
+  if (name === "run" && !o.bare) front += `<g>` + (still ? "" : `<animate attributeName="opacity" values="1;0.4;1;0.4;1" keyTimes="0;0.25;0.5;0.75;1" dur="${C.dur}s" repeatCount="indefinite"/>`) + `<path d="M16 92h20M9 108h24M18 124h15" stroke="#414B5E" stroke-opacity=".3" stroke-width="2.8" stroke-linecap="round"/></g>`;
+  if (name === "jump" && still && !o.bare) front += `<path d="M64 162Q80 169 96 162M70 169.5Q80 173.5 90 169.5" stroke="#414B5E" stroke-opacity=".26" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
   g.innerHTML = back; g.appendChild(figure(c, Object.assign({}, o, { clip: name, x, y: o.y != null ? o.y : GY, k }))); const f = mk(front); while (f.firstChild) g.appendChild(f.firstChild);
   return g;
 }
@@ -1742,10 +1742,10 @@ function action(act, who, opts){
   if (act === "sing"){ spec.doing = "singing"; spec._act = still ? "still" : "anim"; return bust(spec, name); }       // chanter: a microphone, the mouth wide open, notes
   if (act === "write"){ spec.doing = "writing"; return writer(spec, name, !still); }                                  // (.59) écrire: a sheet flat on a table, the pen moving along a line, the ink behind it
   if (act === "read"){ spec.doing = "reading"; return reader(spec, name); }                                            // lire: the open book held in both hands, eyes down on it      // dormir: the head on a pillow, the eyes shut, z z z
-  if (act === "stop" && !opts.card && !opts.size && !opts.old && who === "you" && opts.sex !== "f" && !(opts.spec && opts.spec.is) && !(opts.looks && opts.looks.length)) return FIG.act("stand", traits(spec), { still: true, k: opts.k || 1, ox: opts.ox || 0, yaw: opts.yaw, heads: opts.heads, smile: 0.5, y: opts.y });
+  if (act === "stop" && !opts.card && !opts.size && !opts.old && who === "you" && opts.sex !== "f" && !(opts.spec && opts.spec.is) && !(opts.looks && opts.looks.length)) return FIG.act("stand", traits(spec), { still: true, k: opts.k || 1, ox: opts.ox || 0, yaw: opts.yaw, heads: opts.heads, smile: 0.5, y: opts.y, bare: opts.k > 1.6 });
   if (FIG.CLIPS[act] && !opts.card && !opts.size && !opts.old && !opts.bare && who === "you" && opts.sex !== "f" && !(opts.spec && opts.spec.is) && !(opts.looks && opts.looks.length)){      // so far: the learner as a man (the others follow, each with their own hair and build)      // (the overhaul) the actions keyed from motion capture: one body, one camera
     const c0 = traits(spec), L0 = c0.L, lg = L0.suit ? COL[c0.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
-    return FIG.act(opts.clip || act, c0, { still, legs: lg, heads: opts.heads, y: opts.y, k: opts.k || { jump: 0.88 }[act] || 1, ox: opts.ox != null ? opts.ox : (MOVES[act].ox || 0) + ({ run: -2, walk: -2 }[act] || 0), phase: opts.phase, yaw: opts.yaw }); }
+    return FIG.act(opts.clip || act, c0, { still, legs: lg, heads: opts.heads, y: opts.y, bare: opts.k > 1.6, k: opts.k || { jump: 0.88 }[act] || 1, ox: opts.ox != null ? opts.ox : (MOVES[act].ox || 0) + ({ run: -2, walk: -2 }[act] || 0), phase: opts.phase, yaw: opts.yaw }); }
   const after = MOVES[ACT_OF[word(opts.after)]];           // "stop" after an action: the same size of figure as that action had
   const c = traits(spec), L = c.L, K = opts.card ? Object.assign({}, MOVES.stop, { poses: [A_CARD, A_CARD], scale: 0.8, ox: -36 }) : opts.size ? Object.assign({}, MOVES.stop, { scale: opts.size === "short" ? 0.8 : 1.22, ox: 12 })
     : act === "stop" && after ? Object.assign({}, MOVES.stop, { scale: after.scale }) : opts.shift ? Object.assign({}, MOVES[act], { ox: (MOVES[act].ox || 0) + opts.shift }) : MOVES[act], u = "pa" + (seq++) + "_", skin = c.skin;
