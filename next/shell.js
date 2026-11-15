@@ -15,7 +15,7 @@ const SHELL = (()=>{
     SPACING_GAP_HOURS: 6,             // (work) the second lesson of a day starts at least this long after the first ended
     POINTS_PERFECT_FIRST: 2,          // (owner, 15 Nov late) an exercise perfect the first time it is done
     POINTS_PERFECT_REPAIR: 1,         // (owner) an exercise that had an error, done again perfectly (once: it is then perfect)
-    POINTS_PERFECT_LESSON: 5,         // (owner) a lesson perfect FIRST TIME through (every exercise perfect the first time it was done); a lesson made perfect later by repairs earns no +5 (it still counts for the badges)
+    POINTS_PERFECT_LESSON: 5,         // (owner, 15 Nov late) a lesson that becomes perfect, first time through OR by repairs, once per lesson; (superseded: "first time only") (it still counts for the badges)
     // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
     BADGES: [5,10,20,50,100,200,500,1000,2000],      // (owner) perfect lessons; never a badge for lessons merely finished
     BEAD_SOUND: "A",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
@@ -198,7 +198,7 @@ const SHELL = (()=>{
     if(G.replay) return replayDone();
     const exPts = G.lpts[L.id] || 0; delete G.lpts[L.id];
     let pts=0, bonus=0, back=0, perfectNow=false;
-    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; perfectNow=true; if(L.exercises.every(x=>G.ex[x.id] && G.ex[x.id].f==="p")) pts+=RULES.POINTS_PERFECT_LESSON; }
+    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; perfectNow=true; pts+=RULES.POINTS_PERFECT_LESSON; }
     const runPerfect = RUN.ex.length===L.exercises.length && RUN.ex.every(x=>x.perfect), runEx=RUN.ex.slice(); RUN.ex=[];
     const d=G.days[today]||(G.days[today]={n:0, firstEnd:"", full:false});
     if(d.n===1 && !d.full && cur.t0 && (new Date(cur.t0)-new Date(d.firstEnd))>=RULES.SPACING_GAP_HOURS*3600e3){ d.full=true; bonus=1; }      // recognised, without points (the owner)
@@ -230,7 +230,7 @@ const SHELL = (()=>{
       + (r.why==="once" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>Lesson ${n} once more</b><p>You just need a bit more practice before moving on. Next time we will do this lesson again, and it will feel easier.</p></div></div>`
         : r.why==="back" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>A warm-up first</b><p>You are nearly there. Next time we will start with Lesson ${G.next+1}, which you know, and then come back to Lesson ${n}. Everything you have earned stays yours.</p></div></div>` : "")
       + `<div class="card exstrip"><div class="row"><b>${nPerf} of ${L.exercises.length} exercises perfect</b><span class="pts">${ic("star")} +<span data-n="${r.pts}">${r.pts}</span></span></div><div class="exdots">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div>
-          <small>${r.perfectNow && r.lessonBonus ? `Perfect first time through: +${RULES.POINTS_PERFECT_LESSON} for the lesson.` : r.perfectNow ? "Every exercise is perfect now. It counts toward your badges." : nPerf<L.exercises.length ? "Points come from perfect exercises." : ""}</small></div>`
+          <small>${r.perfectNow && r.runPerfect ? `Perfect first time through: +${RULES.POINTS_PERFECT_LESSON} for the lesson.` : r.perfectNow ? `Every exercise is perfect now: +${RULES.POINTS_PERFECT_LESSON} for the lesson.` : nPerf<L.exercises.length ? "Points come from perfect exercises." : ""}</small></div>`
       + (r.bonus ? `<div class="tile two"><div class="orb">${ic("moon")}</div><div><b>A full day</b><small>${G.bonusSaid++<3 ? "Your two lessons were well apart: that is how French sticks." : "Two lessons, well apart."}</small></div></div>` : r.back ? `<div class="tile two back"><div class="orb">${ic("sun")}</div><div><b>Welcome back</b><small>Good to have you here again.</small></div></div>` : "")
       + (r.soon ? `<div class="line">Done. Your next lesson will stick better after a break.</div>` : "")
       + (r.badge ? `<div class="card badgec">${badgeSvg(r.badge, "badge big")}<div><small>A new badge</small><b>${badgeName(r.badge)}</b><p>Every answer right, in ${r.badge} whole lessons. That is French you can speak.</p></div></div>` : "")
@@ -245,14 +245,14 @@ const SHELL = (()=>{
      delayed tests are as they were before it (kept in G.replay, so that leaving half-way or closing the app puts them back too) ---- */
   function replayDone(){ const R0=G.replay, L=LESSONS[R0.li], X=L.exercises[R0.ei], res=RUN.ex.filter(x=>x.id===X.id).pop() || {perfect:false, p:0}; RUN.ex=[];
     restorePlace(); let bonus=0, badge=null; const today=dayOf();
-    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=-1; badge=newBadge(today); }      // perfect now, by repair: it counts for the badges; no +5 (the owner: only first time through)
+    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; G.points+=bonus; G.lpts[L.id]=(G.lpts[L.id]||0)+bonus; badge=newBadge(today); }      // perfect now, by repair: +5 and it counts for the badges (the owner, 15 Nov late)
     delete G.lpts[L.id]; G.cur=null; store(); look();
-    try{ trace("exercise done again: Lesson "+(R0.li+1)+", exercise "+(R0.ei+1)+": "+(res.perfect?"perfect":"not perfect")+"; points +"+res.p+(bonus?"; the lesson is perfect now (no +5: not first time)":"")+"; the place is as it was"); }catch(e){}
+    try{ trace("exercise done again: Lesson "+(R0.li+1)+", exercise "+(R0.ei+1)+": "+(res.perfect?"perfect":"not perfect")+"; points +"+res.p+(bonus?"; the lesson is perfect now: +"+bonus:"")+"; the place is as it was"); }catch(e){}
     const o=$("done"), name=esc(S.learnerName||"");
     o.innerHTML = (res.perfect ? `<div class="okmark star">${ic("star")}</div><h1>Perfect${name?", "+name:""}!</h1><div class="sub">Lesson ${R0.li+1}, exercise ${R0.ei+1}: every answer right, first time.</div>`
         : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">Lesson ${R0.li+1}, exercise ${R0.ei+1} again. Practice makes it yours.</div>`)
       + `<div class="card exstrip"><div class="row"><b>Lesson ${R0.li+1}</b>${res.p ? `<span class="pts">${ic("star")} +${res.p}</span>` : ""}</div><div class="exdots">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}${k===R0.ei?" me":""}"></i>`; }).join("")}</div>
-          <small>${bonus ? `Every exercise of Lesson ${R0.li+1} is perfect now. It counts toward your badges.` : res.p ? "Repaired: this exercise is perfect now." : res.perfect ? "It was perfect already; it still is." : "Try it again whenever you like."}</small></div>`
+          <small>${bonus ? `Every exercise of Lesson ${R0.li+1} is perfect now: +${bonus} for the lesson. It counts toward your badges.` : res.p ? "Repaired: this exercise is perfect now." : res.perfect ? "It was perfect already; it still is." : "Try it again whenever you like."}</small></div>`
       + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b><p>Every answer right, in ${badge} whole lessons.</p></div></div>` : "")
       + `<div class="spacer"></div><button class="btn" id="doneBtn">Continue</button>`;
     o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, res.perfect); }
