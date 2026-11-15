@@ -54,7 +54,8 @@
         picture card (or "card")    a white card with the learner's figure, frozen, doing spec.doing: dancing | jumping | walking |
                                smiling | eating | drinking | raising a hand (any act of PICS.action); spec.sex "f": the woman.
                                smiling / not smiling (.50): the face close up, eyes to chin filling the card, smiling / with a level
-                               closed mouth: {is: "picture card", doing: "not smiling"} stands beside the smiling card
+                               closed mouth: {is: "picture card", doing: "not smiling"} stands beside the smiling card.
+                               spec.moving (.59): the figure on the card does the action (its loop), not frozen
         newspaper   a folded newspaper               letter      a handwritten sheet and its envelope
         book, apple, pen, shoe      small plain versions of the app's own pictures (the app draws its own; these are for spec.holding);
                                book takes "open". key, dog, car: the same as PICS.key / PICS.dog / PICS.car
@@ -1923,13 +1924,15 @@ function shoeS(k){
   return `<defs>${lgr(u + "s", P.a, P.b)}</defs>` + shad(82, 154, 66) + `<path d="M18 136 Q16 150 30 152 H136 Q148 150 146 138Z" fill="#fbfaf5" stroke="#a9a498" stroke-width="1.5"/><path d="M22 138 Q20 108 34 92 Q44 84 56 88 Q66 100 84 104 Q110 106 128 116 Q146 124 146 138Z" fill="url(#${u}s)" stroke="${P.d}" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M34 92 Q40 86 50 88 Q48 104 40 118" fill="${P.d}" opacity=".6"/><path d="M60 96 L96 112 M64 92 L72 104 M74 98 L82 108 M84 101 L92 112" stroke="#f4f1ea" stroke-width="2.6" stroke-linecap="round"/><path d="M100 120 Q122 122 140 132" stroke="#fff" stroke-width="5" fill="none" opacity=".9" stroke-linecap="round"/>`;
 }
-/* a picture card: a white card with the learner's figure doing spec.doing, frozen: it tells which action to command */
+/* a picture card: a white card with the learner's figure doing spec.doing, frozen: it tells which action to command
+   (.59) spec.moving: the same card with the action going on (the card lit in the naming of an action word: the app draws it so from the
+   cue until the answer) */
 function card(k, spec){
   const u = k.u, w = firstWord(String(spec && spec.doing || "").trim()), a = ACT_OF[w] || ACT2[w] || "smile", close = a === "smile" || a === "not smiling", face = a === "eat" || a === "drink", s = close ? 0.9 : face ? 0.86 : 0.84;
   const sex = spec && spec.sex === "f" ? "f" : "m";        // the learner's own figure, a man or a woman (the app gives spec.sex)
   /* (.50) "smiling" / "not smiling": the face close up fills the card (the smiling frame of the loop; the same face, the mouth level) */
   return `<g transform="rotate(-3 80 95)"><rect x="15" y="14" width="136" height="170" rx="9" fill="#000" opacity=".14"/><rect x="12" y="10" width="136" height="170" rx="9" fill="#fff" stroke="${k.cn ? k.tint().b : "#7d848e"}" stroke-width="${k.cn ? 6 : 2.4}"/>
-    <clipPath id="${u}c"><rect x="14" y="12" width="132" height="166" rx="7"/></clipPath><g clip-path="url(#${u}c)"><g transform="translate(${r2(80 - 80 * s)} ${close ? r2(95 - 95 * s) : face ? r2(181 - 190 * s) : r2(172 - 186 * s)}) scale(${s})">${action(a, "you", { still: true, sex }).outerHTML}</g></g></g>`;
+    <clipPath id="${u}c"><rect x="14" y="12" width="132" height="166" rx="7"/></clipPath><g clip-path="url(#${u}c)"><g transform="translate(${r2(80 - 80 * s)} ${close ? r2(95 - 95 * s) : face ? r2(181 - 190 * s) : r2(172 - 186 * s)}) scale(${s})">${action(a, "you", { still: !(spec && spec.moving), sex }).outerHTML}</g></g></g>`;
 }
 /* --- the weather: a snowy scene and a thermometer low and blue (cold); a blazing sun and a thermometer high and red (hot) --- */
 function weather(k){

@@ -2257,7 +2257,7 @@ function thingPicture(e){
   const lib = window.PICS && PICS.thing && (!PICS.things || PICS.things.includes(String(e.is).toLowerCase()));
   if(lib){ try{ const g=PICS.thing(e.is==="picture card" ? Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e) : e); if(g) return g; }catch(err){ trace("FAULT picture "+e.is+": "+err.message); } }
   const L=e.looks||[];
-  if(e.is==="picture card" && !lib){ const act=ACT_NAME[e.doing]||e.doing; return cardOf(picKnows(act) ? PICS.action(act, "you", {still:true}) : placeholder(act)); }
+  if(e.is==="picture card" && !lib){ const act=ACT_NAME[e.doing]||e.doing; return cardOf(picKnows(act) ? PICS.action(act, "you", {still:!e.moving}) : placeholder(act)); }
   if(e.is==="French flag") return cardOf(mkG(`<rect x="14" y="52" width="44" height="86" fill="#2a4b9b"/><rect x="58" y="52" width="44" height="86" fill="#ffffff"/><rect x="102" y="52" width="44" height="86" fill="#d8372e"/><rect x="14" y="52" width="132" height="86" fill="none" stroke="#9aa0a8" stroke-width="1.5"/>`), 0.8);
   if(e.is==="face"){ const m = L.includes("feeling good") ? "M56 110 Q80 136 104 110" : L.includes("feeling bad") ? "M56 124 Q80 100 104 124" : "M58 116 H102";
     const brow = L.includes("feeling bad") ? `<path d="M52 72 L70 78 M108 72 L90 78" stroke="#5a4632" stroke-width="4" stroke-linecap="round"/>` : "";
@@ -2397,13 +2397,14 @@ function buildRow(items, area={y:24, h:190}){
   // one row up to five pictures; six to ten (Lesson 10: ten numerals) in two rows, read left to right, top row first
   // area (.24): the row stands lower and smaller when a line of things to count is above it (counting silently, then the numerals)
   const N=items.length, rows=N>5?2:1, n=Math.ceil(N/rows)||1, gap=n>2?10:24, vg=8, w=Math.min(160,(344-gap*(n-1))/n, ((area.h-(rows-1)*vg)/rows)*160/190), h=w*190/160, y0=area.y+(area.h-(rows*h+(rows-1)*vg))/2, k=w/160;
-  frameRow.replaceChildren();
+  frameRow.replaceChildren(); LIT.slot=null; LIT.g=null;
   items.forEach((spec,i)=>{ const r=Math.floor(i/n), inRow=Math.min(n, N-r*n), x0=200-(inRow*w+(inRow-1)*gap)/2, x=x0+(i-r*n)*(w+gap), y=y0+r*(h+vg);
     if(spec===null){ delete TARGET["s"+i]; delete BOUNDS["s"+i]; return; }       // .24: the place of a card that has not come yet (cards brought in one at a time keep their places)
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     if(spec && spec.appears){ try{ g.animate([{opacity:0},{opacity:1}], {duration:550, easing:"ease-out"}); }catch(e){} }      // the card that is new in this task comes in
     g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
     const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
+    g.dataset.slot="s"+i; inner.classList.add("pic");      // (.59) litPlay finds the picture of a place by these
     frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62}; BOUNDS["s"+i]={x,y,w,h,r:10};
   });
 }
@@ -2742,7 +2743,7 @@ async function askAndListen(task, expect, think=0, alsoOk=[], cued=false){
     await cueAs(task.cueVoice, task.questionUnits, task.cueAt, task);
     return listenT(task, expect, alsoOk);
   }
-  pointAt(task);                          // focus: the gold border comes on as she speaks
+  pointAt(task); litPlay(task);           // focus: the gold border comes on as she speaks (.59: a lit action card moves from here)
   if(think) await sleep(think);
   await say(task.w1 ? w1Units(task) : task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
   return listenT(task, expect, alsoOk);          // signal at 0.5 s, then the learner responds
@@ -3315,7 +3316,7 @@ async function presentGenModel(m){
   // the script's "Écoute." is not said (Jon 9 Nov 14:21: adults who chose the app know to listen; it costs time)
   const listenFirst = m.teacherUnits.length && /^écoute/i.test(m.teacherUnits[0]);
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
-  if(m.at==="you"){ offering=true; await pointAt("you"); } else await pointAt(m);
+  if(m.at==="you"){ offering=true; await pointAt("you"); } else { await pointAt(m); litPlay(m); }      // (.59) a lit action card moves from the cue
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
   if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt, m); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
   // a model learner's own-name answer (.24): their tag lit and their hand on it while they say it (askMark: the who-asks-whom hand)
@@ -3412,6 +3413,41 @@ function actLoopMs(root){
 }
 const wholeLoop = (ms, root) => Math.max(ms, Math.round(actLoopMs(root||document.getElementById("actBox")))+80);      // +80 ms: the first frame is painted a frame or two after the picture is added
 new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) animFromStart(n); }).observe(document.documentElement, {childList:true, subtree:true});
+/* (.59; Jon's naming stage of an action word: Marie says "Dis." with one action card lit among the known action cards, the learner says
+   the word alone, "Danse.", and then the learner's own figure does it; Pierre and Sylvie model it first) The lit card shows its action
+   going on: from the cue until the answer the card the item points at plays its loop, the other cards stay still. Until .58 every
+   picture card was drawn still: a still smiling card beside the face not smiling reads, a still card of walking or talking reads less
+   well. Only a spoken model or test (never a tap) whose point is a picture card of an action. The card is drawn again moving (people.js
+   card, spec.moving): its loop begins at its first frame (animFromStart, as every animation), and it goes still again only when one
+   whole loop has been seen (litStill: the wait, if the answer came sooner, as wholeLoop does for a figure). Its correction lights the
+   same card, so it moves there too. Not the smile: its loop begins and ends on the face not smiling, the very card that stands beside it
+   (.53, Jon's run of 14 Nov 18:09: "Souris." answered by the face not smiling; a smile among pictures to choose from is the still
+   close-up smile), so the lit smiling card stays the still smile; seen on the first screens of .59, the moving one was a level mouth when
+   the turn opened. */
+const LIT={slot:null, g:null, spec:null, t0:0, ms:0};
+function litSlotOf(it){
+  if(!it || it.tapTask || !(it.type==="model" || (it.type==="task" && it.kind==="test"))) return null;
+  const side=sideOf(it); if(!/^s\d+$/.test(side||"")) return null;
+  const x=curScene && curScene.row && curScene.row[+side.slice(1)];
+  return x && typeof x==="object" && x.is==="picture card" && x.doing && ACT_NAME[x.doing] && !/^(not )?smiling$/.test(x.doing) ? side : null;
+}
+function litPlay(it){
+  const slot=litSlotOf(it); if(!slot || (LIT.slot===slot && LIT.g && LIT.g.isConnected)) return;
+  const holder=frameRow.querySelector(`[data-slot="${slot}"] .pic`); if(!holder) return;
+  if(LIT.g && LIT.g!==holder && LIT.g.isConnected && LIT.spec) LIT.g.replaceChildren(picture(LIT.spec));      // another card was moving: still at once
+  const spec=curScene.row[+slot.slice(1)];
+  holder.replaceChildren(picture(Object.assign({}, spec, {moving:true})));
+  Object.assign(LIT, {slot, g:holder, spec, t0:performance.now(), ms:actLoopMs(holder)});
+  trace(LIT.ms ? "the lit card plays its action: "+spec.doing+" ("+slot+", one loop "+Math.round(LIT.ms)+" ms)" : "FAULT the lit card does not move: "+spec.doing+" (the picture library draws it still)");
+}
+async function litStill(){
+  if(!LIT.slot) return; const g=LIT.g, spec=LIT.spec;
+  const w=Math.round(LIT.ms+80-(performance.now()-LIT.t0));
+  if(w>0 && g && g.isConnected){ await sleep(w); trace("the lit card's loop seen whole: "+w+" ms more"); }
+  if(LIT.g!==g) return;      // drawn again meanwhile (a new scene, or another card lit)
+  LIT.slot=null; LIT.g=null; LIT.spec=null;
+  if(g && g.isConnected) g.replaceChildren(picture(spec));
+}
 function actBox(who, act, opt){
   const g=document.getElementById("actBox"); if(!g) return;
   if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); ACTBOX.key=null; return; }
@@ -3546,6 +3582,7 @@ async function presentModel(m){
   await setPortraits(m.scene); itemStart(m); await convIntro(m);
   if(m.gen){ if(goldThingOf(m)) await goldClear(m.at);
     if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m);
+    await litStill();      // (.59) the lit card goes still after the answer, once a whole loop has been seen
     const end=performance.now(), gap=m.pauseAfterMs>0 ? m.pauseAfterMs : COUNT_GAP;
     if(gap>COUNT_GAP){ await sleep(gap-GOLD_BLINK); trace("pause after the model: "+gap+" ms"); }      // the border stays on its card
     if(holdEar) goldOff(); else rest(); MODEL_END.t=end; MODEL_END.gap=gap; MODEL_END.thing=goldThingOf(m); return; }
@@ -3661,6 +3698,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
     r = await askAndListen(t, expect, think, t.alsoOk||[]);
   }
+  await litStill();      // (.59) the answer has come: the lit card goes still (once a whole loop has been seen)
   rest();
   // whichever recogniser listened: the question said back is that error by name, never a right answer
   // (with Chrome's recogniser the question said back looks like the app's own words picked up by the microphone: "echo".
@@ -3853,7 +3891,7 @@ async function corrModel(task){
     if(c.sweep[0]) goldOn(sideOf(c.sweep[0]));
     SAY_SLOW=!!c.slow; try{ await say([c.answer]); } finally{ SAY_SLOW=false; TXT.onPart=on; TXT.ctx=keep; }
     return; }
-  await pointAt(task.cueVoice ? task.cueAt : task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
+  await pointAt(task.cueVoice ? task.cueAt : task); if(!task.cueVoice) litPlay(task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
 const corrKind = t => isOwnName(t) ? "own name" : t.tapTask ? "tap" : t.corr ? "sound pair" : t.cue==="repeat" ? "Répète" : t.cue==="point" ? "touch-and-name" : t.cueVoice ? "spoken answer, cue by a model learner" : "spoken answer";
 /* (.53; Jon, 14 Nov 2026, after a naive tester had a right "une" refused six times with the same words: "'Non, écoute. Une. Vas-y' obscures what
@@ -3866,7 +3904,7 @@ const oralCorr = t => !t.tapTask;
 const retestOpts = t => oralCorr(t) ? {retest:true, atoi:false, quiet:true} : {retest:true, atoi:false, afterAtoi:true, quiet:true, cued:true};
 async function correction(task, nth, how=""){
   ph("correction "+nth+(how?" ("+how+")":"")); trace("correction frame: "+corrKind(task)+(oralCorr(task) ? " (the target only, then the task again)" : ""));
-  if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); rest(); return; }
+  if(oralCorr(task)){ offering=false; gestureEar(); await sleep(CORR_GAP); await corrModel(task); await clipGap("after the model"); await litStill(); rest(); return; }
   /* (.54; Jon, 15 Nov 2026: "I'd lean towards removing écoute since a truly naive learner doesn't know what it means since we didn't teach it")
      A tap's correction is "Non."  -  0.5 s  -  the cue and her hand's tap  -  0.5 s  -  "Vas-y.". "Écoute." is said nowhere now (a model's
      opening "Écoute." has not been said since 9 Nov: presentGenModel). */
@@ -3938,7 +3976,7 @@ async function trialLimit(it, part, anchor){
   else { await say(["Non."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
   else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
-  rest();
+  await litStill(); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null}, it.id);
 }
