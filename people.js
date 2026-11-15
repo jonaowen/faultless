@@ -1283,7 +1283,7 @@ const C_A = { aL: [3, 0], aR: [-102, -136], ph: 41 }, C_B = { aL: [3, 0], aR: [-
 const P_K = { br: -5, lL: [3, 0], lR: [-56, 4], aL: [50, 12], aR: [-8, -8], ball: [129.5, 136.5] }, P_K2 = { br: -4, lL: [3, 0], lR: [-48, 8], aL: [46, 10], aR: [-8, -8], ball: [129.5, 114] },
       P_U = { br: 0, lL: [0, 0], lR: [-8, 6], aL: [22, 6], aR: [-10, -8], ball: [127, 74] };
 const GO_D = 120, GO = MOVES.walk.poses.slice(0, 4);
-MOVES.work = { dur: 1.2, kt: [0, 0.25, 0.5, 0.75, 1], poses: [W_A, W_B, W_A, W_B, W_A], side: true, chair: true, desk: true, still: 0, scale: 1.1, ox: -29 };
+MOVES.work = { dur: 1.2, kt: [0, 0.25, 0.5, 0.75, 1], poses: [W_A, W_B, W_A, W_B, W_A], side: true, chair: true, desk: true, still: 0, scale: 1.1, ox: -29, q: 0.66, ax: [-1, 2] };      // (.60) both arms from the top of the trunk (the far one had crossed the chest from the far shoulder)
 MOVES.call = { dur: 1.6, kt: [0, 0.5, 1], poses: [C_A, C_B, C_A], still: 0, scale: 1, ox: -22, phone: true };
 MOVES.play = { dur: 1.6, kt: [0, 0.14, 0.5, 1], poses: [P_K, P_K2, P_U, P_K], side: true, still: 1, scale: 1, ox: -12, ball: true };
 MOVES.listen = { dur: 1.6, kt: [0, 0.25, 0.5, 0.75, 1], poses: [{ hr: 0 }, { hr: -8 }, { hr: 0 }, { hr: 8 }, { hr: 0 }].map(p => Object.assign(p, A_DOWN)), still: 1, scale: 1.1, cans: true };
@@ -1297,12 +1297,12 @@ MOVES["go out"] = { dur: 3.4, kt: [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 
      the fall, and lands flat on the ground, with a puff of dust; it lies a moment, fades, and walks in again (jumping goes up and lands on
      its feet, upright; lying down / sleeping is a head on a pillow, still). The frozen frame (the card) is the middle of the fall: the body
      slanting forward, arms out, one foot still on the stone, arcs behind it. */
-const R_A = { ry: -6, br: 20, bx: 3, lR: [-70, 82], lL: [42, 34], aL: [-72, -70], aR: [54, -62] }, R_B = { ry: -6, br: 20, bx: 3, lL: [-70, 82], lR: [42, 34], aR: [-72, -70], aL: [54, -62] },
-      R_M = { ry: 2, br: 20, bx: 3, lR: [-6, 10], lL: [28, 104], aL: [-10, -80], aR: [14, -80] }, R_N = { ry: 2, br: 20, bx: 3, lL: [-6, 10], lR: [28, 104], aR: [-10, -80], aL: [14, -80] };
-MOVES.run = { dur: 0.9, kt: [0, 0.25, 0.5, 0.75, 1], poses: [R_A, R_M, R_B, R_N, R_A], side: true, still: 0, scale: 1.04, ox: -2, run: true };
+const R_A = { ry: -6, br: 16, bx: 2, lR: [-70, 82], lL: [42, 34], aL: [-58, -78], aR: [60, -60] }, R_B = { ry: -6, br: 16, bx: 2, lL: [-70, 82], lR: [42, 34], aR: [-58, -78], aL: [60, -60] },
+      R_M = { ry: 2, br: 16, bx: 2, lR: [-6, 10], lL: [28, 104], aL: [-8, -88], aR: [12, -88] }, R_N = { ry: 2, br: 16, bx: 2, lL: [-6, 10], lR: [28, 104], aR: [-8, -88], aL: [12, -88] };
+MOVES.run = { dur: 0.9, kt: [0, 0.25, 0.5, 0.75, 1], poses: [R_A, R_M, R_B, R_N, R_A], side: true, q: 0.66, ax: [-1, 2], still: 0, scale: 1.04, ox: -2, run: true };
 const F_W = { lR: [-20, 10], lL: [20, 22], aL: [22, -12], aR: [-24, -18], fr: 0 }, F_T = { br: 8, lR: [28, 60], lL: [-16, 12], aL: [-40, -20], aR: [-60, -24], fr: 12 },
       F_F = { br: 8, lR: [30, 50], lL: [4, 22], aL: [-96, -20], aR: [-112, -16], fr: 40 }, F_L = { br: 4, lR: [8, 30], lL: [2, 24], aL: [-128, 8], aR: [-140, 6], fr: 76 };
-MOVES.fall = { dur: 3.6, kt: [0, 0.12, 0.26, 0.4, 0.5, 1], poses: [F_W, F_W, F_T, F_F, F_L, F_L], side: true, still: 3, scale: 0.74, ox: -50, fade: true, fall: true, pivot: "84 178" };
+MOVES.fall = { dur: 3.6, kt: [0, 0.12, 0.26, 0.4, 0.5, 1], poses: [F_W, F_W, F_T, F_F, F_L, F_L], side: true, still: 3, scale: 0.74, ox: -50, fade: true, fall: true, pivot: "84 178", q: 0.66, ax: [-1, 2] };
 const ACT_SPEED = 2;
 function action(act, who, opts){
   opts = opts || {};
@@ -1326,7 +1326,7 @@ function action(act, who, opts){
   const legs = L.suit ? COL[c.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c.kind + c.topName + c.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
   const P = K.poses.map(p => Object.assign({}, POSE0, p, L.umbrella ? { aR: [-20, -125] } : null, opts.reach && p.rx ? { rx: r2(p.rx * opts.reach) } : null)), n = P.length, si = K.still;
   const SY = 97, UA = 21, FA = 20, HY = 126, TH = 26, SH = 26;                   // the skeleton: shoulders, elbows, hips, knees (the same for everybody: the poses turn these joints)
-  const W = BUILD[c.kid ? "kid" : c.fem ? "woman" : "man"], q = K.side ? 0.86 : 1, AW = W.aw, LW = W.lw, sh = r2(W.sh * q), ch = r2(sh - AW / 2 + 1.5), wa = r2(W.wa * q), hip = r2(W.hip * q), xo = r2(sh + AW / 2 - 1.2);
+  const W = BUILD[c.kid ? "kid" : c.fem ? "woman" : "man"], q = K.side ? (K.q || 0.86) : 1, AW = W.aw, LW = W.lw, sh = r2(W.sh * q), ch = r2(sh - AW / 2 + 1.5), wa = r2(W.wa * q), hip = r2(W.hip * q), xo = r2(sh + AW / 2 - 1.2);
   const lx = K.side ? [77, 84] : [r2(80 - W.hx), r2(80 + W.hx)], pc = (lx[0] + lx[1]) / 2, ph = r2((lx[1] - lx[0]) / 2 + LW / 2 + 1);
   const timing = `keyTimes="${K.kt.join(";")}" dur="${r2(K.dur / ACT_SPEED)}s" repeatCount="indefinite"` + (K.linear ? "" : ` calcMode="spline" keySplines="${Array(n - 1).fill("0.4 0 0.6 1").join(";")}"`);
   const G = (type, vals, inner) => `<g transform="${type}(${vals[si]})">` + (still || vals.every(v => v === vals[0]) ? "" : `<animateTransform attributeName="transform" type="${type}" values="${vals.join(";")}" ${timing}/>`) + inner + `</g>`;
@@ -1357,7 +1357,11 @@ function action(act, who, opts){
   if (L.umbrella){ const U = COL[c.umb] || COL.yellow, hx0 = r2(80 + sh + UA * 0.342 + FA * 0.574), hy0 = r2(SY + UA * 0.94 - FA * 0.819);      // held up in the near hand, over the head
     brolly = `<path d="M${hx0} ${hy0 + 5} L86 24" stroke="#4b4f57" stroke-width="2.2" stroke-linecap="round"/><g transform="translate(33.2 21.6) scale(.6)"><path d="M26 34 Q28 5 88 4 Q148 5 150 34 Q134.5 25 119 34 Q103.5 25 88 34 Q72.5 25 57 34 Q41.5 25 26 34 Z" fill="${U[0]}" stroke="${U[1]}" stroke-width="2" stroke-linejoin="round"/>
       <path d="M88 4 Q28 5 26 34 Q41.5 25 57 34 Q62 12 88 4Z M88 4 Q112 12 119 34 Q103.5 25 88 34 Z" fill="${U[1]}"/><path d="M88 4.5 v-4" stroke="#4b4f57" stroke-width="3" stroke-linecap="round"/></g>`; }
-  const upper = (K.side ? arm(r2(80 - sh), "aL") : "") + `<g data-s="${u}b" ${hT}></g>` + behindTrunk + trunk + brolly + `<g data-s="${u}h" ${hT}></g>` + (K.side ? "" : arm(r2(80 - sh), "aL")) + arm(r2(80 + sh), "aR");
+  /* (.60; Jon, 15 Nov, on the running card: "the arms are attached wrongly given the turned head") seen from the side, both shoulders are at the
+     top of the narrow trunk, one behind the other: K.ax gives where the far and the near arm hang from (their x from the middle line), so
+     that an arm swung far forward or back starts at a shoulder and does not cross the chest from the other side of it */
+  const axF = K.ax ? r2(80 + K.ax[0]) : r2(80 - sh), axN = K.ax ? r2(80 + K.ax[1]) : r2(80 + sh);
+  const upper = (K.side ? arm(axF, "aL") : "") + `<g data-s="${u}b" ${hT}></g>` + behindTrunk + trunk + brolly + `<g data-s="${u}h" ${hT}></g>` + (K.side ? "" : arm(axF, "aL")) + arm(axN, "aR");
   const body = (K.side ? leg(lx[0], "lL", far, 4) + leg(lx[1], "lR", legC, 4) : leg(lx[0], "lL", legC, -2.4) + leg(lx[1], "lR", legC, 2.4)) +
     (dress ? `<path d="M${r2(80 - wa)} 118 H${r2(80 + wa)} L${r2(80 + hip + 8)} 151 Q80 156 ${r2(80 - hip - 8)} 151Z" fill="${sleeve[0]}" ${T1}/>`
       : `<path d="M${r2(pc - ph + 1)} 123 H${r2(pc + ph - 1)} L${r2(pc + ph)} ${HY + 3} Q${r2(pc + ph)} ${HY + 9.5} ${pc} ${HY + 9.5} Q${r2(pc - ph)} ${HY + 9.5} ${r2(pc - ph)} ${HY + 3}Z" fill="${legs[0]}"/>`) +
