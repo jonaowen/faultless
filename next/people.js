@@ -204,6 +204,7 @@
 "use strict";
 const NS = "http://www.w3.org/2000/svg";
 let seq = 0;
+let LEARNER = null;                      // the learner's own figure, when one has been made (PICS.setLearner)
 const mk = html => { const g = document.createElementNS(NS, "g"); if (html) g.innerHTML = html; return g; };
 const r2 = v => Math.round(v * 100) / 100;
 
@@ -322,7 +323,14 @@ function traits(spec, variant){
       top: M ? ["#4a6b86", "#36536b"] : COL.green, topName: M ? "slate" : "green", iris: M ? "#5e3f27" : "#4a3524", style: M ? "marie" : "you", beard: false,
       brow: M ? "#4a3326" : "#2a2422", lip: M ? "#c4626a" : "#bf6660", cap: "orange", hat: "felt", band: "#2b2b30", pack: "orange", umb: "yellow", scarf: "mustard",
       coat: "camel", suit: "charcoal", tie: null, glasses: "#26262b", round: false, bag: "mustard" };
-    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
+    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });
+    /* (the overhaul) the learner's own figure (PICS.setLearner): "you" is the person the learner made, in every picture. On the new figure
+       the whole spec is drawn (c.av); the pictures still on the older drawing take from it what they can show: man or woman, skin, hair
+       (its colour and the nearest of their own cuts), eyes, beard, glasses, the colour of the top */
+    if (!M && LEARNER){ const A = FIG.person(LEARNER), sp = FIG.specParse(FIG.specString(LEARNER)), tn = FIG.AV.top[Math.min(FIG.AV.top.length - 1, sp.top | 0)];
+      Object.assign(c, { kind: A.fem ? "woman" : "man", skin: A.skin, hair: A.hair, top: A.top, topName: tn, iris: A.iris, beard: !!A.beard, brow: A.brow, lip: A.lip, bow: A.bow,
+        style: A.headwear ? (A.fem ? "bun" : "crew") : ({ short: "you", side: "sidepart", crop: "crew", bald: "bald", pony: "pony", long: "long", loose: A.fem ? "marie" : "longM", wavy: "wavy", bob: "bob", tucked: "marie" })[A.style] || (A.fem ? "pony" : "you"), av: A });
+      if (A.glassesOn) L.glasses = 1; }      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
   } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
@@ -1209,7 +1217,8 @@ function oneCar(spec){
 function car(spec){
   spec = spec || {};
   const n = spec.count || 1;
-  return n > 1 ? group(n, () => oneCar(spec)) : oneCar(spec);
+  const one = () => (window.THINGS && THINGS.one && THINGS.one(Object.assign({}, spec, { is: "car" }))) || oneCar(spec);
+  return n > 1 ? group(n, one) : one();
 }
 
 
@@ -1353,18 +1362,22 @@ const CLIPS = {
     data: "OOd(OOeHQ`MQN5d&WEQ)aV[qe[OLOcOFaa[lOOOOOOOOOOOOP=eCRaeIR;P;L_eEPvQu=@DzLyHTd<LyHTd<:]N:LCMmE4=+NF<xYSNF<xYSd*JsI(PW:HPXM8C4>KN{A4`&PaNueXO6=:Z3OQGy;iQ+:^RXQ(>?[eOUd0NaeFQcM<N@csWpPoaI]'eVOFQ+N_a^[nOOOOOOOOOOOOPAeFROeHR?PBL]eGP]R+<hF)K#OHe/K#OHe/:rNlJ{N?Hd;QL_<KX4L_<KX4ceIYH~P):SLnMXCF>:NG?z^jP3NdeYNp?m^]OmCY>$PA<1X\"P1B1`uOYdMN@eNQFM{NCcoWzPNaP]!e<ORS9MKb'['OOOOOOOOOOOOPFeBRjeGRHP6LTeEP]S?<iFOHXT'cyHXT'cy;YM1HgN|K6:mKK<\"VYKK<\"VYckI6IVOZ;JHoNPC6>>Ko='Y0M:I`dbO$A<`.OZ?RA_Oo?W^FOeHtdVO^dkN)eWPmP(N+cfX-OaaU[|eDO[RgMZaf[WOOOOOOOOOOOOP@eGRFeIR@P-L^eGPYU!=FF'FKS^c.FKS^c.<^K!G&OcK/:nK$;jU]K$;jU]dPIjKoO(<RF2O|BI>uKg:xLEJ];=SFNtAZ`HOj<wEIO[BoaGOHN!eWOfd~MweSQ%PcM`ctWcO?aX[we=OxS0M/aa[VOOOOOOOOOOOOPGeCR`eLR+P$LteIPmV->WDdEzMmc;EzMmc;=;J{EkO^Hy;GK:;pV#K:;pV#diJ5LaNr<GFJP5CJ>/K[<*H%J6;,MVNR@k_]PQ<AFYOECub0NfP@eYOee4M^eUPuPWMsd$WDN~aR[~e:PAS:LeaC[wOOOOOOOOOOOOPPeARoePQlOqM4eKPvU~?kBxIrEDb1IrEDb1?3F6EhO<Dv=4L-</W?L-</W?e-K@MYN_;6ITOYFb<<N6<(G8ND;8ITNR?\"]bQJ=%EDNtBgaAMoM|ePOYe/MDeXP&P]NadCV^NTaB]4e9PrS3LCa<[yOOOOOOOOOOOOPXe>S!eSQPOOMNeNPyUJ@-B9Q*?*]fQ*?*]f?*E?FsNV@H@dN2=&YfN2=&YfeGM?MHNo:GN:O\"If;1O=<KF@OZ<DFNO+<vYSQ[>.C[MnBVa-LlNTeIOAdsL|eJN)QxP5dPV:N#a&]Te8QQRzK{`w]?OOOOOOOOOOOOPYe=S%eUQ6O>MheQPtUY?hBlX<=4UGX<=4UG=8DqNvM`<{ERQ.@P_=Q.@P_=dUL>IbO]:yTCNPJu:uOK;IHsO{:jKAP*;OV<Q.>wBOM2Bca/LYP~eDO2dVLOe.M$S9Pld@VaM``Y^%e=Q8RlL:`b]bOOOOOOOOOOOOPFeBRieSQFNtMUePP[VVB0@c[_>9Pg[_>9Pg?9A}NmM>:vK9TUHMcjTUHMcjd*KcHUP8=OZTNZHW;SOS:GN.P5:iSQPi:YRGQ\"?JAoL!B|a/L#RHe-O5dDL<e'M*SfPDczWeMU`H^9eKP]Q|M9`f]pOOOOOOOOOOOOP9eHREeQQXNpM>ePP6W2Ft=l]#>PPN]#>PPN?~ASL*M/:OOQVtQud/VtQud/ceJ9HMOT@w_lOpCp=sO>;PVBOMC)aYPy:OMZPh?bARKgBK`cL+SAe!O@dDLVe?McR]P.chX1M]`W^(eWPuO}N1`s]kOOOOOOOOOOOOPJeJR2eSQIO3MLeRP\"VOJ&<>[H>)Pj[H>)Pj?XAtL]Km:gP}Y6X+a0Y6X+a0c0JbFpNuC!aSP[?>A{M!>r]<L|F0c<Px;[HKOx?uA8NR?P^;N.O~eWO@d_M9eRNUQ<Ovd!W]NV`m]ueUQ2O2N=a1]IOOOOOOOOOOOOPLeJR+eSQIO0MLeQP7T_J>;`Z_=_QGZ_=_QG?/B?M$Jm:uO)[+Wk`)[+Wk`)b1H4FPO@BLa-P.<YF&K4Bw`xKPJId[P]=@DhNj@\"A-RH;:TsS1B;`WO6dZMveXN7O^Pld6V|O#a2]LeVPlNVNtaG]/OOOOOOOOOOOOPAeHR>eQQ^O+M8eNPZSJHa;tY?=0S5Y?=0S5>=C9NAJ$;UK(]QQ]a!]QQ]a!a&HuD.P_A/_}No;~GFKFD*anL=N5eAQ4=1E+MiBP>wUN;JRKVpB'_'O3d`NJeZNtNqPId7V}OgaR]!eXP-NBOTaG]0OOOOOOOOOOOOPKeFRIeQQ^OAM7eNPRRoF$<uW,=(VQW,=(VQ=%E3OuJ8<yFp['H{`x['H{`x`]IwC&Q?>l]>Mi<lElLgCcanN)L;e@R$;SI\"M-G)<8Rt:_NZT?=9Y$O8dQNweWOdN)Oqd>VnP?ac[feYOUNIO}aJ],OOOOOOOOOOOOPNeDRYePQhOWM.eLP[RNBW?$T;>2Z]T;>2Z]<!GAOVK5>cCGVmAF^JVmAF^J`zJEC9QF<]XoM\"?+BDNICgb$P5NgeYQv:TN'MCJb;#P}:[LUR&;pVnOFd9O1eLQIMhN>d4W$Q4aR[te[ODNtOuaO]%OOOOOOOOOOOOPDeERTeIR>P0L[eFPgR4?=B3P[Am`UP[Am`U;\"JBN[LPAS?vR\"=lZiR\"=lZibhK4EhPz;.U!M$A>@#O1BgaAPsN}eWPJ:zTBNTKF:kPn:LMtQ>;eVf" },
   "walk": { n: 16, dur: 0.82, loop: true, yaw: 58, still: 0.55, curl: 0.4, trav: 2.080,      // CMU 07_12 brisk walk: one stride, 0.875 s
     data: "OOe,OOe:L{RGQTe8RwOBe[P*eRQBNSMgeKQVOOOOOOOOOOOORie!KUeZP/O*NreXP^Qe=HDjPc:OMLPc:OML>hOkBYKn:nQvT0A2_@T0A2_@`FH?CVN:>+[JNm;EU}Q%U3dkQ5^i_~R!<9G,R.=8E1P{AE`0OPKQe8OQdqOme8LnRKQge;RUOee[OqeUQ,NkMxeQQ%OOOOOOOOOOOORTdyK(eYP?NyNbeXP@Pi=IDXQ1;!JZQ1;!JZ>`Q.BnKc:pQuT-B$`,T-B$`,`UGnD,Mr>Z]+NH:]RbO~NIeXPMX.chQP<kEtQn>xBXOq<2X'NmAG`7OqdrP$eKO4R4OPeQQaPEeYOoeVPuNxN.eSPoOOOOOOOOOOOORUdtJreYPOO+NQeXP/PK<~E?QC;2IzQC;2Iz?MQgAuKw:bPSSOAb_~SOAb_~b2ITEWMa>#[7Mr:JNfP#Jhe)PLP0eXOx:xJ^R=DI=dNt:PM)M7;VV0P1e6OyeDPsRIMqeNQEP@eZOseXPgOhN7eSP|OOOOOOOOOOOORhdsJzeYPKO7NTeYP-Pq<=FgQ.:kKYQ.:kKY@DQ'@nLk:SO;RE@(^_RE@(^_c-J{F[MG<JXFMP:dL6P#JMe#PLO#eYN^:EP/S\"G!<LK.:tMoI*<YVNP7eZOYeLPMQ}N9eMQdOne[O{eWPcP@N7eRQ)OOOOOOOOOOOORhdzK:eYPPOQNNeWPKQI;LI&P{:HNmP{:HNmAMO&?bMC:XM3Q3=s[$Q3=s[$cVK}G)M=;<U<ME;$J^P+JCd~P^OjeXNZ;0U3RTC}>$JR<1VKI.C<`SPCe]OJeVPRP[NCeOQ[O^e[OpePQ0P~MgePPtOOOOOOOOOOOOR`e$K_eXPbOsN;eTPnR,:vKQP':aS+P':aS+A5LH@5M_:tK4Ol<%WiOl<%Wic}LcGmL~:cR>M7;WHlPMIgdmQ#O-eVO5<QXlQZ?1B7JQB9`3J.LWdfPJePO7eWPpOWN0eHR-Ore[OteLQDQDMPeNPtOOOOOOOOOOOORIe(K`eVQ\"OwMzeRPoS*:dN5NQ<,WsNQ<,Ws@xIwA8Mp;BI?N3:{T?N3:{T?d1LcH>Lx:UN5Li;nH;Q0I<d[QfN!eKOt=k[#PP;@I6LBJEdiLMWgcePLe:O-eSQ?NbMleDR>P-eZOteLQ5QMM^eOP{OOOOOOOOOOOOR7e*K^eUQ-OtMoeQPoSA:gP_M1>J[iM1>J[i@NGxBbN+;{GVLq:XQ3Lq:XQ3dtLdJbLm;^HgLS;YI\"QsGwd(R_Mve@Ph>Y]-Oi:EPJNXRLeFN^^i`&PLdvO0eHQzMuM=e>RJPReYOceJQMQLMDeLQ.OOOOOOOOOOOORBe&KPeUQ1OsMleRP]Rm:vRxLh@j_GLh@j_G?,G2E$N?<PF=Kr:bNgKr:bNge2L4LdM)<SFLLj<LFfPbE4bwQNK(e'Qh?*][OR:lShPcVed?PDb-[,PFdUOLeIQvMsM@e@R8P7eZOLeJQQQNMBeMPuOOOOOOOOOOOORed{K?eXPcOrN:eUPaRQ:}STLkB>`lLkB>`l=`GhG4NR<KFEKZ:wL^KZ:wL^e.L6LCM==fD8Lz=[DPPu@*^vR)Hbd@Ql?6]lPP:KQ6Q8PVeRP3_Q_AP5dSOdeVPlNSN@eLQsO^e[OWeIQUQOMAeNPbOOOOOOOOOOOORpdtK%eXP_O`N@eWP>R=:lRaM*B>`pM*B>`p=9H%GpNW<+G,Km:wLFKm:wLFe'LYKWNA<<FhL-A|?YRG:^Q@Tl>AZ_QV>w]IQ*:UM*QGJUd{POUnd]OqdxOfeWN_NAPLeQQJOSe[OreMQUPzMCeMPzOOOOOOOOOOOOR]d|K;eVP}OwN\"eUP=Qr:TQ&MaA&_nMaA&_n=JH'GGN.;VHVL::[NYL::[NYdJLqI$P0:QM#K(Fo<fTJ;%MQW4='VGQf=,YaQW;,J:R'IydeQ(RReBO_e9OIeXNKN|P[eERJO~eZP&eQQ`OsM?eKQ3OOOOOOOOOOOORYe$KYeWPrOvN*eTP^QW:MNzN5>p]JN5>p]J=@I6FbMi;\"JVLg:]QILg:]QIc]L=G,Pc:dS-KMEJ=AT7;VTeU}@-]MQv;lVhQf;aHQRTIjdYQQQ;eKOVeEO5eYNBOIP_eCRYP*eYPBeRQON|MUeKQEOOOOOOOOOOOORZe)KueXPoOWN.eRQ\"Qx:hL7N[<oYBN[<oYB=LJVE[MC:aLSN!;;ULN!;;ULc/KVFCP6</W}L]@R@qTf@s^nUKFbbhR=:}SdQd<AFpRPIBdOQ;QFeLOTeFO3eVN#P3Pre@ReOoeYPSeQQFNDMceLQIOOOOOOOOOOOORfe&KleYPQOANLeTP|RG;NICO+;:UZO+;:UZ>.L#C{Ld:XN.P9=#YfP9=#YfbOJtEHOE=QZYN$;hH*TmH~cuThS%d_R::UP0R(=$ERQrGwd)P9QFeRONe<O7eIM<Q=QEe8S\"OOeZPIePQJN>M`eJQaOOOOOOOOOOOORle#KeeZP;O7NdeVPsR><SFWP$:MQUP$:MQU>lMbBaL(:^P/RX?7]]RX?7]]a;IYD)Nm>&[GNo:KQ@QbQ-eKQd[<auR+:lL+R:=JDrQoEBbuP1O)eZ" },
-  "jump": { n: 20, dur: 0.67, loop: true, yaw: 24, still: 0.5, curl: 0.12, trav: 0.000,      // CMU 13_39 jump: crouch, take-off, flight, landing (0.93 s, played 1.39 times faster, so the flight is made lower to match); at the top the arms are those of CMU 22_16 (jumping jacks, frame 290: both arms thrown up)
-    data: "OO_hOOeSQHOOMVeRP2O1b![?e[OOOZOIb_Z=OOOOOOOOOOOOPseVNbeVPGPfNNeRQ9Rm;TIAR&=z[!R&=z[!<NH_I<La;PI6M-=_ZVM-=_ZVaxGZFRRzB{a/LCBJ?1PwDXbSQmKTe-L1D.b\"QtBz>_JiBN`LK7Q@e+OG`\"OPeUQ6O-MjeUOoO6b1[(e[OMObOHbkZ)OOOOOOOOOOOOPaeRMgeUPgP_N4eWP-S;;'K]Q{@b_DQ{@b_D<4G~K5LG:zK_MJ?b^DMJ?b^Da^F0GGS&Bma#L<B2?FQ@D^bSR3Koe-LbCoauQqBq>fJDB@`5JyP`e*O@`YONeTQ.NaMreVO^O>bBZle[OTOfO?byYmOOOOOOOOOOOOPOeELNeUPrPNN0eWNyTb;#NjQ?F:cHQ?F:cH<kF(LdKN:iN_MuCSaqMuCSaq`zCwI%RhB.`TLnAV?oQ5Djb[QxL;e7MSC1aTQ+B=?'J^B6`5KFO~e6O8aWOSeUPxN^N'eWOPOFbaZ:e[OhOOO:c4Y?OOOOOOOOOOOOP4e3K<eUQ,P2MyeOM_Wj<:REOoNweZOoNweZ>,CLOJI5;HQQNpJNe\"NpJNe\"^t@BL:RFA!_YM6@d@UQQE5bqR$Lwe>NLAd`NP@AP?aJuBo`jK~PTe>O4c\"OjeWPcNjN:eXO&O2c8Y6eZO|O!O9cgX6OOOOOOOOOOOOOae(JbeRQQOEMMeFM.])?fUmNZV6dPNZV6dPAP@=T!Es=BTNP0QleOP0QleOX8<AQ?Qz?9]lM^?WAdQvELbyR7MbeDN~?]^KOf@>@lKMCUaLLWPieEO6e(P>eWPwOHN'eVNnNxd(WHeZP6O5NudIVNOOOOOOOOOOOOO[e!JDeRQZOCMDeDM&bXG?VfPM]/aFPM]/aFG3?lZ{@ABOVHO*Y(c?O*Y(c?Tg=:XoQ?<}YRND>'CXQRDjbXQgLde?O)=?Z;O<>bBbL6CBaNL}O;eMO2gqQ(eWPsOiN,eWO:NldsU'eZP>O_N_e'T;OOOOOOOOOOOOOydtIzeSQGOiM[eIM9e)Q\"S~TGawZFTGawZFP6C=ag;?L1TrJt`u]!Jt`u]!QLC+aPPZ;%TbOg<+G)QWB(`bQNKke4OK;6UNN<<[F%LfA1_kMGKue5O%jiQdeZP)OnNueVP~NZeERVeYPJOHNUeJR1OOOOOOOOOOOOP3dwJ)eWPyOMN&eSN1cqWfQVVScqT6VScqT6V@H2c+;8TnRHH,cXThH,cXThO9IwdtPD:FP9Q-:gKpVCAL^fV5@_]{OB:FPfMK:}JpKb??]UKgCyakNym#Qre[O`O?OAeRQXNGeKR!eYPMO9NTeOQ_OOOOOOOOOOOOP+e!JFeVPtNxN)eVNdbZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPK:FP0PM:tJwXDA}^+X:AX]jOK:CP\"N!;$JIJ)?o]YIoB8_{NrnbQjeZP%NyN|eYPIN^e@RxeYP@O&NeeKR.OOOOOOOOOOOOOte)JjeTQ0NrMneUO$bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLP`:MQAOf;GHxU<=jYKUi?,[<Os:LQPMu;lH#LT<{Y5LT@}_VNnowQjeYPENpN[eYP1NeeARueZP(NxO!eJR9OOOOOOOOOOOOOde=KkeSQAO&M_eSP3bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLP]:NQPOe;XHFS>=&Y(S}@1^AP':SR.M^<0G/O8<BXLP5Au`_Nkp_QpeXPHNgNYeXPKNYeERReZP!NuO'eLR)OOOOOOOOOOOOOoeDL9eTQ?O9MbePPrbZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPL:JQ'P%;MHiRu>@[AS;Bc`tP):OQiMY<!GTOM=q[,PZE~c@NeptQoeXPJNZNZeVPqNWeFRIeZO{NvO,eLR+OOOOOOOOOOOOO}eELBeVQ)O>MxeQQ'bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPL:IPwP4;AI1SK?z^9SfEZbbP):MQSMX;jH-My?H^,NWF4cKN_pTQfeWP>NBNgeVPqNTeBRgeZOzNoO.eIRBOOOOOOOOOOOOP&eGLPeVP}O+N%ePQ3bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLP[:LQ6P?;?I8S,@]_(S8FgcCOx:KQEMK;]HTMmA``ENgK#e.NToaQWeVP2N+NteWPgNae;S6eZO{NcO/eDRcOOOOOOOOOOOOO|eLLweUQ)NqM|eLQ]bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPt:RQjPL;BI/RFA<_sR@GCclOm:JQ=M5;MI,OWD'b:PyP?eUNMn;QOeTP*MfN~eXPcNie:S<eXP\"NIO0eARyOOOOOOOOOOOOOueTMceSQ=NeMmeBRGd<VsP1Yab_S.Yab_S.TcHJcf:|TFPdDfbIRODfbIROQ}J;doQ(:YR:PJ;FI$R`Ai`8RUH[d8Of:JQ:M$;II@P*D}bnQNQ%eMNFlFQJeQOyMDO0eYPXNle<S5eXP'N@O.e<S6OOOOOOOOOOOOOyeYNJeSQANuMke6S8ctH8K4c;R+Xoc;R+XoGkC:_w<-H!KS;6R9Tm;6R9Tm[|C:[FQ+:`RdPH;IHxT,AE_ST9E|bhOs:NQfL};fHKMVCeayNjM3eONRiAQ4eSOmMSO8eZP<Nte)T5eYO}NRO2e)T6OOOOOOOOOOOOP;eXN^eWPvOKN-e;S&W@=CG}Z0@\"Y/Z0@\"Y/=XDKQWF&>7GjB)@6U=B)@6U=a5BpLsQC;'TUP#;nGkRn?E]iS%CiaeOF:yTGM^<bF#Kr@P^zLJGDciNye(PceVPQNDNOeYP'O:dEV[e[O_O\"OEdXV$OOOOOOOOOOOOP8eYNweVQ(O]M}e<RwS4<GG6UD>`ZpUD>`Zp<dFOKyJP<VGRG8>$X)G8>$X)a1D1I.R0<JX7N`=sCrPFBKa+PDPYeWMc<}YQNb>YBoN.?|^jONOFe[ONa^P(eDRgO$L6eCO0OrbkZ(e[O:OVO^cMXlOOOOOOOOOOOOPaeUN7eUPhPYN0ePQ=S%<CG7S2?[]zS2?[]z<yG'IwKG<&H<JN>EZpJN>EZpaPE:H7Rl?9]ZM#?zAFOtF8cOPbK$e,KzA-_XP`A??rLlB$`UM*PCeM" },
+  "jump": { n: 20, dur: 0.67, loop: true, yaw: 24, still: 0.5, curl: 0.12, trav: 0.000,      // CMU 13_39 jump: crouch, take-off, flight, landing (0.93 s, played 1.39 times faster, so the flight is made lower to match: 0.55 of the captured rise, as the faster playing implies); at the top the arms are those of CMU 22_16 (jumping jacks, frame 290: both arms thrown up)
+    data: "OO_hOOeSQHOOMVeRP2O1b![?e[OOOZOIb_Z=OOOOOOOOOOOOPseVNbeVPGPfNNeRQ9Rm;TIAR&=z[!R&=z[!<NH_I<La;PI6M-=_ZVM-=_ZVaxGZFRRzB{a/LCBJ?1PwDXbSQmKTe-L1D.b\"QtBz>_JiBN`LK7Q@e+OG`\"OPeUQ6O-MjeUOoO6b1[(e[OMObOHbkZ)OOOOOOOOOOOOPaeRMgeUPgP_N4eWP-S;;'K]Q{@b_DQ{@b_D<4G~K5LG:zK_MJ?b^DMJ?b^Da^F0GGS&Bma#L<B2?FQ@D^bSR3Koe-LbCoauQqBq>fJDB@`5JyP`e*O@`YONeTQ.NaMreVO^O>bBZle[OTOfO?byYmOOOOOOOOOOOOPOeELNeUPrPNN0eWNyTb;#NjQ?F:cHQ?F:cH<kF(LdKN:iN_MuCSaqMuCSaq`zCwI%RhB.`TLnAV?oQ5Djb[QxL;e7MSC1aTQ+B=?'J^B6`5KFO~e6O8aWOSeUPxN^N'eWOPOFbaZ:e[OhOOO:c4Y?OOOOOOOOOOOOP4e3K<eUQ,P2MyeOM_Wj<:REOoNweZOoNweZ>,CLOJI5;HQQNpJNe\"NpJNe\"^t@BL:RFA!_YM6@d@UQQE5bqR$Lwe>NLAd`NP@AP?aJuBo`jK~PTe>O4c\"OjeWPcNjN:eXO&O2c8Y6eZO|O!O9cgX6OOOOOOOOOOOOOae(JbeRQQOEMMeFM.])?fUmNZV6dPNZV6dPAP@=T!Es=BTNP0QleOP0QleOX8<AQ?Qz?9]lM^?WAdQvELbyR7MbeDN~?]^KOf@>@lKMCUaLLWPieEO6e(P>eWPwOHN'eVNnNxd(WHeZP6O5NudIVNOOOOOOOOOOOOO[e!JDeRQZOCMDeDM&bXG?VfPM]/aFPM]/aFG3?lZ{@ABOVHO*Y(c?O*Y(c?Tg=:XoQ?<}YRND>'CXQRDjbXQgLde?O)=?Z;O<>bBbL6CBaNL}O;eMO2gqQ(eWPsOiN,eWO:NldsU'eZP>O_N_e'T;OOOOOOOOOOOOOydtIzeSQGOiM[eIM9e)Q\"S~TGawZFTGawZFP6C=ag;?L1TrJt`u]!Jt`u]!QLC+aPPZ;%TbOg<+G)QWB(`bQNKke4OK;6UNN<<[F%LfA1_kMGKue5O%iAQdeZP)OnNueVP~NZeERVeYPJOHNUeJR1OOOOOOOOOOOOP3dwJ)eWPyOMN&eSN1cqWfQVVScqT6VScqT6V@H2c+;8TnRHH,cXThH,cXThO9IwdtPD:FP9Q-:gKpVCAL^fV5@_]{OB:FPfMK:}JpKb??]UKgCyakNyjNQre[O`O?OAeRQXNGeKR!eYPMO9NTeOQ_OOOOOOOOOOOOP+e!JFeVPtNxN)eVNdbZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPK:FP0PM:tJwXDA}^+X:AX]jOK:CP\"N!;$JIJ)?o]YIoB8_{Nrk=QjeZP%NyN|eYPIN^e@RxeYP@O&NeeKR.OOOOOOOOOOOOOte)JjeTQ0NrMneUO$bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLP`:MQAOf;GHxU<=jYKUi?,[<Os:LQPMu;lH#LT<{Y5LT@}_VNnksQjeYPENpN[eYP1NeeARueZP(NxO!eJR9OOOOOOOOOOOOOde=KkeSQAO&M_eSP3bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLP]:NQPOe;XHFS>=&Y(S}@1^AP':SR.M^<0G/O8<BXLP5Au`_Nkl1QpeXPHNgNYeXPKNYeERReZP!NuO'eLR)OOOOOOOOOOOOOoeDL9eTQ?O9MbePPrbZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPL:JQ'P%;MHiRu>@[AS;Bc`tP):OQiMY<!GTOM=q[,PZE~c@Nel3QoeXPJNZNZeVPqNWeFRIeZO{NvO,eLR+OOOOOOOOOOOOO}eELBeVQ)O>MxeQQ'bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPL:IPwP4;AI1SK?z^9SfEZbbP):MQSMX;jH-My?H^,NWF4cKN_kvQfeWP>NBNgeVPqNTeBRgeZOzNoO.eIRBOOOOOOOOOOOOP&eGLPeVP}O+N%ePQ3bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLP[:LQ6P?;?I8S,@]_(S8FgcCOx:KQEMK;]HTMmA``ENgK#e.NTk?QWeVP2N+NteWPgNae;S6eZO{NcO/eDRcOOOOOOOOOOOOO|eLLweUQ)NqM|eLQ]bZZ6Q>V`d9QcV`d9QcX!J@c.<7WnR'H#d-QlH#d-QlO-LveLPt:RQjPL;BI/RFA<_sR@GCclOm:JQ=M5;MI,OWD'b:PyP?eUNMjKQOeTP*MfN~eXPcNie:S<eXP\"NIO0eARyOOOOOOOOOOOOOueTMceSQ=NeMmeBRGd<VsP1Yab_S.Yab_S.TcHJcf:|TFPdDfbIRODfbIROQ}J;doQ(:YR:PJ;FI$R`Ai`8RUH[d8Of:JQ:M$;II@P*D}bnQNQ%eMNFi>QJeQOyMDO0eYPXNle<S5eXP'N@O.e<S6OOOOOOOOOOOOOyeYNJeSQANuMke6S8ctH8K4c;R+Xoc;R+XoGkC:_w<-H!KS;6R9Tm;6R9Tm[|C:[FQ+:`RdPH;IHxT,AE_ST9E|bhOs:NQfL};fHKMVCeayNjM3eONRgRQ4eSOmMSO8eZP<Nte)T5eYO}NRO2e)T6OOOOOOOOOOOOP;eXN^eWPvOKN-e;S&W@=CG}Z0@\"Y/Z0@\"Y/=XDKQWF&>7GjB)@6U=B)@6U=a5BpLsQC;'TUP#;nGkRn?E]iS%CiaeOF:yTGM^<bF#Kr@P^zLJGDciNye(PceVPQNDNOeYP'O:dEV[e[O_O\"OEdXV$OOOOOOOOOOOOP8eYNweVQ(O]M}e<RwS4<GG6UD>`ZpUD>`Zp<dFOKyJP<VGRG8>$X)G8>$X)a1D1I.R0<JX7N`=sCrPFBKa+PDPYeWMc<}YQNb>YBoN.?|^jONOFe[ONa^P(eDRgO$L6eCO0OrbkZ(e[O:OVO^cMXlOOOOOOOOOOOOPaeUN7eUPhPYN0ePQ=S%<CG7S2?[]zS2?[]z<yG'IwKG<&H<JN>EZpJN>EZpaPE:H7Rl?9]ZM#?zAFOtF8cOPbK$e,KzA-_XP`A??rLlB$`UM*PCeM" },
   "standup": { n: 14, dur: 1.3, loop: false, yaw: 78, still: 0.56, curl: 0.3, trav: 0.000, once: [0.1,0.46],      // CMU 75_18 high sit: rising from the seat, 0.47 s, at its own speed; then held, as the live picture does
     data: "OOZFOOe[OGOOOWe0K)Q,aI]#eYOSNLP)a<]>OOOOOOOOOOOONIe?RteVPMN;NceGRKNO?yA6Uq?>[QUq?>[Q;mGnOVM&>nBhL|C4aOL|C4aObWERJ}W4PYd.JC<IGzR@KCe#TFW&cZJfQ@e!Sw<*HCKmGLcbK~FccEOQZKOje[O)O0OueZNqQF_2_VeXOWN2P@_s^}OOOOOOOOOOOON>e4SUeVP`NKNMeFRHNiAq?DUA=;XMUA=;XM<MG>K:LJ@n@YL`@W_3L`@W_3aoEPHbVdPCdAJ^<UGKRRJfdrTFVScmJcQ\"e#Sv<7G~KOG?cVK]Ffc@OT[6PEeZNdO(P<eXPDQ<]Ua\"eXOVN?P=^t_zOOOOOOOOOOOON>e-SveVPjNYNBeERNO9A{?:U&;~UJU&;~UJ=%H'HCL(@{@SLK>b[zLK>b[za<F$FoV'NDdTK-=#F3RTJ;dhT&UXd4K$Nwe.SX<^FrK:G.cJK@Fpc?OU]AQ#eZN_OAPAeKR+Q;]Ja+eZOKNVP4^l`%OOOOOOOOOOOON8e5SLeXPiO&N<eIR/OB@z@1Tp;ISKTp;ISK<VI*HXL/?mAfKs='Y2Ks='Y2`PFgDoUYK^dBKZ=NE.RkJ!d]SzUud.KJL2d|S?=(ErJ]Frc0JIH*c]O^^tQ^eZNkN}P;e?S!Q2][`|eZOUN^P&_9_ZOOOOOOOOOOOON-eGR2eXPhOCN8eSP|O6@F@dTQ;BSOTQ;BSO<7IKI6LJ?%BWKU;wVGKU;wVGa4H@DeT|HDc[L'=^DeRtIedSShVNc}KkHtd6Rw==E=JAFmc'J(HscnOf`QR;eZO'N`P(e8SMQ.^J`<eYOwNLOt`(^iOOOOOOOOOOOOM{eRPreXPlOLN3eXOiO2?tA9Sj;NTlSj;NTl<6IaI'Lq>IC>KE;>T6KE;>T6bUI^F6T:E.b<LU=QDkRzIZdOSPW@cdL=EcbzR:=9E2J<Fmc%J&I7cyOlb,S%eXO7N:O|e;S>Q._j_!eVP:N1Oba8]DOOOOOOOOOOOOMceTOJeWPvOSN*eVNlO'?%B7S.<#VrS.<#Vr<2ISI=MK=eD7K9;&RmK9;&RmcBJ<GOS]B1`DM&=5E2RiI^dSS,WIcgLqBba*Q[='EDJ<Fwc)J)J,d4OtcXSzeWOBN(OpeGRSQ(aB].eTPPMxOJbXZGOOOOOOOOOOOOMTeON4eWP{O[N%eTNENt=xCjRq<vX}Rq<vX}<%I7J+N+<nEcK3:~R;K3:~R;cjJOHJRv?R]wMU<pEiR[I]dURhWucZM:@!^cQ'<kEmJ8G\"c-J+K*dKOzd{T}eVO@MxOjeVQ+P{bkY}eQP^MaO1cpW~OOOOOOOOOOOOM`eKMKeXPkOrN6eVNNNk<lE`Rp=rZ_Rp=rZ_;|HsJsNf;{GNK?;$RgK?;$Rgd7JVIlR-=;YtN0<DFWREI_dYR:X=cPMn=aZgPF<GFMJMG*c6JHJXdHP%f\"U~eVO:MwOhe[OrP`c~WVeQPXM`N}dcUaOOOOOOOOOOOOMreFLqeYPNP$NReWNUNf;yGSS->d[mS->d[m;xHNKdO6;6IRKW;5S|KW;5S|d]JaK:Q4;aV^Nm;tG^R%IOdYQcXPcNN9<$W]O`;zGLJvG-cBJvI5d.P&fgVneVO0M|One[ODPWdqU(eSPKMnNse8SLOOOOOOOOOOOON'eCLQeYP8P/NieYNcNr;AI0SN?A]SSN?A]S;mHBL`OS:hKLK~;VUYK~;VUYdzK#LZPP:iSKOF;IHsQfI=dVQ,Y=c.Ne;!TWO0;RHXK*G0cGK+I0d1P%g+WNeVO$N&Oze[O5PTe>R}eUP@N#NleRQJOOOOOOOOOOOONCeFLVeZOvP@O*e[O+O&:xJ_Sr?c]pSr?c]p;dHAMOO[:LMIK~<+W/K~<+W/drJ_LTP,:FP]Of;'J+QLI$dQPhY^b~O\":RR(No;6IUKDG>cSKEH.ctP#g4WxeWNnN5P/eZO9PSePQVeWP8N5NieZOwOOOOOOOOOOOON_eFLOeZOSPAOKe[ONO1:]L+T@?e]cT@?e]c;aH<N/Ob:CO?K~<hXZK~<hXZdqJILuP#:DNlOt:vJiQ9HydPPSY_c!O':FP^Ni;+I|K^GFc]K^G~csP\"g5X3eXNaNQP=eZO7POeUPteWP4N7NieZO$OOOOOOOOOOOON~eELCeZO'P:Owe[OfN|:KMWTs?)[aTs?)[a;NHdO2Or:FP[K}=;YZK}=;YZd{JRM_O~:GN7Ot:uJnQ3HrdNPNYdb|O':DP(Nn;*J!KZG?cXK[HCd\"" },
   "sitdown": { n: 14, dur: 1.3, loop: false, yaw: 78, still: 0.8, curl: 0.3, trav: 0.000, once: [0.1,0.45],      // CMU 75_18 high sit: sitting down, 0.45 s, at its own speed; then held
     data: "OOg*OOe[O3OOOleXPgP]dVU~e[O]O6OJdQV9OOOOOOOOOOOOOvbCZieYNLO~PVeOM?Mo;QHlR\"<HX8R\"<HX8;4K%KZOT:ULWMn<&WZMn<&WZd#K\"HkO^:LQXO;;0IfQ9HZdFPyY=c0NL:bS%NT;1IiK,G)cDK0Hpd)OLfuNBe[O1O<OpeOQqPec;Y*e[O[OBOKc3YAOOOOOOOOOOOOP'`e^#eXN=OhPbeWP,NA<JFHQT<9X\"QT<9X\";EK2JYO$:}JIN(<'WbN(<'WbcoK#H6Ou:pS|O0;/IiQ0HxdQP}X[cONF;.U'NZ;+J!K5G2cKK8Hnd)OJfJM$e[O%O1O~e7SPPla0]He[O^O`O:a-]ROOOOOOOOOOOOP;^}_seWN(ONPveDRJO#=|CcQ#</WtQ#</Wt;VKIIhN9;fH-N7<+WnN7<+WncPJpGSP<;`VjN|;2IaQ$IDd`Q\"XJcWN/<&W`Nr;(J)K@G.cKKAH<cxOGe]Kce[NzO/P,dkUEPm^J`>e[OeODOJ^S`;OOOOOOOOOOOOPG]*aJeWN$O9P}d{TWOi?jADP_<9X0P_<9X0;XKYISMC<lEsN8<8X.N8<8X.c;JSG2Px=.YrNO;;IFP}IhdkQ9X!ciMc=SZOO<;+IxKTG9cTKSH/cwO@dNJ]eZN^O:PDdIVLPrZebAe[OiO2OZZxb:OOOOOOOOOOOOPWZ>bZeVM|N~Q*dJV=P?A9?uPv<JXRPv<JXR;oK%I0LK=vD2Mz<GXJMz<GXJblIoFWQj?4]jN$;RHgPnJ#drQDW!d0M-?[^8Ox;9IGKRGGcZKOH1cwO>c'IxeZNjO-P<dIVMPwXecKe[OcO=OVX}cEOOOOOOOOOOOOP|Y'c;eTMmNoQ=d#WCPfB>?#QL<GXAQL<GXA<#JMH~KI>sC*MO<EX=MO<EX=b>I9E~RKAb`6MJ;wGnPsJ-duQbV)dKL=B6`[Pf;UHXKUGFcZKPH*ctO/a<IJeXNUNUPadWUzQCW^cve[OAO4OnX#coOOOOOOOOOOOOQ6XYcNeSM[NuQKcxWVP}BY>nR3<-WRR3<-WR<-J*H~JV?QBVLo<:WrLo<:WrakHdEGSADpb@Lt<?G!Q-J&dqR-UOdWKcE?b[Qd;}GcK+G:cLJzHud%O'_MI'eTNZMsPjdtTxQWW$d-e[O-N{P.WlcxOOOOOOOOOOOOQ?YGc'eTM_O&QDdHV;PrBT>qS#;zVdS#;zVd<HIRH^I~?|B9L&<1WAL&<1WAa:H5DvT*H3ckL<<[FSQ`I~dkRrUxdAK@H`d&R@<AG$JkG9cDJSI<d(O\"]cHdeNNWM5Pte)T#QbWIc{eYNwNSPYX3ceOOOOOOOOOOOOQ<[;azeTMcO2Q?e0SOP/B2?*Sz<9W#Sz<9W#<IHdIHI`@0B1KI<?WFKI<?WFa0GaE+TRKgdaL!<`FUQuJ#diS5VId+K#L+dsRl<MFuJ_G>cCJDI<d%Nu[8HFeJNALzQ$e?RfQtXacDeUNlM|Q1YCc+OOOOOOOOOOOOQ(^=`GeUMnOMQ1eUP%OGA-?~TJ<uX6TJ<uX6;wHPKeI]?kB]K#<gX0K#<gX0a+F|EYU!NtduKh<PG\"QeJ+dmS-U$dUJaO(e'SE<GG<JaG0c>JKHGchNlZ3H0eKN@M!PqeRQ$Q}Zvb+eRNWMXQW[9axOOOOOOOOOOOOPq`I^=eWN-O^PseELXO%?HAjTI=iYuTI=iYu;UHiMNI|>dCwJv=WYeJv=WYeaIF7FsUMQ;dbKL<;G`QrJ9dpSQV>d)J;QFduSx<8G|JxG/cCJlGdcVNWZ5H#eTNPMwP?eQMLRE]b`heNNDM<Qu^F`6OOOOOOOOOOOOPTbLZVeYNFOYPVdTHwN_=bD/TC?2]\"TC?2]\";GH}NmJb=NERK&>u[lK&>u[lajEZHEVEQ4dFJ~<<GwR.JhdwS~VoclJ3QEdrT<<7H8KCG;cRKUFSc6NDZHGueXNdNWP)e5KBRC_{^ZeNNAM<Qn`7^FOOOOOOOOOOOOPUchX-eXN;OXP[cNF;N-<^F%TR@W^YTR@W^Y;4IcPYKj<MG(K4@&^;K4@&^;bdF!JRW%Pod3Jg<7H5QwK%e\"SpV+d)J4Q%duTX<7HJKZG3cSKdFqcGNCZHGxeZO'NcObdpIkQvb;Z^ePNFMSQMb9ZjOOOOOOOOOOOOPEd]UpeXN5OMPWbIDCN1;qGmTIBy`hTIBy`h;(J[QyL_;XH|KmB+`IKmB+`IcJF^LKW<Phd*JR<;H6Q{K%e\"S{Uxd-ItQ'dmTy<>HNKdG2cUKqFbcB" },
-  "dance": { n: 20, dur: 0.67, loop: true, yaw: -40, still: 0.5, curl: 0.2, trav: 0.000,      // CMU 55_01 dance, whirl: 0.83 s of it (turning, one arm thrown up, the other out), played 1.24 times faster; the last third of the loop is blended back to its start
-    data: "OOf=OOeUMfOOQ8eJM:L'e<M~d{S{L^JWdfKwOOOOOOOOOOOOD~bNK|c)SzFMJ'duNDd9VrN1VbaJYsVbaJYs[[C\"[NHcG.baXnSob{XnSob{]!>ZM/Lg;@U5J0<VGgVKL)d0W9Snc`GJ<<S,HU<AIqD4Mvb<BBCd[-Olf/OjeUN;NBPWeMM1KSe5N/dWTnK]IUdQL7OOOOOOOOOOOODRb?LXbPT<ERIZdjN[d!W;M*W.aEY]W.aEY]]tC'Z+J<Fwc*YnT;b=YnT;b=].>lL_Ld;<U%I^<hGaVSL-d.WJS+cgG|<TU(Gm<,L&FgOuceCpDf^LP)f!P#eLN_L~P%eNM'J|e+NKd4UNJhHkd@L_OOOOOOOOOOOOD&b+M,arT[DXI(dZNfcYWrL+W:aQY?W:aQY?^lCAY5KYFhc@ZuTiaOZuTiaO]T?=KhLY;;TxI7<tGaVQK}d,WRRMcnHw<lVnGX;xN=K(SideFCEr`yPDe|P5e<N~KhOVeOM+JKe\"NkceV1ImH\"d-M9OOOOOOOOOOOOCja~Mda.T_CSHpdTNuc,XTK:W8a`Y&W8a`Y&_LC`XYM$F[cQ[lU6`b[lU6`b]k?bJ~LN;7TdHu<zGnVIL,d1WPR7crJ*=)XCH$;fP2N+UodZHjF>b=P[euPBe'O?J`O2eRMGI~dvO:c3ViHpGBcxMqOOOOOOOOOOOOCQarN;`>TeBOHYdMO.bYY*JBW.aqXoW.aqXo`LD1WLNGFcca]VU__w]VU__w]t?|JALG;4TUHV=!G}VML6d1WWQxcsKF=NYjI.;NQxKIR\"e(H^E|b'PqerPOdkOjIXN`eSM_I^dmOnb`W7G|FwckNYOOOOOOOOOOOOC;afNm_FT_AIH?dDO4b!YbIMW,a~XWW,a~XWa:D[VAO^Ffce^DU|_&^DU|_&]j@,I`LA;0TAH@=!H3VKL=d3WTQKcyM!=eZ_J>;CS>M/PLeMJlDZa~Q%eqP_dHP/HLN6eRMqIMdfPMb)WfG0FKcYO>OOOOOOOOOOOOC(aXOD^BTQ@AH#d9O4aDZ/HVW<b!XGW<b!XGanDqU8PyFac^_#V@^7_#V@^7]o@OHsL<;*S}H.<{HPVRLNd3W[QAcwNc=u[1K`;:T;O3O@e[M3D@b<Q5eqPmcuPaG2MceQN<IFd`Q(aNX%F;F9cOP)OOOOOOOOOOOOBuaKP)]&TM?8GId$O8`kZMGeWOb&X+WOb&X+bAE.T$QyFfcV_wVG]2_wVG]2]I@YGvL<;\"SWG{<uHsV;LXd=W\"OGd8P?>*[LM#;0TdQdNMeNO}DyblQBerQ!c:PqEtMPeQNVICdYQa`nX;EAF2cHPtOOOOOOOOOOOOBxaHPuZYT:>0G>c}OZ`2ZdFrW}awWyW}awWybWE)RmS:FkcD`TVR[=`TVR[=]&@ZG:L<:xS.Go<pI3VALdd<V|N}d9Qe>+[=N7;+TwTlN3dwS-EhbuQMewQ4bMQ,DQMBeQO*IMdUR8`'XNDEF6cBQiOOOOOOOOOOOOC\"aGQ^Y-S{=6G0cwOp_cZmF/XPaoWUXPaoWUbfE$QYTTFoc*a3V]Z=a3V]Z=[Y@[FYLD:qRgGe<jIQVPLrd9W0O6d2Rt={ZlNy;-U-X*MycfUKD+a:QVe}QJaSQCC.M9ePOXIbdRRv_0X^CAFAc<RZOOOOOOOOOOOOC)a@RRWASu<DF_caP;_0ZdE6Y.aaW.Y.aaW.biDuP;UoFybharVeY-arVeY-Z~@NF%LY:gR<GY<cIxVXLud6WBOWd+Sd=kZ6O1;*U$[>LLahWBBO_3Q`f'Qc`BQ^AcM6eOP1IzdNSR^/XaB7Fec=SNOOOOOOOOOOOOCAa>SQU_Sh;fFKcUPk^LZ^D4Z&aEVUZ&aEVUbWDZNNW'G$b?bOVoWkbOVoWkZ>@JE@L^:`QaG`<TJCVbLwd3WOOid&T;=UYYNL;!TR^=L:`1YVC[^kQaf0R\"_2QX@JMXeQPVJCdJT8]#XgA4G3c=TEOOOOOOOOOOOOCda<TVSbSj;6F7cDQV]VZVC-Zza,UiZza,Uib6DALbXNG,abc\"VyVLc\"VyVLY]@ZDILn:YQ4Gk<JJXVwLmd*WqP:cuT@=:Y%Ms:}T?_8LQ_@[;E=^jQaf=RD^0Q[?QM{eQP}JvdITmZmXj@8Ggc>U4OOOOOOOOOOOOD?aFUQR%Sc:yFTcJR:[YZEB#[h`tTk[h`tTkacD(K!YkG+`ycLV{U)cLV{U)Xn@_CaLl:UPTH#<=JkVzLVd&W~PWcnT8<}XQM&;(TCa&Ko]+^sFc]8QXfERn]#QS>YNPeRQ=K[dKU<YoX]?NHCcFUaOOOOOOOOOOOOE3aVVPP*Sa:kFfcFS'Z^Z1A']=`mSU]=`mSUa1CpIj[,G&`!cmVzSgcmVzSgWy@jBuLy:RP(H#<=JkWbK{c_X`OjcST3<cWxLf;%T$acKt[6`cI*[KQEfPRo]KQ:>uO#eUQ4L/dYU(Z6X>?VI)cfULOOOOOOOOOOOOETauV4PbS_:mGFccR}[\"Y{A3]5`wSE]5`wSEa&CAJPZfF_`&ceVwT0ceVwT0Wq@]C\"LX:VP#HU<2JIW:KncmX@P2caSL<8W:L?:uR|`^K}]``EJ8]FQ!fNR.`9PiAMOKeXPaL1duSw]wWlAJI=d5StOOOOOOOOOOOOE/b5TUTcT.;TGjc|R8^IY[C8[Ca.To[Ca.Toa4BZNCWdF*aTbaV_WTbaV_WTY#@9DCKn:ePhIZ<-IGU-L!dUV%OSdXQC;eVdKH:nQ+[tL,a<[|Hb`.PQfHQ+c>O}EtOse[OoKxe/R2a>ViD|IMd_QOOOOOOOOOOOOODUbGQ~Z7TW>#HOdCQ*aAXvFtZ!a6V~Z!a6V~`ZBJSSRPEpc&`<Ur]\"`<Ur]\"ZT?rFTKJ:yR9JU<AH%S=LCe%TJQWdyN5;EUtJA;\"NqS~LJdwRyDBb-P#fCP*e*O)JkPDeYNrK`e9P<caUHHtIXdjNsOOOOOOOOOOOOD:bFO4_eTNAeI(d[Ojc?WrJjXQa/XsXQa/Xs_1BgWkM7F;cD]2Tj`T]2Tj`T[l?HIHKN;4SoK&<^G#R|LWe.T#SCdjJv;VToIL;JL]JqM6d~HdBV_jO^f<OIeVNBN>PreRM|Kae:NgddTGKiI|deLsOOOOOOOOOOOOD@b9Lzb2T5DxIfdnNcd,W(MPW9a)Z$W9a)Z$]WC5Z_IjG%c!YbT!bKYbT!bK]@?*KuKt;ETvJl<mFoSlL!duTrSodMHS<$SxHk<\"JoEbMlc.ChC#[s" },
+  "dance": { n: 18, dur: 0.62, loop: true, yaw: 15, still: 0.33, curl: 0.2, trav: 0.000,      // CMU 93_08 xtra fancy charleston: 0.6 s of it at its own speed (arms swung out wide in turn, knees bending, a cross-step and a kick behind); the last third of the loop is blended back to its start; the card: both arms flung out, up on the toes
+    data: "OOegOOeQMAOOQ]eIQEQ#d7Vte>LMQRQhdLV#OOOOOOOOOOOOQ}cxWI_<LQ_<Q9eGQzPK;^H>Rx;PUJRx;PUJ<`IyGaJv;,L7Iz<CVVIz<CVVU+G\"<|ME=oZvHD<:JCQ]Fpc_SyM;e$R):SPKSb>%D?O@EEc&LeS-e-O_exNHeJLjNnR;e:R7P6ccX<e@LtQnQ(d)W:OOOOOOOOOOOOQ+d1W$]8M^a8PWeTQ!P!;wGUM0<YXaM0<YXaA%J6A!JE;=KyJ2<FVpJ2<FVpS8G-<KNy>l]IJ8;nIpID@u^OIjC&`XR*:XQ/SK=AEGNyFBcSLiRwe1OpfAMdeRMOO\"QSe8RvP9c?Y(e8LiRDPscoWwOOOOOOOOOOOOO}d)WHZVN/bJO0eTQ;R^<?G1I,>[ZQI,>[ZQIpEv=SI';|JZHT<VUqHT<VUqQRH-;lO+>I[{N`<GFLG]@}]bG@EXa<Qn:^R&R1<sErRLFJcCP=S1e<P+fGM5eXN6OcPce4SUOfc7Y8e!LwSxP,ctWtOOOOOOOOOOOOOld/W:Y:N;c3O+eVQ'WA=]GDH$?f[IH$?f[IM*CT>6G#=AHgF'<xS(F'<xS(P8K-:oO9=:Z3T\"?XB@Gz=sXDEFF=`[R':gRUO0<OF7Z5HvaMV}X$b?P<f$M!eZNkOvP,e7SNO6cOXgdkMNU%O<d+WBOOOOOOOOOOOOOldDV^X0NdchOdeZP9[v@$H1Jz?$[zJz?$[zO|B`>cE5?8FeC6>=NmC6>=NmPKO_:EP0<<X<U*CF?*Nu:JMnK6<MW_Rc:rRiOe<dEoVdH5b}UQQ{dYPEeuLyeTMwPLPue9S1N&c`X9dYN*UpNMd3W)OOOOOOOOOOOOO]dSV5WJOGd(Ope[OK^lAFHvRK>6[=RK>6[=QtCx=|E8@9E%AG@IJqAG@IJqU&PV;-PY;5UBSZDy=_PS;YHINX:EOwRT:~SZP+<zEEUVGNc)T*RjdrPdf,LseOOjQvNke9SBN%cnWxd7N!VtN5d8VwOOOOOOOOOOOOO)dLVGVbO6dCOBe[Oo^#@`HtYD?1XWYD?1XWL|D.=qE~@#DaAM@YJ1AM@YJ1WYNp;~P0:MQUP7C5>>O$:CO3Nj:lSeR!;9U%R9=jD?PxCfa~O/OOe[Ptf/LneJP;R5N-e'T/M~d!WOd0N%W)N6dCVVOOOOOOOOOOOONpdNV@UxO5d[O%e[Oy[B?[H.]/?mUr]/?mUrD{A}C-G:?&E(Bl?)KLBl?)KLY@LG=%OW:FN?LnC(>YT/;oU`UhDdaUQA;1T~VL>LE+G@Bz_GE6Jdb@PxedLheMP1QyN6dzTaMpd*W5d<NXVpN\"dUU|OOOOOOOOOOOOO,dYV!UhODdaOLe[O]Yg>lGV].?*Se].?*SeA1B?G8Hg=WFTDM=PN<DM=PN<Y_JL=_O/:NM:LMC->[Tp=2XWUa@o^FQE:xS|UT>5DyH&ESaXFJPbcTPfeOLdeQN^QTOqe'TBMOcwWXdVNsV&N\"dVUzOOOOOOOOOOOOO6diULU{P#dZOleZNqXO>aFFZc=oRQZc=oRQ@qDHE$Ib<]GwFH<IPLFH<IPLWfJZ<_PK:ENtOED*=cP$:gSIP);qW8Ql:sSMUd>&E>GgFLa{FBNjcSP_eaLieUNuQ,Oge/SyMocrWkdsNiU(NCdOV7OOOOOOOOOOOON~ddU_V;P$dPOKe[NyX.>fE|Y,<mQbY,<mQbC*GA@KId<MH@GV<*R6GV<*R6U(JI;hP]:RQrTzCV>xO0;7IMO+;5IVQ~:pS6U>=zE9HjEpb&G)QYciPWf\"L{ePNnQdOje<S8M}cmWydnNSU3NLdFVSOOOOOOOOOOOONodVV'VHO_dLO.e[OKX>?+ENX0<:PrX0<:PrDRIA>QI\"<cH?GO<2RVGO<2RVRtJr;0P.:rT$[#C+BoLn:UPOIn;USYRH:|SVRf=oDAO$DObRM#Rwe4PWf0M3e=NrS1OLe<S7MYcjWzdFN(VLN?d9VtOOOOOOOOOOOONwdUV+VLO]dKO?e[OGY*?uD|X\"<0OzX\"<0OzEMJ_=RHO<mHSFc<LR-Fc<LR-RyK);+Oj;AUq_nBSHrIE<XVc?\"HAZ[RV:vS,PD=LDPUIEvbCR}UHdNPPf*MRe(NIT0OneCRkLpcdWud6N&VwN&d0W+OOOOOOOOOOOOO'dUV-VZObdFOTe[O:Y_?|EDX^<JO:X^<JO:F}K`<RHe<cHYF)<aQPF)<aQPSaK5;6O4<5X._(@PLKFG>}Y&>=IBZ.RG:`QUR0=1E=QQF`cXOtQ>eTPTf>MZdxNbTqOCeDRhLScSX1dLN#V:N%czW]OOOOOOOOOOOOO`dJVOW`O8c}P&e[OTY/?KEbXy<XOtXy<XOtEKJG=ZI(<KH|FM<OQRFM<OQRT/J|;EN?=?Z5YC<vMXEi@'Z0?NI_]!RI:[Q+R@<tEvOwGMd%NQSMe6PPfhMke.N`SzONeHRJLycSX=dlM]U'NSchX/OOOOOOOOOOOOP#d+WAYdN2bzP(eXPZWL>TEdX.<<Q3X.<<Q3BgHz?|I?<&I|GX<(R1GX<(R1S0Jx;3Mq>.[KQw:[M1G@BN_\"DQL6b9R|:bPjRj<fFAMUFLcPLlOOeKP5fiN,eLN+QhP+eBRlN@cqWve/MASGOMcvWqOOOOOOOOOOOOPQcqWx[vM.aJP!ePQaTx=)F^Vo;qR,Vo;qR,@PHhB4Im;`JtH{;rSmH{;rSmSlIO;bN:><[dJ%;?L@O@DCbLPJI<daSq:nP%T.<RGGHgFMbDH[Hnc@OifAN`eLL}P6QDe:RxOrd2W1e>L~R.P^d9VvOOOOOOOOOOOOQBcqWk^XL[_}P_eJR\"R,<)GUTp;OSfTp;OSf=jH}F\"JF;>KnIs<)U`Is<)U`ToGr<RN*=jZxGf<3KhQ}FAcES>HKd&T.:tOFT`<_GHGTGFb?FOL'c=" },
   "talk": { n: 14, dur: 0.66, loop: true, yaw: 24, still: 0.47, curl: 0.12, trav: 0.000,      // CMU 18_08 conversation, explaining with the hands: 0.63 s round frame 1572, where one open hand is raised to the height of the chest; own speed; the last third blended back to the start
     data: "OOg:OOeZNWOOPGeTQ(R(eMOgeELHN]RZeBPuOOOOOOOOOOOOVQdAQ;dZKHTRSHe6PZ_G@cQndrKSSPdrKSSPKOO{e8=*E/PX;DU>R<;DU>R<SiT[dTMn:OQ,MD;_HRNLHOdGNtLCeEKl:hMpKk;@J@ItG`c>KLP$e7OPg:OPeZNjOaP3eUQ'R0eLOleDLENQRae?Q3OOOOOOOOOOOOVAdGQ<dYKXTcS9e:PQ_%@;QCduL4S{duL4S{JzOAe-=;DlOw;HURR6;HURR6SWSvdhMd:OQ\"MM;_HPNGHLdFNkL*eAKg:hMxKi;AJ>IvGQc8K_PYe8OSg9OPe[O!OdO}eVP|R.eLOqeELHN[R[e@Q,OOOOOOOOOOOOV@dFQHd[KUTXS>e9PL^[?qQ#dkLHTTdkLHTTJ:N[d{=NDIOY;SUjRQ;SUjRQSrS]dhM[:OPvMO;ZH[NHHDdCNpLJeFKc:gN=Kj;JIzIxGGc5KTOne9ORg9OOeZNzOtP#eVP|R(eLOueGLRNuRPeAQ3OOOOOOOOOOOOV<dGQLd[KUTWS?e9PJ^<?SPndRL3UDdRL3UDI=Mld]=aD,O@;dUnSD;dUnSDTHRGdpM]:OPzMO;[HWNFHBdBNgKje;Kd:fNDKl;JIzIqG`c=KSP@e7OSg:OMeZO$P$OxeVQ\"R&eMOyeGLONqRSe?QFOOOOOOOOOOOOV.dMQAd^KcTYS3e<PA]d?$PUd-KvVJd-KvVJH%LYd&>(CSNt<$UmTj<$UmTjU<PDdlMW:OPtMT;YHZNGHHdDNjL*eAKe:fNDKk;HJ#IoGXc9KPP9e7OPg;OJeZNoP/P+eUQ%Q|eMP!eKLjO?R5eBQNOOOOOOOOOOOOV0dMQ7d^KjTaS1e=P+[q>BP+cQKVWocQKVWoFJK(c(>_BjNA<aUhVl<aUhVlVqNPd;MY:OP}MT;ZHXNGH@dBNhKee;Kf:gN5Kl;CJ8IqGac=KMP2e6ORg:OIeYNsP;P&eVQ\"QzeNP'eNM$OEQzeDQ^OOOOOOOOOOOOV,dOQ0dcKnTNS.e=P&Ze=XO<bCJuYkbCJuYkD8IiaK?PAlM_=LU+X~=LU+X~X/KHcAMP:PPwM];YHZNIH>dANiKie;Kc:gN:Kl;BJ9IlGZc9KKP=e6OSg;OFeYNxPOO~eUQ(QseNP5eNM%O/Q|eBQpOOOOOOOOOOOOUwdWPvdjL\"T@S$e@O`Y6<hNU`vIi[Q`vIi[QB2Gq_#@X@kL`>HSb[5>HSb[5Y4GRaOMP:PPuMZ;XH]NEH>d@NcK_e9K`:gNEKk;BJ9IiG[c8K;Oce4OTg;OCeXNrPUP%eUQ.QkeNP>ePM:ODQeeCQ}OOOOOOOOOOOOUwdXPadkL*TAS#e@O?WV<&MW^iGi^$^iGi^$@)EeZ/Al?oKn?RQ5^6?RQ5^6ZPDD^cMJ:QPzM[;XH[NNH>dANtLNeFK^:gNCKk;@JDIeGSc4KEPAe4OUg;ODeXNqPYP&eUQ(QfeOPCeQM?O9QbeBR%OOOOOOOOOOOOUsd[PHdkL)T?S,e>NzUZ;ILx[XE7^L[XE7^L>~CLTzC4>sK)@HN+_7@HN+_7[(A:Y~MI:QPzM[;XH[NPH=dANzLxeLK[:hNDKk;@JBIjGQc5KGP/e5ORg<OCeWNkPgP+eUQ+QheNPDeQMCOEQZeCR)OOOOOOOOOOOOUld_P5dmL2T;S(e>NdSL:wLnYbBH]YYbBH]Y>nBQOKDW>&J`ARJ6_KARJ6_K])?`U[MJ:QPzM_;YHYNPHBdCNwLieJK^:hN9Kl;<JRIlGGc1K>Oee5OTg;ODeXN|PSOzeVQ$QueMP:ePM9O6QfeBR&OOOOOOOOOOOOUnd]PLdmL.T:S)e>NvTj;)M|[BBG[*[BBG[*>aBcP!C#>vKO@=JJ^<@=JJ^<]W@2UvMV:OPzMK;YH_N]HHdEO9NNeYK^:gNHKk;BJ;IoGKc4KRPBe7OUg;OGeZNtP#P(eVPxQzeNP\"eLL|NpR'eBQaOOOOOOOOOOOOU|dTQ$deK|TRS1e=ORY*<`Ou`PEJXy`PEJXy@HGK[y?oAMM?=9NyZ1=9NyZ1[KE-^PMW:OPxMJ;WHdNTHGdEO&M?eQK^:gN?Ki;DJ2IrGOc6KJOje7OVg9OJe[NrONP.eVPxR$eMOleHL^NiRFeAQBOOOOOOOOOOOOV7dIQOd`KaTQS6e;PG^%?GQZcnIeUncnIeUnHTMldD=TD@OP;mSnUq;mSnUqV*PVdSMd:OQ$M?;ZHaNOHKdFO&MgeTKa:gN8Kh;GJ(IqGVc9KRP5e7" },
   "stand": { n: 2, dur: 1, loop: false, yaw: -20, still: 0, curl: 0.2, trav: 0.000,      // CMU 13_42, standing still before a jump, made the same on both sides; arms and feet set to an easy stance
-    data: "OOgKOOe[OOOOOOe[P*OOe[O}e[OOOOOOeYPNOOOOOOOOOOOOOOeZP4e[OOOOOOe[OnRb:YOOP~;5U9Ox;^Vh;ENII(L=:YOON!;5U9O';^VhdYNII(PT:EOdOm:DNrS+K8dtS+OOe?NJ:EOdO2:DNrKtK8dtKtOOe?OOgKONe[OOOOOOe[P-OOe[P#e[OOOOOOeYPTOOOOOOOOOOOOOOeZP4e[OOOOOOe[OvRb:YOOP~;5U9Ox;^Vh;ENII(L=:YOON!;5U9O';^VhdYNII(PT:EOdOm:DNrS+K8dtS+OOe?NJ:EOdO2:DNrKtK8dtKtOOe?" }
+    data: "OOgKOOe[OOOOOOe[P*OOe[O}e[OOOOOOeYPNOOOOOOOOOOOOOOeZP4e[OOOOOOe[OnRb:YOOP~;5U9Ox;^Vh;ENII(L=:YOON!;5U9O';^VhdYNII(PT:EOdOm:DNrS+K8dtS+OOe?NJ:EOdO2:DNrKtK8dtKtOOe?OOgKONe[OOOOOOe[P-OOe[P#e[OOOOOOeYPTOOOOOOOOOOOOOOeZP4e[OOOOOOe[OvRb:YOOP~;5U9Ox;^Vh;ENII(L=:YOON!;5U9O';^VhdYNII(PT:EOdOm:DNrS+K8dtS+OOe?NJ:EOdO2:DNrKtK8dtKtOOe?" },
+  "seat": { n: 2, dur: 1, loop: false, yaw: 0, still: 0, curl: 0.3, trav: 0.000,      // CMU 13_01 sit on high stool, frames 700 to 780: seated upright on the stool, the thighs sloping down (made the same on both sides)
+    data: "OOcDOOe[OOOOOOdLHWOOe>S0e[OOOOOOd3W/OOOOOOOOOOOOOOeTQ@e[OOOOOOe[P+`-A;ODBE@0UlBE@0Ul[MA-E_?rA;OD]Y@0Ul]Y@0UlCQA-E_TmDoazQr;SH{STA<_ZRxHyd<J2DoazM-;SH{KJA<_ZL'Hyd<OOcDOMe[OOOOOOdFHEOOeBRse[OOOOOOd2W1OOOOOOOOOOOOOOePQke[OOOOOOeZPB`\"A1NSBT@QVuBT@QVuZf@jE>?}A1NS]J@QVu]J@QVuD9@jE>TlDmayQv;SH~SXA@_]S!HRd.J3DmayM);SH~KFA@_]K~HRd." },
+  "sway": { n: 13, dur: 4, loop: false, yaw: 0, still: 0, curl: 0.3, trav: 0.000,      // CMU 86_15 walking, sitting, hand motions: frames 2390 to 2630, sitting still, hands on the thighs (2 s; made the same on both sides)
+    data: "OO_MOOe[OOOOOOe[OkOOd6W&e[OOOOOObWZJOOOOOOOOOOOOOOeTQ=e[OOOOOOeXPaS4:fN-JmGbcVJmGbcV>~DUH+Kk:fN-T2GbcVT2GbcVa!DUH+T9LXdtN1:GO/UVHfcVU}Jzd)JfLXdtPn:GO/IHHfcVI\"Jzd)OO_KOOe[OOOOOOe[OfOOd0W6e[OOOOOObGZdOOOOOOOOOOOOOOeKR2e[OOOOOOeQQdS<:hN\"JoGoc[JoGoc[?\"DLH4Kc:hN\"T0Goc[T0Goc[`}DLH4T;L]dtN0:GO/UWH^cSV#Jzd(JdL]dtPo:GO/IGH^cSH|Jzd(OO_MOPe[OOOOOOe[OmOOd4W,e[OOOOOObUZLOOOOOOOOOOOOOOeZP8e[OOOOOOe[OFS2:fN&JuGicZJuGicZ>}DPH5Km:fN&T*GicZT*GicZa\"DPH5T9LXdtN2:GO,USHbcVU|K%d,JfLXdtPm:GO,IKHbcVI#K%d,OO_MOPe[OOOOOOe[OhOOd:Vze[OOOOOObhZ-OOOOOOOOOOOOOOeZNWe[OOOOOOeRMLS2:eN6JqGdcWJqGdcW?%DNH+Km:eN6T.GdcWT.GdcW`zDNH+T6LWdtN3:GO,UNHdcXUxK8d1JiLWdtPl:GO,IPHdcXI'K8d1OO_NONe[OOOOOOe[OOOOdCVce[OOOOOObkZ)OOOOOOOOOOOOOOe[OTe[OOOOOOeZNnS.:cNOJvGgcZJvGgcZ?\"DKH4Kq:cNOT)GgcZT)GgcZ`}DKH4T9LWdsN1:GO0UNHecXUzK?d2JfLWdsPn:GO0IPHecXI%K?d2OO_KOLe[OOOOOOe[ODOOd@Vje[OOOOOObYZFOOOOOOOOOOOOOOeRQYe[OOOOOOeVQ,S1:dNPJsGtc_JsGtc_>~DIH=Kn:dNPT,Gtc_T,Gtc_a!DIH=T6L[duN4:FO3UOHjcZUxK4d0JiL[duPk:FO3IOHjcZI'K4d0OO_KOMe[OOOOOOe[OROOd8W#e[OOOOOObLZ[OOOOOOOOOOOOOOeSQOe[OOOOOOeVQ!S5:fN4JkG{c`JkG{c`>vDRHAKj:fN4T4G{c`T4G{c`a)DRHAT7LZdtN3:FO2UNHgcYUuJyd,JhLZdtPl:FO2IPHgcYI*Jyd,OO_NOQe[OOOOOOe[O[OOd:V|e[OOOOOOb_Z=OOOOOOOOOOOOOOe[OOe[OOOOOOeZNVS1:eN6JoGjcYJoGjcY>{DRH4Kn:eN6T0GjcYT0GjcYa$DRH4T6LUdtN4:FO-UMHacWUuK!d-JiLUdtPk:FO-IQHacWI*K!d-OO_MOOe[OOOOOOe[OOOOdAVhe[OOOOOObgZ/OOOOOOOOOOOOOOe[O3e[OOOOOOeXN>S-:cNPJqGkcZJqGkcZ>{DQH8Kr:cNPT.GkcZT.GkcZa$DQH8T5LWdtN5:FO/UMHfcYUxK;d2JjLWdtPj:FO/IQHfcYI'K;d2OO_LOLe[OOOOOOe[O?OOdDV^e[OOOOOObfZ1OOOOOOOOOOOOOOeWPve[OOOOOOeYPLS-:bN]JtGycaJtGyca>yDLHEKr:bN]T+GycaT+Gycaa&DLHET3LZduN7:FO3UJHjc[UuKKd6JlLZduPh:FO3ITHjc[I*KKd6OO_MONe[OOOOOOe[ONOOd>Vqe[OOOOOObcZ7OOOOOOOOOOOOOOeZPDe[OOOOOOe[O^S,:cNHJsGtc`JsGtc`>uDSHBKs:cNHT,Gtc`T,Gtc`a*DSHBT6LWdtN4:FO1UIHccYUwKQd7JiLWdtPk:FO1IUHccYI(KQd7OO_MOPe[OOOOOOe[ODOOdBVde[OOOOOOb`Z<OOOOOOOOOOOOOOeOQte[OOOOOOePQkS.:cNVJiG}c`JiG}c`>fDkHBKq:cNVT6G}c`T6G}c`a9DkHBT5LWduN5:FO,ULH`cWUuK/d0JjLWduPj:FO,IRH`cWI*K/d0OO_HOJe[OOOOOOe[O4OOd=Vre[OOOOOObQZSOOOOOOOOOOOOOOe/Sze[OOOOOOe-T&S':bNTK$H6cpK$H6cp>hDSHdKx:bNTS{H6cpS{H6cpa7DSHdT5LbdvN5:FO8UMHpc^UtK8d2JjLbdvPj:FO8IQHpc^I+K8d2" }
 };
 const DEC = {};
 function clipOf(name){
@@ -1472,12 +1485,14 @@ const STYLE = {
   long:  { v: 0.09, top: 0.05, quiff: 0, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.98, r: [0.9, 1.32, 0.5] }, { a: [0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }, { a: [-0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }] },
   loose: { v: 0.1, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.62, r: [0.93, 0.96, 0.52] }, { a: [0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }, { a: [-0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }] },
   wavy:  { v: 0.12, top: 0.06, quiff: 0.04, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.8, r: [1.02, 1.12, 0.56] }, { a: [0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }, { a: [-0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }] },
+  tucked: { v: 0.1, top: 0.06, quiff: 0.05, at: [[-180, -52], [-128, -50], [-108, -34], [-97, -2], [-86, -6], [-75, 4], [-60, 16], [-36, 30], [-10, 34], [20, 42], [46, 30], [62, 14], [75, 4], [86, -6], [97, -2], [108, -34], [128, -50], [180, -52]],      // to the shoulder, behind the ears (the teacher on the stage)
+    mass: [{ a: [0, -0.1, -0.36], drop: 0.6, r: [0.97, 0.98, 0.5] }] },
   bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.34, r: [0.97, 0.74, 0.62] }, { a: [0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }, { a: [-0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }] },
   scarf: { v: 0.07, top: 0.03, quiff: 0, cloth: true, ears: false, at: [[-180, -62], [-100, -62], [-72, -50], [-58, -12], [-46, 20], [-24, 34], [0, 38], [24, 34], [46, 20], [58, -12], [72, -50], [100, -62], [180, -62]],
     mass: [{ a: [0, -0.2, -0.3], drop: 0.72, r: [0.92, 0.98, 0.52] }, { a: [0, -0.88, 0.06], drop: 0.42, r: [0.84, 0.46, 0.78] }] },
   bald:  { v: 0.02, top: 0, quiff: 0, at: [[-180, -30], [-120, -24], [-97, 6], [-80, 10], [-60, 40], [0, 88], [60, 40], [80, 10], [97, 6], [120, -24], [180, -30]] }
 };
-const HAIR_OF = { you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "loose", longM: "loose",
+const HAIR_OF = { you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "tucked", longM: "loose",
   julie: "long", long: "long", xlong: "long", klong: "long", wavy: "wavy", curlyF: "wavy", bob: "bob", kbob: "bob", kmid: "bob", kpig: "bob", pig: "bob", bald: "bald" };
 /* the edge of the hair at an angle round the head: a smooth curve through the points (Catmull-Rom) */
 function lineAt(L, az){ const a = L.at, n = a.length; let i = 1; while (i < n - 1 && az > a[i][0]) i++;
@@ -1507,14 +1522,14 @@ function head(J, B, cam, c, out, zb){
       if (Math.abs(A) < 0.02) continue; if (A < 0) P.reverse(); d += poly(P); }
     return d; };
   const fl = L.flip || 1, sm = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
-  const hair = patches(cr0, crR, -180, 180, 44, 6, az => lineAt(L, az), () => 90, (u, t) => { const up = Math.max(0, u[1]), back = L.mass ? 0 : sm((0.25 - u[2]) / 0.5);
+  const hair = patches(cr0, crR, -180, 180, 44, 6, az => lineAt(L, az), () => 90, (u, t) => { const up = Math.max(0, u[1]), back = Math.max(L.mass ? 0 : sm((0.25 - u[2]) / 0.5), big ? sm((Math.abs(u[0]) - 0.5) / 0.3) : 0);      // (large: thin at its edge at the temples too, so that it meets the head there)
     return 1 + (L.v * (1 - back * (1 - sm(t * 2.6))) + L.top * up * up + L.quiff * Math.max(0, u[2]) * up * (1 + 0.5 * fl * u[0])); });
   /* a beard: the same, on the jaw, from under the nose down and back to the ears */
   const beard = c.beard ? patches(jw0, jwR, -112, 112, 24, 4, () => -90, az => { const t = Math.min(1, Math.abs(az) / 100); return -4 + 34 * t * t; }, () => 1.07) : "";
   /* hair that hangs: each mass hangs straight down from the head (it keeps to the upright when the head tilts), turned with the head */
   const hx = nrm([Bh.x[0], 0, Bh.x[2]]), hz = [-hx[2], 0, hx[0]], extra = [];
   (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
-    extra.push({ id: "hm" + i, z: q[2] + (m.a[2] < 0 ? -0.004 : 0.033), mat: "hm" + i, layers: [[ellPath(E, 0, 0, 0), hr.n[1]], [ellPath(E, -me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
+    extra.push({ id: "hm" + i, z: m.a[2] < 0 ? (vl[2] > 0.3 ? Math.min(q[2] - 0.004, cam.pt(J.chest)[2] - 0.006) : q[2] - 0.004) : q[2] + 0.033 /* hair down the back: behind the neck and the shoulders of a head that faces the viewer */, mat: "hm" + i, layers: [[ellPath(E, 0, 0, 0), hr.n[1]], [ellPath(E, -me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
   if (L.tail){ const t = L.tail, A = at(o, Bh, mul(t.a, hh)), Z = add(add(A, [0, -t.len * hh, 0]), mul(Bh.z, -0.22 * hh)), M = [(A[0] + Z[0]) / 2 - Bh.z[0] * 0.14 * hh, (A[1] + Z[1]) / 2, (A[2] + Z[2]) / 2 - Bh.z[2] * 0.14 * hh];
     const Es = [disc(cam.pt(A), t.r[0] * px), disc(cam.pt(M), t.r[0] * 0.92 * px), disc(cam.pt(Z), t.r[1] * px)]; Es.forEach(E => E.n = 14); const te = 0.05 * px, zq = cam.pt(M)[2];
     extra.push({ id: "tail", z: zq - 0.004, mat: "tail", layers: [[hullOf(Es, 0, 0, 0), hr.n[1]], [hullOf(Es, -te, LIGHT[0] * te, LIGHT[1] * te), hr.n[0]]] });
@@ -1531,11 +1546,15 @@ function head(J, B, cam, c, out, zb){
     const facing = dot(at([0, 0, 0], Bh, [Math.sin(a), 0, Math.cos(a)]), cam.view);
     return { id, tag: "g", clip: "skc", m: [U[0] * hh, U[1] * hh, -Vv[0] * hh, -Vv[1] * hh, q[0], q[1]].map(x => Math.round(x * 1000) / 1000), inner, hide: facing < (min == null ? 0.42 : min) }; };
   const iris = c.iris || "#4a3524", lid = "#2a1c15";
-  const eyeArt = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g>
-      <path d="M-.19 0Q0 -.177 .19 -.013" stroke="${lid}" stroke-width="${c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8"/>` + (c.fem ? `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>` : "")
+  /* (c.live: the teacher's eyes: the irises in a group that can look down, the upper lid in a group that comes down with them, and a shut lid for a blink) */
+  const LV = c.live ? ` style="transition:transform .25s ease-in-out"` : "";
+  const eyeArt0 = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><g class="pup"${LV}><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g></g>
+      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${c.live ? "#2e1f18" : lid}" stroke-width="${c.live ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.13 * sg} -.084Q${0.2 * sg} -.064 ${0.212 * sg} -.008" stroke="#2e1f18" stroke-width=".044" fill="none" stroke-linecap="round"/><path d="M${0.2 * sg} -.03q${0.04 * sg} -.008 ${0.052 * sg} -.034M${0.165 * sg} -.064q${0.03 * sg} -.014 ${0.034 * sg} -.04" stroke="${lid}" stroke-width=".017" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity="${c.live ? 0.4 : 0.8}"/>`
+      + (c.live ? `<g class="blk" visibility="hidden"><path d="M-.2 0Q0 -.19 .2 -.01Q0 .15 -.2 0Z" fill="${sk.n[0]}"/><path d="M-.18 .012Q0 .1 .18 .004" stroke="${lid}" stroke-width=".04" fill="none" stroke-linecap="round"/></g>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
-  const browArt = sg => big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
-  const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = big && c.speaks ? `<ellipse cy=".05" rx=".2" ry=".13" fill="#5a2326"/><path d="M-.2 .05A.2 .13 0 0 1 .2 .05" stroke="${c.lip}" stroke-width=".05" fill="none"/><path d="M-.2 .05A.2 .13 0 0 0 .2 .05" stroke="${c.lip}" stroke-width=".06" fill="none"/>` : big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
+  const eyeArt = sg => c.live ? `<g transform="scale(.9 .95)">${eyeArt0(sg)}</g>` : eyeArt0(sg);      // (the teacher's eyes a little narrower than the cards' faces: calm, not wide)
+  const browArt = sg => c.live ? `<path d="M${0.24 * sg} .055Q${0.08 * sg} -.13 ${-0.19 * sg} -.04Q${-0.225 * sg} -.015 ${-0.2 * sg} .008Q${0.07 * sg} -.065 ${0.24 * sg} .055Z" fill="${mixc(c.browC, "#1d1410", 0.25)}"/>` : big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
+  const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = c.mouthInner ? c.mouthInner(px) : big && c.speaks ? `<ellipse cy=".05" rx=".2" ry=".13" fill="#5a2326"/><path d="M-.2 .05A.2 .13 0 0 1 .2 .05" stroke="${c.lip}" stroke-width=".05" fill="none"/><path d="M-.2 .05A.2 .13 0 0 0 .2 .05" stroke="${c.lip}" stroke-width=".06" fill="none"/>` : big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
     : c.speaks ? `<ellipse cy=".04" rx=".15" ry=".12" fill="#5a2326"/><path d="M-.15 .04A.15 .12 0 0 1 .15 .04" stroke="${c.lipC}" stroke-width=".05" fill="none"/>`
     : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.06 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
   const noseArt = `<path d="M-.05 -.2Q-.09 .03 -.11 .15Q-.07 .2 -.01 .19" stroke="${sk.n[1]}" stroke-width=".034" fill="none" opacity=".75" stroke-linecap="round"/><ellipse cx="-.078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/><ellipse cx=".078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/>`;
@@ -1565,9 +1584,58 @@ function head(J, B, cam, c, out, zb){
   for (const p of parts) out.push(p);
 }
 
+/* ---------- a hand with fingers (drawn where a hand is large: the teacher's) ----------
+   The hand's own frame: hd (from the wrist along the fingers), pn (the way the palm faces), and across it toward the thumb. A palm; four
+   fingers of three bones each, bent toward the palm at the knuckle and at the two joints (the far joint bends two thirds as much as the
+   middle one, as it does in a real finger); a thumb of two parts that stands away from the palm's edge, comes over the palm and bends.
+   Lengths after the proportions of the hand's bones (the palm a little over half the hand; the middle finger longest, then ring, index,
+   little; each finger's bones about a half, three tenths and a fifth of it).
+   A shape is the bends [knuckle, middle joint] of index, middle, ring and little finger, sp: how far the fingers fan, th: the thumb
+   [how far from the palm's edge, how far over the palm, its own bend] (radians). relaxed: the hand at rest, each finger a little more
+   bent than the one before it; point: the index straight, the others shut, the thumb laid over them; flat: the open hand, fingers together;
+   palmup: the open hand offered, fingers a little apart, the thumb out; cup: the open hand hollowed (behind the ear) */
+const HANDS = {
+  relaxed: { f: [[0.24, 0.36], [0.32, 0.44], [0.4, 0.52], [0.48, 0.6]], sp: 0.01, th: [0.42, 0.3, 0.3] },
+  point:   { f: [[0.02, 0.04], [1.38, 1.62], [1.44, 1.68], [1.46, 1.66]], sp: 0, th: [0.18, 1.02, 0.8] },
+  flat:    { f: [[0.06, 0.05], [0.05, 0.05], [0.06, 0.05], [0.08, 0.07]], sp: 0.012, th: [0.34, 0.1, 0.12] },
+  palmup:  { f: [[0.16, 0.26], [0.2, 0.3], [0.25, 0.34], [0.3, 0.38]], sp: 0.06, th: [0.5, 0.18, 0.28] },
+  cup:     { f: [[0.34, 0.42], [0.38, 0.46], [0.42, 0.5], [0.48, 0.54]], sp: 0, th: [0.08, 0.3, 0.3] }
+};
+const handFlat = H => [H.f[0][0], H.f[0][1], H.f[1][0], H.f[1][1], H.f[2][0], H.f[2][1], H.f[3][0], H.f[3][1], H.sp, H.th[0], H.th[1], H.th[2]];
+function fingers(wr, hd, pn, left, hp, B, P, S, SK, id){
+  const HL = B.hand * (hp[12] || 1), PW = HL * (B.pwk || 0.235), th = left ? cross(pn, hd) : cross(hd, pn), parts = [], LX = LIGHT[0], LY = LIGHT[1];
+  const bend = (d, n, a) => { const c = Math.cos(a), s = Math.sin(a); return [add(mul(d, c), mul(n, s)), sub(mul(n, c), mul(d, s))]; };
+  const Q = (p, r) => { const q = P(p); return [q[0], q[1], r * S, q[2]]; };
+  const tube = pts => (g, dx, dy) => { let d = ""; for (let i = 0; i + 1 < pts.length; i++) d += capsule(pts[i][0] + dx, pts[i][1] + dy, Math.max(0.3, pts[i][2] + g), pts[i + 1][0] + dx, pts[i + 1][1] + dy, Math.max(0.3, pts[i + 1][2] + g)); return d; };
+  const lay = (fn, e) => [[fn(0, 0, 0), SK[1]], [fn(-e, LX * e, LY * e), SK[0]]];
+  const KN = [0.5, 0.52, 0.495, 0.445], OFF = [0.74, 0.25, -0.24, -0.71], LEN = [0.405, 0.45, 0.42, 0.33], RF = [0.265, 0.27, 0.255, 0.225], knuckles = [];
+  const zw = P(wr)[2], view = dot(pn, [0, 0, 1]);
+  for (let i = 0; i < 4; i++){
+    const a = (1.2 - i) * hp[8], d0 = nrm(add(mul(hd, Math.cos(a)), mul(th, Math.sin(a)))), n0 = nrm(sub(pn, mul(d0, dot(pn, d0)))), p0 = add(add(wr, mul(hd, KN[i] * HL)), mul(th, OFF[i] * PW)), L = LEN[i] * HL, r = RF[i] * PW;
+    const [d1, n1] = bend(d0, n0, hp[i * 2]), p1 = add(p0, mul(d1, L * 0.48)), [d2, n2] = bend(d1, n1, hp[i * 2 + 1]), p2 = add(p1, mul(d2, L * 0.29)), [d3] = bend(d2, n2, hp[i * 2 + 1] * 0.66), p3 = add(p2, mul(d3, L * 0.23));
+    const pts = [Q(p0, r), Q(p1, r * 0.97), Q(p2, r * 0.91), Q(p3, r * 0.82)]; knuckles.push(pts[0]);
+    parts.push({ id: id + "f" + i, z: (pts[1][3] + pts[2][3] + pts[3][3]) / 3 + 0.0004 * i, mat: id + "f" + i, layers: lay(tube(pts), Math.max(0.5, r * S * 0.3)) });
+  }
+  /* the thumb: from the heel of the hand on the thumb's side */
+  { const A = hp[9], O = hp[10], b0 = add(add(wr, mul(hd, 0.15 * HL)), mul(th, 0.78 * PW)), dA = nrm(add(mul(hd, Math.cos(A)), mul(th, Math.sin(A)))), d1 = nrm(add(mul(dA, Math.cos(O)), mul(pn, Math.sin(O))));
+    const nb = nrm(sub(add(add(mul(pn, 0.6), mul(hd, 0.45)), mul(th, -0.65)), mul(d1, dot(add(add(mul(pn, 0.6), mul(hd, 0.45)), mul(th, -0.65)), d1)))), [d2] = bend(d1, nb, hp[11]);
+    const p1 = add(b0, mul(d1, 0.27 * HL)), p2 = add(p1, mul(d2, 0.17 * HL)), pts = [Q(b0, 0.36 * PW), Q(p1, 0.3 * PW), Q(p2, 0.26 * PW)];
+    parts.push({ id: id + "t", z: (pts[0][3] + pts[1][3] * 2 + pts[2][3]) / 4 + (O > 0.6 ? 0.004 : 0), mat: id + "t", layers: lay(tube(pts), Math.max(0.5, 0.09 * PW * S)) }); }
+  /* the palm: from the wrist to the knuckles, the heel of the thumb and the heel of the hand */
+  const D = [Q(add(wr, mul(th, 0.5 * PW)), 0.5 * PW), Q(add(wr, mul(th, -0.52 * PW)), 0.46 * PW), Q(add(add(wr, mul(hd, 0.2 * HL)), mul(th, 0.62 * PW)), 0.52 * PW), Q(add(add(wr, mul(hd, 0.24 * HL)), mul(th, -0.66 * PW)), 0.42 * PW)].concat(knuckles.map(k => [k[0], k[1], k[2] * 1.06, k[3]]));
+  const Es = D.map(q => { const E = disc([q[0], q[1]], q[2]); E.n = 10; return E; }), palm = (g, dx, dy) => hullOf(Es, g, dx, dy), zp = P(add(wr, mul(hd, 0.28 * HL)))[2];
+  parts.push({ id: id + "p", z: zp, mat: id + "p", layers: lay(palm, Math.max(0.6, 0.1 * PW * S)) });
+  /* the palm's side, when it is the side seen: a lighter hollow and its two lines */
+  if (dot(pn, [0, Math.sin(7 * Math.PI / 180), Math.cos(7 * Math.PI / 180)]) > 0.35){ const c0 = P(add(add(wr, mul(hd, 0.27 * HL)), mul(th, -0.04 * PW))), U = sub(P(add(add(wr, mul(hd, 0.27 * HL)), mul(th, 0.6 * PW))), c0), V = sub(P(add(wr, mul(hd, 0.44 * HL))), P(add(wr, mul(hd, 0.1 * HL)))), r3 = v => Math.round(v * 1000) / 1000;
+    parts.push({ id: id + "h", z: zp + 0.0001, tag: "g", m: [U[0], U[1], V[0], V[1], c0[0], c0[1]].map(r3), inner: `<ellipse rx=".8" ry=".42" fill="${mixc(SK[0], "#ffffff", 0.22)}" opacity=".75"/><path d="M-.55 .1Q-.1 -.2 .62 -.02M-.35 .26Q.1 .02 .6 .2" stroke="${SK[1]}" stroke-width=".05" fill="none" stroke-linecap="round" opacity=".55"/>` }); }
+  const zs = parts.map(x => x.z), zmax = Math.max(...zs);
+  return { parts, z: zmax, cast: (g, dx, dy) => palm(g, dx, dy) };
+}
+
 /* ---------- the whole figure, one frame: the parts with their depth ---------- */
 function frame(k, B, cam, c, floor, o){
   const J = skeleton(k, B), parts = [], S = cam.scale, P = p => cam.pt([p[0], p[1] - floor, p[2]]), T = c.topM, G = c.legM, sk = c.skinM, SH = c.shoeM;
+  const part = o && o.part, doBody = part !== "arms", doArms = part !== "body";          // (the teacher is drawn as two groups: her body, and her arms in front of it)
   const zmid = (a, b) => (P(a)[2] + P(b)[2]) / 2, zt = P(J.chest)[2], lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   const RIM = Math.min(1.1, 0.0075 * S), lax = (Bx, r) => [cam.lin(mul(Bx.x, r[0])), cam.lin(mul(Bx.y, r[1])), cam.lin(mul(Bx.z, r[2]))];
   /* a form in its tones: fn(grow, dx, dy) gives its outline grown and moved. Near the viewer: a thin light rim on the lit edge, the shade
@@ -1581,24 +1649,25 @@ function frame(k, B, cam, c, floor, o){
     const pts = [[A, R[0]], [lerp(A, Jt, 0.36), R[1]], [c0, R[2] + (R[1] - R[2]) * Math.max(0, (0.64 - (1 - b1 - 0.36)) / 0.64) * 0], [bez(0.33), rc], [bez(0.67), rc], [c1, R[2]], [lerp(Jt, Z, Math.max(b2 + 0.05, 0.34)), R[3]], [Z, R[4]]];
     return pts.map(([p, r]) => { const q = P(p); return [q[0], q[1], r * S, q[2]]; }); };
   const sweep = (Q, lo, hi) => (g, dx, dy) => { let d = ""; for (let i = lo; i < hi; i++) d += capsule(Q[i][0] + dx, Q[i][1] + dy, Math.max(0.3, Q[i][2] + g), Q[i + 1][0] + dx, Q[i + 1][1] + dy, Math.max(0.3, Q[i + 1][2] + g)); return d; };
-  const cast = [];                                          // what stands in front of the trunk throws its shadow on it
+  const cast = []; let castD = "";                          // what stands in front of the trunk throws its shadow on it
   /* the trunk: one garment, from the cross-sections of the body: the hem round the hips, the waist, the chest, the yoke of the shoulders
      (two round shoulder caps and the foot of the neck) */
   const Ech = ellipse(P(at(J.chest, J.Bc, [0, 0.012, 0.004])), lax(J.Bc, B.chest)), Ehm = ellipse(P(at(J.root, J.Bp, [0, 0.012, 0])), lax(J.Bp, B.hem)), Ewa = ellipse(P(lerp(J.root, J.chest, 0.45)), lax(J.Bp, B.waist));
-  const EsL = disc(P(J.shL), B.rSh * S), EsR = disc(P(J.shR), B.rSh * S), Enb = disc(P(at(J.nb, J.Bc, [0, -0.012, 0])), B.rNeck * S * 1.3);
+  const EsL = disc(P(J.shL), B.rSh * S), EsR = disc(P(J.shR), B.rSh * S), Enb = disc(P(at(J.nb, J.Bc, [0, -0.012, 0])), B.rNeck * S * (B.nkY || 1.3)); if (B.nkV){ Enb.b = B.rNeck * S * B.nkV; Enb.c = [Enb.c[0], Enb.c[1] + B.nkDy * S]; }      // (the teacher: the foot of the neck wide and low, so that the line of the shoulders slopes gently from it)
   Ech.n = 36; Ehm.n = 30; Ewa.n = 26; EsL.n = EsR.n = 18; Enb.n = 12;
   const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
-  const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = trunkFn(0, 0, 0);
+  const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = doBody ? trunkFn(0, 0, 0) : "";
+  if (doBody){
   parts.push({ id: "trunk", z: zt, mat: "top", layers: form(trunkFn, T, 0.03 * S) });
   /* its ribbed hem: a band that follows the lower edge (the lower half of the ring, and the same line again a band's width higher) */
   const band = (E, w) => { const ct = Math.cos(E.th), st = Math.sin(E.th), lo = [], hi = []; for (let i = 0; i <= 14; i++){ const t = i / 14 * Math.PI, x = (E.a + 0.4) * Math.cos(t), y = (E.b + 0.4) * Math.sin(t), X = E.c[0] + x * ct - y * st, Y = E.c[1] + x * st + y * ct; lo.push([X, Y]); hi.push([X, Y - w]); }
     return poly(lo.concat(hi.reverse())); };
   parts.push({ id: "rib", z: zt + 0.0003, mat: "rib", layers: [[band(Ehm, 0.03 * S), T.rib]] });
   /* a name tag on the chest: it lies on the chest and turns with it (it is gone when the chest has turned away) */
-  if (c.tag){ const Bc = J.Bc, U = cam.lin(Bc.x), Vv = cam.lin(Bc.y), q = P(at(J.chest, Bc, [0, 0.02, B.chest[2] * 0.96])), w = Math.min(B.chest[0] * 1.5, 0.03 + 0.021 * c.tag.length), h = 0.052, fs = Math.min(0.04, w * 1.7 / c.tag.length), r3 = v => Math.round(v * 1000) / 1000;
+  if (c.tag){ const Bc = J.Bc, U = cam.lin(Bc.x), Vv = cam.lin(Bc.y), TA = c.tagAt || [0, 0.02], q = P(at(J.chest, Bc, [TA[0], TA[1], B.chest[2] * 0.96 * Math.sqrt(Math.max(0.2, 1 - (TA[0] / B.chest[0]) ** 2))])), w = c.tagBox ? c.tagBox[0] : Math.min(B.chest[0] * 1.5, 0.03 + 0.021 * c.tag.length), h = c.tagBox ? c.tagBox[1] : 0.052, fs = c.tagBox ? Math.min(h * 0.545, w * 1.25 / c.tag.length) : Math.min(h * 0.77, w * 1.7 / c.tag.length), r3 = v => Math.round(v * 1000) / 1000;
     parts.push({ id: "tag", z: zt + 0.0008, tag: "g", m: [U[0], U[1], -Vv[0], -Vv[1], q[0], q[1]].map(r3), hide: dot(Bc.z, cam.view) < 0.3,
-      inner: `<g class="nametag"><rect x="${r3(-w / 2)}" y="${-h / 2}" width="${r3(w)}" height="${h}" rx=".008" fill="#fffdf6" stroke="#b9ae98" stroke-width=".003"/><rect x="${r3(-w / 2)}" y="${-h / 2}" width="${r3(w)}" height=".012" rx=".006" fill="#d8483f"/><text x="0" y="${r3(h / 2 - 0.011)}" text-anchor="middle" font-size="${r3(fs)}" font-weight="700" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" fill="#2b2b30">${c.tag}</text></g>` }); }
+      inner: `<g class="nametag"${c.tagId ? ` id="${c.tagId}" transform="rotate(-3)"` : ""}><rect x="${r3(-w / 2)}" y="${-h / 2}" width="${r3(w)}" height="${h}" rx=".008" fill="#fffdf6" stroke="#b9ae98" stroke-width=".003"/><rect x="${r3(-w / 2)}" y="${-h / 2}" width="${r3(w)}" height="${r3(h * 0.23)}" rx=".006" fill="#d8483f"/><text x="0" y="${r3(h / 2 - h * 0.21)}" text-anchor="middle" font-size="${r3(fs)}" font-weight="700" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" fill="#2b2b30">${c.tag}</text></g>` }); }
   /* the shadow of the hem on the legs; the neck of the jumper round the foot of the neck (its back, the neck, then its front edge) */
   parts.push({ id: "hemS", z: zt - 0.001, mat: "hemS", layers: [[ellPath(Ehm, -0.004 * S, 0.006 * S, 0.02 * S), G.f[1]]] });
   const Ecl = ellipse(P(at(J.nb, J.Bc, [0, -0.01, 0.004])), lax(J.Bc, [B.rNeck * 1.5, 0.02, B.rNeck * 1.42])), nk = (a, b) => capsule(a[0], a[1], B.rNeck * S, b[0], b[1], B.rNeck * 0.97 * S);
@@ -1623,14 +1692,21 @@ function frame(k, B, cam, c, floor, o){
     const mid = mul(add(F.heel, F.toe), 0.5), hgt = Math.max(0, Math.min(F.heel[1], F.toe[1]) - floor - 0.035), g0 = cam.pt([mid[0], 0, mid[2]]), fd = nrm([F.sole[0], 0, F.sole[2]]);
     parts.push({ id: "sh" + s, z: -99, mat: "shadow" + s, layers: [[ellPath(ellipse(g0, [cam.lin(mul(fd, 0.15)), cam.lin([fd[2] * 0.085, 0, -fd[0] * 0.085]), [0, 0.03 * S]]), 0, 0, 0), c.shadow]], op: f2(Math.max(0, 1 - hgt / 0.24)) });
   }
+  }
   /* arms: the sleeve from the shoulder cap to the wrist in one outline, its cuff, the hand (a palm, the fingers together, a thumb) */
-  for (const s of ["L", "R"]){
+  if (doArms) for (const s of ["L", "R"]){
     const sh = J["sh" + s], el = J["el" + s], wr = J["wr" + s], hd = J["hd" + s], pn = J["pn" + s], Q = chain(sh, el, wr, [B.rSh, B.rUa, B.rEl, B.rFa, B.rWr * 1.08]), e = B.rWr * S * 0.34, mat = "arm" + s;
-    const zu = zmid(sh, el), zf = zmid(el, wr), farU = zu < zt - 0.012, far = zf < zt - 0.012;
+    const zu = zmid(sh, el), zf = zmid(el, wr), farU = !part && zu < zt - 0.012, far = !part && zf < zt - 0.012;
     if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 0, 7), T, e, far, true) });
     else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(sweep(Q, 0, 4), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
-    if (zu > zt) cast.push(sweep(Q, 0, 4)); if (zf > zt) cast.push(sweep(Q, 3, 7));
+    const kz = z => Math.max(1, Math.min(3.2, 1 + (z - zt - 0.03) / 0.035));          // a part held well out from the body throws its shadow further from itself
+    if (zu > zt) cast.push(sweep(Q, 0, 4)); if (zf > zt){ const k2 = kz(zf), sw = sweep(Q, 3, 7); cast.push((g, dx, dy) => sw(g, dx * k2, dy * k2)); }
     { const a0 = add(wr, mul(J["fd" + s], -0.026)), A = P(a0), Z = P(wr); parts.push({ id: "cf" + s, z: zf + 0.0005, mat: "cuff" + s, layers: [[capsule(A[0], A[1], B.rWr * 1.2 * S, Z[0], Z[1], B.rWr * 1.2 * S), far ? T.f[1] : T.rib]] }); }
+    if (o && o.hands){                                         // a hand with fingers (at the size of the teacher): see fingers()
+      const HP = fingers(wr, hd, pn, s === "L", o.hands[s], B, P, S, far ? sk.f : sk.n, "hn" + s);
+      for (const x of HP.parts) parts.push(x);
+      if (HP.z > zt){ const k2 = kz(HP.z); cast.push((g, dx, dy) => HP.cast(g, dx * k2, dy * k2)); }
+      continue; }
     const curl = c.curl == null ? 0.5 : c.curl, HL = B.hand, th = s === "L" ? cross(pn, hd) : cross(hd, pn), ca = Math.cos(curl * 1.9), sa = Math.sin(curl * 1.9), fdir = add(mul(hd, ca), mul(pn, sa)), fn = sub(mul(pn, ca), mul(hd, sa));
     const kn = add(wr, mul(hd, HL * 0.5)), pc = add(wr, mul(hd, HL * 0.27)), fc = add(kn, mul(fdir, HL * 0.21)), he = 0.006 * S;
     const Ep = ellipse(P(pc), [cam.lin(mul(hd, HL * 0.33)), cam.lin(mul(th, B.palm)), cam.lin(mul(pn, 0.023))]), Ef = ellipse(P(fc), [cam.lin(mul(fdir, HL * 0.3)), cam.lin(mul(th, B.palm * 0.94)), cam.lin(mul(fn, 0.02))]);
@@ -1642,13 +1718,14 @@ function frame(k, B, cam, c, floor, o){
       parts.push({ id: "fg" + s, z: hz + 0.0002, tag: "g", m: [U[0], U[1], V[0], V[1], q[0], q[1]].map(r3), inner: `<path d="M-.5 -.36H.86M-.62 0H.96M-.5 .36H.82" stroke="${SK[1]}" stroke-width=".05" fill="none" stroke-linecap="round" opacity=".8" vector-effect="non-scaling-stroke" style="stroke-width:${f1(Math.max(0.5, 0.006 * S))}px"/>` }); }
     if (hz > zt){ const D = disc(P(kn), B.palm * S); D.n = 12; cast.push((g, dx, dy) => hullOf([D], g, dx, dy)); }
   }
-  const headParts = []; head(J, B, Object.assign({}, cam, { pt: P }), c, headParts, 0.03);
+  const headParts = []; if (doBody) head(J, B, Object.assign({}, cam, { pt: P }), c, headParts, 0.03);
   for (const p of headParts) parts.push(p);
   const skull = headParts.find(p => p.id === "skull");
   /* the shadows that the arms, the hands and the head throw on the trunk: their own shapes, moved away from the light, kept inside the trunk */
-  { const dx = -LIGHT[0] * 0.028 * S, dy = -LIGHT[1] * 0.032 * S; let d = ""; for (const fn of cast) d += fn(0.003 * S, dx, dy);
-    if (skull && skull.z > zt) d += skull.cast(dx * 1.4, dy * 1.9);
-    parts.push({ id: "trunkC", z: zt + 0.0005, tag: "clip", clip: trunkD, d, fill: T.n[1] }); }
+  { const ck = B.castK || 1, dx = -LIGHT[0] * 0.028 * S * ck, dy = -LIGHT[1] * 0.032 * S * ck; let d = ""; for (const fn of cast) d += fn(0.003 * S, dx, dy);
+    if (part === "arms") castD = d;                                                 // (the teacher: the arms' shadow belongs to the body's group, under her name tag: handed back with the list)
+    else { if (skull && skull.z > zt) d += skull.cast(dx * 1.4, dy * 1.9);
+      parts.push({ id: "trunkC", z: zt + 0.0005, tag: "clip", clip: trunkD, d: part ? d + (o.cast || "") : d, fill: T.n[1] }); } }
   /* the far parts first; parts of one material that follow each other are drawn tone by tone (all their shade, then all their light), so
      that where two of them meet there is no seam */
   parts.sort((a, b) => a.z - b.z);
@@ -1658,6 +1735,7 @@ function frame(k, B, cam, c, floor, o){
     for (const p of run){ if (p.tag) list.push(p); else if (p.stroke) list.push({ id: p.id, d: p.stroke[0], stroke: p.stroke[1], sw: p.stroke[2] }); }
     for (let q = 0; q < n; q++) for (const p of run){ const L = p.layers; if (!L) continue; const t = L.length === n ? q : q - (n - L.length); if (t >= 0 && L[t][0]) list.push({ id: p.id + t, d: L[t][0], fill: L[t][1], op: p.op }); }
     i = j; }
+  if (part === "arms") list.cast = castD;
   return list;
 }
 const nodeHTML = (n, u) => n.tag === "clip" ? `<g data-p="${n.id}"><clipPath id="${u}${n.id}"><path d="${n.clip}"/></clipPath><path clip-path="url(#${u}${n.id})" d="${n.d}" fill="${n.fill}"/></g>`
@@ -1682,7 +1760,7 @@ function wearer(c, o, u){
   const W0 = { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.62), mixc(c.skin[1], c.skin[2], 0.3)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
     shoeM: { n: ["#4a4340", "#2c2623"], f: ["#3a3431", "#231e1c"], sole: "#e6dfd2", soleF: "#bdb6aa" }, style: c.style, ink: "#2a2422", browC: c.brow || c.hair[2], lip: c.lip || "#bf6660", lipC: mixc(c.lip || "#bf6660", "#7a3030", 0.3), iris: c.iris,
     curl: o.curl, smile: o.smile, speaks: o.speaks, shadow: `url(#${u}sh)`, defs: defs.join(""), fem: c.fem, kid: c.kid, beard: c.beard, bow: c.bow, tag: o.tag, face: c.face, freckles: c.freckles, old: c.old,
-    glasses: c.glassesOn ? (c.glasses || "#26262b") : null, headwear: c.headwear };
+    glasses: c.glassesOn ? (c.glasses || "#26262b") : null, headwear: c.headwear, live: o.live, mouthInner: o.mouthInner, tagAt: o.tagAt, tagBox: o.tagBox, tagId: o.tagId };
   if (c.headwear === "scarf"){ const sc = c.scarfCol || ["#8a9863", "#667545"]; W0.hairM = Object.assign(material(sc[0], sc[1]), { hi: sc[0], gh: sc[0] }); }
   return W0;
 }
@@ -1808,15 +1886,241 @@ function person(sp){ sp = Object.assign({}, AV_DEFAULT, typeof sp === "string" ?
   const pick = (a, i) => a[Math.min(a.length - 1, Math.max(0, i | 0))], fem = sp.body === "f", hc = pick(AV.hairc, sp.hairc), hair = HAIRW[hc] || HAIR[hc], top = COL[pick(AV.top, sp.top)], skinName = pick(AV.skin, sp.skin), deep = skinName === "brown" || skinName === "dark";
   return { kid: sp.age === "c", fem, old: sp.age === "o", girth: sp.girth, skin: SKIN[skinName], hair, style: pick(AV.hair, sp.hair), top, legs: pick(AV.legs, sp.legs), beard: !!sp.beard && !fem && sp.age !== "c", face: sp.face, iris: pick(AV.eyes, sp.eyes),
     brow: hc === "grey" || hc === "white" ? "#9a9a94" : hair[2], lip: fem ? (deep ? "#a8404e" : "#cf5266") : (deep ? "#8a4a44" : "#b8645f"), glassesOn: !!sp.glasses, freckles: !!sp.freckles, headwear: sp.head ? "scarf" : "", scarfCol: COL[pick(AV.top, sp.scarf)], bow: "#3fa9a3" }; }
+/* FIG.bust(c, o): the head and shoulders of a person (c: traits) in the 160 x 190 box, turned a little as the portraits are (o.yaw), the head
+   o.head units high about y = o.cy, a small smile (o.smile) */
+function bustOf(c, o){ o = o || {}; const B = bodyOf(c, o), k = (o.head || 78) / (2 * B.hh * B.H);
+  return act("stand", c, { still: true, legs: o.legs || c.legs, k, y: (o.cy || 90) + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: o.smile == null ? 0.5 : o.smile, yaw: o.yaw == null ? -12 : o.yaw, heads: o.heads }); }
 /* FIG.avatar(spec, o): o.view "portrait" (head and shoulders) | "standing" | "doing" (o.doing: an action; o.still: its frozen frame) */
 function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
   if (o.view === "portrait"){ const k = 78 / (2 * B.hh * B.H); return act("stand", c, { still: true, legs: c.legs, k, y: 90 + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: 0.5, yaw: o.yaw == null ? -12 : o.yaw }); }
   if (o.view === "doing" && CLIPS[o.doing]) return act(o.doing, c, { still: !!o.still, legs: c.legs, k: o.k || (o.doing === "jump" ? 0.88 : 1), ox: o.doing === "run" || o.doing === "walk" ? -2 : 0, yaw: o.yaw, phase: o.phase });
   return act("stand", c, { still: true, legs: c.legs, k: o.k || 1, smile: 0.5, yaw: o.yaw }); }
-return { figure, act, avatar, person, specString, specParse, AV, CLIPS, clipOf, STAT };
+/* ---------- the teacher: a half figure, seated, facing the learner, in the 400 x 700 space of the stage ----------
+   The same body and the same camera as every other figure, at a large size (five and a half heads, so that the head is the size it has
+   always had on the stage: its middle at 200, 348; the shoulders at 146, 448 and 254, 448; the mouth at 200, 385). Seated as a person sits
+   (CMU 75_18); the stage crops her at its bottom edge.
+   FIG.tutor(c, o) -> { node, rig }. node: <g id="tutor"> holding <g id="tutorBody"> (trunk, legs, neck, head) and, after it, <g id="arms">
+   (both arms and hands, and the shadows they throw on her), and the 2D hand shapes hs_point ... the page itself uses.
+   The page keeps everything that is teaching (what is said when, which arm does what on which cue and how fast, when she looks, when she
+   nods); the rig only draws what it is given:
+     rig.mouth.draw(v, smile)   one mouth shape: v = [open, width, protrusion, closed, teeth, fv, tongue] (the page's own), smile 0 .. 1.3
+     rig.arms.draw(pose)        both arms: pose = {L, R} of {x, y, shape, rot, scale, fs} (the page's own, L = the viewer's left): the wrist is
+                                put at x, y; the hand takes the shape (relaxed, point, flat, palmup, cup) and the turn
+     rig.arms.tip(side)         where the tip of that hand's index finger is now
+     rig.gaze(where)            "learner": the eyes look down at the model learner; anything else: at the real learner
+     rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
+     rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
+     rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
+const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0.8, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
+  legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
+function tutor(c, o){
+  o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
+  const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "woman", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
+  for (const r of ["rUa", "rEl", "rFa"]) B[r] *= TUT.arm;
+  const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
+  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
+  const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
+  const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
+  const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
+  for (const [i, sg] of [[57, 1], [69, -1]]){ const L = TUT.legs[sg > 0 ? 0 : 1]; setv(base, i, [L[0] * sg, L[1], L[2]]); setv(base, i + 3, [L[3] * sg, L[4], L[5]]); setv(base, i + 6, [L[6] * sg, L[7], L[8]]); }      // the thighs as on a chair of ordinary height (CMU 86_15), the knees together and the feet side by side, one a little forward (a composed sitter: see REFERENCES)
+  /* the neck's length is set so that the mouth is where the stage's close-up expects it: 63 above the line of the shoulders */
+  { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (TUT.shY - TUT.mouthY - a) / (b - a) * 0.06; }
+  const J0 = skeleton(base, B), floor = lowest(J0), ys0 = (J0.shL[1] + J0.shR[1]) / 2, zs0 = (J0.shL[2] + J0.shR[2]) / 2;
+  const ox = 200, oy = TUT.shY + ((ys0 - floor) * cp - zs0 * sp) * S, cam = camera(0, pitch, S, ox, oy);
+  const unproj = (X, Y, z) => [(X - ox) / S, floor + ((oy - Y) / S + z * sp) / cp, z];
+  /* ----- the chair she sits on (the stage's present chair, in the figures' finish): an upholstered back seen from the front behind her
+     shoulders, the seat's cushion under her, two front legs of dark wood; the same camera as her body; light from the upper left ----- */
+  function chairSVG(J){
+    if (o.chair === false) return "";
+    const stool = o.chair === "stool";                       // (the other option: a small upholstered seat under her and no back, as the round-one drawing the owner liked)
+    const Q = (x, y, z) => { const q = cam.pt([x, y - floor, z]); return [q[0], q[1]]; }, R = v => v.toFixed(1);
+    const ys = J.root[1] - 0.058, zf = J.root[2] + 0.165, zb = J.root[2] - 0.13, hw = 0.148, th = 0.052, ysh = (J.shL[1] + J.shR[1]) / 2;
+    const up = TUT.chairUp, zk = zb - 0.035;                         // the back: a padded panel standing behind her, its top `up` above her shoulders
+    const rr = (x0, y0, x1, y1, r) => `M${R(x0 + r)} ${R(y0)}H${R(x1 - r)}Q${R(x1)} ${R(y0)} ${R(x1)} ${R(y0 + r)}V${R(y1 - r)}Q${R(x1)} ${R(y1)} ${R(x1 - r)} ${R(y1)}H${R(x0 + r)}Q${R(x0)} ${R(y1)} ${R(x0)} ${R(y1 - r)}V${R(y0 + r)}Q${R(x0)} ${R(y0)} ${R(x0 + r)} ${R(y0)}Z`;
+    const UP = TUT.chairCol, M = material(UP[0], UP[1]), wood = ["#5f4838", "#46352a"];
+    const b0 = Q(-hw * 0.96, ysh + up, zk), b1 = Q(hw * 0.96, ys, zk), bw = b1[0] - b0[0], e = bw * 0.06;
+    if (stool){ const sw2 = 0.105, t0s = Q(-sw2, ys, zb + 0.05), t1s = Q(sw2, ys, zf - 0.02), f0s = Q(-sw2, ys, zf - 0.02), f1s = Q(sw2, ys - th * 0.8, zf - 0.02), rs = (f1s[1] - f0s[1]) * 0.45, SM = material("#6d5848", "#4e3e33");
+      const lg = sg => { const a = Q(sg * (sw2 - 0.02), ys - th * 0.8, zf - 0.04), b = Q(sg * (sw2 - 0.012), 0, zf - 0.04), w = (f1s[0] - f0s[0]) * 0.05; return `<path d="M${R(a[0] - w)} ${R(a[1])}L${R(b[0] - w * 0.8)} ${R(b[1])}H${R(b[0] + w * 0.8)}L${R(a[0] + w)} ${R(a[1])}Z" fill="${wood[1]}"/>`; };
+      return `<g class="chair">` + lg(-1) + lg(1) + `<path d="${rr(t0s[0], t0s[1], t1s[0], t1s[1] + rs, rs)}" fill="${SM.n[0]}"/><path d="${rr(f0s[0], f0s[1] - 1, f1s[0], f1s[1], rs)}" fill="${SM.n[1]}"/></g>`; }
+    const back = rr(b0[0], b0[1], b1[0], b1[1], bw * 0.16), backS = rr(b0[0] + e, b0[1] + e * 0.9, b1[0], b1[1], bw * 0.16), backL = rr(b0[0], b0[1], b1[0] - e, b1[1] - e * 0.9, bw * 0.16);
+    const t0 = Q(-hw, ys, zb), t1 = Q(hw, ys, zf), f0 = Q(-hw, ys, zf), f1 = Q(hw, ys - th, zf), rad = (f1[1] - f0[1]) * 0.45;
+    const seatTop = rr(t0[0], t0[1], t1[0], t1[1] + rad, rad), front = rr(f0[0], f0[1] - 1, f1[0], f1[1], rad), frontS = rr(f0[0] + e * 0.7, f0[1] + (f1[1] - f0[1]) * 0.45, f1[0], f1[1], rad);
+    const leg = sg => { const a = Q(sg * (hw - 0.03), ys - th, zf - 0.03), b = Q(sg * (hw - 0.032), 0.0, zf - 0.03), w = (f1[0] - f0[0]) * 0.055;
+      return `<path d="M${R(a[0] - w)} ${R(a[1])}L${R(b[0] - w * 0.8)} ${R(b[1])}H${R(b[0] + w * 0.8)}L${R(a[0] + w)} ${R(a[1])}Z" fill="${wood[0]}"/><path d="M${R(a[0] + w * 0.15)} ${R(a[1])}L${R(b[0] + w * 0.1)} ${R(b[1])}H${R(b[0] + w * 0.8)}L${R(a[0] + w)} ${R(a[1])}Z" fill="${wood[1]}"/>`; };
+    const hipS = Q(0, ys, J.root[2] + 0.06), hipW = (J.hipL ? Math.abs(Q(J.hipL[0], 0, 0)[0] - Q(J.hipR[0], 0, 0)[0]) : 80) * 0.9;
+    return `<g class="chair">` + leg(-1) + leg(1) +
+      `<path d="${back}" fill="${M.n[1]}"/><path d="${backL}" fill="${M.n[0]}"/><path d="${rr(b0[0] + e * 0.35, b0[1] + e * 0.3, b0[0] + bw * 0.5, b0[1] + e * 1.2, e * 0.4)}" fill="${M.n[2]}" opacity=".45"/>` +
+      `<path d="${rr(b0[0] + e * 1.6, b0[1] + e * 1.6, b1[0] - e * 1.6, b1[1] - e, bw * 0.12)}" fill="none" stroke="${M.n[1]}" stroke-width="${R(e * 0.22)}" opacity=".55"/>` +
+      `<path d="${seatTop}" fill="${M.n[0]}"/><path d="${front}" fill="${M.n[1]}"/><path d="${rr(f0[0], f0[1] - 1, f1[0] - e * 0.7, f1[1] - (f1[1] - f0[1]) * 0.5, rad)}" fill="${mixc(M.n[0], M.n[1], 0.45)}"/>` +
+      `<ellipse cx="${R(hipS[0] + 3)}" cy="${R(hipS[1] + 4)}" rx="${R(hipW * 0.75)}" ry="${R(Math.max(6, (t1[1] - t0[1]) * 0.55))}" fill="#1d2233" opacity=".16"/></g>`;
+  }
+  /* ----- the mouth: the page's own drawing of a mouth shape (lips, the dark of the open mouth, teeth, tongue, the line of the closed lips,
+     the dimples of a smile), laid on the head in the mouth's place and turned with it; units: the stage's, from the middle of the mouth ----- */
+  const f2s = n => n.toFixed(2), dimple = mixc(c.skin[1], c.skin[2], 0.55);
+  const mouthInner = px => `<g transform="scale(${(1 / px).toFixed(5)})"><path class="mLips" fill="#c4626a"/><path class="mIn" fill="#4a1c22"/><clipPath id="${u}mc"><path class="mClip"/></clipPath><g clip-path="url(#${u}mc)"><rect class="mTU" fill="#f7f3ec"/><rect class="mTL" fill="#ece6dc"/><ellipse class="mTg" ry="3" fill="#cf6b74"/></g>` +
+    `<path class="mLine" stroke="#8e3d45" stroke-width="1.3" fill="none" stroke-linecap="round"/><path class="mHi" stroke="#e39aa0" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".4"/><rect class="mTF" x="-7" y="-3" width="14" height="3" rx="1" fill="#f7f3ec" opacity="0"/><path class="mDim" stroke="${dimple}" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".6"/></g>`;
+  let M = null, lastV = [0.04, 0.5, 0, 1, 0, 0, 0], lastSmile = 0.8, mouthT = 0, smileLid = 0, lidHook = null;
+  function mouthDraw(v, smile){
+    if (smile == null) smile = lastSmile; lastSmile = smile;
+    if (!(v[3] > 0.5) && v[0] > 0.08 || Math.abs(v[0] - lastV[0]) > 0.004 || Math.abs(v[1] - lastV[1]) > 0.004) mouthT = now();          // she is speaking: no blink, no breath
+    lastV = v; if (!M) return;
+    const open = v[0], width = v[1], protr = v[2], closed = v[3], teeth = v[4], fv = v[5], tongue = v[6], cx = 0, cy = 0;
+    /* the broad smile (smile above 1, the page's smile(true) after a right answer, when she is not speaking): wider, the corners higher, the lips
+       parted on the upper teeth, the cheeks raising the lower lids: so that it reads at the stage's size against her resting smile */
+    const bs = (closed > 0.5 || open < 0.08) ? Math.max(0, Math.min(1, (smile - 1) / 0.3)) : 0;
+    const sm = smile * (1 - 0.8 * protr), Wd = 6 + 10 * width - 3 * protr + 2.4 * sm + TUT.smW * bs;
+    let H = closed > 0.5 ? 0.1 : Math.max(0.1, 0.6 + 8 * open); if (closed < 0.5 && protr > 0.3) H = Math.max(H, Wd * 0.75 * protr); if (bs) H = Math.max(H, TUT.smH * bs);
+    if (smileLid !== bs){ smileLid = bs; if (lidHook) lidHook(); }
+    const L = 2.3 + 1.8 * protr, lift = 2.6 * sm + TUT.smLift * bs, xl = cx - Wd - L * 0.75, xr = cx + Wd + L * 0.75, yc = cy - lift + 0.4, up = cy - H - L * 1.05, dn = cy + H + L * 1.4;
+    M.lips.setAttribute("d", `M${f2s(xl)} ${f2s(yc)} Q${f2s(cx - Wd * 0.55)} ${f2s(up - 0.8)} ${f2s(cx - 1.8)} ${f2s(up + 0.2)} Q${f2s(cx)} ${f2s(up + 1.1)} ${f2s(cx + 1.8)} ${f2s(up + 0.2)} Q${f2s(cx + Wd * 0.55)} ${f2s(up - 0.8)} ${f2s(xr)} ${f2s(yc)} Q${f2s(cx + Wd * 0.6)} ${f2s(dn + 0.8)} ${f2s(cx)} ${f2s(dn)} Q${f2s(cx - Wd * 0.6)} ${f2s(dn + 0.8)} ${f2s(xl)} ${f2s(yc)} Z`);
+    M.lips.setAttribute("fill", protr > 0.5 ? "#b5535c" : "#c4626a");
+    const hIn = fv > 0.5 ? 0.8 : H, yi = cy - lift * 0.7, inner = `M${f2s(cx - Wd)} ${f2s(yi)} Q${f2s(cx)} ${f2s(cy - hIn * 1.05 - lift * 0.25)} ${f2s(cx + Wd)} ${f2s(yi)} Q${f2s(cx)} ${f2s(cy + hIn * 1.05 + lift * 0.6)} ${f2s(cx - Wd)} ${f2s(yi)} Z`;
+    M.inn.setAttribute("d", inner); M.clip.setAttribute("d", inner); M.inn.setAttribute("opacity", H > 0.7 || fv > 0.5 ? 1 : 0);
+    M.line.setAttribute("d", `M${f2s(xl + 1.2)} ${f2s(yc + 0.2)} Q${f2s(cx)} ${f2s(cy + lift * 0.95 + 0.3)} ${f2s(xr - 1.2)} ${f2s(yc + 0.2)}`); M.line.setAttribute("opacity", H > 1.2 ? 0 : 1);
+    M.hi.setAttribute("d", `M${f2s(cx - Wd * 0.38)} ${f2s(dn - 1.3)} Q${f2s(cx)} ${f2s(dn - 0.6)} ${f2s(cx + Wd * 0.38)} ${f2s(dn - 1.3)}`);
+    M.dim.setAttribute("d", `M${f2s(xl - 1.6)} ${f2s(yc - 3.4)} q-2.2 3.2 0 6.6 M${f2s(xr + 1.6)} ${f2s(yc - 3.4)} q2.2 3.2 0 6.6`); M.dim.setAttribute("opacity", f2s(Math.max(0, sm - 0.95) * 1.2));
+    const th = teeth > 0.05 ? Math.min(H * 1.2, 2.2 + 1.4 * teeth) : bs ? H * 1.15 : 0;
+    M.tu.setAttribute("x", f2s(cx - Wd)); M.tu.setAttribute("width", f2s(2 * Wd)); M.tu.setAttribute("y", f2s(cy - H - lift * 0.3)); M.tu.setAttribute("height", f2s(th));
+    M.tl.setAttribute("x", f2s(cx - Wd)); M.tl.setAttribute("width", f2s(2 * Wd)); M.tl.setAttribute("y", f2s(cy + H - Math.min(1.6, H * 0.4))); M.tl.setAttribute("height", (open > 0.25 || teeth > 0.95) ? "1.60" : "0");
+    M.tg.setAttribute("cy", f2s(cy + H - 1.5 - 3.5 * tongue * open)); M.tg.setAttribute("rx", f2s(Wd * 0.7)); M.tg.setAttribute("opacity", (open > 0.15 ? 0.55 + 0.45 * tongue : 0).toFixed(2));
+    M.tf.setAttribute("opacity", fv > 0.5 ? 1 : 0);
+  }
+  const W = wearer(c, { legs: o.legs || ["#5a6272", "#3f4654"], tag: o.tag == null ? "Marie" : o.tag, tagAt: [TUT.tagX, TUT.tagY], tagBox: [50 / S, 23 / S], tagId: "claireTag", live: true, mouthInner, smile: 0.5 }, u);
+  /* ----- the body: the seated pose; the small sway of sitting still (x: 0 .. 1 along the captured two seconds; only the trunk's part of
+     it: the head stays level and the hands stay where they are); the head bent forward for a nod (a: radians) ----- */
+  const keyOf = (x, a) => { const k = Float32Array.from(base);
+    if (x){ const s = keyAt(SWAY, x), s0 = SWAY.keys[0]; for (let i = 0; i < 18; i++) k[i] += (s[i] - s0[i]); for (const i of [3, 6, 9, 12, 15]) setv(k, i, getv(k, i)); }
+    if (a){ const cs = Math.cos(a), sn = Math.sin(a), n = getv(k, 24), up = getv(k, 30); setv(k, 24, [n[0], n[1] * Math.cos(a / 3) - n[2] * Math.sin(-a / 3), n[1] * Math.sin(a / 3) + n[2] * Math.cos(a / 3)]); setv(k, 30, [up[0], up[1] * cs - up[2] * sn, up[1] * sn + up[2] * cs]); }
+    return k; };
+  /* ----- the arms: each wrist is put where the page asks, in three dimensions: its depth is that of the surface it is in front of (the
+     chest; the lap, low down; beside the head, high up), further forward the more the page foreshortens the forearm (fs); the elbow is found
+     from the two bones' lengths and bends down, out and a little back, as an elbow does ----- */
+  const REST = { L: { x: 150, y: 582, shape: "relaxed", rot: "auto", scale: 1, fs: 1 }, R: { x: 250, y: 582, shape: "relaxed", rot: "auto", scale: 1, fs: 1 } };
+  const sm01 = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+  function depth(X, Y, fs, J){
+    const xb = (X - ox) / S, yb = floor + (oy - Y) / S / cp, yr = J.root[1], yc = J.chest[1] + 0.012, ysh = (J.shL[1] + J.shR[1]) / 2;
+    const t = (yb - yr) / (yc - yr), tw = Math.max(0, Math.min(1, t)), a = t < 0.45 ? B.hem[0] + (B.waist[0] - B.hem[0]) * tw / 0.45 : B.waist[0] + (B.chest[0] - B.waist[0]) * (tw - 0.45) / 0.55, d = t < 0.45 ? B.hem[2] + (B.waist[2] - B.hem[2]) * tw / 0.45 : B.waist[2] + (B.chest[2] - B.waist[2]) * (tw - 0.45) / 0.55;
+    const zc = J.root[2] + (J.chest[2] - J.root[2]) * tw;
+    let z = zc + d * Math.sqrt(Math.max(0, 1 - (xb / a) * (xb / a))) + 0.016;                                 // on the trunk
+    z += (0.135 - z) * sm01((yr + 0.1 - yb) / 0.07);                                                          // on the lap
+    z += (J.head[2] - 0.03 - z) * sm01((yb - ysh - 0.015) / 0.06);                                            // beside the head
+    return z + (1 - (fs == null ? 1 : fs)) * TUT.fwd;
+  }
+  function reach(sh, X, Y, z){                                 // the place of the wrist: on the line of sight through X, Y, as near depth z as the arm's length allows
+    const W0 = unproj(X, Y, 0), r = [0, sp / cp, 1], mx = (B.ua + B.fa) * 0.985, v = sub(W0, sh), rr = dot(r, r), b = dot(v, r), cc = dot(v, v) - mx * mx, disc2 = b * b - rr * cc;
+    if (disc2 <= 0) z = -b / rr; else { const q = Math.sqrt(disc2), z1 = (-b - q) / rr, z2 = (-b + q) / rr; z = Math.max(z1, Math.min(z2, z)); }
+    return add(W0, mul(r, z)); }
+  function elbow(sh, wr, sg){
+    let d = sub(wr, sh), L = Math.hypot(d[0], d[1], d[2]); const a = B.ua, b = B.fa, mx = (a + b) * 0.999, mn = Math.abs(a - b) + 0.02;
+    if (L > mx){ d = mul(d, mx / L); L = mx; } if (L < mn){ d = mul(d, mn / (L || 1)); L = mn; }
+    const uu = mul(d, 1 / L), x = (a * a - b * b + L * L) / (2 * L), h = Math.sqrt(Math.max(0, a * a - x * x)), up = sm01((d[1] + 0.16) / 0.14);      // a hand in the lap: the elbow back, beside the body; a hand raised: the elbow out
+    let pole = [sg * (TUT.elOut + 0.4 * up), -0.62, -0.7 + 0.55 * up]; pole = nrm(sub(pole, mul(uu, dot(pole, uu))));
+    const el = add(add(sh, mul(uu, x)), mul(pole, h)), w2 = add(sh, d); return { ud: nrm(sub(el, sh)), fd: nrm(sub(w2, el)) }; }
+  /* the hand: which way it points and which way its palm faces, for each shape the page asks for */
+  const perp = (v, h) => nrm(sub(v, mul(h, dot(v, h)))), PNR = { L: getv(base, 42), R: getv(base, 54) };
+  function orient(p, fd, side, sg){
+    const sh = p.shape, r = p.rot; let hd, pn;
+    if (sh === "cup"){ hd = nrm([sg * 0.16, 1, 0.2]); pn = perp([-sg * 0.62, 0, 1], hd); }                    // behind the ear: fingers up, the palm forward and a little to the head
+    else if (sh === "palmup"){ const H = TUT.palmHd, N = TUT.palmPn; hd = nrm([H[0] * sg, H[1], H[2]]); pn = perp([N[0] * sg, N[1], N[2]], hd); }            // offered to the learner: fingers toward him and a little out, the palm up
+    else if (r === "auto" || r == null){ hd = fd; pn = sh === "relaxed" ? perp([-sg * 0.42, -0.62, -0.66], hd) : perp([sg * 0.2, -0.3, -1], hd); }      // at rest the palm lies on the thigh (down, and turned a little inward, as the capture's hands lie)
+    else { const a = r * Math.PI / 180; hd = nrm([-Math.sin(a), -Math.cos(a), sh === "point" ? -0.1 : -0.03]); pn = perp([0, 0, -1], hd); }      // on her chest: the hand lies on it, turned as the page says
+    return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([p.scale || 1]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
+  const ST = { L: {}, R: {} }, mixv = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t), TIP = {};
+  let pose = REST, blendUntil = 0, armsT = 0, lastArmsDraw = 0, armCast = "", castEl = null, headCast = "";
+  function armsList(k, t){
+    const J = skeleton(k, B), hands = {};
+    for (const ps of ["L", "R"]){ const side = ps === "L" ? "R" : "L", sg = side === "L" ? 1 : -1, off = side === "L" ? 33 : 45, p0 = pose[ps] || REST[ps], st = ST[ps], sh = J["sh" + side];
+      const p = p0.shape === "flat" && typeof p0.rot === "number" && p0.y < 500 && Math.abs(p0.rot + 118) < 20 ? Object.assign({}, p0, { x: p0.x + (ps === "L" ? 1 : -1) * TUT.chestDx, y: p0.y + TUT.chestDy, rot: TUT.chestRot })
+        : p0.shape === "point" && typeof p0.rot === "number" && Math.abs(Math.abs(p0.rot) - 90) < 15 && p0.y > 440 && p0.y < 500 && Math.abs(p0.x - 200) < 60 ? Object.assign({}, p0, { y: p0.y + TUT.selfDy }) : p0;      // her finger on her own name tag: on the tag where this body wears it      // the flat hand on her chest lies higher, on the breastbone, its fingers toward the far shoulder: above her name tag, which stays readable
+      const offer = p.shape === "palmup" && (p.fs == null ? 1 : p.fs) < 0.9, px = p.x + (offer ? (ps === "L" ? -1 : 1) * TUT.palmOut : 0);      // the open hand offered: a little out to the side as well as forward
+      const wr = reach(sh, px, p.y, depth(px, p.y, p.fs, J)), E = elbow(sh, wr, sg), O = orient(p, E.fd, side, sg), key = p.shape + "|" + (typeof p.rot === "number" ? "n" : p.rot);
+      if (st.key !== key){ const jump = st.x != null && Math.hypot(p.x - st.x, p.y - st.y) > 45; st.from = st.last && !jump && st.key ? st.last : null; st.t = t; st.key = key; }      // a new shape: the hand changes into it over 130 ms (at once if the arm was put there at once)
+      st.x = p.x; st.y = p.y;
+      let w = st.from ? (t - st.t) / 130 : 1; if (w >= 1){ w = 1; st.from = null; } else blendUntil = Math.max(blendUntil, st.t + 140);
+      const e = sm01(w), hd = st.from ? nrm(mixv(st.from.hd, O.hd, e)) : O.hd, pn = st.from ? perp(mixv(st.from.pn, O.pn, e), hd) : O.pn, hp = st.from ? mixv(st.from.hp, O.hp, e) : O.hp;
+      st.last = { hd, pn, hp };
+      setv(k, off, E.ud); setv(k, off + 3, E.fd); setv(k, off + 6, hd); setv(k, off + 9, pn); hands[side] = hp;
+      { const HL = B.hand, th = side === "L" ? cross(pn, hd) : cross(hd, pn), q = cam.pt((p => [p[0], p[1] - floor, p[2]])(add(add(wr, mul(hd, 0.956 * HL)), mul(th, 0.74 * B.pwk * HL)))); TIP[ps] = { x: q[0], y: q[1] }; } }
+    const list = frame(k, B, cam, W, floor, { part: "arms", hands }); armCast = list.cast || "";
+    for (const ps of ["L", "R"]){ const p = pose[ps] || REST[ps], st = ST[ps]; if (p.shape !== "cup") continue;      // the hand cupped behind the ear: the ear is in front of the palm
+      const side = ps === "L" ? "R" : "L", sg = side === "L" ? 1 : -1, hh = B.hh, e3 = at(J.head, J.Bh, [sg * 0.83 * hh, -0.1 * hh, -0.1 * hh]), q = cam.pt([e3[0], e3[1] - floor, e3[2]]);
+      const E = ellipse(q, [cam.lin(mul(J.Bh.x, 0.1 * hh)), cam.lin(mul(J.Bh.y, 0.2 * hh)), cam.lin(mul(J.Bh.z, 0.14 * hh))]), op = f2(st.from ? sm01((t - st.t) / 130) : 1);
+      E.a *= 1.12; E.b *= 1.12;
+      list.push({ id: "earO" + ps + "0", d: ellPath(E, 0, 0.02 * PX * sg, 0.012 * PX), fill: W.skinM.f[1], op }, { id: "earO" + ps + "1", d: ellPath(E, 0, 0, 0), fill: W.skinM.n[1], op }, { id: "earO" + ps + "2", d: ellPath(E, -0.045 * PX, -0.03 * PX * sg, 0), fill: W.skinM.n[0], op }); }
+    return list;
+  }
+  /* ----- the page ----- */
+  const g = document.createElementNS(NS, "g"); g.setAttribute("id", "tutor");
+  /* o.zoom (a proposal, not the default): the whole teacher drawn larger about (200, 340), so that the stage's lower edge crops her at the lap
+     (1.3: her legs fall below the edge at 390 x 844). The page's poses keep their numbers (they are scaled with her); tip() gives the place on
+     the stage. NOTE for the page if it is chosen: the mouth moves to y 398 (faceZoom's centre), and her resting hands come down to y 685-708,
+     into the mic tab's zone */
+  const ZM = o.zoom && o.zoom !== 1 ? o.zoom : 0, zpt = q => ZM ? { x: 200 + (q.x - 200) * ZM, y: 340 + (q.y - 340) * ZM } : q;
+  if (ZM) g.setAttribute("transform", `translate(200 340) scale(${ZM}) translate(-200 -340)`);
+  const P2 = p => [p[0] * S, -p[1] * S, p[2]], shapeDef = (name, hd, pn, dx) => { const R = fingers([0, 0, 0], nrm(hd), perp(pn, nrm(hd)), false, handFlat(HANDS[name]), B, P2, S, W.skinM.n, "x"); R.parts.sort((a, b) => a.z - b.z);
+    return `<g id="hs_${name}"><g transform="translate(${dx} 0)">` + R.parts.map(n => n.tag ? `<g transform="matrix(${n.m.join(" ")})">${n.inner}</g>` : n.layers.map(l => `<path d="${l[0]}" fill="${l[1]}"/>`).join("")).join("") + `</g></g>`; };
+  /* the hand shapes the page itself draws with (the learners' pointing hand, the small hands of a tap turn): the same hand, flat on the page,
+     the wrist at 0, 0, pointing down; the tip of the pointing finger where it has always been (8.5, 55.3) */
+  const defs = shapeDef("relaxed", [0, -1, 0], [0, 0, -1], 0) + shapeDef("point", [0, -1, 0], [0, 0, -1], f2(8.55 - 0.74 * B.pwk * B.hand * S)) + shapeDef("flat", [0, -1, 0], [0, 0, -1], 0) + shapeDef("palmup", [0, -0.58, 0.81], [0, 0.81, 0.58], 0) + shapeDef("cup", [0, 1, 0], [0, 0, 1], 0);
+  g.innerHTML = `<defs>${W.defs}${defs}</defs><g id="tutorBody">${chairSVG(J0)}</g><g id="arms"></g>`;
+  const hostB = g.children[1], hostA = g.children[2];
+  const syncer = host => { let order = null; const byId = {}, last = {}; return list => { const ord = list.map(n => n.id).join(" ");
+    if (ord !== order){ order = ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; } for (const id in byId) if (!seen[id]){ byId[id].remove(); delete byId[id]; } }
+    for (const n of list){ const sig = n.tag ? null : n.d + "|" + n.fill + "|" + n.op; if (sig !== null && last[n.id] === sig) continue; last[n.id] = sig; nodeSet(byId[n.id], n); } }; };      // (a part that has not changed is left alone: an arm at rest costs nothing while the other moves)
+  const syncB = syncer(hostB), syncA = syncer(hostA);
+  let swayX = 0, nodA = 0, kNow = keyOf(0, 0);
+  /* the jumper over her bust: a soft shade under each breast, laid on the chest and turned with it
+     (TUT.bust: how much; 0: none) */
+  const bustOf = k => { if (!TUT.bust) return []; const J = skeleton(k, B), Bc = J.Bc, T = W.topM, q = v => { const r = cam.pt([v[0], v[1] - floor, v[2]]); return [r[0], r[1]]; }, bz = TUT.bust, out = [];
+    const on = (x, y) => at(J.chest, Bc, [x, y, B.chest[2] * 1.0 * Math.sqrt(Math.max(0.05, 1 - (x / B.chest[0]) ** 2)) - 0.004]), R = v => v.toFixed(1);
+    let dS = "";
+    for (const sg of [1, -1]){ const cx = sg * TUT.bustX, y0 = TUT.bustY, w = 0.036, dep = 0.022 * bz;
+      const A = [], Bq = []; for (let i = 0; i <= 10; i++){ const t = i / 10, x = cx + sg * (-w + 2 * w * t) * 1, sa = Math.sin(Math.PI * t); A.push(q(on(x, y0 - dep * sa - 0.004 * t))); Bq.push(q(on(x, y0 - dep * 0.45 * sa - 0.004 * t + 0.002))); }
+      dS += "M" + A.map(p => R(p[0]) + " " + R(p[1])).join("L") + "L" + Bq.reverse().map(p => R(p[0]) + " " + R(p[1])).join("L") + "Z";
+    }
+    out.push({ id: "bustS", d: dS, fill: T.n[1], op: f2(0.55) });
+    return out; };
+  const bodyKept = {}, bodyList = (x, a) => { const id = x.toFixed(3) + "|" + a.toFixed(3); if (bodyKept[id]) return bodyKept[id];
+    const k = keyOf(x, a), L = frame(k, B, cam, W, floor, { part: "body" }), bs = bustOf(k); if (bs.length){ let i = -1; L.forEach((n, j) => { if (/^trunk\d/.test(n.id)) i = j; }); L.splice(i + 1, 0, ...bs); }
+    return (bodyKept[id] = L); };
+  let castWas = null; const castSet = () => { if (!castEl) castEl = hostB.querySelector('[data-p="trunkC"]'); const d = headCast + armCast; if (castEl && d !== castWas){ castWas = d; castEl.lastChild.setAttribute("d", d); } };
+  function drawBody(){ kNow = keyOf(swayX, 0); const L = bodyList(swayX, nodA); syncB(L); headCast = (L.find(n => n.id === "trunkC") || {}).d || ""; castSet(); }
+  function drawArms(){ const t = now(); lastArmsDraw = t; syncA(armsList(Float32Array.from(kNow), t)); castSet(); if (t < blendUntil) requestAnimationFrame(() => { if (now() - lastArmsDraw > 8) drawArms(); }); }
+  drawBody(); drawArms();
+  { const mg = hostB.querySelector('[data-p="mouth"]'), q = s => mg.querySelector(s); M = { lips: q(".mLips"), inn: q(".mIn"), clip: q(".mClip"), tu: q(".mTU"), tl: q(".mTL"), tg: q(".mTg"), line: q(".mLine"), hi: q(".mHi"), tf: q(".mTF"), dim: q(".mDim") }; mouthDraw(lastV, 0.8); }
+  const eyes = ["eyeL", "eyeR"].map(id => hostB.querySelector(`[data-p="${id}"]`)), pups = eyes.map(e => e.querySelector(".pup")), lids = eyes.map(e => e.querySelector(".lid")), blks = eyes.map(e => e.querySelector(".blk"));
+  /* the eyes: looking down at the model learner (the irises and the lids come down together, as the page's did: 2.3 and 2.4 of the stage's units in a quarter of a second) */
+  let down = false, shut = 0, held = false, nodding = false;
+  const lidSet = () => { const dy = (down ? 2.4 : 0) / PX + shut * 0.075 + TUT.lid + TUT.smLid * smileLid; lids.forEach(l => l.style.transform = `translate(0px,${dy.toFixed(4)}px)`); blks.forEach(b => b.setAttribute("visibility", shut >= 1 ? "visible" : "hidden")); };
+  lidHook = lidSet; lidSet();
+  function gaze(where){ down = where === "learner"; pups.forEach(p2 => p2.style.transform = down ? `translate(0px,${(2.3 / PX).toFixed(4)}px)` : "translate(0px,0px)"); lidSet(); }
+  /* a blink: the lids half down, shut, half down, open (about a seventh of a second) */
+  let blinking = false;
+  function blink(){ if (blinking) return; blinking = true; lids.forEach(l => l.style.transition = "none"); shut = 0.5; lidSet();
+    setTimeout(() => { shut = 1; lidSet(); }, 34); setTimeout(() => { shut = 0.5; lidSet(); }, 110); setTimeout(() => { shut = 0; lidSet(); lids.forEach(l => l.style.transition = "transform .25s ease-in-out"); blinking = false; }, 150); }
+  /* she is quiet when nothing is being said (the mouth has been at rest for a while), both hands are at rest and she is not nodding: only
+     then may she blink or breathe */
+  const atRest = () => ["L", "R"].every(s => { const p = pose[s] || REST[s]; return p.shape === "relaxed" && Math.abs(p.x - REST[s].x) < 0.5 && Math.abs(p.y - REST[s].y) < 0.5; });
+  const quiet = () => !held && !nodding && atRest() && now() - mouthT > 700 && now() - armsT > 700;
+  if (o.autoBlink !== false){ const again = () => setTimeout(() => { if (!g.isConnected && again.n++ > 40) return; if (g.isConnected && quiet() && !document.hidden) blink(); again(); }, 2600 + Math.random() * 3200); again.n = 0; again(); }
+  /* the nod: the head bends forward on the neck nine degrees (the chin comes down by 7 of the stage's units, as the page's nod did) and comes
+     back, twice; each way eased over 160 ms, the next beginning 170 ms after the last, as the page's did. Its frames are worked out once */
+  const NODS = [0, 0.25, 0.5, 0.75, 1].map(f => f * 9 * Math.PI / 180), easeIO = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const nodWarm = () => { for (const a of NODS) bodyList(swayX, a); };
+  function nod(){ nodding = true; const t0 = now(); nodWarm();
+    return new Promise(res => { (function f(){ const t = now() - t0, seg = Math.min(3, Math.floor(t / 170)), u2 = easeIO(Math.min(1, (t - seg * 170) / 160)), v = seg % 2 === 0 ? u2 : 1 - u2, a = NODS[Math.round(v * 4)];
+      if (a !== nodA){ nodA = a; drawBody(); }
+      if (t < 680) requestAnimationFrame(f); else { nodA = 0; drawBody(); nodding = false; res(); } })(); }); }
+  if (typeof requestIdleCallback === "function") requestIdleCallback(nodWarm, { timeout: 3000 }); else setTimeout(nodWarm, 1200);
+  const rig = { mouth: { draw: mouthDraw }, arms: { draw(p){ const P0 = pose; pose = { L: Object.assign({}, REST.L, p && p.L), R: Object.assign({}, REST.R, p && p.R) }; if (!atRest() || P0 !== REST) armsT = now(); drawArms(); }, tip: s => TIP[s] && zpt(TIP[s]) },
+    gaze, nod, blink, still(on){ held = !!on; }, _: { B, S, cam, quiet } };
+  return { node: g, rig };
+}
+return { figure, act, avatar, person, tutor, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
 })();
 /* the figure >>> */
 const ACT_SPEED = 2;
+const CLOSE_OF_YOU = { smile: 1, "not smiling": 1, eat: 1, drink: 1, sleep: 1, sing: 1, read: 1, write: 1 };
 function action(act, who, opts){
   opts = opts || {};
   const word = x => firstWord(String(x || "").trim());
@@ -1825,6 +2129,10 @@ function action(act, who, opts){
   const still = !!opts.still, spec = opts.spec && !opts.spec.person && opts.spec.is ? { is: opts.spec.is } : { person: who }, name = who === "you" ? "" : (opts.name || WHO_NAME[who]);
   if (opts.looks && opts.looks.length) spec.looks = opts.looks;
   if (opts.sex === "f" && spec.person === "you") spec.sex = "f";      // the learner as a woman (opts.sex "f"; "m", the default, is the man)
+  /* (the overhaul) the close-ups of "you" (smile, not smiling, eat, drink, sleep, sing, read, write) are still the older head, which cannot
+     show all of a learner's own figure (a headscarf, freckles, a build): until they are redrawn on the new head they show the default learner */
+  if (LEARNER && who === "you" && !opts._noLearner && CLOSE_OF_YOU[act]){ const keep = LEARNER; LEARNER = null;
+    try { return action(act, who, Object.assign({}, opts, { _noLearner: 1 })); } finally { LEARNER = keep; } }
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
   if (act === "not smiling"){ spec._smile = "neutral"; return bust(spec, name); }      // (.50) the face close up, as the smile is, the mouth level and closed: always still
   if (act === "eat" || act === "drink"){ spec.doing = act === "eat" ? "eating" : "drinking"; spec._act = still ? "still" : "anim"; return bust(spec, name); }
@@ -1837,7 +2145,7 @@ function action(act, who, opts){
      stands by the measuring post, and falling, working, calling, playing, listening, going out: those are still the older drawing. */
   const FIGCLIP = { run: "run", walk: "walk", jump: "jump", dance: "dance", talk: "talk", "stand up": "standup", "sit down": "sitdown", arrive: "walk", leave: "walk", stop: "stand" };
   if (FIGCLIP[act] && !opts.card && !opts.size && !opts.old && !opts.bare && !opts.shift && !(opts.looks && opts.looks.length)){
-    const c0 = traits(spec), L0 = c0.L, lg = L0.suit ? COL[c0.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
+    const cT = traits(spec), c0 = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT, L0 = c0.L, lg = cT.av ? cT.av.legs : L0.suit ? COL[c0.suit] : spec.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
     const ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[spec.person];       // the three identity colours (the design language, 9.1), as the middle tone of the jumper
     if (ID) c0.top = [tone(ID, 0.14), tone(ID, -0.2)];
     const P = { talk: { speaks: 1 }, arrive: { house: "right" }, leave: { house: "left" }, stop: { smile: 0.5, kmax: 1.12 } }[act];
@@ -2593,7 +2901,7 @@ function placePic(spec, draw){
   spec = spec || {};
   const D = draw || oneThing, rel = String(spec.rel || "on").toLowerCase().replace(/[^a-z]+/g, " ").trim(), G = spec.ground || {}, gk = String(G.is || "table").toLowerCase().trim(), ghost = !!spec.was;
   const T = bare(D(Object.assign({}, spec.thing, { count: 1 }))), put = (cx, yb, mw, mh) => fitted(T, cx, yb, mw, mh, ghost, 0.8);
-  const gl = lookOf({ looks: G.looks }), gc = gl.cn ? [gl.cn] : [], own = (kind, more, hook) => { const k = lookOf({ looks: gc.concat(more || []) }); Object.assign(k, hook); return THING[kind](k, {}); };
+  const gl = lookOf({ looks: G.looks }), gc = gl.cn ? [gl.cn] : [], own = (kind, more, hook) => { const k = lookOf({ looks: gc.concat(more || []) }); Object.assign(k, hook); const t = window.THINGS && THINGS.ground && THINGS.ground(kind, k); return t != null ? t : THING[kind](k, {}); };      // things.js: the new drawing of the ground (table, chair, box), when it has one
   const lay = (cx, cy, s, inner) => `<g transform="translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})">${inner}</g>`;
   if (gk === "table" && (rel === "on" || rel === "under"))
     return mk(rel === "on" ? lay(80, 172, 0.9, own("table")) + put(80, 97, 86, 80).s : lay(80, 172, 0.9, own("table", [], { under: put(80, 161, 66, 44).s })));
@@ -2601,6 +2909,7 @@ function placePic(spec, draw){
     return mk(rel === "on" ? own("chair") + put(82, 124, 64, 74).s : own("chair", [], { under: put(79, 178, 58, 37).s }));
   if (gk === "box" && rel === "in") return mk(lay(84, 170, 0.92, own("box", ["open"], { inside: put(82, 97 + Math.min(20, put(82, 0, 66, 76).h * 0.35), 66, 76).s })));
   if (gk === "box" && rel === "on") return mk(lay(84, 164, 0.8, own("box")) + put(84, 99, 76, 82).s);
+  if (gk === "bag" && rel === "in"){ const t = window.THINGS && THINGS.ground && THINGS.ground("bag", Object.assign(lookOf({ looks: gc }), { inside: put(80, 109 + Math.min(16, put(80, 0, 70, 96).h * 0.3), 70, 96).s })); if (t) return mk(t); }      // things.js: the new open bag (it draws its own shadow), when it is there
   if (gk === "bag" && rel === "in"){ const P = pal(TINT[gl.cn] || COL.blue), st = `stroke="${P.d}" stroke-width="1.8" stroke-linejoin="round"`;
     return mk(shad(80, 176, 50) + `<path d="M56 96 Q56 46 80 46 Q104 46 104 96" stroke="${P.d}" stroke-width="7.4" fill="none"/><path d="M56 96 Q56 46 80 46 Q104 46 104 96" stroke="${P.b}" stroke-width="4.4" fill="none"/>
       <ellipse cx="80" cy="98" rx="52" ry="15" fill="${P.d}" ${st}/>` + put(80, 109 + Math.min(16, put(80, 0, 70, 96).h * 0.3), 70, 96).s + `<path d="M28 98 Q80 126 132 98 L124 166 Q80 178 36 166Z" fill="${P.a}" ${st}/><path d="M38 110 L44 160" stroke="#fff" stroke-width="3.4" opacity=".3" stroke-linecap="round"/>
@@ -3340,6 +3649,7 @@ function oneThing(spec){
   const is = String(spec.is || "").toLowerCase().trim();
   if ((spec.looks || []).some(x => String(x).toLowerCase() === "in an open box"))      // (.48) what is found in an open box ('Oh ! Un téléphone !')
     return placePic({ thing: { is: spec.is, looks: (spec.looks || []).filter(x => String(x).toLowerCase() !== "in an open box") }, rel: "in", ground: { is: "box", looks: ["red"] } });
+  { const t = window.THINGS && THINGS.one && THINGS.one(spec); if (t) return t; }      // things.js: the new drawing of this thing, when it has one
   if (is === "key") return oneKey(spec);
   if (is === "dog") return oneDog(spec);
   if (is === "car") return /\bbig\b/i.test((spec.looks || []).join(" ")) ? sized(oneCar(spec), true) : oneCar(spec);
@@ -3371,6 +3681,30 @@ function together(act, opts){
   });
   return g;
 }
-window.PICS = { _fig: FIG, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
+/* the teacher on the stage (see FIG.tutor): Marie as the course knows her (her skin, her brown hair to the shoulder, her navy) */
+/* PICS.setLearner(spec): the learner's own figure (the spec of the avatar maker: an object, or the string PICS.avatarString gives; null:
+   the usual learner again). From then on every picture of "you" is that person. PICS.learner(): the spec now set, or null */
+function setLearner(spec){ LEARNER = spec ? (typeof spec === "string" ? FIG.specParse(spec) : Object.assign({}, spec)) : null; return LEARNER; }
+/* PICS.portrait(who, name): Pierre ("paul"), Sylvie ("julie") or Marie, head and shoulders in the 160 x 190 box, on the new figure, with
+   the name tag where the stage expects it (class nametag: x 80 - w/2, y 146, w 50 or 56 for Sylvie, h 24).
+   PICS.learnerCard(name, sex): the learner's own card: the learner's figure (the one made in the avatar maker when PICS.setLearner has been
+   given it, else the usual learner, a man or with sex "f" a woman) with the name on the tag; a long name goes on two lines, as the stage's
+   own card did (the tag's size is left on the picture as g.tagBox = {w, h}, and given to the stage's LEARNER_TAG when it is there) */
+const boxed = fig => { const u = "bx" + (seq++), g = mk(`<clipPath id="${u}"><rect width="160" height="190"/></clipPath><g clip-path="url(#${u})"></g>`); g.lastChild.appendChild(fig); return g; };      // a head and shoulders ends at the bottom edge of its picture
+const flatTag = (lines, w, h, tws, MAXT) => `<g class="nametag"><rect x="${r2(80 - w / 2)}" y="146" width="${r2(w)}" height="${h}" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/><rect x="${r2(80 - w / 2)}" y="146" width="${r2(w)}" height="5" rx="2" fill="#c8453b"/>` +
+  lines.map((t, i) => `<text x="80" y="${166 + i * 16}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522"${tws && tws[i] > MAXT ? ` textLength="${MAXT}" lengthAdjust="spacingAndGlyphs"` : ""}>${String(t).replace(/[<&"]/g, ch => ({ "<": "&lt;", "&": "&amp;", '"': "&quot;" }[ch]))}</text>`).join("") + `</g>`;
+function portraitPic(who, name){ who = who === "julie" || who === "marie" ? who : "paul"; const c = traits({ person: who }), ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[who];
+  c.top = [tone(ID, 0.14), tone(ID, -0.2)]; if (who === "marie") c.style = "tucked";
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
+function learnerCardPic(name, sex){ name = String(name || ""); const cT = traits({ person: "you", sex: sex === "f" ? "f" : "m" }), c = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT;
+  let cv = learnerCardPic.cv; const width = t => { try { cv = cv || (learnerCardPic.cv = document.createElement("canvas").getContext("2d")); cv.font = '700 14px "Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return cv.measureText(t).width; } catch (e){ return t.length * 8.4; } };
+  const MAXT = 136; let lines = [name];
+  if (width(name) > MAXT){ const cuts = [...name.matchAll(/[ -]/g)].map(m => m.index); if (cuts.length){ const q = cuts.reduce((a, b) => Math.abs(b - name.length / 2) < Math.abs(a - name.length / 2) ? b : a); lines = [name.slice(0, name[q] === "-" ? q + 1 : q), name.slice(q + 1)]; } }
+  const tws = lines.map(width), w = Math.max(50, Math.min(MAXT + 12, Math.max(...tws) + 14)), h = lines.length > 1 ? 40 : 24;
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
+  try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
+  return g; }
+function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
+window.PICS = { _fig: FIG, _thingsHook: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
   things: Object.keys(THING).filter(k => !/^(book|apple|pen|shoe|flag|card|boy|girl)$/.test(k)) };
 })();

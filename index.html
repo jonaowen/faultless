@@ -373,6 +373,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson6.js"></script>
 <script src="course/lesson7.js"></script>
 <script src="course/lesson8.js"></script>
+<script src="course/lesson9.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script>
@@ -380,7 +381,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.61";
+const APP_VERSION="2026-11-15.62";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -546,6 +547,8 @@ const VOCAB = {
   nage: {name:"nage", kind:"word", verb:true, tu:"nages", say:[], accept:["nage","nages","nagent"]},
   chante: {name:"chante", kind:"word", verb:true, tu:"chantes", say:[], accept:["chante","chantes","chantent"]},      // "Il chante." took the place of "Il nage." (11 Nov, afternoon)
   ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
+  joue: {name:"joue", kind:"word", verb:true, tu:"joues", say:[], accept:["joue","joues","jouent"]},      // (.62) jouer: "Joue." (Lesson 9)
+  tombe: {name:"tombe", kind:"word", verb:true, tu:"tombes", say:[], accept:["tombe","tombes","tombent"]},      // (.62) tomber: "Tombe." (Lesson 9)
   moi: {name:"moi", kind:"word", say:[], accept:["moi","mois"]},
   jusqua: {name:"jusqu'à", kind:"word", say:[], accept:["jusqu'à","jusqu'a","jusqua"]},
   comment: {name:"comment", kind:"word", say:[], accept:["comment"]},
@@ -792,7 +795,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:61.1, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:62, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -820,7 +823,8 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=58)) migrate58();      // (.58) a state saved before Lessons 4 and 5 were built anew at DISE's rate (the either/or first)
   if(!(s.courseRev>=59)) migrate59();      // (.59) a state saved before Lessons 4 and 5 were drawn again with the naming of action words, and Lesson 6 came
   if(!(s.courseRev>=60)) migrate60();      // (.60) a state saved before Lesson 7 came (Lessons 1-6 unchanged)
-  if(!(s.courseRev>=61.1)) migrate61(s.courseRev);      // (.61) a state saved before Lesson 8 came (Lessons 1-7 unchanged), or by the first working copy of .61
+  if(!(s.courseRev>=61.1)) migrate61(s.courseRev);
+  if(!(s.courseRev>=62)) migrate62();      // (.62) a state saved before il / elle was taught on several men and women (R-154) and Lesson 9 came      // (.61) a state saved before Lesson 8 came (Lessons 1-7 unchanged), or by the first working copy of .61
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -899,6 +903,32 @@ function migrate58(){
   if(here || had || old.length)
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
   S.courseRev=58;
+}
+/* (.62) il / elle is taught and asked on several men and several women with no name (R-154): in Lesson 4 the exercises E8, E9, E10 and E24
+   are made anew, and so are the returns and the sentence exercises of Lessons 5-8 listed in CHANGED_62; Lesson 9 is new; every other
+   exercise of Lessons 1-8 is the same. Only the records of the changed exercises are dropped (finished marks, errors, delayed tests),
+   with one log line: every place stands. A learner who is in the middle of a lesson does a changed exercise of it again when the lesson
+   comes to it (main runs every exercise not finished); a learner who had finished the lesson they are in keeps it finished, so that the
+   next start goes on into the next lesson (the end of Lesson 8: into Lesson 9). */
+const CHANGED_62 = ["L4E8","L4E9","L4E10","L4E24","L5E21","L6E10","L6E12","L6E13","L6E37","L7E10","L7E11","L7E16","L7E23","L8E28","L8E35","L8E39"];
+function migrate62(){
+  const ch = k => CHANGED_62.includes(String(k).replace(/[^A-Z0-9].*$/i, "").replace(/^(L\d+E\d+).*$/, "$1"));
+  const L=LESSONS[S.lesson], done = !!(L && L.exercises.every(e=>S.finished[e.id]));
+  const had = Object.keys(S.finished||{}).filter(k=>S.finished[k] && ch(k));
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>ch(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  const TEACH = ["L4E8","L4E9","L4E10"];
+  if(done) for(const e of L.exercises) if(!TEACH.includes(e.id)) S.finished[e.id]=true;      // the lesson the learner had finished stays finished (but the new teaching of il / elle)
+  /* (.62; the delta reader's N8, the coordinator's ruling) a learner saved after L4E7 did the OLD teaching of il / elle and would meet men and
+     women with no name first in tests with no model: such a learner is sent once to the new teaching, L4E8-E10, and then goes back to the
+     place they were at (main: S.detour). A learner in Lesson 4 itself needs no detour: E8-E10 are no longer finished, and the lesson runs
+     every exercise not finished from its first, so they come before the learner's place. */
+  let sent=false;
+  if(S.lesson>3){ S.detour={lesson:3, ids:TEACH.slice(), back:{lesson:S.lesson, ex:S.ex}}; S.lesson=3; S.ex=7; sent=true; }
+  if(had.length || old.length || sent)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": il / elle made anew on men and women with no name (R-154); records dropped of "+(had.length ? had.join(", ") : "no finished exercise")+(old.length?"; delayed tests dropped: "+old.length:"")+(sent?"; this learner does the new teaching (L4E8-E10) once, then goes back to Lesson "+(S.detour.back.lesson+1)+", exercise "+(S.detour.back.ex+1):""), heard:[]});
+  S.courseRev=62;
 }
 /* (.61) Lesson 8 is new; Lessons 1-7 are as .60 (their files are the same). A place anywhere in Lessons 1-7 stands, with its delayed
    tests; a learner who has finished Lesson 7 goes on into Lesson 8 at the next start. Only a record of Lesson 8 from a build no longer
@@ -2392,6 +2422,7 @@ function swimmer(e){
     <path d="M122 76 l6 -9 M131 80 l10 -5 M116 72 l1 -10" stroke="#8fd0f3" stroke-width="3" stroke-linecap="round"/>
     <rect x="8" y="16" width="144" height="158" rx="10" fill="none" stroke="#b8cfe0" stroke-width="2"/>`);
 }
+const placedThing = x => OWN_THING.includes(String(x.is)) ? onePicture(x) : x.is==="key" && window.PICS ? PICS.key(x) : x.is==="dog" && window.PICS && PICS.dog ? PICS.dog(x) : x.is==="car" && window.PICS && PICS.car ? PICS.car(x) : thingPicture(x);      // (.62) a thing on / under a table: drawn as it is anywhere else
 const OWN_THING=["book","apple","pen","shoe"];         // drawn in this file since Lesson 1 (objectPicture)
 /* (.25, the eighth round: faces as cards) the hand sign that goes with a face: thumb up (feeling good), the flat hand that rocks
    (so-so), thumb down (feeling bad). Drawn here, in the corner of the card, until the artist puts the hands into the faces. */
@@ -2426,14 +2457,20 @@ function genPicture0(e){
        beside a picture of the same man not smiling. Whole-body actions still move. */
     return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:ACT_NAME[e.doing]==="smile"});
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
+  /* (.57) sur / sous by ear (Lesson 5): the same thing on a table and under it (people.js PICS.place).
+     (.62; found by the things agent and the coordinator, 15 Nov: a car "on a table" was drawn as a car alone, sent to PICS.car before the
+     place was looked at, and a phone on / under a table as an EMPTY table, the place drawing the thing with onePicture, which knows only
+     the book, the apple, the pen and the shoe: in L6E6, the teaching of sur / sous, every picture was one or the other, and "Sur." / "Sous."
+     could not be seen in L6E38, L7E34, L8E36, L9E38 either.) The place is now looked at first, for every kind, and the thing on or under
+     the table is drawn as it is drawn anywhere else: this file's own picture for the book, apple, pen and shoe, the library's for the rest. */
+  { const REL = (e.looks||[]).includes("on a table") ? "on" : (e.looks||[]).includes("under a table") ? "under" : null;
+    if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="on a table" && x!=="under a table")});
+      return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:"table", looks:["wooden"]}}, x=>placedThing(Object.assign({}, rest, x, {count:1}))); } }
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
   if(e.is==="numeral") return numberCard("n"+e.value, (e.looks||[])[0]);      // (.58) a written number in the colour of its look: six pictures of each number ("C'est quel nombre ?")
   if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
-  { const REL = (e.looks||[]).includes("on a table") ? "on" : (e.looks||[]).includes("under a table") ? "under" : null;      // (.57) sur / sous by ear (Lesson 5): the same thing on a table and under it (people.js PICS.place)
-    if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="on a table" && x!=="under a table")});
-      return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:"table", looks:["wooden"]}}, x=>onePicture(Object.assign({}, rest, x, {count:1}))); } }
   if((e.looks||[]).includes("in an open box") && window.PICS && PICS.place){         // (.48) what is found in an open box ('Oh ! Un livre !')
     const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="in an open box")});
     if(!OWN_THING.includes(e.is)) return thingPicture(e);
@@ -2999,13 +3036,18 @@ function textUnit(unit, meta, lag){
    onset of the word said in its place. On the learner's turn nothing is outlined. An exercise without a board shows no print.
    ============================================================ */
 function boardShow(b){
-  const key=JSON.stringify(b)+"|"+(learnerTagName()||"");
+  const key=JSON.stringify(b)+"|"+(learnerTagName()||"")+"|"+boardRoomSig();      // (.62) laid out again when the room round it changes (side portraits, the row's height)
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
   let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
   /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
      overlapped the bottom of the cards and the learner's name tag in the action box */
-  const lh=fs*1.25, y0 = n===1 ? TXT_Y : 218 + fs*1.15;
+  /* (.62) a board of three or four lines (L8E15, L9E18) ran down behind Marie's head and over the side portraits of Pierre and Sylvie:
+     where it does not fit as before, it moves up under the pictures as they really are (a row of three or more cards ends well above 214)
+     and, only if it must, its letters get smaller, until it ends above Marie's head and, with the side portraits on the screen, it is
+     narrow enough to pass between them (boardFit). A board that fitted is placed exactly as before. */
+  let top0=218; if(n>1){ const f=boardFit(n, lines, fs); fs=f.fs; top0=f.top; }
+  const lh=fs*1.25, y0 = n===1 ? TXT_Y : top0 + fs*1.15;
   const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
   const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
   let at=0, svg="", boxes=[]; const widths=lines.map(l=>MEAS(l, fs)), W=Math.max(...widths), X0=200-W/2;
@@ -3023,6 +3065,26 @@ function boardShow(b){
   top=y0-fs*1.15, bot=y0+(n-1)*lh+fs*0.6;
   TXT.g.innerHTML=`<rect x="${x0.toFixed(1)}" y="${top.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="8" fill="#f2f6f1" stroke="#9fb3a3" stroke-width="1.6"/><g id="txtBoxes"></g><g id="txtLine">${svg}</g>`;
   TXT.cur="board"; BOARD.key=key; BOARD.b=b; BOARD.boxes=boxes; TXT.g.setAttribute("opacity",1);
+}
+/* (.62) where a board of several lines can stand (the coordinates of the pictures' layer, as TXT.g): below the pictures, above Marie's head
+   (BOARD_FLOOR: the top of her hair, measured on the screen at 291), and between the side portraits when they are shown (their top at 258,
+   their inner edges at 86 and 314: BOARD_SIDES) */
+const BOARD_FLOOR = 291, BOARD_SIDES = {top:254, x0:88, x1:312};
+const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||"")+":"+(HAND.at||""); };
+/* the bottom of an element in the board's own coordinates (the hand resting on a picture is drawn in another layer) */
+const bottomInBoard = el => { try{ const r=el.getBoundingClientRect(), m=TXT.g.getScreenCTM(); return r.height ? (r.bottom - m.f)/m.d : 0; }catch(e){ return 0; } };
+function boardFit(n, lines, fs0){
+  const H = f => f*(1.15 + 0.6 + (n-1)*1.25), W = f => Math.max(...lines.map(l=>MEAS(l, f))) + 48;
+  const sides = !!document.querySelector("#sideBadges > g");
+  const fits = (top, f) => top + H(f) <= BOARD_FLOOR && (!sides || top + H(f) <= BOARD_SIDES.top || W(f) <= BOARD_SIDES.x1 - BOARD_SIDES.x0);
+  let hand=0; { const hd=document.getElementById("theHand"); if(hd && hd.getAttribute("opacity")==="1" && HAND.at) hand=HAND.bottom||0; }      // a hand resting on a picture (where it will be, not where its move has got to)
+  if(fits(218, fs0) && hand+6<=218) return {fs:fs0, top:218};
+  let pics = 0;      // the bottom of what is shown above the board: the row of pictures, or the action box
+  for(const el of [frameRow, document.getElementById("actBox")]){ try{ const op = el && (el.style.opacity!=="" ? el.style.opacity : el.getAttribute("opacity")); if(el && el.childNodes.length && op!=="0" && String(op)!=="0"){ const b=el.getBBox(); if(b.height) pics=Math.max(pics, b.y+b.height); } }catch(e){} }
+  const top = hand ? Math.max(hand + 6, pics + 6) : Math.min(218, Math.max(pics ? pics + 6 : 218, 60));
+  let fs = fs0; while(fs > 12 && !fits(top, fs)) fs -= 0.5;
+  trace("board of "+n+" lines placed at "+Math.round(top)+", letters "+fs+(fits(top, fs) ? "" : " (FAULT LAYOUT: it still does not fit)"));
+  return {fs, top};
 }
 // the outline round board parts (a list of indices), or none
 function boardHi(list){
@@ -3128,13 +3190,17 @@ const HAND_LEN = 56*HAND_K, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
 const boundsOf = slot => slot==="self" ? SELF_BOUNDS : BOUNDS[slot==="strip" ? "strip" : sideOf(slot)] || BOUNDS[slot];
 const handName = by => by==="teacher"||by==="both" ? VOCAB.claire.name : by==="paul"||by==="julie" ? VOCAB[by].name : by==="you" ? "You" : "";
 const SLEEVE = {teacher:"#3d5a7a", both:"#3d5a7a", paul:"#3f6fb5", julie:"#c0453b", you:"#4f9a61"};
-function handTo(x, y, by){
+function handTo(x, y, by, k=1){
   const h=document.getElementById("theHand"), tag=document.getElementById("handTag"), name=handName(by);
+  /* (.62) k < 1: the hand resting on a picture made smaller, its name tag on its sleeve instead of below it, so that a board of several
+     lines fits under the row (L9E18: the hand and its tag had covered the board's first line) */
+  if(tag) tag.setAttribute("transform", k<1 ? "translate(0,-12)" : `translate(0,${(22.8*HAND_K-20).toFixed(1)})`);
   /* (.58; Jon, 15 Nov: "when Pierre or Sylvie touch things and their hands are shown, the colour of their sleeve should match what they
      normally wear") the sleeve of the hand is the colour of its owner's top: Marie slate, Pierre blue, Sylvie red, the learner green. */
   if(by!==undefined){ const sl=document.getElementById("handSleeve"); if(sl) sl.setAttribute("fill", SLEEVE[by] || SLEEVE.teacher); }
   if(by!==undefined) tag.innerHTML = name ? `<rect x="${-name.length*3.4-5}" y="15" width="${name.length*6.8+10}" height="15" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.2"/><text x="0" y="26.5" text-anchor="middle" font-size="11.5" font-weight="700" font-family="system-ui,sans-serif" fill="#2b2f36">${escX(name)}</text>` : "";
-  h.setAttribute("transform",`translate(${x.toFixed(1)},${(y+HAND_LEN).toFixed(1)})`); h.setAttribute("opacity",1);
+  h.setAttribute("transform",`translate(${x.toFixed(1)},${(y+HAND_LEN*k).toFixed(1)})`+(k<1 ? ` scale(${k})` : "")); h.setAttribute("opacity",1);
+  HAND.bottom = y + k*(HAND_LEN + 22.8*HAND_K + (k<1 ? -3 : 10));      // (.62) where the hand ends when it has arrived (its move takes 0.2 s: the screen is not asked)
 }
 function handHide(){ const h=document.getElementById("theHand"); if(h) h.setAttribute("opacity",0); document.getElementById("tapRing").setAttribute("opacity",0); HAND.at=null; }
 const HAND = {at:null};
@@ -3147,7 +3213,10 @@ const tipOf = slot => { const b=boundsOf(slot); return slot==="self" ? {x:200, y
 function ringSlot(slot, on){ const g=document.getElementById("tapRing"), b=on && boundsOf(slot); if(!b){ g.setAttribute("opacity",0); return; }
   const m=6; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",(b.r||10)+m); g.setAttribute("opacity",1); }
 // a hand resting on a picture (scene.touching), or a tap being shown: the labelled hand with its finger on the picture
-function handAt(by, slot){ const p=tipOf(slot); if(!boundsOf(slot)) return; handTo(p.x, p.y, by); HAND.at=slot; }
+function handAt(by, slot){ const p=tipOf(slot); if(!boundsOf(slot)) return;
+  const board = TXT.cur==="board" && BOARD.b && /\n/.test(String(BOARD.b.text||""));      // (.62) a board of several lines is up: the smaller hand, and the board laid out again under it
+  handTo(p.x, p.y, by, board ? 0.78 : 1); HAND.at=slot;
+  if(board){ BOARD.key=null; boardShow(BOARD.b); } }
 async function handTap(by, slot){ const p=tipOf(slot), b=boundsOf(slot); if(!b){ trace("FAULT TAP: no picture at "+slot); return; }
   handTo(p.x+26, p.y+46, by); await sleep(260); handTo(p.x, p.y, by); await sleep(210); pulse(p.x, p.y); ringSlot(slot, true); HAND.at=slot;
   trace("tap shown: "+(handName(by)||"the hand")+" on "+slot); await sleep(650); ringSlot(slot, false); }
@@ -3236,10 +3305,13 @@ const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; con
   return n; };
 const slotsShown = t => { const row=(t.scene && t.scene.row)||[], out=row.map((x,i)=>"s"+i+": "+slotName(t.scene, "s"+i)); if((t.targets||[]).includes("self")) out.push("self: "+VOCAB.claire.name); return out; };
 // the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
+/* (.62; R-154, L4E10: either man is right for "Il.", either woman for "Elle.") slot may be a list: her hand taps each right picture in turn,
+   so that a correction does not show one of two right answers as if it were the only one */
 async function tapModel(t, by, slot){
+  const slots=[].concat(slot);
   await setPortraits(t.scene); gestureEar();
-  if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); await handTap(by, slot); }
-  else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); await handTap(by, slot); })()]);
+  if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); for(const s1 of slots) await handTap(by, s1); }
+  else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); for(const s1 of slots) await handTap(by, s1); })()]);
   const done = actx ? actx.currentTime : 0;      // (.45) the end of the model, for the pause after it in a correction (corrModel)
   await sleep(250); handHide(); rest();
   return done;
@@ -3968,7 +4040,7 @@ async function ownNameCorrection(task, o={}){
    the next (clipGap). Her hand is at her ear from "Non, écoute." to the end of the model; the open palm comes with "Vas-y.". */
 async function corrModel(task){
   if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : "", framed:true}); return; }
-  if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct[0]); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
+  if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
   /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
      the border on the single card and then on the card asked about (course field correction). */
   if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart;
@@ -4219,6 +4291,15 @@ async function runDelayed(d, anchor){
 }
 
 async function main(){
+  /* (.62) a detour (migrate62): the exercises it names are done first, from the lesson it names; then the learner goes back to the place
+     they were at. It is kept in the saved state until it is over, so that a lesson stopped half way through it comes back to it. */
+  if(S.detour){ const d=S.detour, DL=LESSONS[d.lesson];
+    trace("detour: "+d.ids.join(", ")+", then back to Lesson "+(d.back.lesson+1)+", exercise "+(d.back.ex+1));
+    for(const id of d.ids){ const ei=DL ? DL.exercises.findIndex(e=>e.id===id) : -1; if(ei>=0 && !S.finished[id]) await runExercise(d.lesson, ei); }
+    S.detour=null; S.lesson=Math.min(d.back.lesson, LESSONS.length-1); S.ex=d.back.ex;
+    const B=LESSONS[S.lesson];
+    if(B.exercises.every(e=>S.finished[e.id]) && S.lesson+1<LESSONS.length){ S.lesson++; S.ex=0; LESSONS[S.lesson].exercises.forEach(e=>delete S.finished[e.id]); }      // they had finished that lesson: on to the next
+    logEntry({result:"DETOUR OVER: back to Lesson "+(S.lesson+1)+", exercise "+(S.ex+1), heard:[]}); save(); lessonTag(); }
   const lesson=LESSONS[S.lesson];
   // start of a lesson: delayed tests due at the start of this lesson
   if(S.ex===0 && !S.finished[lesson.exercises[0].id]){

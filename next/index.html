@@ -7,8 +7,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#F7F2E8">
 <link rel="preload" href="fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="icon" href="../icon-192.png">
-<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+<link rel="stylesheet" href="brand/splash.css">
 <style>
 /* ============================================================
    next/: the design language (dev/design/DESIGN_LANGUAGE.md). Tokens first; then the lesson player; then the shell.
@@ -52,7 +54,7 @@
   --ease-out:cubic-bezier(.22,1,.36,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
   /* the turn frame's three thicknesses, and the room the chrome takes */
-  --f-listen:8px; --f-speak:14px; --f-tap:22px; --top-h:84px; --bot-h:66px;
+  --f-listen:8px; --f-speak:14px; --f-tap:11px; --listen-edge:#A93626; --top-h:84px; --bot-h:66px;
   --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
   /* the old names, still used by the script and the tester panel */
   --bg:var(--paper); --muted:var(--ink-3); --frame:var(--card); --frame-line:var(--line); --go:var(--speak); --stop:var(--listen); --panel:var(--card);
@@ -70,18 +72,21 @@ button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
 
 /* ---------------- the turn frame: one object, three states (signal() sets the classes exactly as before) ----------------
    Three still layers that cross-fade (opacity only: nothing is laid out or repainted when the turn changes).
-   listen: thin, matt.  speak (.on): thick, lit from within, and a tab with the microphone.  tap (.tap): a band of tapping hands. */
+   listen: thin, matt, the paper set into it like a page in a frame.  speak (.on): thick, lit from within, and a tab with the microphone.
+   tap (.tap): a plain blue outline, a little wider than listen, and a tab with the tapping finger (the owner, 15 Nov: no band of hands).
+   Each colour sits on a band of the same hue a shade deeper at the screen's own edge, so the frame reads as an object, not a line. */
 #signal{position:fixed;inset:0;pointer-events:none;z-index:20}
 #signal i{position:absolute;display:block;opacity:0;transition:opacity .12s linear;will-change:opacity}
-#signal .fl{inset:var(--f-listen);border-radius:26px;box-shadow:0 0 0 90px var(--listen), inset 0 0 0 1.5px rgba(var(--shade),.12);opacity:1}
-#signal .fs{inset:var(--f-speak);border-radius:28px;box-shadow:0 0 0 90px var(--speak), inset 0 0 0 1.5px rgba(var(--shade),.14)}
+#signal .fl{inset:var(--f-listen);border-radius:26px;box-shadow:0 0 0 90px var(--listen), 0 0 0 2px var(--listen-edge), inset 0 0 0 1px rgba(255,255,255,.55), inset 0 3px 9px -2px rgba(var(--shade),.20);opacity:1}
+#signal .fs{inset:var(--f-speak);border-radius:28px;box-shadow:0 0 0 90px var(--speak), inset 0 0 0 1px rgba(255,255,255,.6), inset 0 3px 10px -2px rgba(var(--shade),.18)}
 #signal .fg{inset:var(--f-speak);border-radius:28px;box-shadow:inset 0 0 26px 2px var(--speak-glow)}
+#signal .ft{inset:var(--f-tap);border-radius:27px;box-shadow:0 0 0 90px var(--tap), inset 0 0 0 1px rgba(255,255,255,.6), inset 0 3px 10px -2px rgba(var(--shade),.18)}
+#signal.tap .ft{opacity:1}
 #signal.on .fl,#signal.tap .fl{opacity:0}
 #signal.on .fs{opacity:1}
 #signal.on .fg{opacity:1;animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
-#tapBorder{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20;display:none}
-#tapBorder.on{display:block}
+#tapBorder{display:none!important}
 /* the tab at the bottom edge: where the phone's own microphone is. It holds the microphone and bars that move with the voice, or the tapping hand. */
 #turnTab{position:fixed;left:50%;bottom:0;z-index:21;pointer-events:none;transform:translateX(-50%)}
 #turnTab > div{position:absolute;left:50%;bottom:0;display:flex;align-items:center;gap:10px;height:calc(58px + var(--sab));padding:0 22px calc(6px + var(--sab)) 18px;border-radius:26px 26px 0 0;color:#fff;
@@ -139,7 +144,7 @@ svg#scene{display:block;overflow:visible;flex:none;
 svg#scene text{font-family:var(--font-ui)}
 svg#scene text.numeral{font-family:var(--font-display);font-variation-settings:"SOFT" 60}
 @media (max-height:520px){ :root{ --top-h:20px; --bot-h:20px } #chrome{right:auto;width:150px} #turnTab{left:82%} }
-@media (min-width:700px) and (min-height:700px){ :root{ --top-h:104px; --bot-h:80px; --f-listen:10px; --f-speak:18px; --f-tap:28px }
+@media (min-width:700px) and (min-height:700px){ :root{ --top-h:104px; --bot-h:80px; --f-listen:10px; --f-speak:18px; --f-tap:14px }
   #chrome{left:calc(44px + var(--sal));right:calc(52px + var(--sar));top:calc(40px + var(--sat))} #leave{width:56px;height:56px} #leave .icon{width:32px;height:32px} #bar{height:16px;border-radius:8px} }
 .fade{transition:opacity .25s}
 .limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
@@ -241,8 +246,10 @@ html[data-tester="on"] body.inLesson #save{top:auto;bottom:calc(30px + var(--sab
 html[data-motion="less"] #signal .fg{animation:none!important;opacity:1} html[data-motion="less"] #micBars.idle b{animation:none!important;transform:scaleY(.45)}
 html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-motion="less"] .btn, html[data-motion="less"] #turnTab > div{transition-duration:1ms!important}
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
+<script src="brand/splash.js"></script>
 <div id="stage">
 <svg id="scene" viewBox="0 0 400 700" aria-hidden="true">
   <!-- demo scene: a person, seen from behind, using the app on a phone (first appearance of a new item) -->
@@ -440,7 +447,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
   </g>
 </svg>
 </div>
-<div id="signal"><i class="fl"></i><i class="fs"></i><i class="fg"></i></div>
+<div id="signal"><i class="fl"></i><i class="fs"></i><i class="fg"></i><i class="ft"></i></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-play" viewBox="0 0 28 28"><path d="M10 6.2v15.6a1 1 0 0 0 1.5.86l13-7.8a1 1 0 0 0 0-1.72l-13-7.8A1 1 0 0 0 10 6.2z" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-close" viewBox="0 0 28 28"><path d="M8 8l12 12M20 8L8 20"/></symbol>
@@ -451,8 +458,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <symbol id="i-tap" viewBox="0 0 28 28"><path d="M11 14.5V6.3a2.1 2.1 0 0 1 4.2 0v6.2l5 1.2a2.6 2.6 0 0 1 2 2.9l-.7 5.1a3.2 3.2 0 0 1-3.2 2.8h-4.4a4 4 0 0 1-3.2-1.6L6.6 17.4a1.9 1.9 0 0 1 2.9-2.4z" fill="#fff" stroke="none"/></symbol>
 </defs></svg>
 <div id="turnTab" aria-hidden="true"><div class="mic"><svg class="icon"><use href="#i-mic"/></svg><div id="micBars" class="idle"><b></b><b></b><b></b><b></b><b></b><b></b></div></div><div class="hand"><svg class="icon"><use href="#i-tap"/></svg></div></div>
-<div id="chrome" lang="en"><button id="leave" aria-label="Leave the lesson"><svg class="icon"><use href="#i-close"/></svg></button><div id="bar" role="progressbar" aria-label="How far through the lesson" aria-valuemin="0" aria-valuemax="100"><div id="barClip"><div id="barFill"></div></div><div id="bead"></div></div></div>
-<div id="leaveSheet" hidden lang="en"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="leaveH"><h2 id="leaveH">Leave the lesson?</h2><p>Next time you will start this exercise again from its beginning.</p><button class="btn" id="leaveStay">Stay in the lesson</button><button class="btn quiet" id="leaveGo">Leave</button></div></div>
+<div id="chrome" lang="en"><button id="leave" aria-label="Leave the lesson"><svg class="icon"><use href="#i-close"/></svg><span class="lv">Leave</span></button><div id="bar" role="progressbar" aria-label="How far through the lesson" aria-valuemin="0" aria-valuemax="100"><div id="barClip"><div id="barFill"></div></div><div id="bead"></div></div></div>
+
 <div id="caption" hidden></div>
 <div id="manual" hidden>
   <input id="manualText" placeholder="typed answer" autocomplete="off">
@@ -525,12 +532,13 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="../course/lesson7.js"></script>
 <script src="../listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
+<script src="things.js"></script>
 <script>
 "use strict";
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.60-next.1";   // next/: the preview has its own version line (next/version.json); the part before "-next" is the live version it was copied from
+const APP_VERSION="2026-11-15.60-next.2";   // next/: the preview has its own version line (next/version.json); the part before "-next" is the live version it was copied from
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -926,6 +934,16 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    are carried over at every switch. Recordings are in IndexedDB under ids that begin with the user's id, and a run file has
    only the recordings of its own session (a switch reloads the page, which starts a new session), so one user's recordings
    never get into another's run file. */
+/* (next) At its first start on a phone the preview takes a copy of the live app's learners (frDI.users and each frDI.u.<id>, or the single
+   state frDI.v1 of before .23) into its own keys, so that a family keeps its places and names. It only READS the live app's keys: it never
+   writes, changes or removes them. Done once (frDIn.migrated); a phone that already has the preview's own learners is left as it is.
+   A place in a lesson this copy does not serve yet goes to the start of the last lesson it serves. */
+(function migrateFromLive(){ try{ const ls=localStorage; if(ls.getItem("frDIn.users") || ls.getItem("frDIn.v1") || ls.getItem("frDIn.migrated")) return;
+  const served=Object.keys(window.COURSE||{}).length, fit=raw=>{ try{ const o=JSON.parse(raw); if(o && served && o.lesson>=served){ o.lesson=served-1; o.ex=0; } return JSON.stringify(o); }catch(e){ return raw; } };
+  let u=null; try{ u=JSON.parse(ls.getItem("frDI.users")||"null"); }catch(e){} let n=0;
+  if(u && Array.isArray(u.list) && u.list.length){ for(const x of u.list){ const raw=ls.getItem("frDI.u."+x.id); if(raw){ ls.setItem("frDIn.u."+x.id, fit(raw)); n++; } } ls.setItem("frDIn.users", JSON.stringify(u)); }
+  else { const old=ls.getItem("frDI.v1"); if(old){ ls.setItem("frDIn.v1", fit(old)); n=1; } }
+  ls.setItem("frDIn.migrated", JSON.stringify({at:new Date().toISOString(), learners:n})); }catch(e){} })();
 const USERS_KEY="frDIn.users", OLD_KEY="frDIn.v1";   // next/: its own saved-progress namespace (frDIn.*), so the preview never touches a place saved by the live app
 function loadUsers(){
   let u=null; try{ u=JSON.parse(localStorage.getItem(USERS_KEY)||"null"); }catch(e){}
@@ -1170,7 +1188,7 @@ function removeUser(id){
 const UI = (()=>{
   const KEY="frDIn.ui", def={red:"quiet", mic:true, tester:false, haptics:true, sound:true, motion:"auto"};
   let pref=Object.assign({}, def); try{ Object.assign(pref, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){}
-  try{ const q=new URLSearchParams(location.search); if(q.has("red")) pref.red = q.get("red")==="loud" ? "loud" : "quiet"; if(q.has("mic")) pref.mic = q.get("mic")!=="off";
+  try{ const q=new URLSearchParams(location.search); if(q.has("red")) pref.red = q.get("red")==="loud" ? "loud" : "quiet"; pref.mic=true;      /* (the owner, 15 Nov) the microphone tab stays: no flag */
     if(q.has("tester")) pref.tester = q.get("tester")!=="off"; if(q.has("motion")) pref.motion = q.get("motion")==="less" ? "less" : "auto"; }catch(e){}
   const apply=()=>{ const h=document.documentElement; h.dataset.red=pref.red; h.dataset.mictab=pref.mic?"on":"off"; h.dataset.tester=pref.tester?"on":"off"; h.dataset.motion=pref.motion; };
   const savePref=()=>{ try{ localStorage.setItem(KEY, JSON.stringify(pref)); }catch(e){} apply(); };
@@ -1647,7 +1665,7 @@ const signalEl = document.getElementById("signal");
    tapping hands all the way round the screen: the same hand as the tap signal on the pictures. Not red, which says "listen, say nothing"
    and left a tester waiting on 13 Nov (.40), and not green. */
 const TAPBORDER = (()=>{ const el=document.createElementNS("http://www.w3.org/2000/svg","svg"); el.id="tapBorder"; el.setAttribute("aria-hidden","true"); document.body.appendChild(el); return el; })();
-function tapBorderDraw(){
+function tapBorderDraw(){ if(!TAPBORDER) return; TAPBORDER.innerHTML=""; return;      // (next, the owner 15 Nov) no band of hands: the tap frame is a plain blue outline with the tab (CSS)
   /* (next) the same band of tapping hands, in the new language: the band is the frame's tap state (rounded inside like the other two),
      the hands a little larger and further apart, none where the tab with the hand stands at the bottom */
   const W=window.innerWidth, H=window.innerHeight, T=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--f-tap"))||22, R=22, k=(T-3)/57, r1=n=>n.toFixed(1);
@@ -2459,6 +2477,7 @@ const PAL = { black:{c:"#2b2b30",d:"#141417",l:"#5b5b63"}, silver:{c:"#a9adb3",d
   yellow:{c:"#e2b23a",d:"#b8862a",l:"#f7d96b"}, white:{c:"#ece7dc",d:"#bdb4a2",l:"#fffdf6"}, brown:{c:"#8a5a36",d:"#5c3a22",l:"#b07a4e"} };
 const PAL_APPLE = { red:{c:"#c9302c",d:"#8f1d1b",l:"#ef6a55"}, green:{c:"#7fb03a",d:"#4f7a1f",l:"#b6d86c"}, yellow:{c:"#e8c23e",d:"#b88a1e",l:"#f8e37a"} };
 function onePicture(e){
+  { const t = window.THINGS && THINGS.one && THINGS.one(e); if(t) return t; }      // things.js: the new book (later apple, pen, shoe)
   const L=e.looks||[], col=L.find(x=>PAL[x]);
   if(e.is==="book"){ const inst = L.includes("open")?3 : L.includes("thin")?2 : 1;
     const g=objectPicture("livre", inst, {pal: col?PAL[col]:undefined});
@@ -2763,7 +2782,7 @@ async function setPortraits(sc){
   const first = curSceneKey===null;
   goldOff(); tagLit(null); lastPoint=null;
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
-  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
+  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : (BOARD_TALL && sc.row.length<=2) ? {y:24, h:166} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
@@ -2778,7 +2797,7 @@ async function setPortraits(sc){
    ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
    the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
    ============================================================ */
-const ARMS = (()=>{
+const ARMS = (()=>{ const API = {};      // (next) API.draw: a new rig draws the arms (TUTOR.adopt gives it); go, the easing, the hand shapes' change and the gold border stay the page's
   const SH = {L:{x:146,y:448}, R:{x:254,y:448}}, UP=72, FORE0=66;
   const svgns="http://www.w3.org/2000/svg";
   const hands = {L:document.getElementById("hand_L"), R:document.getElementById("hand_R")};
@@ -2798,7 +2817,7 @@ const ARMS = (()=>{
     const out = s==="L" ? (e1.x<e2.x?e1:e2) : (e1.x>e2.x?e1:e2);          // the elbow bends away from the body
     return {E:out, W};
   }
-  function draw(){
+  function draw(){ if(API.draw){ API.draw(cur); return; }
     for(const s of ["L","R"]){
       const p=cur[s], {E,W}=solve(s,p);
       const dpath=`M${SH[s].x} ${SH[s].y} L${E.x.toFixed(1)} ${E.y.toFixed(1)} L${W.x.toFixed(1)} ${W.y.toFixed(1)}`;
@@ -2827,7 +2846,7 @@ const ARMS = (()=>{
     return new Promise(res=>{ done=res; raf=requestAnimationFrame(frame); });
   }
   draw();
-  return { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } };
+  return Object.assign(API, { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } });
 })();
 // Poses (the teacher's right hand is on the viewer's left)
 const POSE = {
@@ -3125,6 +3144,7 @@ async function cueAs(voice, units, at, item){
    ============================================================ */
 const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
 const BOARD = {key:null, b:null, boxes:[]};
+let BOARD_TALL = false;      // (next) this exercise has a board of four lines or more (set by runExercise)
 let BOARD_EX = null;      // (.28) the id of the exercise being run (null: no lesson running, as in the screen tools): a board shows only on its own items      // (.26) the DISE-style board shown now (boardShow)
 const TXT_Y = 250, TXT_SIZE = 24, TXT_BLUE = "#1F6FD6", TXT_INK = "#1B2433", TXT_HI = "#FFF1B8";
 const mkLayer = (id, parent) => { const g=document.createElementNS(svgNS,"g"); g.id=id; document.getElementById(parent).appendChild(g); return g; };
@@ -3224,10 +3244,10 @@ function boardShow(b){
   const key=JSON.stringify(b)+"|"+(learnerTagName()||"");
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
-  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
+  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE;      // (next) four lines keep 17: the cards above make room (BOARD_TALL) { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
   /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
      overlapped the bottom of the cards and the learner's name tag in the action box */
-  const lh=fs*1.25, y0 = n===1 ? TXT_Y : (n===2 ? 223 : 219) + fs*1.15;
+  const lh=fs*1.25, y0 = n===1 ? TXT_Y : (n>=4 && BOARD_TALL ? 196 : n===2 ? 223 : 219) + fs*1.15;
   const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
   const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
   let at=0, svg="", boxes=[]; const widths=lines.map(l=>MEAS(l, fs)), W=Math.max(...widths), X0=200-W/2;
@@ -4407,6 +4427,9 @@ async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
   ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
   BOARD_EX=ex.id; textHide();      // (.28) a new exercise: whatever was written goes; only this exercise's board can come up
+  /* (next) a board of four lines at full letter size needs room over Marie's head: in an exercise that has one, a row of one or two cards is
+     drawn a little lower in height (166 for 190), and the board starts higher. Places in the row and what is shown do not change. */
+  BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
   S.lesson=li; S.ex=ei; save();
   curSceneKey=null;
   const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};
@@ -4467,6 +4490,7 @@ async function endScreen(){
   await sleep(1200);
   document.getElementById("tick").style.opacity=0;
   S.doneDay=dayKey(); save(); trace("lesson finished: Lesson "+(S.lesson+1)); UI.haptic("done");
+  if(window.SHELL) try{ SHELL.lessonDone(); }catch(e){ trace("FAULT shell lesson complete: "+e.message); }      // (next) the lesson-complete screen, over the home that showPlay brings
   showPlay(true);
 }
 
@@ -4475,7 +4499,7 @@ async function endScreen(){
    ============================================================ */
 let running=false;
 function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); if(on) lessonHead(afterDemo); el.hidden=!on;
-  document.body.classList.toggle("inLesson", !on); if(!on) UI.progDraw(); }
+  document.body.classList.toggle("inLesson", !on); if(!on) UI.progDraw(); if(on && window.SHELL) try{ SHELL.home(); }catch(e){ trace("FAULT shell home: "+e.message); } }
 /* The start screen says which lesson this is. When the lesson was finished today it says so, and that the next lesson is for
    tomorrow (one lesson a day: what was learned has to fade a little before it is practised again); the button is still
    there, smaller and grey, for anyone who has to go on. On a later day the same state shows the next lesson's number. */
@@ -4717,9 +4741,10 @@ $("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise
 $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const n=await saveRun(); b.classList.remove("busy"); b.classList.add("done"); setTimeout(()=>b.classList.remove("done"),1500); };
 function alertish(m){ setStatus(m); }
 
-$("leave").onclick=()=>{ UI.haptic("tick"); trace("leave asked"); $("leaveSheet").hidden=false; };
-$("leaveStay").onclick=()=>{ trace("leave: stayed"); $("leaveSheet").hidden=true; };
-$("leaveGo").onclick=()=>{ trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); };
+{ let leaveT=0; const lv=$("leave");
+  lv.onclick=()=>{ UI.haptic("tick");
+    if(!lv.classList.contains("ask")){ trace("leave asked"); lv.classList.add("ask"); lv.setAttribute("aria-label","Leave the lesson: tap again to leave"); clearTimeout(leaveT); leaveT=setTimeout(()=>{ lv.classList.remove("ask"); lv.setAttribute("aria-label","Leave the lesson"); }, 3000); return; }
+    trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
 /* (next) THE TUTOR'S INTERFACE. Everything the script asks of the teacher's figure goes through these: MOUTH (plan, start, startTimeline, word,
    stop, smile, smiling: the mouth, sound by sound), ARMS (go(pose, ms), SH: the arms and hand shapes), gaze(where), nod(), faceZoom(on),
    tagLit(slot). A new rig (people.js: PICS.tutor() returning {node, rig}) replaces them call for call with TUTOR.adopt(rig); until one is
@@ -4745,5 +4770,7 @@ $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, setScene, gestureLead};
 </script>
+<script src="words.js"></script>
+<script src="shell.js"></script>
 </body>
 </html>
