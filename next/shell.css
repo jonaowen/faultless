@@ -279,7 +279,7 @@ svg.rings{width:136px;height:136px;display:block}
 .rings .arc{transition:stroke-dasharray 950ms var(--ease-out)} .rings.still .arc{transition:none}
 .rings .midc{fill:var(--speak)} .rings .midt{fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 html[data-motion="less"] .rings .arc{transition:none} @media (prefers-reduced-motion:reduce){ .rings .arc{transition:none} }
-.rrows{display:grid;gap:10px;min-width:0}
+.rrows{display:grid;gap:12px;min-width:0} .rrows.c{gap:10px}
 .rr{display:flex;gap:9px;align-items:flex-start;min-width:0} .rr > i{flex:none;width:15px;height:15px;border-radius:50%;border:4.5px solid var(--c);margin-top:2px}
 .rr.day{--c:var(--ring-day)} .rr.week{--c:var(--ring-week)} .rr.lvl{--c:var(--ring-lvl)}
 .rr > div{min-width:0} .rr > div > span{display:block;font:700 15px/1.15 var(--font-ui);color:var(--ink-2)}
@@ -287,7 +287,7 @@ html[data-motion="less"] .rings .arc{transition:none} @media (prefers-reduced-mo
 .rr small{display:block;font:500 15px/1.25 var(--font-ui);color:var(--ink-2)} .rr .gold{color:var(--lit-deep);font-weight:700;font-style:normal;white-space:nowrap} .rr small .icon{width:15px;height:15px;vertical-align:-2px;color:var(--ring-gold)}
 .rrows.c .rr b{font-size:17px}
 .moments{display:grid;grid-template-columns:1fr 1fr;gap:8px} .moments.one{grid-template-columns:1fr}
-.mo{display:grid;grid-template-columns:auto 1fr;column-gap:9px;row-gap:1px;align-items:center;padding:8px 10px;border-radius:var(--r2);min-height:60px;min-width:0}
+.mo{display:grid;grid-template-columns:auto 1fr;column-gap:9px;row-gap:1px;align-items:center;padding:7px 10px;border-radius:var(--r2);min-height:56px;min-width:0}
 .mo .orb{grid-row:1/3;width:36px;height:36px} .mo .orb .icon{width:21px;height:21px}
 .mo.am{background:var(--sun-tint)} .mo.am .orb{background:var(--sun);color:#5a3600} .mo.pm{background:var(--moon-tint)} .mo.pm .orb{background:var(--moon);color:#fff}
 .mo .k{font:700 15px/1.1 var(--font-ui);color:var(--ink-2);overflow-wrap:anywhere;align-self:end} .mo .v{font:700 17px/1.15 var(--font-ui);color:var(--ink);display:flex;align-items:center;gap:4px;align-self:start}

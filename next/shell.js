@@ -228,9 +228,9 @@ const SHELL = (()=>{
       ${C.map(([k,r,v])=>`<circle class="trk ${k}" cx="70" cy="70" r="${r}"/>${arc(r, v.f, k)}${arc(r, v.gold||0, "gold "+k)}`).join("")}</g>
       ${R.day.closed && R.week.closed ? `<g class="mid" transform="translate(70 70)"><circle r="9" class="midc"/><path d="M-4.2 .3l2.8 2.8 5.6-6" class="midt"/></g>` : ""}</svg>`; }
   function ringRows(R, compact){ const tick2=ic("check");
-    const day = R.day.n>=2 ? `<b>Goal met${tick2}</b><small class="gold">${ic("star")} Two lessons</small>` : R.day.n>=1 ? `<b>Goal met${tick2}</b>${compact||G.goal===1?"":`<small>A second adds gold</small>`}` : `<b>One lesson</b><small>${R.day.f>0?"under way":"today's goal"}</small>`;
-    const week = R.week.closed ? `<b>${R.week.n} lesson${R.week.n===1?"":"s"}${tick2}</b><small>Goal met: ${R.week.goal}</small>` : `<b>${R.week.n} of ${R.week.goal} lessons</b><small>the week's goal</small>`;
-    const lvl = R.lvl.top ? `<b>C2</b><small>reached</small>` : `<b>${R.lvl.pct}% to ${R.lvl.id}</b><small>${R.lvl.done} of ${R.lvl.span} lessons${R.lvl.perf ? ` · <em class="gold">${R.lvl.perf} perfect</em>` : ""}</small>`;
+    const day = R.day.n>=2 ? `<b>Goal met${tick2}</b><small class="gold">${ic("star")} Two lessons</small>` : R.day.n>=1 ? `<b>Goal met${tick2}</b>` : `<b>One lesson</b>${compact ? `<small>${R.day.f>0?"under way":"today's goal"}</small>` : ""}`;
+    const week = R.week.closed ? `<b>${R.week.n} lesson${R.week.n===1?"":"s"}${tick2}</b><small>Goal met: ${R.week.goal}</small>` : `<b>${R.week.n} of ${R.week.goal} lessons</b>${compact ? `<small>the week's goal</small>` : ""}`;
+    const lvl = R.lvl.top ? `<b>C2</b><small>reached</small>` : `<b>${R.lvl.pct}% to ${R.lvl.id}</b>${compact ? `<small>${R.lvl.done} of ${R.lvl.span} lessons${R.lvl.perf ? ` <em class="gold">· ${R.lvl.perf} perfect</em>` : ""}</small>` : R.lvl.perf ? `<small><em class="gold">${R.lvl.perf} perfect</em></small>` : ""}`;
     return `<div class="rrows${compact?" c":""}"><div class="rr day"><i></i><div><span>Today</span>${day}</div></div><div class="rr week"><i></i><div><span>This week</span>${week}</div></div><div class="rr lvl"><i></i><div><span>Your French</span>${lvl}</div></div></div>`; }
   // a draw-on from the values last shown (on home, after a lesson) to the values now
   function ringsAnimate(root, from, to){ if(!root) return; const svg=root.querySelector("svg.rings"); if(!svg || lessMotion() || !from) return;
@@ -259,7 +259,7 @@ const SHELL = (()=>{
   const GLYPH = [
     `<path d="M10 18V10M10 12c0-4-3-6-7-6 0 4 3 6 7 6M10 10c0-4 3-6 7-6 0 4-3 6-7 6"/>`,                                             // a sprout
     `<path d="M5 18V3h10v15M2.5 18h15"/><circle cx="12.2" cy="11" r=".9" fill="currentColor" stroke="none"/>`,                    // an open door
-    `<path d="M5.5 3.5c2 0 3 2 3 4.2S7.6 11 6 11 3.6 9.6 3.6 7.6 4 3.5 5.5 3.5zM14.5 8.5c1.5 0 2 2 2 4s-1 3.3-2.6 3.3-2.3-1.4-2.3-3.4 1.4-3.9 2.9-3.9z"/>`,   // footsteps
+    `<path d="M10 18.5V2.5M10 4h6.2l2 2.2-2 2.2H10M10 10.5H3.8l-2 2.2 2 2.2H10"/>`,                                                // a signpost
     `<rect x="3" y="7" width="14" height="10" rx="2"/><path d="M7.5 7V4.5h5V7M3 11.5h14"/>`,                                         // a suitcase
     `<path d="M1.5 14.5h17M5 14.5V8c0-2.6 10-2.6 10 0v6.5M5 11.5h10"/>`,                                                            // a hat
     `<path d="M3.5 7h11v4.5c0 3.8-11 3.8-11 0zM14.5 8.5c3 0 3 4 0 4M3 17.5h12M7 2.5c-1 1 1 2 0 3M11 2.5c-1 1 1 2 0 3"/>`,             // a cup
@@ -513,7 +513,7 @@ const SHELL = (()=>{
     const T=G.next, n=T+1, now=new Date(), today=dayOf(now), d=G.days[today]||{n:0}, hr=now.getHours(), greet = hr<4 ? "Good evening" : hr<12 ? "Good morning" : hr<18 ? "Good afternoon" : "Good evening";
     const started = !allDone(S.lesson) && (S.ex>0 || !!S.finished[LESSONS[S.lesson].exercises[0].id]) && S.lesson===T;
     const sl=slots(d, now), two=G.goal!==1;
-    const eyebrow = G.why==="once" ? `<div class="eyebrow sun">${ic("redo")} Once more</div>` : G.why==="back" || G.why==="warm" ? `<div class="eyebrow sun">${ic("redo")} A warm-up</div>` : d.n>=1 ? `<div class="eyebrow moon">${ic("moon")} ${two?"Your second lesson today":"Another lesson"}</div>` : `<div class="eyebrow">${ic("sun")} Today's lesson</div>`;
+    const eyebrow = G.why==="once" ? `<div class="eyebrow sun">${ic("redo")} Once more</div>` : G.why==="back" || G.why==="warm" ? `<div class="eyebrow sun">${ic("redo")} A warm-up</div>` : d.n>=1 ? `<div class="eyebrow moon">${ic("moon")} ${two && d.n===1 ? "Your second lesson today" : "Another lesson"}</div>` : `<div class="eyebrow">${ic("sun")} Today's lesson</div>`;
     const L=LESSONS[T], mins=minutesFor(L), st=stageLine(Math.min(G.furthest+1, LESSONS.length));
     const R=ringsNow(now), k=G.rank||0;
     h.innerHTML=`<div class="h-top"><button class="h-me" id="hMe" aria-label="You">${avOut("portrait", "t").replace('viewBox="0 0 160 190"','viewBox="27 24 106 106"')}</button><div class="h-hello">${greet},<b>${esc(S.learnerName||"")}</b></div>
