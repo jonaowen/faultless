@@ -163,19 +163,26 @@ const SHELL = (()=>{
   const badgeName = n=>`${n.toLocaleString("en-GB")} perfect lessons`;
   function badgeSvg(n, cls="badge"){ return `<svg class="${cls}" viewBox="0 0 56 70" aria-hidden="true"><use href="#i-rosette"/><text x="28" y="${n>=1000?30.5:31.5}" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>=1000?8.5:n>=100?11:14}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n>=1000?(n/1000)+"k":n}</text></svg>`; }
 
-  /* ---- the goal of the whole course: the CEFR levels A1 to C2 (where each is reached comes from the plan: COURSE_WORDS.levels; until the
-     plan's data is there, nothing is shown, except with ?levels=stub, which shows the design on made-up numbers) ---- */
-  const LEVELS = (CW.levels && CW.levels.length) ? CW.levels : /[?&]levels=stub/.test(location.search) ? [
-    {id:"A1", lesson:60, canDo:"You can now introduce yourself, ask and answer simple questions about people and things, and count.", trip:"You could greet people in France, say who you are and ask for what you want."},
-    {id:"A2", lesson:180, canDo:"You can now talk about your day, what you did and what you will do.", trip:"You could travel to France and chat about the weather or a trip you had last week."},
-    {id:"B1", lesson:420, canDo:"(stub)"}, {id:"B2", lesson:800, canDo:"(stub)"}, {id:"C1", lesson:1400, canDo:"(stub)"}, {id:"C2", lesson:2000, canDo:"(stub)"}] : [];
-  function levelNow(){ if(!LEVELS.length) return null; let from=0; for(let k=0;k<LEVELS.length;k++){ const Lv=LEVELS[k]; if(G.furthest<Lv.lesson) return {k, Lv, pct:Math.floor(100*(G.furthest-from)/(Lv.lesson-from)), from}; from=Lv.lesson; } return {k:LEVELS.length, Lv:null, pct:100}; }
+  /* ---- the goal of the whole course: the CEFR levels A1 to C2, in speaking and listening (COURSE_WORDS.levels, from the plan: the lesson at
+     which each is reached and what the learner can then do; the sentences live in the data, not here). The bar of the level now: lessons
+     passed since the last level over the lessons between the two; inside it, brighter, the share of those lessons that are perfect (it never
+     holds a level back). ---- */
+  const LEVELS = (CW.levels||[]).map(x=>({id:x.id, lesson:x.lesson, canDo:[].concat(x.canDo||[])}));
+  const perfectIn = (a,b)=>LESSONS.filter((L,i)=>i>=a && i<b && G.lp[L.id]).length;      // lesson indexes a..b-1
+  function levelNow(){ if(!LEVELS.length) return null; let from=0; const passed=G.furthest;
+    for(let k=0;k<LEVELS.length;k++){ const Lv=LEVELS[k], span=Lv.lesson-from;
+      if(passed<Lv.lesson){ const done=Math.max(0, passed-from); return {k, Lv, from, span, done, pct:Math.max(0, Math.min(100, Math.floor(100*done/span))), perf:Math.floor(100*perfectIn(from, passed)/span)}; }
+      from=Lv.lesson; }
+    return {k:LEVELS.length, Lv:null, pct:100}; }
   function newLevel(today){ let got=null; for(const Lv of LEVELS) if(G.furthest>=Lv.lesson && !G.levels[Lv.id]){ G.levels[Lv.id]=today; got=Lv; } return got; }
-  function levelCard(){ const n=levelNow(); if(!n) return ""; return `<div class="card cefr"><div class="row"><b>Your French</b><small>${n.Lv ? `${n.Lv.id} · ${n.pct}%` : "C2 reached"}</small></div>
-      <div class="lv">${LEVELS.map((Lv,k)=>`<div class="lvc${k<n.k?" done":k===n.k?" now":""}"><span>${Lv.id}</span><i style="--p:${k<n.k?100:k===n.k?n.pct:0}%"></i></div>`).join("")}</div>
-      ${n.Lv ? `<p>At ${n.Lv.id}: ${esc(n.Lv.trip||n.Lv.canDo)}</p>` : ""}</div>`; }
-  function levelParty(Lv, then){ const o=$("lvl"); o.innerHTML=`<div class="lvbig" aria-hidden="true"><span>${Lv.id}</span></div><h1>You have reached ${Lv.id}</h1><div class="lede center">${esc(Lv.canDo)}</div>${Lv.trip?`<div class="card trip">${ic("sun")}<p>${esc(Lv.trip)}</p></div>`:""}<div class="spacer"></div><button class="btn" id="lvGo">Continue</button>`;
-    o.hidden=false; fete(o, true); $("lvGo").onclick=()=>{ tick(); o.hidden=true; stopFete(); if(then) then(); }; }
+  function levelCard(full){ const n=levelNow(); if(!n) return "";
+    return `<div class="card cefr"><div class="row"><b>Your French</b><small>in speaking and listening</small></div>
+      <div class="lv">${LEVELS.map((Lv,k)=>`<div class="lvc${k<n.k?" done":k===n.k?" now":""}"><span>${k<n.k?ic("check"):""}${Lv.id}</span><i style="--p:${k<n.k?100:k===n.k?Math.max(n.pct,2):0}%;--q:${k<n.k?100:k===n.k?n.perf:0}%"></i></div>`).join("")}</div>
+      ${n.Lv ? `<div class="lvnow"><b class="num">${n.pct}%</b><span>of the way to <b>${n.Lv.id}</b><small>${n.done} of ${n.span} lessons${n.perf?` · ${perfectIn(n.from, G.furthest)} of them perfect`:""}</small></span></div>
+        ${full ? `<div class="lvwill"><small>At ${n.Lv.id}</small>${n.Lv.canDo.slice(0,full?3:1).map(t=>`<p>${esc(t)}</p>`).join("")}</div><p class="lvnote">${esc((CW.levelLimits||[])[1] ? "Where the levels fall may move a little as the course is built." : "")}</p>` : ""}` : `<div class="lvnow"><b class="num">C2</b><span>reached</span></div>`}</div>`; }
+  function levelParty(Lv, then){ const o=$("lvl"); o.innerHTML=`<div class="lvbig" aria-hidden="true"><span>${Lv.id}</span></div><h1>You have reached ${Lv.id}</h1><div class="sub center">in speaking and listening</div>
+      <div class="card trip">${Lv.canDo.map(t=>`<div>${ic("check")}<p>${esc(t)}</p></div>`).join("")}</div><div class="spacer"></div><button class="btn" id="lvGo">Continue</button>`;
+    o.hidden=false; o.scrollTop=0; fete(o, true); $("lvGo").onclick=()=>{ tick(); o.hidden=true; stopFete(); if(then) then(); }; }
 
   /* ---- the end of a lesson: the record, the rules, the screen ---- */
   function lessonDone(){ const li=S.lesson, L=LESSONS[li], cur=G.cur && G.cur.lesson===L.id ? G.cur : {lesson:L.id, t0:"", kind:""};
@@ -262,7 +269,7 @@ const SHELL = (()=>{
       <div class="card lvsum">${G.lp[L.id] ? badgeSvg(li+1, "badge") : `<div class="ring" style="--p:${Math.round(100*nP/L.exercises.length)}%"><b>${nP}</b></div>`}<div><b>${G.lp[L.id] ? "A perfect lesson" : nP+" of "+L.exercises.length+" exercises perfect"}</b><small>${G.lp[L.id] ? "Every exercise right, first time." : "Do a yellow one again and make it perfect: +"+RULES.POINTS_PERFECT_REPAIR+" each, +"+RULES.POINTS_PERFECT_LESSON+" when the whole lesson is perfect."}</small></div></div>
       <div class="exgrid">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<button class="extile ${g ? (g.g?"g":"y") : "u"}" data-ei="${k}" aria-label="Exercise ${k+1}: ${g ? (g.g?"perfect":"had an error") : "done"}"><span class="k">${k+1}</span>${firstMini(x)}<span class="st">${g ? (g.g?ic("star"):"") : ""}</span></button>`; }).join("")}</div>
       <div class="legend"><span><i class="g"></i>Perfect</span><span><i class="y"></i>Had an error</span>${known<L.exercises.length?`<span><i class="u"></i>Done before the record began</span>`:""}</div>
-      <button class="btn quiet" id="lvAll">${ic("redo")} Do the whole lesson again</button>`;
+      <button class="btn quiet" id="lvAll">${ic("redo")} The whole lesson again</button>`;
     o.hidden=false; o.scrollTop=0;
     $("lvBack").onclick=()=>{ tick(); o.hidden=true; };
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
@@ -394,7 +401,7 @@ const SHELL = (()=>{
     $("askNo").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
     const go=()=>{ const m=done(inp.value); if(m){ $("askMsg").textContent=m; } else close(); };
     $("askOk").onclick=go; inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); }); }
-  function info(title, html){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2><div class="sh-body">${html}</div><button class="btn" id="infoOk">Close</button></div>`;
+  function info(title, html){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2><div class="sh-body">${html}</div><button class="btn${/class="btn/.test(html)?" quiet":""}" id="infoOk">Close</button></div>`;
     sh.hidden=false; const close=()=>{ sh.hidden=true; sh.innerHTML=""; }; $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
 
   /* ---- the avatar maker: built from the picture library's own lists (PICS.avatarOptions), so options can be added without touching this ---- */
@@ -506,8 +513,8 @@ const SHELL = (()=>{
   function you(){ const o=$("you"); if(!o) return; const own=ownedCards().length, st=stageLine(Math.max(1, G.furthest)), bs=RULES.BADGES.filter(n=>G.badges[n]), nextB=RULES.BADGES.find(n=>!G.badges[n]), tz=UI.pref.text||1, A=G.anchors;
     o.innerHTML=`<div class="tabhead"><h1>You</h1></div>
       <button class="card me" id="youAv"><div class="face">${AV.svg(AV.get(), "portrait", "t")}</div><div class="l"><b>${esc(S.learnerName||"")}</b><small>Change how you look ${ic("chev")}</small></div></button>
-      <div class="card stats"><div><b class="num">${G.points}</b><small>points</small></div><div><b class="num">${perfectCount()}</b><small>perfect lessons</small></div><div><b class="num">${own}</b><small>words</small></div><div><b class="num">${G.daysLearned}</b><small>days learned</small></div></div>
-      ${levelCard()}
+      <div class="card stats"><div><b class="num">${G.points}</b><small>points</small></div><div><b class="num">${perfectCount()}</b><small>perfect lesson${perfectCount()===1?"":"s"}</small></div><div><b class="num">${own}</b><small>words</small></div><div><b class="num">${G.daysLearned}</b><small>days learned</small></div></div>
+      ${levelCard(true)}
       <h3 class="gh">Badges</h3><div class="miles">${bs.map(n=>`<div class="ms">${badgeSvg(n)}<span>${badgeName(n)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${perfectCount()} of ${nextB} perfect lessons</span></div>` : ""}</div>
       ${st ? `<div class="sline">${st.text} lessons · best run ${G.bestRun} day${G.bestRun===1?"":"s"}</div>` : ""}
       <h3 class="gh">Your two moments</h3><div class="card grp">${row("setA1","First lesson","After "+esc(A.first.after),"sun",`<span class="num">${hm(atToday(A.first.time))}</span>`)}${G.goal!==1?row("setA2","Second lesson","After "+esc(A.second.after),"moon",`<span class="num">${hm(atToday(A.second.time))}</span>`):row("setA2","Lessons a day","One for now","moon","")}</div>

@@ -250,3 +250,9 @@ html[data-motion="less"] #bar.perfect:after, html[data-motion="less"] #bar .chee
 #lvl{background:radial-gradient(120% 60% at 50% 10%, var(--speak-tint) 0%, rgba(220,239,226,0) 100%), var(--paper)} #lvl h1{text-align:center;margin:16px 0 8px;font:600 36px/1.08 var(--font-display);font-variation-settings:"SOFT" 100}
 .lvbig{width:168px;height:168px;margin:40px auto 0;border-radius:50%;display:grid;place-items:center;background:var(--speak-deep);box-shadow:0 0 0 12px var(--speak-tint), 0 0 0 22px rgba(220,239,226,.5), var(--e2)} .lvbig span{font:600 72px/1 var(--font-display);font-variation-settings:"SOFT" 100;color:#fff}
 #lvl .lede{font:var(--t-body-l);text-align:center;margin:0 0 14px} .card.trip{display:flex;gap:12px;padding:16px;align-items:flex-start} .trip .icon{flex:none;color:var(--sun-deep)} .trip p{margin:0;font:600 18px/1.4 var(--font-ui)}
+.lvc span{display:inline-flex;align-items:center;gap:2px} .lvc span .icon{width:14px;height:14px;stroke-width:3.2}
+.lvc i{background:linear-gradient(90deg,var(--speak-deep) var(--q),#8DCB9F var(--q),#8DCB9F var(--p),var(--paper-3) var(--p))}
+.lvnow{display:flex;align-items:center;gap:12px} .lvnow .num{font:600 40px/1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink)} .lvnow span{font:600 18px/1.25 var(--font-ui);color:var(--ink)} .lvnow span b{font:inherit;font-weight:800} .lvnow small{display:block;font:500 15px/1.3 var(--font-ui);color:var(--ink-2)}
+.lvwill{padding:12px 14px;border-radius:var(--r3);background:var(--paper)} .lvwill small{font:var(--t-label);color:var(--ink-2)} .lvwill p{margin:6px 0 0;font:500 16px/1.4 var(--font-ui);color:var(--ink)}
+.cefr .lvnote{margin:0;font:500 14px/1.3 var(--font-ui);color:var(--ink-3)}
+#lvl .sub{font:var(--t-body-l);color:var(--ink-2);margin-bottom:16px} .card.trip{display:grid;gap:12px} .trip > div{display:flex;gap:12px;align-items:flex-start} .trip .icon{color:var(--speak-deep)!important}
