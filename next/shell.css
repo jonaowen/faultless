@@ -342,8 +342,8 @@ html[data-motion="less"] .rb-track i, html[data-motion="less"] .rankup .emb.big{
 .opt .ol{position:absolute;left:0;right:0;bottom:0;padding:3px 0 4px;background:rgba(255,253,248,.92);font:700 15px/1 var(--font-ui);color:var(--ink)}
 #sheet .sh-body .btn{width:100%;margin:8px 0 4px} #sheet .sh-body p.small{margin-top:14px}
 /* ---- motion and ease (brief 18): screens, tabs, lists, sheets, presses; nothing of it in a lesson; none with less movement ---- */
-@keyframes mvRise{from{transform:translateY(28px);opacity:0}} @keyframes mvPush{from{transform:translateX(40px);opacity:0}} @keyframes mvFade{from{opacity:0}}
-@keyframes mvSettle{from{transform:scale(.982);opacity:.6}} @keyframes mvTabL{from{transform:translateX(-22px);opacity:0}} @keyframes mvTabR{from{transform:translateX(22px);opacity:0}}
+@keyframes mvRise{from{transform:translateY(28px);opacity:0}} @keyframes mvPush{0%{transform:translateX(40px);opacity:0}45%{opacity:1}} @keyframes mvFade{from{opacity:0}}
+@keyframes mvSettle{from{transform:scale(.982);opacity:.6}} @keyframes mvTabL{0%{transform:translateX(-22px);opacity:0}40%{opacity:1}} @keyframes mvTabR{0%{transform:translateX(22px);opacity:0}40%{opacity:1}}
 @keyframes stIn{from{transform:translateY(14px);opacity:0}} @keyframes shDown{to{transform:translateY(48px);opacity:0}} @keyframes shDim{from{opacity:0}} @keyframes shUndim{to{opacity:0}}
 .mv-rise{animation:mvRise 380ms var(--ease-out) both} .mv-push{animation:mvPush 320ms var(--ease-out) both} .mv-fade{animation:mvFade 260ms var(--ease-out) both}
 .mv-settle{animation:mvSettle 300ms var(--ease-out) both} .mv-tab-l{animation:mvTabL 260ms var(--ease-out) both} .mv-tab-r{animation:mvTabR 260ms var(--ease-out) both}
