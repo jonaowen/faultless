@@ -13,7 +13,7 @@ const SHELL = (()=>{
     STEP_BACK_LESSONS: 1,             // (owner)
     UNSURE_COUNTS: false,             // (work) an ERROR the app itself doubts (unsure) is left out of the percentage
     SPACING_GAP_HOURS: 6,             // (work) the second lesson of a day starts at least this long after the first ended
-    POINTS_PERFECT_FIRST: 2,          // (owner, 15 Nov late) an exercise perfect the first time it is done
+    POINTS_PERFECT_FIRST: 1,          // (owner, 15 Nov late: "It should just be 1 point for a perfect exercise whether that is by the first time or by repair") an exercise perfect the first time it is done
     POINTS_PERFECT_REPAIR: 1,         // (owner) an exercise that had an error, done again perfectly (once: it is then perfect)
     POINTS_PERFECT_LESSON: 5,         // (owner, 15 Nov late) a lesson that becomes perfect, first time through OR by repairs, once per lesson; (superseded: "first time only") (it still counts for the badges)
     // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
