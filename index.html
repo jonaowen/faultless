@@ -788,7 +788,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:55, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:56, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -811,6 +811,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=48)) migrate48();      // (.48) a state saved before Lessons 1 to 10 were made anew from the whole-course sketch
   if(!(s.courseRev>=54)) migrate54();      // (.54) a state saved before the exercises of Lessons 1 to 5 were cut and renumbered
   if(!(s.courseRev>=55)) migrate55();      // (.55) a state saved before Lessons 4 and 5 were built anew, each format by a constructor
+  if(!(s.courseRev>=56)) migrate56();      // (.56) a state saved before Lessons 1 and 2 were built anew, each format by a constructor
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -872,6 +873,22 @@ function migrate55(){
   if(inL45 || had || old.length){ if(S.lesson===3 || S.lesson===4) S.ex=0;
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (their exercises have other numbers)"+((S.lesson===3||S.lesson===4)?"; this learner starts Lesson "+(S.lesson+1)+" from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
   S.courseRev=55;
+}
+/* (.56) Lessons 1 and 2 are built anew by construction (other exercises, other numbers). The same safe rule as .55, for Lessons 1-2:
+   a learner saved inside Lesson 1 or 2 goes on at the START of that lesson; their exercise records and delayed tests are dropped (one
+   log line); the lessons before the learner's own count as done; Lessons 3-5 are untouched. */
+function migrate56(){
+  const L12 = k => /^L[12]E\d+/.test(k);
+  const inL12 = (S.lesson===0 || S.lesson===1) && (S.ex||0)>0;
+  const had = Object.keys(S.finished||{}).some(L12);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!L12(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>L12(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  const n=Math.min(S.lesson||0, 2);                        // the lessons before the one the learner is in count as done
+  for(let i=0;i<n;i++) for(const e of LESSONS[i].exercises) S.finished[e.id]=true;
+  if(inL12 || had || old.length){ if(S.lesson===0 || S.lesson===1) S.ex=0;
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1 and 2 are built anew (their exercises have other numbers)"+((S.lesson===0||S.lesson===1)?"; this learner starts Lesson "+(S.lesson+1)+" from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]}); }
+  S.courseRev=56;
 }
 function migrate54(){
   const L15 = k => /^L[1-5]E\d+/.test(k);
@@ -3110,15 +3127,18 @@ async function presentTapShow(a){
 }
 let holdHand=false;
 async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
-  ph(retest ? "retest (tap)" : "test (tap)"); rest();
+  ph(t.leadHand ? "lead (tap)" : retest ? "retest (tap)" : "test (tap)"); rest();
   tapArm(t.targets);                     // (.27) a touch while the cue is said counts
   if(!cued){ await say(t.questionUnits, "tutor", undefined, 0);      // (.45) cued: "Vas-y." at the end of a correction was the cue
     if(t.touch && t.touch.silent) await silentTouches(t.touch.count); }
+  /* (.56; Jon, 15 Nov: "Saying the word then model of tapping, lead of tapping, test of tapping.") A lead of a tap: Marie's hand moves to
+     the right picture while the learner taps it. Not a test: it does not count as first-time correct. */
+  if(t.leadHand){ const s0=t.correct[0], p=tipOf(s0); if(boundsOf(s0)){ handTo(p.x+26, p.y+46, t.leadHand); await sleep(220); handAt(t.leadHand, s0); trace("lead: "+(handName(t.leadHand)||"the hand")+" moves to "+slotName(t.scene, s0)); } }
   textAtResponse(t); signal("tap"); tapSignal(t.targets); trace("your turn to tap: "+t.targets.map(s=>slotName(t.scene, s)).join(" | ")+" (tap signal and the border of tapping hands; no microphone)");
   window.__tapTask = t;                     // for the automatic test harness (an oracle learner taps what is asked for)
   const r = await tapWait(t.targets, TAP_WINDOW); tapSignal(null); signal(false);
   const ok = !!r && t.correct.includes(r.slot);
-  const isFirst = firstSeen && !retest && !firstSeen.has(t.id);
+  const isFirst = firstSeen && !retest && !t.leadHand && !firstSeen.has(t.id);
   if(isFirst){ firstSeen.add(t.id); const f=(S.ftc[ctx.exKey]=S.ftc[ctx.exKey]||{new:{c:0,n:0}, review:{c:0,n:0}}); f[t.tag].n++; if(ok) f[t.tag].c++; }
   ctx.firm=ctx.firm||{}; ctx.slow=ctx.slow||{};
   if(ok && !retest) ctx.firm[t.target]=(ctx.firm[t.target]||0)+1; if(!ok){ ctx.firm[t.target]=0; }
@@ -3130,6 +3150,7 @@ async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
   LAST_TEST={id:t.id, ok, retest};
   /* (.37, Jon 12 Nov 21:00: "Let's get rid of the ding and the pause. The learner gets no feedback for getting individual tasks right;
      if they get it wrong, then there's the normal sequence ... Saving 15% of the time is crucial.") no ding, no smile, no wait */
+  if(t.leadHand && !holdHand) handHide();
   if(ok){ textReveal(t); ringSlot(r.slot, true); handAt("you", r.slot); if(t.text && t.text.reveal==="after") await sleep(900); ringSlot(r.slot, false); if(!holdHand) handHide(); }
   return ok;
 }
