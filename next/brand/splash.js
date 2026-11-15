@@ -77,7 +77,7 @@
         node.classList.add(quick ? 'sp-out-quick' : 'sp-out');
         var ended = false, end = function () { if (!ended) { ended = true; finish(); } };
         node.addEventListener('transitionend', function (e) { if (e.target === node) end(); });
-        setTimeout(end, 450);
+        setTimeout(end, 600);
       }); });
       el = null;
     });

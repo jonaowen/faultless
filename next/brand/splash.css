@@ -27,11 +27,15 @@
 #splash.sp-font .sp-label{font-family:"Atkinson Hyperlegible Next",system-ui,sans-serif}
 #splash.sp-retry{cursor:pointer} #splash.sp-retry .sp-label{color:#1B2433;text-decoration:underline;text-underline-offset:3px}
 #splash.sp-retry .sp-track{display:none}
-/* the hand-over: the card is picked up (it rises, its shadow lengthens) as the paper goes */
-#splash.sp-out{opacity:0}
+/* the hand-over, in two beats so that no words ever lie over other words: first the mark is picked up (it rises, its
+   shadow lengthens) and the mark, name and bar go (140 ms); then the bare paper lifts off the first screen (220 ms) */
+#splash .sp-col{transition:opacity 140ms cubic-bezier(.22,1,.36,1),transform 140ms cubic-bezier(.22,1,.36,1)}
+#splash.sp-out .sp-col,#splash.sp-out-quick .sp-col{opacity:0}
+#splash.sp-out .sp-col{transform:translateY(-4px)}
 #splash.sp-out .sp-mark{transform:translateY(-6px) scale(1.035)}
 #splash.sp-out .sp-mark:before{transform:translate(7px,16px);opacity:.7}
-#splash.sp-out-quick{opacity:0;transition-duration:160ms}
+#splash.sp-out{opacity:0;transition:opacity 220ms cubic-bezier(.22,1,.36,1) 110ms}
+#splash.sp-out-quick{opacity:0;transition:opacity 160ms cubic-bezier(.22,1,.36,1) 80ms}
 @media (prefers-reduced-motion: reduce){
   #splash,#splash *,#splash .sp-mark:before{transition:none!important;animation:none!important}
   #splash.sp-ind .sp-fill{width:100%;background:#C4B79F}
