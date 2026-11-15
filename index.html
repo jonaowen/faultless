@@ -1630,7 +1630,9 @@ function judge(text, expect, echoes=[], alsoOk=[]){
        "Répète : tu danses." or after "Tu fais quoi ?" stays unsure as before. Measured 15 Nov 2026 (the app's listener, the word list of
        L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's, Helen's and
        Richard's own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
-       other person: see the release notes of .59 for the figures. */
+       other person: the "je" of 240 recordings heard as je 240 times (Jon 131, Helen 36, Richard 20, 53 unnamed), the "tu" of 86 (all
+       Jon's) heard as tu 85 times (once the whole line was heard as "je m'appelle Marie"). So a right "Tu danses." taken for "Je danse."
+       is rare (about one in a hundred on the one voice measured), and then corrected once, while the error itself was never corrected. */
     const echoed = (e, w) => { const q=String(curCue||"").trim(), cp = /\?\s*$/.test(q) ? (/^(je|j')\s/i.test(q) ? "JE" : /^tu\s/i.test(q) ? "TU" : null) : null;
       return !!cp && cp!==e && SLOT[cp].includes(w); };
     { const e0=whole[0], e1=whole[1], w0=t[0], w1=t[1], rest=bad.every(([e])=>e===e0 || e===e1);
