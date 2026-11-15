@@ -2415,6 +2415,7 @@ function swimmer(e){
     <path d="M122 76 l6 -9 M131 80 l10 -5 M116 72 l1 -10" stroke="#8fd0f3" stroke-width="3" stroke-linecap="round"/>
     <rect x="8" y="16" width="144" height="158" rx="10" fill="none" stroke="#b8cfe0" stroke-width="2"/>`);
 }
+const placedThing = x => OWN_THING.includes(String(x.is)) ? onePicture(x) : x.is==="key" && window.PICS ? PICS.key(x) : x.is==="dog" && window.PICS && PICS.dog ? PICS.dog(x) : x.is==="car" && window.PICS && PICS.car ? PICS.car(x) : thingPicture(x);      // (.62) a thing on / under a table: drawn as it is anywhere else
 const OWN_THING=["book","apple","pen","shoe"];         // drawn in this file since Lesson 1 (objectPicture)
 /* (.25, the eighth round: faces as cards) the hand sign that goes with a face: thumb up (feeling good), the flat hand that rocks
    (so-so), thumb down (feeling bad). Drawn here, in the corner of the card, until the artist puts the hands into the faces. */
@@ -2449,14 +2450,20 @@ function genPicture0(e){
        beside a picture of the same man not smiling. Whole-body actions still move. */
     return PICS.action(ACT_NAME[e.doing], "you", {spec:{is:e.is}, looks:e.looks||[], still:ACT_NAME[e.doing]==="smile"});
   if(PEOPLE_KIND.includes(e.is)) return window.PICS ? PICS.person(e) : blank();
+  /* (.57) sur / sous by ear (Lesson 5): the same thing on a table and under it (people.js PICS.place).
+     (.62; found by the things agent and the coordinator, 15 Nov: a car "on a table" was drawn as a car alone, sent to PICS.car before the
+     place was looked at, and a phone on / under a table as an EMPTY table, the place drawing the thing with onePicture, which knows only
+     the book, the apple, the pen and the shoe: in L6E6, the teaching of sur / sous, every picture was one or the other, and "Sur." / "Sous."
+     could not be seen in L6E38, L7E34, L8E36, L9E38 either.) The place is now looked at first, for every kind, and the thing on or under
+     the table is drawn as it is drawn anywhere else: this file's own picture for the book, apple, pen and shoe, the library's for the rest. */
+  { const REL = (e.looks||[]).includes("on a table") ? "on" : (e.looks||[]).includes("under a table") ? "under" : null;
+    if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="on a table" && x!=="under a table")});
+      return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:"table", looks:["wooden"]}}, x=>placedThing(Object.assign({}, rest, x, {count:1}))); } }
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
   if(e.is==="numeral") return numberCard("n"+e.value, (e.looks||[])[0]);      // (.58) a written number in the colour of its look: six pictures of each number ("C'est quel nombre ?")
   if(e.is==="finger") return ((e.count||1)>4 && window.PICS) ? PICS.fingers(e.count) : fingerCard(e.count||1);
-  { const REL = (e.looks||[]).includes("on a table") ? "on" : (e.looks||[]).includes("under a table") ? "under" : null;      // (.57) sur / sous by ear (Lesson 5): the same thing on a table and under it (people.js PICS.place)
-    if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="on a table" && x!=="under a table")});
-      return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:"table", looks:["wooden"]}}, x=>onePicture(Object.assign({}, rest, x, {count:1}))); } }
   if((e.looks||[]).includes("in an open box") && window.PICS && PICS.place){         // (.48) what is found in an open box ('Oh ! Un livre !')
     const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="in an open box")});
     if(!OWN_THING.includes(e.is)) return thingPicture(e);
