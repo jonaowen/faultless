@@ -101,6 +101,10 @@ function scene(yaw, pitch, D){
     disc(c, r, axis, mat, o){ const pts = []; for (let i = 0; i < 20; i++){ const a = i * Math.PI / 10, u = Math.cos(a) * r, v = Math.sin(a) * r;
         pts.push(axis === "x" ? [c[0], c[1] + u, c[2] + v] : axis === "y" ? [c[0] + u, c[1], c[2] + v] : [c[0] + u, c[1] + v, c[2]]); }
       return S.face(pts, mat, Object.assign({ r: 0 }, o)); },
+    /* a ball (smoke): a round shape that faces us, its shade on the lower right */
+    puff(c, r, lit, shade, o){ o = o || {}; const q = pr(c), R = r * dist / (dist - q[2]); grow([q[0] - R, q[1] - R]); grow([q[0] + R, q[1] + R]);
+      items.push({ k: (o.layer || 0) * 1e5 + q[2], s: `<circle cx="${r1(q[0])}" cy="${r1(q[1])}" r="${r1(R)}" fill="${shade}"/><circle cx="${r1(q[0] - R * 0.11)}" cy="${r1(q[1] - R * 0.14)}" r="${r1(R * 0.82)}" fill="${lit}"/>` });
+      return S; },
     /* a box by its two corners; only the faces named in o.show ("f" front z+, "b" back, "r" right x+, "l" left, "t" top, "u" under) */
     box(a, b, mat, o){ o = o || {}; const [x0, y0, z0] = a, [x1, y1, z1] = b, sh = o.show || "frt";
       if (sh.indexOf("f") >= 0) S.face([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], mat, o);
@@ -135,10 +139,10 @@ function cast(S, x0, x1, z0, z1, o){
    looks: "red roof" (cream walls, red tiles: the usual one) | "brick, tall" (a narrow house of three floors) | "stone" | "wooden" */
 function house(k){
   const V = k.has("brick", "tall") ? "brick" : k.has("stone") ? "stone" : k.has("wooden", "wood") ? "wood" : "red";
-  const G = { red:   { w: 66, L: 86, h: 46, rise: 36, wall: C.cream, roof: C.red, shut: P("#5F97BD", "#44749B"), door: P("#5F97BD", "#44749B"), floors: 1 },
+  const G = { red:   { w: 64, L: 70, h: 54, rise: 40, wall: C.cream, roof: C.red, shut: P("#5F97BD", "#44749B"), door: P("#5F97BD", "#44749B"), floors: 1 },
               brick: { w: 50, L: 56, h: 98, rise: 28, wall: C.brick, roof: C.slate, shut: null, door: P("#3F6DA8", "#2C4F80"), floors: 3 },
-              stone: { w: 70, L: 94, h: 44, rise: 32, wall: C.stone, roof: C.slate, shut: P("#7DAA7B", "#5A875C"), door: C.brown, floors: 1, arch: 1 },
-              wood:  { w: 66, L: 84, h: 44, rise: 42, wall: C.wood, roof: P("#5B7F86", "#3F5E66"), shut: null, door: P("#FBF8F0", "#D9D3C4"), floors: 1, trim: 1 } }[V];
+              stone: { w: 68, L: 74, h: 50, rise: 36, wall: C.stone, roof: C.slate, shut: P("#7DAA7B", "#5A875C"), door: C.brown, floors: 1, arch: 1 },
+              wood:  { w: 64, L: 70, h: 52, rise: 44, wall: C.wood, roof: P("#5B7F86", "#3F5E66"), shut: null, door: P("#FBF8F0", "#D9D3C4"), floors: 1, trim: 1 } }[V];
   if (k.cn && V === "red" && !k.has("roof")) G.wall = colour(k);          // a colour alone: the walls (as now)
   else if (k.cn && k.has("roof")) G.roof = colour(k);
   const { w, L, h, rise } = G, W = G.wall, R = G.roof, hw = w / 2, hl = L / 2, S = scene(-40, 9, 620);
@@ -155,13 +159,13 @@ function house(k){
   // the walls' own look
   if (V === "brick"){ for (let r = 0; r < 12; r++) for (let c = 0; c < 3; c++) if ((r * 7 + c * 5) % 4 !== 1){ const x = -hw + 5 + c * 15 + (r % 2) * 6, y = 5 + r * 7.6; if (x + 8 < hw - 2) F(x, y, x + 8, y + 2.6, mix(W.l, W.r, (r + c) % 2 ? 0.5 : 0), { r: 0.5, t: "l", layer: 1 }); }
     for (let r = 0; r < 12; r++) for (let c = 0; c < 3; c++) if ((r * 5 + c * 3) % 4 === 1){ const z = hl - 8 - c * 17 - (r % 2) * 6, y = 5 + r * 7.6; if (z - 9 > -hl + 2) Sd(z, y, z - 9, y + 2.6, W.fs, { r: 0.5, t: "s", layer: 1 }); } }
-  if (V === "stone"){ [[-26, 6, 12, 7], [10, 4, 13, 6], [-30, 30, 9, 6], [20, 22, 11, 6], [-8, 36, 10, 5], [-18, 18, 9, 5], [22, 38, 9, 5]].forEach(([x, y, a, b], i) => F(x, y, x + a, y + b, i % 2 ? W.r : mix(W.l, W.s, 0.45), { r: 2, t: "l", layer: 1 }));
-    [[30, 6, 14, 7], [-10, 4, 13, 6], [10, 30, 12, 6], [-34, 30, 11, 6], [-28, 14, 10, 5]].forEach(([z, y, a, b]) => Sd(z, y, z - a, y + b, W.fs, { r: 2, t: "s", layer: 1 })); }
+  if (V === "stone"){ [[-28, 6, 12, 7], [10, 4, 13, 6], [-31, 34, 9, 6], [22, 6, 9, 6], [-6, 42, 10, 5], [-30, 20, 8, 5], [24, 42, 8, 5]].forEach(([x, y, a, b], i) => F(x, y, x + a, y + b, i % 2 ? W.r : mix(W.l, W.s, 0.45), { r: 2, t: "l", layer: 1 }));
+    [[30, 6, 13, 6], [-6, 4, 12, 6], [8, 40, 10, 5], [-26, 6, 9, 6], [-25, 40, 8, 5]].forEach(([z, y, a, b]) => Sd(z, y, z - a, y + b, W.fs, { r: 2, t: "s", layer: 1 })); }
   if (V === "wood"){ for (let y = 6; y < h + rise - 6; y += 6.5){ const x = y > h ? hw * (1 - (y - h) / rise) - 1.5 : hw; S.line([[-x, y, hl + 0.3], [x, y, hl + 0.3]], W.s, 0.9, { layer: 1, op: 0.75 }); if (y < h) S.line([[hw + 0.3, y, hl], [hw + 0.3, y, -hl]], W.fs, 0.9, { layer: 1, op: 0.8 }); } }
   // the eaves' shadow on the side wall
   Sd(hl, h - 7, -hl, h, W.fs, { r: 0, t: "s", layer: 1 });
   // door and windows of the front wall (in the light)
-  const dw = V === "brick" ? 13 : 15, dh = V === "brick" ? 27 : 30, dx = V === "brick" ? -10 : V === "red" || V === "stone" ? -12 : 0;
+  const dw = V === "brick" ? 13 : 16, dh = V === "brick" ? 27 : 34, wy = h * 0.3, wh = h * 0.38, dx = V === "brick" ? -10 : V === "red" || V === "stone" ? -12 : 0;
   const door = () => { F(dx - dw / 2 - 2, 0, dx + dw / 2 + 2, dh + 2, G.trim ? WIN : W.r, { r: G.arch ? 6 : 1 }); F(dx - dw / 2, 0, dx + dw / 2, dh, G.door, { t: "l", r: G.arch ? 5 : 0.8, z: 0.2 });
     F(dx - dw / 2 + 2.5, dh * 0.5, dx + dw / 2 - 2.5, dh - 3, G.door, { t: "s", r: 1, z: 0.4 }); S.disc([dx + dw / 2 - 3, dh * 0.42, hl + 0.6], 1.3, "z", C.gold.l, { layer: 2, z: 0.6, t: "l" });
     S.box([dx - dw / 2 - 4, 0, hl], [dx + dw / 2 + 4, 2.4, hl + 7], C.stone, { layer: 2, z: 0.8 }); };
@@ -172,9 +176,9 @@ function house(k){
   const Fz = (a, y0, b, y1, m, oo) => F(Math.min(a, b), y0, Math.max(a, b), y1, m, oo), Sz = (a, y0, b, y1, m, oo) => Sd(-Math.min(a, b), y0, -Math.max(a, b), y1, m, oo);
   door();
   if (V === "brick"){ win(Fz, 13, 8, 10, 15, 1); [36, 66].forEach(y => { win(Fz, -11, y, 10, 16, 1); win(Fz, 12, y, 10, 16, 1); }); [8, 36, 66].forEach(y => { win(Sz, -12, y, 11, 16, 0); win(Sz, 13, y, 11, 16, 0); }); }
-  else { if (V === "wood"){ win(Fz, -21, 13, 11, 16, 1); win(Fz, 21, 13, 11, 16, 1); F(dx - dw / 2 - 6, dh + 3, dx + dw / 2 + 6, dh + 6.5, WIN, { r: 1, z: 1 }); } else win(Fz, 15, 13, 12, 17, 1);
+  else { if (V === "wood"){ win(Fz, -21, wy, 11, wh, 1); win(Fz, 21, wy, 11, wh, 1); F(dx - dw / 2 - 6, dh + 3, dx + dw / 2 + 6, dh + 6.5, WIN, { r: 1, z: 1 }); } else win(Fz, 15, wy, 12, wh, 1);
     S.disc([0, h + rise * 0.42, hl + 0.4], 5.4, "z", V === "wood" ? WIN : W.r, { layer: 2, t: "l" }); S.disc([0, h + rise * 0.42, hl + 0.6], 3.8, "z", glassL, { layer: 2, z: 0.3, t: "l" });
-    win(Sz, -22, 13, 13, 17, 0); win(Sz, 20, 13, 13, 17, 0); }
+    win(Sz, -16, wy, 12, wh, 0); win(Sz, 16, wy, 12, wh, 0); }
   // the chimney (behind the roof's near slope; it comes out of the roof)
   { const cx0 = 6, cx1 = 18, cz1 = -hl + 30, cz0 = -hl + 18, top = h + rise + 9, M = V === "red" ? C.brick : V === "wood" ? C.brick : W;
     S.face([[cx0, yP(cx0), cz1], [cx1, yP(cx1), cz1], [cx1, top, cz1], [cx0, top, cz1]], M, { layer: 4, t: "l" });
@@ -187,17 +191,18 @@ function house(k){
   S.face([[-hw - e, yE, rz1], [0, h + rise, rz1], [hw + e, yE, rz1], [hw + e, yE - 3.6, rz1], [0, h + rise - 5.2, rz1], [-hw - e, yE - 3.6, rz1]], G.trim ? WIN : R.s, { layer: 3, z: 2, r: 0.5, t: "l" });
   S.line([[-hw - e + 1, yE + 0.4, rz1], [0, h + rise + 0.2, rz1], [0, h + rise + 0.2, rz0]], G.trim ? "#FFFFFF" : R.r, 1.3, { layer: 3, z: 3 });      // the light on the lit edge
   for (let i = 1; i < 5; i++){ const t = i / 5, x = (hw + e) * t, y = h + rise + (yE - h - rise) * t; S.line([[x, y, rz1 - 2], [x, y, rz0 + 2]], R.s, 0.8, { layer: 3, z: 0.5, op: 0.55 }); }     // courses of tiles or slates
-  return S.out(V === "brick" ? { y0: 18, y1: 174 } : { mid: true, y0: 38, y1: 178 });
+  return S.out(V === "brick" ? { y0: 18, y1: 174 } : { mid: true, y0: 20, y1: 178 });
 }
 
 /* ================================================================ a train (un train) ================================================================
    Coming toward us along its rails from the upper left: the long nose of a fast train, a dark windscreen, a row of windows, a
    carriage behind, a pantograph, rails and sleepers. Against a bus and a car: rails, no road wheels, several carriages, the nose.
-   looks: a colour (blue, red ...) | "old" (a square-fronted railcar, green and cream) ; "steam" is not drawn here yet */
+   looks: a colour (blue, red ...) | "old" (a square-fronted railcar, green and cream) | "steam" (a black engine, red wheels, smoke, a tender)
+   The train is drawn short and full (a power car and one carriage), so that at the size of a card it is a bold shape and not a thin line. */
 function train(k, spec){
-  if (k.has("steam")) return null;
-  const v = (spec && spec._v) || {}, Lp = v.lp || 58, Lc = v.lc || 62;
-  const old = k.has("old"), B = old ? C.green : colour(k, "blue"), S = scene(v.yaw || -68, v.pitch || 18, v.D || 270), W = 32, hz = W / 2, yb = 7, ys = 34, yr = 40, zr = hz - 6;
+  if (k.has("steam")) return steam();
+  const v = (spec && spec._v) || {}, Lp = v.lp || (k.has("old") ? 44 : 38), Lc = v.lc || 42;
+  const old = k.has("old"), B = old ? C.green : colour(k, "blue"), S = scene(v.yaw || -64, v.pitch || 18, v.D || 210), W = 32, hz = W / 2, yb = 7, ys = 34, yr = 40, zr = hz - 6;
   const CR = P("#FBF3E0", "#D9CDB4"), GL = "#2B3850", GL2 = "#55708F", RF = C.steel;
   const car = (x0, x1, front, lead) => {
     S.face([[x0, yb, hz], [x1, yb, hz], [x1, ys, hz], [x0, ys, hz]], B, { t: "l", r: 0.5 });                                    // the side
@@ -246,6 +251,36 @@ function train(k, spec){
   return S.out({ y1: 172, y0: 18, mid: true });
 }
 
+function steam(){
+  const S = scene(-64, 18, 210), hz = 16, B = C.black, RD = C.red, yb = 7, TY = "#262B36", X0 = -62, X1 = 86;
+  S.face([[X0, 0, 21], [X1, 0, 21], [X1, 0, -21], [X0, 0, -21]], C.paving, { layer: -9, t: "l", r: 5 });
+  for (let x = X0 + 6; x < X1 - 4; x += 13) S.face([[x, 0.2, 16], [x + 5, 0.2, 16], [x + 5, 0.2, -16], [x, 0.2, -16]], "#A98C69", { layer: -8, r: 0.6 });
+  [10, -10].forEach(z => { S.face([[X0 + 2, 0.5, z + 1.1], [X1 - 2, 0.5, z + 1.1], [X1 - 2, 0.5, z - 1.1], [X0 + 2, 0.5, z - 1.1]], "#7F8796", { layer: -7, r: 0 }); S.line([[X0 + 2, 0.6, z + 0.6], [X1 - 2, 0.6, z + 0.6]], "#D5DAE2", 0.6, { layer: -7, z: 1 }); });
+  cast(S, -52, 68, -hz, hz, { g: 5, op: 0.12 });
+  const wheel = (x, r, col) => { S.disc([x, r, hz + 0.6], r, "z", TY, { layer: 2, t: "l" }); S.disc([x, r, hz + 0.8], r * 0.76, "z", col, { layer: 2, z: 0.2, t: "l" }); S.disc([x, r, hz + 1], r * 0.24, "z", C.steel.l, { layer: 2, z: 0.4, t: "l" }); };
+  // the tender, with its coal
+  S.box([-52, yb, -14], [-6, 27, 14], B, { show: "frt", r: 1 }); S.face([[-48, 27, 10], [-10, 27, 10], [-15, 33, 3], [-43, 33, 3]], "#1F232C", { layer: 1, r: 2 }); S.face([[-43, 33, 3], [-15, 33, 3], [-15, 33, -7], [-43, 33, -7]], "#2A2F3A", { layer: 1, r: 2 });
+  S.face([[-50, 20, 14.3], [-8, 20, 14.3], [-8, 22.4, 14.3], [-50, 22.4, 14.3]], RD.l, { layer: 1, r: 0 }); S.face([[-50, 2.5, 13], [-8, 2.5, 13], [-8, yb, 13], [-50, yb, 13]], C.dark, { t: "s", z: -1 });
+  [-42, -29, -16].forEach(x => wheel(x, 4.6, C.dark.l));
+  // the cab and its roof
+  S.box([0, yb, -15], [20, 41, 15], B, { show: "frt", r: 1 }); S.box([-3, 41, -17], [23, 43.6, 17], { l: B.r, m: B.l, s: B.fs }, { show: "frt", layer: 1, r: 1 });
+  S.face([[5, 25, 15.3], [15, 25, 15.3], [15, 36, 15.3], [5, 36, 15.3]], "#FFE9A6", { layer: 1, r: 1.5 });
+  // the boiler: a round barrel, its front a door
+  for (let i = 0; i < 12; i++){ const a = i * Math.PI / 6, b = (i + 1) * Math.PI / 6; S.face([[20, 25 + 12 * Math.cos(a), 12 * Math.sin(a)], [64, 25 + 12 * Math.cos(a), 12 * Math.sin(a)], [64, 25 + 12 * Math.cos(b), 12 * Math.sin(b)], [20, 25 + 12 * Math.cos(b), 12 * Math.sin(b)]], B, { r: 0 }); }
+  S.disc([64.2, 25, 0], 12, "x", B.fs, { layer: 1, t: "l" }); S.disc([64.4, 25, 0], 9.2, "x", B.s, { layer: 1, z: 0.2, t: "l" }); S.disc([64.6, 25, 0], 2.2, "x", C.steel.l, { layer: 1, z: 0.4, t: "l" }); S.disc([64.8, 40, 0], 2.6, "x", "#FFF1B8", { layer: 2, t: "l" });
+  [30, 44].forEach(x => S.face([[x, 25 + 12.2, -3], [x + 1.6, 25 + 12.2, -3], [x + 1.6, 25 + 10.7, 6.2], [x + 1.6, 25 + 6.2, 10.7], [x + 1.6, 25, 12.3], [x, 25, 12.3], [x, 25 + 6.2, 10.7], [x, 25 + 10.7, 6.2]], C.gold.l, { layer: 1, r: 0, op: 0.9 }));      // two bands of brass
+  S.box([20, 11.5, -16], [69, 13.2, 16], RD, { show: "frt", layer: 1 });                                                        // the running board
+  S.box([51.5, 36, -3.4], [58.5, 49, 3.4], B, { layer: 1, r: 1 }); S.box([50.5, 49, -4.4], [59.5, 51.6, 4.4], { l: B.r, m: B.l, s: B.fs }, { layer: 1, z: 1, r: 1 });      // the chimney
+  S.box([32, 36, -3.6], [41, 41.5, 3.6], C.gold, { layer: 1, r: 2.5 });                                                         // the dome
+  S.face([[0, 2.5, 13], [66, 2.5, 13], [66, yb + 4.5, 13], [0, yb + 4.5, 13]], C.dark, { t: "s", z: -1 });
+  wheel(28, 8.4, RD.l); wheel(46, 8.4, RD.l); wheel(61, 4.8, RD.l);
+  S.line([[28, 8.4, hz + 1.4], [46, 8.4, hz + 1.4], [59, 10.5, hz + 1.4]], C.steel.l, 1.8, { layer: 3 });                       // the rod
+  S.box([55, 7, 13], [65, 13, hz + 1.2], B, { layer: 2, z: -2, r: 1 });                                                         // the cylinder
+  S.box([67, 5, -15], [70, 11.5, 15], RD, { show: "frt", layer: 1, r: 0.8 }); [9, -9].forEach(z => S.disc([70.3, 8.4, z], 2.3, "x", C.steel.l, { layer: 2, t: "l" }));      // the buffer beam
+  S.puff([55, 60, 0], 6.5, "#DDE0E7", "#C3C8D3", { layer: 4 }); S.puff([48, 73, 0], 9.5, "#DDE0E7", "#C3C8D3", { layer: 4 }); S.puff([37, 86, 0], 7.5, "#E4E6EC", "#CDD1DA", { layer: 4 });      // smoke
+  return S.out({ y1: 172, y0: 16, mid: true });
+}
+
 /* ================================================================ a book (un livre) ================================================================
    A block of pages between two boards: the pages' edge always shows (that is what tells a book from a photo, a card, a phone).
    looks: "closed" (lying, the usual one) | "open" | "thin" (standing) | "thick" (lying, twice as thick) | "old" ; a colour: the cover */
@@ -273,7 +308,7 @@ function book(k){
     S.face([[-w + 5, 0, t + 0.2], [-w + 8, 0, t + 0.2], [-w + 8, h, t + 0.2], [-w + 5, h, t + 0.2]], B, { t: "s", layer: 1, r: 0, op: 0.7 });     // the hinge of the board
     S.face([[-w + 17, h * 0.6, t + 0.3], [w - 9, h * 0.6, t + 0.3], [w - 9, h * 0.82, t + 0.3], [-w + 17, h * 0.82, t + 0.3]], PG, { t: "l", layer: 1, r: 2.5 });     // a plain label (no word on it)
     S.face([[-w + 17, h * 0.2, t + 0.3], [w - 9, h * 0.2, t + 0.3], [w - 9, h * 0.23, t + 0.3], [-w + 17, h * 0.23, t + 0.3]], B, { t: "s", layer: 1, r: 0.6, op: 0.8 });
-    return S.out({ y1: 172, y0: 18 });
+    return S.out({ y1: 166, y0: 30, x0: 44, x1: 116 });      // not the whole card: three of them are laid out together (index.html) and must not touch
   }
   const T = k.has("thick") ? 38 : 15, S = scene(33, 36, 760), w = 36, d = 48, c = 2.2;       // lying closed: the spine to the left in the light, the pages to the front
   cast(S, -w, w, -d, d, { g: 7, op: 0.11 });
@@ -333,7 +368,7 @@ function car(k){
       line("M64 115V142M103 116L105 142", B.fs, 1, 'opacity=".7"') + rect(69, 119, 7, 2.2, B.fs, 1) + rect(88, 119, 7, 2.2, B.fs, 1) + fill("M99 108L105 108Q106 113 102 113L99 113Z", B.s) +
       rect(141, 139, 9, 4.5, C.silver.l, 2) + rect(10, 139, 9, 4.5, C.silver.l, 2) +
       circ(w1, wy, r + 2.4, B.fs) + circ(w2, wy, r + 2.4, B.fs) + wheel(w1, wy, r) + wheel(w2, wy, r); }
-  return `<g transform="translate(0 ${up})">${s}</g>`;
+  return `<g transform="translate(80 ${121 + up}) scale(${small ? 1.02 : 1.07}) translate(-80 -121)">${s}</g>`;
 }
 
 /* ================================================================ a town (une ville) ================================================================
@@ -360,7 +395,7 @@ function town(k){
     return o;
   };
   const tree = (cx, cy, r) => solid(cd(cx, cy, r), nt(C.leaf), { k: r * 0.5, rim: night ? 0 : 1 });
-  if (night){ s += `<ellipse cx="80" cy="90" rx="68" ry="80" fill="#27325F"/>` +
+  if (night){ s += fill(rrd(11, 13, 138, 164, 15), "#27325F") + fill("M11 28Q11 13 26 13H134Q149 13 149 28V60Q80 44 11 66Z", "#2F3B70") +
       [[30, 52], [52, 30], [112, 32], [132, 62], [96, 22], [22, 84], [138, 92]].map(([x, y], i) => circ(x, y, i % 2 ? 1.1 : 1.5, "#FFF6CF")).join("") +
       circ(118, 52, 9, "#FFF1B8") + circ(114.5, 49.5, 8, "#27325F"); }                                                              // a moon
   // the far row
@@ -382,7 +417,10 @@ function town(k){
   // the foot of the town: trees and the ground (or the river)
   if (river){ const WA = nt(P("#7FC0E4", "#58A0CB")); s += fill("M6 150Q80 144 154 150L154 166Q80 176 6 168Z", nt(C.grass).l) +
       [[22, 148, 7], [60, 150, 6], [104, 150, 6.5], [140, 148, 7]].map(a => tree(a[0], a[1], a[2])).join("") +
-      fill("M4 158Q80 152 156 158L156 172Q80 180 4 173Z", WA.l) + fill("M4 166Q80 161 156 166L156 172Q80 180 4 173Z", WA.s) + line("M22 162H44M70 160H96M112 164H134M48 169H66", "#FFFFFF", 1.4, 'opacity=".75"'); }
+      fill("M4 158Q80 152 156 158L156 172Q80 180 4 173Z", WA.l) + fill("M4 166Q80 161 156 166L156 172Q80 180 4 173Z", WA.s) + line("M14 163H30M132 165H148M20 171H40M120 172H142", "#FFFFFF", 1.4, 'opacity=".75"') +
+      fill("M34 156Q80 143 126 156L126 174H116Q116 160 104 160Q92 160 92 174H86Q86 159 74 159Q62 159 62 174H56Q56 160 46 160Q38 161 38 174H34Z", nt(C.stone).l) +      // a bridge of three arches: a river, not a lake
+      fill("M34 156Q80 143 126 156L126 160Q80 147 34 160Z", nt(C.stone).r) + fill("M104 160Q116 160 116 174H112Q112 163 104 160ZM74 159Q86 159 86 174H82Q82 162 74 159ZM46 160Q56 160 56 174H52.5Q52.5 163 46 160Z", nt(C.stone).s); }
+  else if (night) s += clipped(rrd(11, 13, 138, 164, 15), fill("M0 158Q80 150 160 158V190H0Z", nt(C.grass).l) + [[20, 156, 8], [44, 159, 6], [66, 158, 7], [92, 160, 6], [114, 158, 7.5], [138, 156, 8]].map(a => tree(a[0], a[1], a[2])).join(""));
   else s += ground(80, 168, 78, 9, 0.2) + fill("M8 160Q80 150 152 160Q150 172 80 174Q10 172 8 160Z", nt(C.grass).l) + fill("M40 171Q80 166 152 160Q150 172 80 174Z", nt(C.grass).s, 'opacity=".7"') +
       [[20, 156, 8], [44, 159, 6], [66, 158, 7], [92, 160, 6], [114, 158, 7.5], [138, 156, 8]].map(a => tree(a[0], a[1], a[2])).join("");
   return s;
@@ -420,21 +458,214 @@ function restaurant(k){
   return s;
 }
 
+/* ================================================================ a bus (un bus) ================================================================
+   From the side like the car, facing right, but ONE long tall box: a row of many large windows, two glazed doors, two (or three) road
+   wheels, a wide windscreen. Against a train (rails, a nose, carriages, seen along its length) and a car (short, a cabin over a bonnet).
+   looks: a colour (red: the usual town bus) | "long" (a bus in two halves with a bellows, three axles) | "school" (yellow, a bonnet in
+          front, dark lines along it) | "green" alone (an old round bus, cream above) ; "plain" with a colour: the town bus in that colour */
+const tyre = (cx, cy, r, hub) => circ(cx, cy, r, "#2E3442") + line(`M${r1(cx - r * 0.74)} ${r1(cy - r * 0.6)}A${r} ${r} 0 0 1 ${r1(cx + r * 0.3)} ${r1(cy - r * 0.95)}`, "#5A6274", 1.4) +
+  solid(cd(cx, cy, r * 0.58), hub || P("#E3E7EE", "#A9B1BF"), { k: 3, rim: 0 }) + circ(cx, cy, r * 0.2, "#7C8494");
+function bus(k){
+  const school = k.has("school"), long = k.has("long"), oldB = k.cn === "green" && !k.has("plain") && !long && !school;
+  const B = school ? C.yellow : colour(k, "red"), G = C.glass, CR = "#FBF3E0", lamp = "#FFF1B8", DK = C.dark;
+  const win = (x, y, w, h, r) => rect(x, y, w, h, G.l, r == null ? 2.5 : r) + clipped(rrd(x, y, w, h, r == null ? 2.5 : r), fill(`M${x + w * 0.5} ${y}H${x + w * 0.8}L${x + w * 0.45} ${y + h}H${x + w * 0.15}Z`, "#FFFFFF", 'opacity=".45"'));
+  let s;
+  if (oldB){                                               // an old round bus: cream above the waist, a round lamp
+    const body = "M14 140V98Q14 70 44 70H112Q146 70 146 104V140Z", top = "M14 110V98Q14 70 44 70H112Q146 70 146 104V110Z";
+    s = ground(80, 156, 74, 7) + solid(body, B, { k: 6 }) + clipped(body, fill(top, CR) + fill("M14 106H146V110H14Z", "#E2D7BE")) + line("M16 96Q16 72 44 72", "#FFFFFF", 1.4) +
+      [22, 49, 76, 103].map(x => win(x, 80, 22, 22, 6)).join("") + fill("M129 80Q141 84 142 102H129Z", G.l) +
+      line("M14 122H146", CR, 2.4) + circ(139, 124, 5.2, C.silver.s) + circ(139.6, 124, 3.8, lamp) + rect(140, 136, 10, 4.5, C.silver.l, 2) + rect(10, 136, 10, 4.5, C.silver.l, 2) + rect(15, 116, 3, 7, "#C9422F", 1.2) +
+      circ(42, 142, 15.2, B.fs) + circ(114, 142, 15.2, B.fs) + tyre(42, 142, 12.6, P("#F3EBD8", "#CFC5AE")) + tyre(114, 142, 12.6, P("#F3EBD8", "#CFC5AE")); }
+  else if (school){                                        // a yellow school bus: a bonnet in front, dark lines along it
+    const body = "M12 140V86Q12 76 22 76H112Q120 76 121 84L124 108H140Q148 108 148 118V140Z";
+    s = ground(80, 156, 74, 7) + solid(body, B, { k: 6 }) + [18, 38, 58, 78].map(x => win(x, 84, 16, 20)).join("") + fill("M100 84H114L117 106H100Z", G.l) +
+      line("M12 112H122M12 120H146", DK.l, 2.2) + line("M97 82V138", B.fs, 1.2, 'opacity=".8"') + rect(141, 124, 6.5, 5, lamp, 1.5) + rect(12, 124, 3.4, 8, "#C9422F", 1.2) + rect(139, 134, 11, 5, DK.l, 2) + rect(9, 134, 9, 5, DK.l, 2) +
+      circ(24, 80, 2.2, "#C9422F") + circ(108, 80, 2.2, "#F08A2E") +
+      circ(40, 142, 15.2, B.fs) + circ(128, 142, 14.2, B.fs) + tyre(40, 142, 12.6) + tyre(128, 142, 11.6); }
+  else if (long){                                          // a long bus: two halves, a bellows between them, three axles
+    const a = "M11 138V98Q11 88 21 88H72V138Z", b = "M82 138V88H136Q146 88 148 100L149 126V138Z";
+    s = ground(80, 152, 76, 6.5) + rect(70, 91, 14, 45, DK.l, 2) + [72.5, 76, 79.5].map(x => line(`M${x} 93V134`, DK.s, 1.4)).join("") +
+      solid(a, B, { k: 5 }) + solid(b, B, { k: 5 }) + [16, 30, 44].map(x => win(x, 95, 11.5, 15)).join("") + [88, 102].map(x => win(x, 95, 11.5, 15)).join("") + fill("M131 95H138Q143 96 144 104V112H131Z", G.l) +
+      rect(58, 94, 10, 40, B.s, 1.5) + rect(59.6, 96, 6.8, 22, G.l, 1) + rect(116, 94, 12, 40, B.s, 1.5) + rect(117.6, 96, 8.8, 22, G.l, 1) + line("M122 96V132", B.s, 1) +
+      line("M11 119H56M70 119H114M130 119H148", CR, 2.4) + rect(143, 124, 5, 4.4, lamp, 1.4) + rect(11, 122, 3, 7, "#C9422F", 1.2) +
+      [28, 100, 134].map(x => circ(x, 139, 12.4, B.fs) + tyre(x, 139, 10.2)).join(""); }
+  else {                                                   // the town bus
+    const body = "M12 140V86Q12 74 24 74H134Q145 74 147 88L149 122V140Z";
+    s = ground(80, 156, 74, 7) + solid(body, B, { k: 6 }) + [18, 37, 75, 94].map(x => win(x, 83, 16, 22)).join("") + fill("M131 83H139Q143 84 144 92L145 108H131Z", G.l) +
+      rect(56, 82, 16, 52, B.s, 2) + rect(58, 84.5, 5.4, 30, G.l, 1) + rect(64.6, 84.5, 5.4, 30, G.l, 1) + rect(113, 82, 15, 52, B.s, 2) + rect(115, 84.5, 11, 30, G.l, 1) + line("M120.5 84.5V132", B.s, 1) +
+      line("M12 118H54M74 118H111M130 118H148", CR, 2.6) + rect(131, 76.5, 13, 4.2, "#F6C453", 1.2) + rect(143.5, 124, 5, 5, lamp, 1.5) + rect(12, 122, 3.2, 8, "#C9422F", 1.2) + rect(141, 134, 10, 5, C.silver.l, 2) + rect(9, 134, 9, 5, C.silver.l, 2) +
+      circ(38, 142, 15.2, B.fs) + circ(108, 142, 15.2, B.fs) + tyre(38, 142, 12.6) + tyre(108, 142, 12.6); }
+  return `<g transform="translate(80 ${long ? 86 : 90}) scale(1.04) translate(-80 -112)">${s}</g>`;
+}
+
+/* ================================================================ a phone (un téléphone) ================================================================
+   A slab with a dark screen of small coloured squares, standing a little turned. Against a book (pages), a photo (a print with a white
+   border and a scene) and a picture card. looks: a colour: the case (black, red, blue, silver ...) */
+function phone(k){
+  const B = k.cn === "silver" ? C.silver : colour(k, "black"), body = rrd(45, 20, 70, 150, 13), scr = rrd(50.5, 27, 59, 136, 8);
+  const ICON = ["#F3BC3F", "#4489C8", "#DB4D3A", "#5AA86D", "#EE8FA8", "#8E6BBF", "#EE8B3A", "#FBF8F0", "#4FB3B0", "#DB4D3A", "#F3BC3F", "#4489C8"];
+  let ic = ""; for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) ic += rect(57 + c * 16.4, 42 + r * 19, 12.6, 12.6, ICON[r * 3 + c], 3.6);
+  return ground(84, 172, 46, 6) + `<g transform="rotate(-7 80 95)">` + solid(body, B, { k: 5, rim: 1.4 }) + fill(scr, "#243049") + clipped(scr, fill("M50 27H76L50 80Z", "#FFFFFF", 'opacity=".08"')) +
+    rect(71, 30.5, 18, 4.4, "#101726", 2.2) + ic + rect(54.5, 124, 51, 20, "#34425F", 6) + [0, 1, 2].map(c => rect(59 + c * 15.4, 127.5, 12.6, 12.6, ["#5AA86D", "#FBF8F0", "#4489C8"][c], 3.6)).join("") + rect(68, 153.5, 24, 2.6, "#8D97AB", 1.3) + `</g>`;
+}
+
+/* ================================================================ a heart (un cœur) ================================================================
+   The plain sign of a heart, full and round. looks: a colour (red, pink, purple, orange ...) */
+function heart(k){
+  const B = colour(k, "red"), d = "M80 166C44 136 15 108 15 71C15 45 34 28 55 28C67 28 76 34 80 45C84 34 93 28 105 28C126 28 145 45 145 71C145 108 116 136 80 166Z";
+  return ground(84, 173, 40, 5, 0.2) + solid(d, B, { k: 9, rim: 1.6 }) + fill("M34 62C34 48 44 39 56 39C61 39 62 44 57 45C48 47 42 54 41 63C40 68 34 68 34 62Z", "#FFFFFF", 'opacity=".5"');
+}
+
+/* ================================================================ coffee (un café) ================================================================
+   A cup ON ITS SAUCER with dark coffee in it and steam over it (the drink, not the place). Against a glass of water (clear, no handle,
+   no saucer). looks: "in a white cup" (the usual one; a colour + "cup") | "in a small black cup" | "with milk" (a wide cup of pale
+   coffee and a little jug) | "in a glass" (a glass of dark coffee on a saucer, a spoon) | "in a red mug" */
+function coffee(k){
+  const glass = k.has("glass"), milk = k.has("milk"), small = k.has("small"), mug = k.has("mug");
+  const B = glass ? C.glass : k.cn && C[k.cn] ? C[k.cn] : C.white, CO = milk ? P("#C99B6E", "#A97C52") : P("#6B4630", "#4A2E1E"), SA = glass || milk || mug ? C.white : B;
+  const steam = (x, y, h) => [0, 9, 18].map((dx, i) => line(`M${x + dx} ${y}q-6 ${-h * 0.25} 0 ${-h * 0.5}t0 ${-h * 0.5}`, "#A9B0C0", 2.6, `opacity="${i === 1 ? 0.75 : 0.5}"`)).join("");
+  const saucer = (cx, cy, rx) => ground(cx + 2, cy + 6, rx * 1.05, rx * 0.2) + `<ellipse cx="${cx}" cy="${cy + 3}" rx="${rx}" ry="${r1(rx * 0.23)}" fill="${SA.s}"/><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${r1(rx * 0.23)}" fill="${SA.l}"/><ellipse cx="${cx + 2}" cy="${cy + 1}" rx="${r1(rx * 0.62)}" ry="${r1(rx * 0.13)}" fill="${SA.s}" opacity=".7"/>`;
+  let s;
+  if (glass){
+    const g = "M52 62H108L102 140Q101 146 95 146H65Q59 146 58 140Z";
+    s = saucer(80, 148, 56) + line("M96 152L132 142", C.silver.l, 3.2) + `<ellipse cx="135" cy="141" rx="7" ry="3.6" fill="${C.silver.l}" transform="rotate(-16 135 141)"/>` +
+      fill(g, "#E4F1F6") + clipped(g, rect(40, 80, 80, 80, CO.l) + rect(84, 80, 40, 80, CO.s) + `<ellipse cx="80" cy="80" rx="27" ry="5" fill="${mix(CO.l, "#C99B6E", 0.5)}"/>`) +
+      line("M57 70L62 138", "#FFFFFF", 3, 'opacity=".7"') + `<ellipse cx="80" cy="62" rx="28" ry="5.4" fill="none" stroke="${B.s}" stroke-width="2.2"/>` + line("M52 62L58 140Q59 146 65 146H95Q101 146 102 140L108 62", B.s, 2.2) + steam(71, 52, 30);
+  } else {
+    const w = milk ? 44 : mug ? 34 : 40, top = mug ? 70 : 84, bot = 142, cx = milk ? 62 : 78, k2 = small ? 0.72 : 1;
+    const cup = mug ? `M${cx - w} ${top}H${cx + w}V${bot - 8}Q${cx + w} ${bot} ${cx + w - 8} ${bot}H${cx - w + 8}Q${cx - w} ${bot} ${cx - w} ${bot - 8}Z`
+      : `M${cx - w} ${top}H${cx + w}Q${cx + w} ${bot - 6} ${cx + w * 0.42} ${bot}H${cx - w * 0.42}Q${cx - w} ${bot - 6} ${cx - w} ${top}Z`;
+    const hy = top + (mug ? 16 : 10), handle = `M${cx + w - 3} ${hy}Q${cx + w + 24} ${hy - 4} ${cx + w + 22} ${hy + 16}Q${cx + w + 20} ${hy + 32} ${cx + w - (mug ? 3 : 12)} ${hy + (mug ? 36 : 30)}`;
+    s = (mug ? ground(cx + 4, bot + 2, w * 1.5, 7) : saucer(cx, bot + 2, w * 1.42)) + line(handle, B.s, 9) + line(handle, B.l, 5.4) + solid(cup, B, { k: 7, rim: 1.4 }) +
+      `<ellipse cx="${cx}" cy="${top}" rx="${w}" ry="${r1(w * 0.2)}" fill="${B.r}"/><ellipse cx="${cx}" cy="${top + 0.6}" rx="${w - 4}" ry="${r1(w * 0.2 - 2)}" fill="${CO.s}"/><ellipse cx="${cx}" cy="${top + 1.8}" rx="${w - 5.5}" ry="${r1(w * 0.2 - 3.2)}" fill="${CO.l}"/>` +
+      (milk ? line(`M${cx - 14} ${top + 2}q8 -4 16 0t14 -1`, "#FBF3E0", 2.2, 'opacity=".9"') : `<ellipse cx="${cx - w * 0.3}" cy="${top + 0.6}" rx="${r1(w * 0.3)}" ry="2" fill="${mix(CO.l, "#C99B6E", 0.55)}" opacity=".8"/>`) + steam(cx - 9, top - 10, 30);
+    if (milk) s += ground(132, 158, 20, 5) + line("M143 128Q155 128 153 139Q151 148 141 148", C.white.s, 4) + solid("M118 120H146L142 154Q142 158 138 158H126Q122 158 122 154Z", C.white, { k: 5 }) + `<ellipse cx="132" cy="120" rx="14" ry="3.4" fill="#FFFFFF"/><ellipse cx="132" cy="120.6" rx="11" ry="2.2" fill="#F3EBD8"/>` + fill("M115 117L121 119L120 125Z", C.white.l);
+    if (small) s = `<g transform="translate(80 150) scale(${k2}) translate(-80 -150)">${s}</g>`;
+  }
+  return `<g transform="translate(0 4)">${s}</g>`;
+}
+
+/* ================================================================ a door (une porte) ================================================================
+   The door ALONE, as large as the card: its frame of stone, its step, a knob. Against a house (a whole building, with a roof) and a
+   window. looks: a colour (red: a panelled front door under a fanlight) | "wooden" (planks and a brace) | "with a window" (glazed above)
+   | "old" (green: an arched door of planks on iron hinges) | "white" | "big" with black (a double door: not drawn here yet) */
+function door(k){
+  if (k.has("big")) return null;
+  const old = k.has("old"), wooden = k.has("wooden") && !old, glazed = k.has("window"), B = wooden ? C.wood : colour(k, old ? "green" : "red"), ST = C.stone, BR = C.gold, IR = "#2E3442";
+  let s = ground(82, 174, 62, 6, 0.2);
+  if (old){
+    const fr = "M32 170V70Q32 16 80 16Q128 16 128 70V170Z", lf = "M43 170V72Q43 28 80 28Q117 28 117 72V170Z";
+    s += solid(fr, ST, { k: 5 }) + [[34, 96], [34, 128], [118, 84], [118, 142], [56, 22], [96, 20]].map(([x, y], i) => rect(x, y, i > 3 ? 12 : 8, i > 3 ? 5 : 12, i % 2 ? ST.r : ST.s, 2, 'opacity=".7"')).join("") +
+      solid(lf, B, { k: 6 }) + clipped(lf, [55, 67.5, 80, 92.5, 105].map(x => line(`M${x} 26V170`, B.fs, 1.2, 'opacity=".6"')).join("")) +
+      [70, 136].map(y => fill(`M43 ${y - 3.5}H96L101 ${y}L96 ${y + 3.5}H43Z`, IR) + circ(50, y, 1.3, "#8D97AB") + circ(64, y, 1.3, "#8D97AB") + circ(78, y, 1.3, "#8D97AB")).join("") +
+      `<circle cx="104" cy="104" r="6" fill="none" stroke="${IR}" stroke-width="2.6"/>` + circ(104, 98, 2.2, IR);
+  } else {
+    const fan = !wooden && !glazed, top = fan ? 50 : 24;
+    s += solid(fan ? "M32 170V58Q32 14 80 14Q128 14 128 58V170Z" : rrd(32, 14, 96, 156, 4), wooden ? C.stone : P("#FBF8F0", "#D9D3C4"), { k: 5 });
+    if (fan) s += fill("M43 50Q43 25 80 25Q117 25 117 50Z", C.glass.l) + line("M80 26V50M56 32L68 50M104 32L92 50", "#FBF8F0", 2.4) + fill("M43 50Q43 25 80 25L80 28Q49 29 46 50Z", C.glass.s, 'opacity=".6"');
+    const lf = rrd(43, top, 74, 170 - top, 2);
+    s += solid(lf, B, { k: 6 });
+    if (wooden) s += clipped(lf, [55.3, 67.6, 80, 92.3, 104.6].map(x => line(`M${x} ${top}V170`, B.fs, 1.2, 'opacity=".6"')).join("")) + fill(`M43 ${top + 16}H117V${top + 27}H43Z`, B.r, 'opacity=".55"') + fill("M43 136H117V147H43Z", B.r, 'opacity=".55"') +
+        fill(`M49 136L105 ${top + 27}H117L61 136Z`, B.r, 'opacity=".55"') + `<circle cx="108" cy="104" r="5.5" fill="none" stroke="${IR}" stroke-width="2.6"/>` + circ(108, 98.5, 2.2, IR);
+    else { const pan = (x, y, w, h) => rect(x, y, w, h, B.s, 2) + rect(x + 1.6, y + 1.8, w - 1.6, h - 1.8, B.m, 1.5);
+      if (glazed) s += rect(51, top + 9, 58, 60, "#FBF8F0", 2.5) + rect(54, top + 12, 52, 54, C.glass.l, 1.5) + clipped(rrd(54, top + 12, 52, 54, 1.5), fill(`M78 ${top + 10}H94L72 ${top + 70}H56Z`, "#FFFFFF", 'opacity=".5"')) + rect(78.6, top + 12, 2.8, 54, "#FBF8F0") + rect(54, top + 37.6, 52, 2.8, "#FBF8F0") + pan(51, 112, 58, 48);
+      else s += pan(51, top + 9, 25, 44) + pan(84, top + 9, 25, 44) + pan(51, top + 62, 25, 50) + pan(84, top + 62, 25, 50);
+      s += rect(70, glazed ? 102 : top + 55, 20, 4.6, BR.l, 1.6) + circ(109.5, glazed ? 106 : top + 58, 3.4, BR.s) + circ(109, glazed ? 105.4 : top + 57.4, 2.6, BR.l); }
+  }
+  return s + fill(rrd(22, 168, 116, 9, 3), ST.l) + fill("M22 173H138V174Q138 177 135 177H25Q22 177 22 174Z", ST.s);
+}
+
+/* ================================================================ a photo (une photo) ================================================================
+   A PRINT: a white border round a picture of people out of doors, a shine across it, a strip of tape; it lies turned on the card.
+   Against a book (pages), a phone (a dark screen), a picture card (the learner's figure on a plain card) and a window.
+   looks: "family" (three people) | "holiday" (two people, a tower, the sun) | "old" (brown, two people, corner mounts) |
+          a colour (a portrait of one person on that colour: "blue") */
+function photo(k){
+  const old = k.has("old"), fam = k.has("family"), hol = k.has("holiday"), SK = ["#E8B58E", "#C98F62", "#F0C7A4"], x0 = 30, y0 = 34, w = 100, h = 96;
+  const sep = c => old ? mix(mix(c, "#8A6A45", 0.55), "#E9D9BA", 0.25) : c;
+  const head = (cx, cy, r, skin, hair, top) => fill(`M${cx - r * 1.9} ${y0 + h}Q${cx - r * 1.9} ${cy + r * 1.25} ${cx} ${cy + r * 1.15}Q${cx + r * 1.9} ${cy + r * 1.25} ${cx + r * 1.9} ${y0 + h}Z`, sep(top)) + circ(cx, cy, r, sep(skin)) +
+    fill(`M${cx - r * 1.04} ${cy - r * 0.1}Q${cx - r * 1.1} ${cy - r * 1.25} ${cx} ${cy - r * 1.2}Q${cx + r * 1.1} ${cy - r * 1.25} ${cx + r * 1.04} ${cy - r * 0.1}Q${cx + r * 0.5} ${cy - r * 0.7} ${cx - r * 0.3} ${cy - r * 0.62}Q${cx - r * 0.8} ${cy - r * 0.55} ${cx - r * 1.04} ${cy - r * 0.1}Z`, sep(hair)) +
+    line(`M${cx - r * 0.36} ${cy + r * 0.4}Q${cx} ${cy + r * 0.66} ${cx + r * 0.36} ${cy + r * 0.4}`, sep("#8A4B3A"), 1.3) + circ(cx - r * 0.36, cy + r * 0.02, r * 0.1, sep("#2B2420")) + circ(cx + r * 0.36, cy + r * 0.02, r * 0.1, sep("#2B2420"));
+  const pic = rrd(x0, y0, w, h, 2);
+  let in_ = "";
+  if (k.cn && !old && !fam && !hol) in_ = rect(x0, y0, w, h, colour(k).l) + rect(x0, y0 + h * 0.62, w, h, colour(k).s, 0, 'opacity=".35"') + head(80, 78, 21, SK[0], "#5A3B28", C.red.l);
+  else { in_ = rect(x0, y0, w, h, sep("#BFE0F2")) + fill(`M${x0} ${y0 + 66}Q${x0 + 50} ${y0 + 52} ${x0 + w} ${y0 + 64}V${y0 + h}H${x0}Z`, sep("#9FCF8C"));
+    if (hol) in_ += circ(x0 + 20, y0 + 20, 9, sep("#F7C948")) + fill(`M${x0 + 80} ${y0 + 12}L${x0 + 84.5} ${y0 + 40}Q${x0 + 88} ${y0 + 62} ${x0 + 96} ${y0 + 78}H${x0 + 89}Q${x0 + 80} ${y0 + 60} ${x0 + 71} ${y0 + 78}H${x0 + 64}Q${x0 + 72} ${y0 + 62} ${x0 + 75.5} ${y0 + 40}Z`, sep("#6E7A92")) + head(52, 96, 13, SK[0], "#2B2420", C.red.l) + head(82, 102, 12, SK[1], "#B9763E", C.blue.l);
+    else if (fam) in_ += circ(x0 + 78, y0 + 30, 22, sep("#8FCB8A")) + circ(x0 + 20, y0 + 36, 16, sep("#A9D79E")) + head(54, 88, 13, SK[0], "#5A3B28", C.blue.l) + head(104, 86, 13, SK[1], "#2B2420", C.red.l) + head(80, 106, 10.5, SK[2], "#C68A3E", C.yellow.l);
+    else in_ += head(62, 84, 15, SK[0], "#3D2B1F", "#5F5448") + head(100, 90, 14, SK[2], "#6B4A2E", "#8A7A66"); }
+  const paper = old ? P("#F1E4C6", "#D3C3A0") : P("#FFFFFF", "#E3DED2");
+  let s = fill(rrd(22, 26, 116, old ? 112 : 126, 3), paper.s, 'transform="translate(2.4 3)"') + fill(rrd(22, 26, 116, old ? 112 : 126, 3), paper.l) + clipped(pic, in_ + fill(`M${x0 + 40} ${y0}H${x0 + 66}L${x0 + 26} ${y0 + h}H${x0}Z`, "#FFFFFF", 'opacity=".28"'));
+  if (old) s += [[22, 26, 0], [138, 26, 90], [138, 138, 180], [22, 138, 270]].map(([x, y, a]) => fill("M-3 -3H16L-3 16Z", "#3A4254", `transform="translate(${x} ${y}) rotate(${a})"`)).join("");
+  else s += fill("M62 18H98L99 31H61Z", "#F3DE9A", 'opacity=".92"') + fill("M62 18H98L98.3 22H61.8Z", "#FFF4C4", 'opacity=".9"');
+  return ground(84, 170, 60, 6, 0.2) + `<g transform="rotate(${old ? 5 : -6} 80 95) translate(0 ${old ? 12 : 6})">${s}</g>`;
+}
+
+/* ================================================================ a street (une rue) ================================================================
+   Seen from INSIDE, down its length: two rows of fronts running away to one point, the roadway between them with its line, pavements,
+   a lamp. Against a town (seen whole from outside: a skyline, a spire) and a restaurant (one front, close).
+   looks: "with cars" | "with trees" | "with shops" (awnings along both sides) | "with houses" | "at night" (a dark sky, lit windows) */
+function street(k){
+  const night = k.has("night"), shops = k.has("shops"), cars = k.has("cars"), trees = k.has("trees"), V = [80, 92], panel = rrd(11, 13, 138, 164, 15);
+  const nt = p => night ? P(mix(p.l, "#2A3566", 0.7), mix(p.s, "#1E2750", 0.76)) : p, winC = night ? "#FFD966" : "#6C7E9C", L = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const AW = [C.red, C.blue, C.yellow, C.green, C.orange, C.blue];
+  /* one side: three fronts between x = xa (near, at the card's edge) and xb (far); y at the near edge: top ty[i], bottom 170 */
+  const side = (sgn, W3, tops) => { let o = ""; const X = t => 80 + sgn * (68 - 54 * t), cuts = [0, 0.42, 0.74, 1];
+    for (let i = 2; i >= 0; i--){ const W = nt(W3[i]), t0 = cuts[i], t1 = cuts[i + 1], xa = X(t0), xb = X(t1), nearTop = [80 + sgn * 68, tops[i]], nearBot = [80 + sgn * 68, 170];
+      const top = t => L(nearTop, V, t * 54 / 68), bot = t => L(nearBot, V, t * 54 / 68), q = (t, f) => { const a = top(t), b = bot(t); return [X(t), a[1] + (b[1] - a[1]) * f]; };
+      o += fill(poly([q(t0, 0), q(t1, 0), q(t1, 1), q(t0, 1)]), sgn < 0 ? W.s : W.l) + line(`M${r1(q(t0, 0)[0])} ${r1(q(t0, 0)[1])}L${r1(q(t1, 0)[0])} ${r1(q(t1, 0)[1])}`, sgn < 0 ? W.l : W.r, 1.2);
+      const n = i === 0 ? 3 : 2; for (let c = 0; c < n; c++) for (let r = 0; r < 2; r++){ const a = t0 + (t1 - t0) * (c + 0.2) / n, b = t0 + (t1 - t0) * (c + 0.72) / n, f0 = 0.1 + r * 0.26, f1 = f0 + 0.17;
+          if (night && (c + r + i) % 3 === 0) o += fill(poly([q(a, f0), q(b, f0), q(b, f1), q(a, f1)]), mix(W.s, INK, 0.3)); else o += fill(poly([q(a, f0), q(b, f0), q(b, f1), q(a, f1)]), winC); }
+      const a = t0 + (t1 - t0) * 0.1, b = t0 + (t1 - t0) * 0.9;                                                 // the ground floor: a shop window under an awning, or a door
+      if (shops){ const A = nt(AW[i + (sgn > 0 ? 3 : 0)]); o += fill(poly([q(a, 0.72), q(b, 0.72), q(b, 0.94), q(a, 0.94)]), night ? "#FFD966" : nt(C.glass).l) + fill(poly([q(a, 0.57), q(b, 0.57), [q(b, 0.7)[0] - sgn * 7 * (1 - t1 * 0.75), q(b, 0.7)[1]], [q(a, 0.7)[0] - sgn * 7 * (1 - t0 * 0.75), q(a, 0.7)[1]]]), sgn < 0 ? A.m : A.l) + fill(poly([[q(a, 0.7)[0] - sgn * 7 * (1 - t0 * 0.75), q(a, 0.7)[1]], [q(b, 0.7)[0] - sgn * 7 * (1 - t1 * 0.75), q(b, 0.7)[1]], [q(b, 0.74)[0] - sgn * 7 * (1 - t1 * 0.75), q(b, 0.74)[1]], [q(a, 0.74)[0] - sgn * 7 * (1 - t0 * 0.75), q(a, 0.74)[1]]]), A.fs); }
+      else { const m = (a + b) / 2, d = (t1 - t0) * 0.1; o += fill(poly([q(m - d, 0.7), q(m + d, 0.7), q(m + d, 1), q(m - d, 1)]), nt(sgn < 0 ? C.brown : C.blue).s); }
+    } return o; };
+  let s = night ? fill(panel, "#27325F") + fill("M11 28Q11 13 26 13H134Q149 13 149 28V50Q80 36 11 54Z", "#2F3B70") + [[52, 30], [70, 22], [96, 40], [112, 24], [64, 52]].map(([x, y], i) => circ(x, y, i % 2 ? 1.1 : 1.5, "#FFF6CF")).join("") + circ(92, 28, 7.5, "#FFF1B8") + circ(89, 26, 6.8, "#27325F") : "";
+  let in_ = fill(poly([[12, 178], [148, 178], [148, 170], [94, V[1] + 16], [66, V[1] + 16], [12, 170]]), nt(C.paving).l) +                                            // the pavements
+    fill(poly([[32, 178], [128, 178], [86, V[1] + 16], [74, V[1] + 16]]), nt(P("#A3AAB8", "#858D9C")).l) +                                                           // the roadway
+    [[0.04, 0.2], [0.34, 0.47], [0.6, 0.69], [0.8, 0.86]].map(([a, b]) => { const y = t => 178 + (V[1] + 16 - 178) * t, hw = t => 2.2 * (1 - t) + 0.4; return fill(poly([[80 - hw(a), y(a)], [80 + hw(a), y(a)], [80 + hw(b), y(b)], [80 - hw(b), y(b)]]), night ? "#C9CEE6" : "#FFFFFF"); }).join("") +
+    rect(69, V[1] - 6, 22, 23, nt(far(C.cream, 0.3)).l, 1) + fill(poly([[67.5, V[1] - 5.5], [80, V[1] - 16], [92.5, V[1] - 5.5]]), nt(far(C.tile, 0.25)).l) + rect(77, V[1] + 4, 6, 12, nt(far(C.slate, 0.2)).l, 1) +      // the far end of the street
+    side(-1, [P("#F1D3B4", "#CFA884"), C.cream, P("#E9E2D2", "#C2B9A3")], [20, 38, 28]) + side(1, [P("#F4DDA6", "#D3B878"), P("#E7C9C0", "#C4A096"), C.cream], [30, 18, 36]);
+  if (trees) in_ += [[0.1, 1], [0.45, 1], [0.7, 1], [0.1, -1], [0.45, -1], [0.7, -1]].map(([t, sg]) => { const x = 80 + sg * (46 - 37 * t), y = 174 + (V[1] + 16 - 174) * t, r = 13 * (1 - t * 0.8); return rect(x - r * 0.1, y - r * 1.5, r * 0.2, r * 1.5, nt(C.brown).s) + solid(cd(x, y - r * 2, r), nt(C.leaf), { k: r * 0.45, rim: night ? 0 : 1 }); }).reverse().join("");
+  if (cars){ const rear = (x, y, w, B) => { const h = w * 0.78; return ground(x, y + 1, w * 0.7, w * 0.12, 0.3) + solid(rrd(x - w / 2, y - h, w, h * 0.92, w * 0.16), B, { k: w * 0.12, rim: 0.8 }) + fill(rrd(x - w * 0.36, y - h * 0.9, w * 0.72, h * 0.34, w * 0.07), nt(C.glass).l) + rect(x - w * 0.46, y - h * 0.44, w * 0.2, h * 0.12, "#F2C24B", 1) + rect(x + w * 0.26, y - h * 0.44, w * 0.2, h * 0.12, "#F2C24B", 1) + rect(x - w * 0.42, y - h * 0.1, w * 0.18, h * 0.14, "#2E3442", 1) + rect(x + w * 0.24, y - h * 0.1, w * 0.18, h * 0.14, "#2E3442", 1); };
+    in_ += rear(88, 124, 10, nt(C.blue)) + rear(63, 166, 28, nt(C.red)); }
+  const lx = 126; in_ += line(`M${lx} 176V92Q${lx} 84 ${lx - 9} 84`, night ? "#141A2E" : "#414B5E", 2.6) + circ(lx - 11, 86.5, 4.2, night ? "#FFE9A6" : "#FBF8F0") + (night ? circ(lx - 11, 86.5, 11, "#FFE9A6", 'opacity=".25"') : "");
+  return s + clipped(panel, in_);
+}
+
 /* ---------- the looks, read as people.js reads them ---------- */
 function lookOf(spec){
   const S = " " + (spec.looks || []).join(" ").toLowerCase().replace(/[^a-z'\- ]+/g, " ").replace(/\s+/g, " ").trim() + " ";
   const cn = S.trim().split(" ").find(x => C[x] && !/^(cream|stone|brick|wood|tile|slate|glass|leaf|grass|paper|steel|dark|gold|paving)$/.test(x));
   return { S, cn, has: (...w) => w.some(x => S.indexOf(" " + x + " ") >= 0) };
 }
-const DRAW = { house, train, book, car, town, restaurant };
+const DRAW = { house, train, book, car, town, restaurant, bus, phone, heart, coffee, door, photo, street };
 const PLACED = /^(in an open box|on a table|under a table)$/;
+const FOOT = { car: 140, book: 152, train: 160, bus: 146, heart: 170, coffee: 160, photo: 168 };      // where each stands in its card (the line a small one shares with a big one)
 function one(spec){
   spec = spec || {};
   const is = String(spec.is || "").toLowerCase().trim(), f = DRAW[is];
   if (!f) return null;
-  const looks = (spec.looks || []).map(x => String(x).toLowerCase());
-  if (looks.some(x => PLACED.test(x) || x === "big" || (x === "small" && is !== "car"))) return null;      // placed or sized by the caller's own code, for now
-  try { const s = f(lookOf(spec), spec); return s == null ? null : mk(s); } catch (e) { return null; }
+  const looks = (spec.looks || []).map(x => String(x).toLowerCase()), placed = looks.find(x => PLACED.test(x));
+  try {
+    if (placed){
+      /* on / under a table, in a box: the caller places the thing (index.html and people.js strip the look and ask again for the thing
+         alone). The one case it did not: a CAR on or under a table was drawn as a car alone, with no table (the car is sent to PICS.car
+         before the table is looked at): here the car is placed on the present table like every other thing. */
+      if (is !== "car" || placed === "in an open box" || !window.PICS || !PICS.place) return null;
+      const rest = looks.filter(x => x !== placed);
+      return PICS.place({ thing: { is: "car", looks: rest }, rel: placed === "on a table" ? "on" : "under", ground: { is: "table", looks: ["wooden"] } }, x => one(Object.assign({}, x, { is: "car" })));
+    }
+    /* "big" / "small" on any kind: the SAME picture at two sizes, standing on the same line (small = 0.55 of big; places 0.72).
+       Not for the looks in which small names a picture of its own (the small car, coffee in a small cup) or that are not drawn here. */
+    const big = looks.indexOf("big") >= 0, sm = looks.indexOf("small") >= 0 && is !== "car" && is !== "coffee";
+    if (big && is === "door") return null;
+    if (big || sm){
+      const base = f(lookOf({ looks: looks.filter(x => x !== "big" && x !== "small") }), spec); if (base == null) return null;
+      const y = FOOT[is] || 174, kx = /^(town|street|restaurant)$/.test(is) ? 0.72 : is === "train" ? 0.7 : 0.55;
+      return mk(sm ? `<g transform="translate(80 ${y}) scale(${kx}) translate(-80 ${-y})">${base}</g>` : base);
+    }
+    const s = f(lookOf(spec), spec); return s == null ? null : mk(s);
+  } catch (e) { return null; }
 }
 const can = spec => !!one(spec);
 

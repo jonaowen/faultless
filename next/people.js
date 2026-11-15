@@ -1521,7 +1521,7 @@ function head(J, B, cam, c, out, zb){
   /* hair that hangs: each mass hangs straight down from the head (it keeps to the upright when the head tilts), turned with the head */
   const hx = nrm([Bh.x[0], 0, Bh.x[2]]), hz = [-hx[2], 0, hx[0]], extra = [];
   (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
-    extra.push({ id: "hm" + i, z: q[2] + (m.a[2] < 0 ? -0.004 : 0.033), mat: "hm" + i, layers: [[ellPath(E, 0, 0, 0), hr.n[1]], [ellPath(E, -me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
+    extra.push({ id: "hm" + i, z: m.a[2] < 0 ? (vl[2] > 0.3 ? Math.min(q[2] - 0.004, cam.pt(J.chest)[2] - 0.006) : q[2] - 0.004) : q[2] + 0.033 /* hair down the back: behind the neck and the shoulders of a head that faces the viewer */, mat: "hm" + i, layers: [[ellPath(E, 0, 0, 0), hr.n[1]], [ellPath(E, -me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
   if (L.tail){ const t = L.tail, A = at(o, Bh, mul(t.a, hh)), Z = add(add(A, [0, -t.len * hh, 0]), mul(Bh.z, -0.22 * hh)), M = [(A[0] + Z[0]) / 2 - Bh.z[0] * 0.14 * hh, (A[1] + Z[1]) / 2, (A[2] + Z[2]) / 2 - Bh.z[2] * 0.14 * hh];
     const Es = [disc(cam.pt(A), t.r[0] * px), disc(cam.pt(M), t.r[0] * 0.92 * px), disc(cam.pt(Z), t.r[1] * px)]; Es.forEach(E => E.n = 14); const te = 0.05 * px, zq = cam.pt(M)[2];
     extra.push({ id: "tail", z: zq - 0.004, mat: "tail", layers: [[hullOf(Es, 0, 0, 0), hr.n[1]], [hullOf(Es, -te, LIGHT[0] * te, LIGHT[1] * te), hr.n[0]]] });
@@ -1541,7 +1541,7 @@ function head(J, B, cam, c, out, zb){
   /* (c.live: the teacher's eyes: the irises in a group that can look down, the upper lid in a group that comes down with them, and a shut lid for a blink) */
   const LV = c.live ? ` style="transition:transform .25s ease-in-out"` : "";
   const eyeArt = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><g class="pup"${LV}><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g></g>
-      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${lid}" stroke-width="${c.live ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.185 * sg} -.014l${0.05 * sg} -.034" stroke="${lid}" stroke-width=".03" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8"/>`
+      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${c.live ? "#3a2820" : lid}" stroke-width="${c.live ? 0.032 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.185 * sg} -.014l${0.05 * sg} -.034" stroke="${lid}" stroke-width=".03" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity=".8"/>`
       + (c.live ? `<g class="blk" visibility="hidden"><path d="M-.2 0Q0 -.19 .2 -.01Q0 .15 -.2 0Z" fill="${sk.n[0]}"/><path d="M-.18 .012Q0 .1 .18 .004" stroke="${lid}" stroke-width=".04" fill="none" stroke-linecap="round"/></g>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
   const browArt = sg => big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
@@ -1586,7 +1586,7 @@ function head(J, B, cam, c, out, zb){
    bent than the one before it; point: the index straight, the others shut, the thumb laid over them; flat: the open hand, fingers together;
    palmup: the open hand offered, fingers a little apart, the thumb out; cup: the open hand hollowed (behind the ear) */
 const HANDS = {
-  relaxed: { f: [[0.28, 0.42], [0.4, 0.52], [0.48, 0.6], [0.54, 0.66]], sp: 0.035, th: [0.5, 0.35, 0.3] },
+  relaxed: { f: [[0.24, 0.36], [0.32, 0.44], [0.4, 0.52], [0.48, 0.6]], sp: 0.01, th: [0.42, 0.3, 0.3] },
   point:   { f: [[0.02, 0.04], [1.38, 1.62], [1.44, 1.68], [1.46, 1.66]], sp: 0, th: [0.18, 1.02, 0.8] },
   flat:    { f: [[0.06, 0.05], [0.05, 0.05], [0.06, 0.05], [0.08, 0.07]], sp: 0.012, th: [0.34, 0.1, 0.12] },
   palmup:  { f: [[0.1, 0.2], [0.14, 0.22], [0.18, 0.26], [0.22, 0.3]], sp: 0.07, th: [0.72, 0.08, 0.2] },
@@ -1648,7 +1648,7 @@ function frame(k, B, cam, c, floor, o){
   Ech.n = 36; Ehm.n = 30; Ewa.n = 26; EsL.n = EsR.n = 18; Enb.n = 12;
   const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
-  const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = trunkFn(0, 0, 0);
+  const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = doBody ? trunkFn(0, 0, 0) : "";
   if (doBody){
   parts.push({ id: "trunk", z: zt, mat: "top", layers: form(trunkFn, T, 0.03 * S) });
   /* its ribbed hem: a band that follows the lower edge (the lower half of the ring, and the same line again a band's width higher) */
@@ -1905,7 +1905,7 @@ function tutor(c, o){
   const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
-  for (const [i, sg] of [[57, 1], [69, -1]]){ setv(base, i, [0.17 * sg, base[i + 1], 0.97]); setv(base, i + 3, [-0.05 * sg, -0.95, -0.3]); setv(base, i + 6, [0.1 * sg, -0.3, 0.95]); }      // the knees nearer each other than the man of the capture kept his
+  for (const [i, sg] of [[57, 1], [69, -1]]){ setv(base, i, [0.17 * sg, -0.2, 0.96]); setv(base, i + 3, [-0.05 * sg, -0.95, -0.3]); setv(base, i + 6, [0.1 * sg, -0.3, 0.95]); }      // the thighs as on a chair of ordinary height (CMU 86_15), the knees nearer each other than the men of the captures kept theirs
   /* the neck's length is set so that the mouth is where the stage's close-up expects it: 63 above the line of the shoulders */
   { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (63 - a) / (b - a) * 0.06; }
   const J0 = skeleton(base, B), floor = lowest(J0), ys0 = (J0.shL[1] + J0.shR[1]) / 2, zs0 = (J0.shL[2] + J0.shR[2]) / 2;
@@ -1966,7 +1966,8 @@ function tutor(c, o){
   function elbow(sh, wr, sg){
     let d = sub(wr, sh), L = Math.hypot(d[0], d[1], d[2]); const a = B.ua, b = B.fa, mx = (a + b) * 0.999, mn = Math.abs(a - b) + 0.02;
     if (L > mx){ d = mul(d, mx / L); L = mx; } if (L < mn){ d = mul(d, mn / (L || 1)); L = mn; }
-    const uu = mul(d, 1 / L), x = (a * a - b * b + L * L) / (2 * L), h = Math.sqrt(Math.max(0, a * a - x * x)); let pole = [sg * 0.62, -0.7, -0.36]; pole = nrm(sub(pole, mul(uu, dot(pole, uu))));
+    const uu = mul(d, 1 / L), x = (a * a - b * b + L * L) / (2 * L), h = Math.sqrt(Math.max(0, a * a - x * x)), up = sm01((d[1] + 0.16) / 0.14);      // a hand in the lap: the elbow back, beside the body; a hand raised: the elbow out
+    let pole = [sg * (0.34 + 0.4 * up), -0.62, -0.7 + 0.55 * up]; pole = nrm(sub(pole, mul(uu, dot(pole, uu))));
     const el = add(add(sh, mul(uu, x)), mul(pole, h)), w2 = add(sh, d); return { ud: nrm(sub(el, sh)), fd: nrm(sub(w2, el)) }; }
   /* the hand: which way it points and which way its palm faces, for each shape the page asks for */
   const perp = (v, h) => nrm(sub(v, mul(h, dot(v, h)))), PNR = { L: getv(base, 42), R: getv(base, 54) };
@@ -1974,7 +1975,7 @@ function tutor(c, o){
     const sh = p.shape, r = p.rot; let hd, pn;
     if (sh === "cup"){ hd = nrm([sg * 0.16, 1, 0.2]); pn = perp([-sg * 0.62, 0, 1], hd); }                    // behind the ear: fingers up, the palm forward and a little to the head
     else if (sh === "palmup"){ hd = nrm([-sg * 0.12, -0.44, 0.89]); pn = perp([0, 0.89, 0.44], hd); }            // offered to the learner: fingers toward him, the palm up
-    else if (r === "auto" || r == null){ hd = fd; pn = sh === "relaxed" ? perp(PNR[side], hd) : perp([sg * 0.2, -0.3, -1], hd); }
+    else if (r === "auto" || r == null){ hd = fd; pn = sh === "relaxed" ? perp([-sg * 0.42, -0.62, -0.66], hd) : perp([sg * 0.2, -0.3, -1], hd); }      // at rest the palm lies on the thigh (down, and turned a little inward, as the capture's hands lie)
     else { const a = r * Math.PI / 180; hd = nrm([-Math.sin(a), -Math.cos(a), sh === "point" ? -0.1 : -0.03]); pn = perp([0, 0, -1], hd); }      // on her chest: the hand lies on it, turned as the page says
     return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([p.scale || 1]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
   const ST = { L: {}, R: {} }, mixv = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t), TIP = {};
@@ -2007,13 +2008,13 @@ function tutor(c, o){
   const defs = shapeDef("relaxed", [0, -1, 0], [0, 0, -1], 0) + shapeDef("point", [0, -1, 0], [0, 0, -1], -1.5) + shapeDef("flat", [0, -1, 0], [0, 0, -1], 0) + shapeDef("palmup", [0, -0.58, 0.81], [0, 0.81, 0.58], 0) + shapeDef("cup", [0, 1, 0], [0, 0, 1], 0);
   g.innerHTML = `<defs>${W.defs}${defs}</defs><g id="tutorBody"></g><g id="arms"></g>`;
   const hostB = g.children[1], hostA = g.children[2];
-  const syncer = host => { let order = null; const byId = {}; return list => { const ord = list.map(n => n.id).join(" ");
+  const syncer = host => { let order = null; const byId = {}, last = {}; return list => { const ord = list.map(n => n.id).join(" ");
     if (ord !== order){ order = ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; } for (const id in byId) if (!seen[id]){ byId[id].remove(); delete byId[id]; } }
-    for (const n of list) nodeSet(byId[n.id], n); }; };
+    for (const n of list){ const sig = n.tag ? null : n.d + "|" + n.fill + "|" + n.op; if (sig !== null && last[n.id] === sig) continue; last[n.id] = sig; nodeSet(byId[n.id], n); } }; };      // (a part that has not changed is left alone: an arm at rest costs nothing while the other moves)
   const syncB = syncer(hostB), syncA = syncer(hostA);
   let swayX = 0, nodA = 0, kNow = keyOf(0, 0);
   const bodyKept = {}, bodyList = (x, a) => { const id = x.toFixed(3) + "|" + a.toFixed(3); return bodyKept[id] || (bodyKept[id] = frame(keyOf(x, a), B, cam, W, floor, { part: "body" })); };
-  const castSet = () => { if (!castEl) castEl = hostB.querySelector('[data-p="trunkC"]'); if (castEl) castEl.lastChild.setAttribute("d", headCast + armCast); };
+  let castWas = null; const castSet = () => { if (!castEl) castEl = hostB.querySelector('[data-p="trunkC"]'); const d = headCast + armCast; if (castEl && d !== castWas){ castWas = d; castEl.lastChild.setAttribute("d", d); } };
   function drawBody(){ kNow = keyOf(swayX, 0); const L = bodyList(swayX, nodA); syncB(L); headCast = (L.find(n => n.id === "trunkC") || {}).d || ""; castSet(); }
   function drawArms(){ const t = now(); lastArmsDraw = t; syncA(armsList(Float32Array.from(kNow), t)); castSet(); if (t < blendUntil) requestAnimationFrame(() => { if (now() - lastArmsDraw > 8) drawArms(); }); }
   drawBody(); drawArms();
