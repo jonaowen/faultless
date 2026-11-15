@@ -3598,7 +3598,15 @@ async function youDoIntro(){
    Pierre, "Arrêtez." to Pierre and Sylvie: the task's scene shows them stopped, so they are shown still moving first (as
    in the task before), she says it, and then they stand still: the change is what shows the past. */
 const stopsSomeone = sc => !!(sc && sc.row && sc.row.some(x=>x && typeof x==="object" && x.did));
+/* (.60; Jon's "Dis : Ça va ?", Lesson 8) a model learner's reply to the learner: the learner has just asked Pierre "Ça va ?" (told to by
+   "Dis : Ça va ?"), and Pierre answers in his own voice, "Ça va bien.": the natural end of the exchange, not a model and not a test.
+   A `say` whose voice is Pierre's or Sylvie's (the course: kind "say", scene.speaker "Pierre" / "Sylvie", the line in "teacher"): his
+   green ring while he says it, nothing asked. It goes with the test before it (isReply), and after a correction it follows the retest
+   once that is right (runParts). */
+const isModelReply = it => it && it.type==="say" && (it.voice==="paul" || it.voice==="julie");
 async function presentSay(a){
+  if(isModelReply(a)){ curTask=a.id; itemStart(a); ph("a model learner replies (no answer)"); await setPortraits(a.scene);
+    trace("a model learner replies to the learner: "+VOCAB[a.voice].name+" \""+a.teacherUnits.join(" ")+"\""); await sayAs(a.voice, a.teacherUnits); await sleep(350); rest(); return; }
   curTask=a.id; itemStart(a); await convIntro(a); ph("the teacher speaks (no answer)");
   const sc=sceneOf(a.scene)||{}, stop=stopsSomeone(sc);
   if(stop){ const moving=Object.assign({}, sc, {row: sc.row.map(x=> x && x.did ? Object.assign({}, x, {doing:x.did, did:undefined}) : x)});
@@ -4110,7 +4118,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
           fixed=await presentTest(it, retestOpts(it)); tries++;
         }
         if(!fixed){ await trialLimit(it, part, anchor); limited.add(it.id); if(isOwnName(it)){ limitedParts.add(part.id); trace("part "+part.id+": own-name seven-trial limit, on to the next part"); break; } i++; prevTest=false; continue; }
-        ph("final confirmation"); rest();      // (.45) no smile here: it showed during the icon's second, and with no icon the next task follows at once, as after any right answer
+        ph("final confirmation"); rest(); if(isModelReply(items[i+1]) && isReply(items[i+1], it)) await presentSay(items[i+1]);      // (.60) the model learner's reply, once the question is right: it showed during the icon's second, and with no icon the next task follows at once, as after any right answer
         i++; prevTest=false; continue;
       }
 
@@ -4131,6 +4139,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
         i++; prevTest=false; continue; }
       // DISE correction step 6: before leaving a corrected statement, the learner hears it said correctly once more
       ph("final confirmation"); rest();
+      if(isModelReply(items[i+1]) && isReply(items[i+1], it)) await presentSay(items[i+1]);      // (.60) the model learner's reply, once the question is right
       // NIFDI step 3: go back and repeat the part (its tasks, not its models); it is firm when it runs with no errors.
       // At most PART_REPEATS times: a learner whose errors are scattered across the part would otherwise never leave it;
       // the part is then left for its delayed tests (end of the next exercise, start of the next lesson)
