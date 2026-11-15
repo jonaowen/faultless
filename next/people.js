@@ -1676,6 +1676,11 @@ function frame(k, B, cam, c, floor, o){
   const band = (E, w) => { const ct = Math.cos(E.th), st = Math.sin(E.th), lo = [], hi = []; for (let i = 0; i <= 14; i++){ const t = i / 14 * Math.PI, x = (E.a + 0.4) * Math.cos(t), y = (E.b + 0.4) * Math.sin(t), X = E.c[0] + x * ct - y * st, Y = E.c[1] + x * st + y * ct; lo.push([X, Y]); hi.push([X, Y - w]); }
     return poly(lo.concat(hi.reverse())); };
   parts.push({ id: "rib", z: zt + 0.0003, mat: "rib", layers: [[band(Ehm, 0.03 * S), T.rib]] });
+  if (c.fem && !c.kid && B.chest[0] * S > 10 && dot(J.Bc.z, cam.view) > 0.5){      // (large, and the chest toward the viewer: see wearer())
+    const Bc = J.Bc, on = (x, y, zk) => P(at(J.chest, Bc, [x, y, B.chest[2] * zk])), cv = on(0, B.chest[1] * 0.42, 0.95), cs0 = on(0, -B.chest[1] * 0.05, 0.9), cs1 = P(lerp(J.root, J.chest, 0.15));
+    const Ev = ellipse(cv, [cam.lin(mul(Bc.x, B.chest[0] * 1.05)), cam.lin(mul(Bc.y, B.chest[1] * 0.6)), [0, 0, 0]]), wS = B.chest[0] * S * 1.3;
+    parts.push({ id: "chV", z: zt + 0.00031, tag: "clip", clip: trunkD, d: ellPath(Ev, 0, 0, 0), fill: `url(#${c.u}cv)` });
+    parts.push({ id: "chS", z: zt + 0.00032, tag: "clip", clip: trunkD, d: poly([[cs0[0] - wS, cs0[1]], [cs0[0] + wS, cs0[1]], [cs1[0] + wS, cs1[1]], [cs1[0] - wS, cs1[1]]]), fill: `url(#${c.u}cs)` }); }
   /* a name tag on the chest: it lies on the chest and turns with it (it is gone when the chest has turned away) */
   if (c.tag){ const Bc = J.Bc, U = cam.lin(Bc.x), Vv = cam.lin(Bc.y), TA = c.tagAt || [0, 0.02], q = P(at(J.chest, Bc, [TA[0], TA[1], B.chest[2] * 0.96 * Math.sqrt(Math.max(0.2, 1 - (TA[0] / B.chest[0]) ** 2))])), w = c.tagBox ? c.tagBox[0] : Math.min(B.chest[0] * 1.5, 0.03 + 0.021 * c.tag.length), h = c.tagBox ? c.tagBox[1] : 0.052, fs = c.tagBox ? Math.min(h * 0.545, w * 1.25 / c.tag.length) : Math.min(h * 0.77, w * 1.7 / c.tag.length), r3 = v => Math.round(v * 1000) / 1000;
     parts.push({ id: "tag", z: zt + 0.0008, tag: "g", m: [U[0], U[1], -Vv[0], -Vv[1], q[0], q[1]].map(r3), hide: dot(Bc.z, cam.view) < 0.3,
@@ -1687,7 +1692,7 @@ function frame(k, B, cam, c, floor, o){
   parts.push({ id: "neck", z: zt + 0.002, mat: "neck", layers: [[nk(P(add(J.nb, mul(sub(J.nb, J.skull), 0.05))), P(J.skull)), sk.n[1]]] });
   parts.push({ id: "collarF", z: zt + 0.0025, mat: "collarF", layers: [[band(Ecl, 0.017 * S), T.rib]] });
   /* legs: thigh and shin in one outline (its root lies under the hem), the shoe; the hips in the colour of the legs */
-  const Epv = ellipse(P(at(J.root, J.Bp, [0, -0.012, 0])), lax(J.Bp, [B.hw + B.rHip * 0.92, 0.062, 0.07]));
+  const Epv = ellipse(P(at(J.root, J.Bp, [0, -0.012, 0])), lax(J.Bp, [(B.hw + B.rHip * 0.92) * (B.hipK || 1), 0.062, 0.07]));
   parts.push({ id: "hips", z: zt - 0.004, mat: "hips", layers: [[ellPath(Epv, 0, 0, 0), G.n[1]]] });
   for (const s of ["L", "R"]){
     const hip = J["hip" + s], kn = J["kn" + s], an = J["an" + s], F = J["ft" + s];
@@ -1775,6 +1780,10 @@ function wearer(c, o, u){
   defs.push(`<radialGradient id="${u}sh"><stop offset="0" stop-color="#1d2233" stop-opacity=".34"/><stop offset=".55" stop-color="#1d2233" stop-opacity=".16"/><stop offset="1" stop-color="#1d2233" stop-opacity="0"/></radialGradient>`);
   defs.push(`<radialGradient id="${u}bl"><stop offset="0" stop-color="#e98a7a" stop-opacity="${c.kid ? 0.5 : 0.34}"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>`);
   const top = material(c.top[0], c.top[1]); top.rib = mixc(c.top[0], c.top[1], 0.55);
+  /* a woman's chest in a jumper: no drawn lines, only the cloth's light: a soft lit volume across the upper chest, and a broad soft shade
+     below it where the knit falls to the waist */
+  if (c.fem && !c.kid) defs.push(`<radialGradient id="${u}cv"><stop offset="0" stop-color="${mixc(c.top[0], "#ffffff", 0.16)}" stop-opacity=".42"/><stop offset=".6" stop-color="${mixc(c.top[0], "#ffffff", 0.08)}" stop-opacity=".2"/><stop offset="1" stop-color="${c.top[0]}" stop-opacity="0"/></radialGradient>`,
+    `<linearGradient id="${u}cs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${darker(c.top[1], 0.1)}" stop-opacity="0"/><stop offset=".45" stop-color="${darker(c.top[1], 0.1)}" stop-opacity=".2"/><stop offset="1" stop-color="${darker(c.top[1], 0.1)}" stop-opacity="0"/></linearGradient>`);
   const W0 = { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.62), mixc(c.skin[1], c.skin[2], 0.3)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
     shoeM: { n: ["#4a4340", "#2c2623"], f: ["#3a3431", "#231e1c"], sole: "#e6dfd2", soleF: "#bdb6aa" }, style: c.style, ink: "#2a2422", browC: c.brow || c.hair[2], lip: c.lip || "#bf6660", lipC: mixc(c.lip || "#bf6660", "#7a3030", 0.3), iris: c.iris,
     curl: o.curl, smile: o.smile, speaks: o.speaks, shadow: `url(#${u}sh)`, defs: defs.join(""), fem: c.fem, kid: c.kid, beard: c.beard, bow: c.bow, tag: o.tag, face: c.face, freckles: c.freckles, old: c.old,
@@ -1929,14 +1938,14 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0.8, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, palmK: 1.2, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
+const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, palmK: 1.2, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
   const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "teacher", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
   for (const r of ["rUa", "rEl", "rFa"]) B[r] *= TUT.arm;
   const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
-  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
+  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rKnee *= TUT.kneeK == null ? 1 : TUT.kneeK; B.rTh *= TUT.thK == null ? 1 : TUT.thK; B.hipK = TUT.hipK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
   const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
