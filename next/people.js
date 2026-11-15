@@ -1909,7 +1909,7 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 58, chest: 1.1, waist: 1.1, rSh: 1.08, sy: 0.072, nb: 0.13, neckUp: 63,
+const TUT0 = { sw: 58, chest: 1.1, waist: 1.1, rSh: 1.08, sy: 0.072, nb: 0.13, neckUp: 63, chairUp: 0.16, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
@@ -1922,10 +1922,32 @@ function tutor(c, o){
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
   for (const [i, sg] of [[57, 1], [69, -1]]){ const L = TUT.legs[sg > 0 ? 0 : 1]; setv(base, i, [L[0] * sg, L[1], L[2]]); setv(base, i + 3, [L[3] * sg, L[4], L[5]]); setv(base, i + 6, [L[6] * sg, L[7], L[8]]); }      // the thighs as on a chair of ordinary height (CMU 86_15), the knees together and the feet side by side, one a little forward (a composed sitter: see REFERENCES)
   /* the neck's length is set so that the mouth is where the stage's close-up expects it: 63 above the line of the shoulders */
-  { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (63 - a) / (b - a) * 0.06; }
+  { const up = nk => { B.neck = nk; const J = skeleton(base, B), m = at(J.head, J.Bh, [0, -0.64 * B.hh, 0.74 * B.hh]); return ((m[1] - (J.shL[1] + J.shR[1]) / 2) * cp - (m[2] - (J.shL[2] + J.shR[2]) / 2) * sp) * S; }, a = up(0.04), b = up(0.1); B.neck = 0.04 + (TUT.neckUp - a) / (b - a) * 0.06; }
   const J0 = skeleton(base, B), floor = lowest(J0), ys0 = (J0.shL[1] + J0.shR[1]) / 2, zs0 = (J0.shL[2] + J0.shR[2]) / 2;
   const ox = 200, oy = 448 + ((ys0 - floor) * cp - zs0 * sp) * S, cam = camera(0, pitch, S, ox, oy);
   const unproj = (X, Y, z) => [(X - ox) / S, floor + ((oy - Y) / S + z * sp) / cp, z];
+  /* ----- the chair she sits on (the stage's present chair, in the figures' finish): an upholstered back seen from the front behind her
+     shoulders, the seat's cushion under her, two front legs of dark wood; the same camera as her body; light from the upper left ----- */
+  function chairSVG(J){
+    if (o.chair === false) return "";
+    const Q = (x, y, z) => { const q = cam.pt([x, y - floor, z]); return [q[0], q[1]]; }, R = v => v.toFixed(1);
+    const ys = J.root[1] - 0.058, zf = J.root[2] + 0.165, zb = J.root[2] - 0.13, hw = 0.148, th = 0.052, ysh = (J.shL[1] + J.shR[1]) / 2;
+    const up = TUT.chairUp, zk = zb - 0.035;                         // the back: a padded panel standing behind her, its top `up` above her shoulders
+    const rr = (x0, y0, x1, y1, r) => `M${R(x0 + r)} ${R(y0)}H${R(x1 - r)}Q${R(x1)} ${R(y0)} ${R(x1)} ${R(y0 + r)}V${R(y1 - r)}Q${R(x1)} ${R(y1)} ${R(x1 - r)} ${R(y1)}H${R(x0 + r)}Q${R(x0)} ${R(y1)} ${R(x0)} ${R(y1 - r)}V${R(y0 + r)}Q${R(x0)} ${R(y0)} ${R(x0 + r)} ${R(y0)}Z`;
+    const UP = TUT.chairCol, M = material(UP[0], UP[1]), wood = ["#5f4838", "#46352a"];
+    const b0 = Q(-hw * 0.96, ysh + up, zk), b1 = Q(hw * 0.96, ys, zk), bw = b1[0] - b0[0], e = bw * 0.06;
+    const back = rr(b0[0], b0[1], b1[0], b1[1], bw * 0.16), backS = rr(b0[0] + e, b0[1] + e * 0.9, b1[0], b1[1], bw * 0.16), backL = rr(b0[0], b0[1], b1[0] - e, b1[1] - e * 0.9, bw * 0.16);
+    const t0 = Q(-hw, ys, zb), t1 = Q(hw, ys, zf), f0 = Q(-hw, ys, zf), f1 = Q(hw, ys - th, zf), rad = (f1[1] - f0[1]) * 0.45;
+    const seatTop = rr(t0[0], t0[1], t1[0], t1[1] + rad, rad), front = rr(f0[0], f0[1] - 1, f1[0], f1[1], rad), frontS = rr(f0[0] + e * 0.7, f0[1] + (f1[1] - f0[1]) * 0.45, f1[0], f1[1], rad);
+    const leg = sg => { const a = Q(sg * (hw - 0.03), ys - th, zf - 0.03), b = Q(sg * (hw - 0.032), 0.0, zf - 0.03), w = (f1[0] - f0[0]) * 0.055;
+      return `<path d="M${R(a[0] - w)} ${R(a[1])}L${R(b[0] - w * 0.8)} ${R(b[1])}H${R(b[0] + w * 0.8)}L${R(a[0] + w)} ${R(a[1])}Z" fill="${wood[0]}"/><path d="M${R(a[0] + w * 0.15)} ${R(a[1])}L${R(b[0] + w * 0.1)} ${R(b[1])}H${R(b[0] + w * 0.8)}L${R(a[0] + w)} ${R(a[1])}Z" fill="${wood[1]}"/>`; };
+    const hipS = Q(0, ys, J.root[2] + 0.06), hipW = (J.hipL ? Math.abs(Q(J.hipL[0], 0, 0)[0] - Q(J.hipR[0], 0, 0)[0]) : 80) * 0.9;
+    return `<g class="chair">` + leg(-1) + leg(1) +
+      `<path d="${back}" fill="${M.n[1]}"/><path d="${backL}" fill="${M.n[0]}"/><path d="${rr(b0[0] + e * 0.35, b0[1] + e * 0.3, b0[0] + bw * 0.5, b0[1] + e * 1.2, e * 0.4)}" fill="${M.n[2]}" opacity=".45"/>` +
+      `<path d="${rr(b0[0] + e * 1.6, b0[1] + e * 1.6, b1[0] - e * 1.6, b1[1] - e, bw * 0.12)}" fill="none" stroke="${M.n[1]}" stroke-width="${R(e * 0.22)}" opacity=".55"/>` +
+      `<path d="${seatTop}" fill="${M.n[0]}"/><path d="${front}" fill="${M.n[1]}"/><path d="${rr(f0[0], f0[1] - 1, f1[0] - e * 0.7, f1[1] - (f1[1] - f0[1]) * 0.5, rad)}" fill="${mixc(M.n[0], M.n[1], 0.45)}"/>` +
+      `<ellipse cx="${R(hipS[0] + 3)}" cy="${R(hipS[1] + 4)}" rx="${R(hipW * 0.75)}" ry="${R(Math.max(6, (t1[1] - t0[1]) * 0.55))}" fill="#1d2233" opacity=".16"/></g>`;
+  }
   /* ----- the mouth: the page's own drawing of a mouth shape (lips, the dark of the open mouth, teeth, tongue, the line of the closed lips,
      the dimples of a smile), laid on the head in the mouth's place and turned with it; units: the stage's, from the middle of the mouth ----- */
   const f2s = n => n.toFixed(2), dimple = mixc(c.skin[1], c.skin[2], 0.55);
@@ -2021,7 +2043,7 @@ function tutor(c, o){
   /* the hand shapes the page itself draws with (the learners' pointing hand, the small hands of a tap turn): the same hand, flat on the page,
      the wrist at 0, 0, pointing down; the tip of the pointing finger where it has always been (8.5, 55.3) */
   const defs = shapeDef("relaxed", [0, -1, 0], [0, 0, -1], 0) + shapeDef("point", [0, -1, 0], [0, 0, -1], -1.5) + shapeDef("flat", [0, -1, 0], [0, 0, -1], 0) + shapeDef("palmup", [0, -0.58, 0.81], [0, 0.81, 0.58], 0) + shapeDef("cup", [0, 1, 0], [0, 0, 1], 0);
-  g.innerHTML = `<defs>${W.defs}${defs}</defs><g id="tutorBody"></g><g id="arms"></g>`;
+  g.innerHTML = `<defs>${W.defs}${defs}</defs><g id="tutorBody">${chairSVG(J0)}</g><g id="arms"></g>`;
   const hostB = g.children[1], hostA = g.children[2];
   const syncer = host => { let order = null; const byId = {}, last = {}; return list => { const ord = list.map(n => n.id).join(" ");
     if (ord !== order){ order = ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; } for (const id in byId) if (!seen[id]){ byId[id].remove(); delete byId[id]; } }

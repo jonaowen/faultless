@@ -153,17 +153,26 @@ const SHELL = (()=>{
   function minutesFor(L){ const t=tasksOf(L), p=G.pace.slice(-5).sort((a,b)=>a-b), med=p.length ? p[Math.floor(p.length/2)] : null;
     const s = med ? t*med : t*RULES.PACE_DEFAULT[0]+L.exercises.length*RULES.PACE_DEFAULT[1]; return Math.max(3, Math.round(s/60)); }
 
-  /* ---- milestones: real and countable; never announced beforehand ---- */
+  /* ---- badges: for PERFECT lessons only (the owner): a lesson counts once all its exercises are perfect, however it got there ---- */
   const completions = ()=>Object.values(G.lessons).reduce((a,b)=>a+b.length,0);
-  function fullWeek(){ const ks=Object.keys(G.days).filter(k=>G.days[k].full).sort(); let best=0, run=0, prev=""; for(const k of ks){ run = prev && daysBetween(prev,k)===1 ? run+1 : 1; prev=k; best=Math.max(best,run); } return best>=7; }
-  const MILES = [
-    ...[10,50,100,250,500,1000,2000].map(n=>({id:"L"+n, ok:()=>completions()>=n, what:`${n} lessons finished`})),
-    ...[7,30,100,365].map(n=>({id:"D"+n, ok:()=>G.daysLearned>=n, what:`${n} days of learning`})),
-    ...[7,30,60,100,365].map(n=>({id:"R"+n, ok:()=>G.run.len>=n, what:`${n} days in a row`})),
-    {id:"W1", ok:fullWeek, what:"A week of full days: two lessons a day, seven days running"},
-    ...(CW.stages||[]).map(s=>({id:"S"+s.id, ok:()=>G.furthest>=s.last, what:`Stage ${s.id} done`, stage:s})),
-    ...[50,100,250,500,1000].map(n=>({id:"W"+n, ok:()=>ownedCards().length>=n, what:`${n} words of your own`})) ];
-  function newMilestones(today){ const got=[]; for(const m of MILES) if(!G.milestones[m.id] && m.ok()){ G.milestones[m.id]=today; got.push(m); } return got; }
+  const perfectCount = ()=>Object.keys(G.lp).length;
+  function newBadge(today){ let got=null; for(const n of RULES.BADGES) if(perfectCount()>=n && !G.badges[n]){ G.badges[n]=today; got=n; } return got; }
+  const badgeName = n=>`${n.toLocaleString("en-GB")} perfect lessons`;
+  function badgeSvg(n, cls="badge"){ return `<svg class="${cls}" viewBox="0 0 56 70" aria-hidden="true"><use href="#i-rosette"/><text x="28" y="${n>=1000?30.5:31.5}" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>=1000?8.5:n>=100?11:14}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n>=1000?(n/1000)+"k":n}</text></svg>`; }
+
+  /* ---- the goal of the whole course: the CEFR levels A1 to C2 (where each is reached comes from the plan: COURSE_WORDS.levels; until the
+     plan's data is there, nothing is shown, except with ?levels=stub, which shows the design on made-up numbers) ---- */
+  const LEVELS = (CW.levels && CW.levels.length) ? CW.levels : /[?&]levels=stub/.test(location.search) ? [
+    {id:"A1", lesson:60, canDo:"You can now introduce yourself, ask and answer simple questions about people and things, and count.", trip:"You could greet people in France, say who you are and ask for what you want."},
+    {id:"A2", lesson:180, canDo:"You can now talk about your day, what you did and what you will do.", trip:"You could travel to France and chat about the weather or a trip you had last week."},
+    {id:"B1", lesson:420, canDo:"(stub)"}, {id:"B2", lesson:800, canDo:"(stub)"}, {id:"C1", lesson:1400, canDo:"(stub)"}, {id:"C2", lesson:2000, canDo:"(stub)"}] : [];
+  function levelNow(){ if(!LEVELS.length) return null; let from=0; for(let k=0;k<LEVELS.length;k++){ const Lv=LEVELS[k]; if(G.furthest<Lv.lesson) return {k, Lv, pct:Math.floor(100*(G.furthest-from)/(Lv.lesson-from)), from}; from=Lv.lesson; } return {k:LEVELS.length, Lv:null, pct:100}; }
+  function newLevel(today){ let got=null; for(const Lv of LEVELS) if(G.furthest>=Lv.lesson && !G.levels[Lv.id]){ G.levels[Lv.id]=today; got=Lv; } return got; }
+  function levelCard(){ const n=levelNow(); if(!n) return ""; return `<div class="card cefr"><div class="row"><b>Your French</b><small>${n.Lv ? `${n.Lv.id} · ${n.pct}%` : "C2 reached"}</small></div>
+      <div class="lv">${LEVELS.map((Lv,k)=>`<div class="lvc${k<n.k?" done":k===n.k?" now":""}"><span>${Lv.id}</span><i style="--p:${k<n.k?100:k===n.k?n.pct:0}%"></i></div>`).join("")}</div>
+      ${n.Lv ? `<p>At ${n.Lv.id}: ${esc(n.Lv.trip||n.Lv.canDo)}</p>` : ""}</div>`; }
+  function levelParty(Lv, then){ const o=$("lvl"); o.innerHTML=`<div class="lvbig" aria-hidden="true"><span>${Lv.id}</span></div><h1>You have reached ${Lv.id}</h1><div class="lede center">${esc(Lv.canDo)}</div>${Lv.trip?`<div class="card trip">${ic("sun")}<p>${esc(Lv.trip)}</p></div>`:""}<div class="spacer"></div><button class="btn" id="lvGo">Continue</button>`;
+    o.hidden=false; fete(o, true); $("lvGo").onclick=()=>{ tick(); o.hidden=true; stopFete(); if(then) then(); }; }
 
   /* ---- the end of a lesson: the record, the rules, the screen ---- */
   function lessonDone(){ const li=S.lesson, L=LESSONS[li], cur=G.cur && G.cur.lesson===L.id ? G.cur : {lesson:L.id, t0:"", kind:""};
