@@ -571,13 +571,15 @@ const SHELL = (()=>{
   for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ textSize(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); syncNext(); store(); home(); MIC.init();
+  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
     firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));
     if(!who(false)) welcome();
     G.lastSeen=new Date().toISOString(); store();
-    if(document.readyState==="complete") offline(); else window.addEventListener("load", offline); }
+    if(document.readyState==="complete") offline(); else window.addEventListener("load", offline);
+    // the first screen is drawn (home, who is learning, the first run's name or the welcome back): the loading screen hands over once the faces are in
+    try{ UI.fonts().then(()=>window.SPLASH && SPLASH.done()); }catch(e){ try{ SPLASH.done(); }catch(x){} } }
   return {RULES, get G(){ return G; }, home, lessonDone, who, maker, you, words, anchors, score, init, AV, MIC, welcome, offerUpdate};
 })();
 window.SHELL = SHELL;      // the page's hooks look for it there

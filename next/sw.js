@@ -7,7 +7,9 @@ const CACHE = "faultless-next-v1";
 const CORE = ["./", "index.html", "shell.js", "shell.css", "people.js", "things.js", "words.js", "manifest.webmanifest",
   "fonts/atkinson-next-latin.woff2", "fonts/atkinson-next-latin-ext.woff2", "fonts/fraunces-soft-latin.woff2",
   "../listener/listener.js", "../listener/ort/ort.wasm.min.js", "../listener/vosk/vosk.js",
-  "../audio/teacher/index.json", "../audio/learner/index.json", "../audio/narrator/index.json", "../icon-192.png", "../icon-512.png"];
+  "../audio/teacher/index.json", "../audio/learner/index.json", "../audio/narrator/index.json",
+  "brand/splash.css", "brand/splash.js", "brand/favicon.svg", "brand/icon.svg", "brand/icon-192.png", "brand/icon-512.png", "brand/icon-maskable-512.png",
+  "brand/icon-monochrome-512.png", "brand/apple-touch-icon.png"];
 const skip = u => u.origin !== location.origin || /\/version\.json$/.test(u.pathname) || /\/listener\/model\//.test(u.pathname);
 const same = (a, b) => !!a && !!b && ((a.headers.get("etag") && a.headers.get("etag") === b.headers.get("etag")) ||
   (a.headers.get("last-modified") && a.headers.get("last-modified") === b.headers.get("last-modified") && a.headers.get("content-length") === b.headers.get("content-length")));
