@@ -110,6 +110,9 @@ body.inLesson #chrome{display:flex}
 #bead:after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--sun)}
 #bead.pop:after{animation:beadPop .22s var(--ease-out)}
 @keyframes beadPop{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.3);opacity:0}}
+#bar:after{content:"";position:absolute;inset:-4px;border-radius:10px;box-shadow:0 0 0 3px var(--sun);opacity:0;pointer-events:none}
+#bar.exDone:after{animation:exDone .7s var(--ease-out)}
+@keyframes exDone{0%{opacity:0;transform:scale(.99)}25%{opacity:.95}100%{opacity:0;transform:scale(1.02,1.5)}}
 #lessonTag{display:none}
 /* leaving: a sheet that asks once */
 #leaveSheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(var(--shade),.38);padding:0 12px calc(12px + var(--sab))}
@@ -135,7 +138,7 @@ svg#scene{display:block;overflow:visible;flex:none;
   width:min(100vw - 18px - var(--sal) - var(--sar), (100vh - var(--top-h) - var(--bot-h) - var(--sat) - var(--sab)) * 0.6452);height:auto}
 svg#scene text{font-family:var(--font-ui)}
 svg#scene text.numeral{font-family:var(--font-display);font-variation-settings:"SOFT" 60}
-@media (max-height:520px){ :root{ --top-h:20px; --bot-h:20px } #chrome{right:auto;width:150px} }
+@media (max-height:520px){ :root{ --top-h:20px; --bot-h:20px } #chrome{right:auto;width:150px} #turnTab{left:82%} }
 @media (min-width:700px) and (min-height:700px){ :root{ --top-h:104px; --bot-h:80px; --f-listen:10px; --f-speak:18px; --f-tap:28px }
   #chrome{left:calc(44px + var(--sal));right:calc(52px + var(--sar));top:calc(40px + var(--sat))} #leave{width:56px;height:56px} #leave .icon{width:32px;height:32px} #bar{height:16px;border-radius:8px} }
 .fade{transition:opacity .25s}
@@ -233,7 +236,7 @@ html[data-tester="on"] body.inLesson #save{top:auto;bottom:calc(30px + var(--sab
 
 /* ---------------- less movement: the chrome is still; the figures' own actions are teaching and still play ---------------- */
 @media (prefers-reduced-motion:reduce){
-  #signal .fg{animation:none!important;opacity:1} #micBars.idle b{animation:none!important;transform:scaleY(.45)} #bead.pop:after{animation:none!important}
+  #signal .fg{animation:none!important;opacity:1} #micBars.idle b{animation:none!important;transform:scaleY(.45)} #bead.pop:after{animation:none!important} #bar.exDone:after{animation:none!important}
   .cardIn,.cardSh,.btn,#leave,#turnTab > div,#barFill,#bead{transition-duration:1ms!important} #leaveSheet .sheet{animation:none!important} }
 html[data-motion="less"] #signal .fg{animation:none!important;opacity:1} html[data-motion="less"] #micBars.idle b{animation:none!important;transform:scaleY(.45)}
 html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-motion="less"] .btn, html[data-motion="less"] #turnTab > div{transition-duration:1ms!important}
@@ -419,9 +422,9 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
         <linearGradient id="lNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a86f50"/><stop offset="1" stop-color="#c48a68"/></linearGradient>
         <radialGradient id="lHair" cx="0.45" cy="0.35" r="0.7"><stop offset="0" stop-color="#4a3a30"/><stop offset="0.7" stop-color="#2f2620"/><stop offset="1" stop-color="#211a15"/></radialGradient>
       </defs>
-      <path d="M96 700 v-40 q0-58 66-66 h76 q66 8 66 66 v40z" fill="url(#lTop)"/>
+      <path d="M96 1500 v-840 q0-58 66-66 h76 q66 8 66 66 v840z" fill="#587d4a"/><path d="M96 760 v-100 q0-58 66-66 h76 q66 8 66 66 v100z" fill="url(#lTop)"/>
       <path d="M170 596 q30 14 60 0" stroke="#4d6f40" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>
-      <path d="M128 640 q10 30 6 60 M272 640 q-10 30 -6 60 M200 610 v90" stroke="#4d6f40" stroke-width="2" fill="none" opacity=".35"/>
+      <path d="M128 640 q10 30 6 260 M272 640 q-10 30 -6 260 M200 610 v290" stroke="#4d6f40" stroke-width="2" fill="none" opacity=".35"/>
       <path d="M182 552 h36 v40 q-18 10 -36 0z" fill="url(#lNeck)"/>
       <ellipse cx="153.5" cy="534" rx="6.5" ry="11" fill="#c48a68"/><ellipse cx="246.5" cy="534" rx="6.5" ry="11" fill="#c48a68"/>
       <path d="M154 538 q-6-62 46-64 q52 2 46 64 q-4 16-14 22 q-14 6-32 6 q-18 0-32-6 q-10-6-14-22z" fill="url(#lHair)"/>
@@ -1220,7 +1223,8 @@ const UI = (()=>{
     return fontsReady; }
   // a touch that was taken: the card goes down and comes back
   function press(el){ if(!el) return; el.classList.add("pressed"); setTimeout(()=>el.classList.remove("pressed"), 130); }
-  return {pref, savePref, haptic, turn, voice, progStart, progDraw, onLog, layout, fonts, press, PROG, VIEW};
+  function exerciseDone(){ const bar=document.getElementById("bar"); if(!bar) return; bar.classList.remove("exDone"); void bar.offsetWidth; bar.classList.add("exDone"); }
+  return {pref, savePref, haptic, turn, voice, progStart, progDraw, onLog, layout, fonts, press, exerciseDone, PROG, VIEW};
 })();
 
 /* ============================================================
@@ -4412,7 +4416,7 @@ async function runExercise(li, ei){
     if(only.size){ ph("the tasks with an error again (step 5)"); trace("step 5: the tasks with an error again: "+[...only].join(", "));
       await runParts(ex.parts, {run:{only}, firstSeen, errorsByTask, anchor}); }
   }
-  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
+  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save(); try{ UI.exerciseDone(); }catch(e){}
 }
 // a delayed test: the part's test tasks (since .45 opened with no symbol). Passed when it runs with no error;
 // an error resets the count and schedules it again (end of the next exercise, start of the next lesson).
