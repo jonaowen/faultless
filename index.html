@@ -1623,7 +1623,19 @@ function judge(text, expect, echoes=[], alsoOk=[]){
          elle 4): accepted as unsure.
        - "elle" + verb for "on" + verb and the reverse (3-4 of 16 for marche): unsure, unless the part being run asks for
          both (judgePart: then the part is there to tell them apart, and the answer is judged as heard). */
+    /* (.59; the reader of Lessons 1-6: in "Je fais quoi ?" -> "Tu danses." the learner's likeliest error is "Je danse.", the person of
+       the question said back, and the rule above passed it as unsure every time: it was never corrected) Where the question itself is
+       about je or tu ("Je fais quoi ?", "Tu fais quoi ?", "Tu vas faire quoi ?": the cue begins with the person) and what was heard is
+       that SAME person, the answer is judged: it is the question's person said back. Only that direction: "je" heard for "tu" after
+       "Répète : tu danses." or after "Tu fais quoi ?" stays unsure as before. Measured 15 Nov 2026 (the app's listener, the word list of
+       L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's, Helen's and
+       Richard's own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
+       other person: see the release notes of .59 for the figures. */
+    const echoed = (e, w) => { const q=String(curCue||"").trim(), cp = /\?\s*$/.test(q) ? (/^(je|j')\s/i.test(q) ? "JE" : /^tu\s/i.test(q) ? "TU" : null) : null;
+      return !!cp && cp!==e && SLOT[cp].includes(w); };
     { const e0=whole[0], e1=whole[1], w0=t[0], w1=t[1], rest=bad.every(([e])=>e===e0 || e===e1);
+      if(bad.length===2 && rest && ((e0==="JE" && e1==="VAIS" && SLOT.VA.includes(w1)) || (e0==="TU" && e1==="VA" && SLOT.VAIS.includes(w1))) && echoed(e0, w0))
+        return {ok:false, reason:"said \""+w0+" "+w1+"\" for \""+SLOT_WORD[e0]+" "+(e0==="TU"?"vas":"vais")+"\": the person of the question said back", person:true};
       if(bad.length===2 && rest && ((e0==="JE" && e1==="VAIS" && SLOT.TU.includes(w0) && SLOT.VA.includes(w1)) || (e0==="TU" && e1==="VA" && SLOT.JE.includes(w0) && SLOT.VAIS.includes(w1))))
         return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+w0+" "+w1+"\" where \""+SLOT_WORD[e0]+" "+(e0==="TU"?"vas":"vais")+"\" was expected; accepted, not judged on the person", unsure:"person"};
       if(bad.length===1 && bad[0][0]===e0 && (e0==="ON" || e0==="ELLE")){
@@ -1631,6 +1643,8 @@ function judge(text, expect, echoes=[], alsoOk=[]){
         if(w0==="un" || (!both && (e0==="ON" ? SLOT.ELLE : SLOT.ON).includes(w0)))
           return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+w0+"\" where \""+SLOT_WORD[e0]+"\" was expected; accepted, not judged on the person", unsure:"person"}; } }
     const otherSubject = w => SLOT.IL.includes(w) || SLOT.ELLE.includes(w) || SLOT.ON.includes(w) || ((nameOf(w)||{}).n && VOCAB[nameOf(w).n].kind==="person" && !nameOf(w).near);
+    if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU") && echoed(bad[0][0], bad[0][1]))
+      return {ok:false, reason:"said \""+bad[0][1]+"\" for \""+SLOT_WORD[bad[0][0]]+"\": the person of the question said back", person:true};
     if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU") && !otherSubject(bad[0][1]))      // whatever short word was heard in its place ("un danses", "pomme danses": 4 of 16 English voices)
       return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+bad[0][1]+"\" where \""+SLOT_WORD[bad[0][0]]+"\" was expected; accepted, not judged on the person", unsure:"person"};
     if(bad.length && bad.length<whole.length && !bad.some(([e])=>VOCAB[e] && VOCAB[e].kind==="person"))
@@ -3459,7 +3473,7 @@ function litPlay(it){
   const spec=curScene.row[+slot.slice(1)];
   holder.replaceChildren(picture(Object.assign({}, spec, {moving:true})));
   Object.assign(LIT, {slot, g:holder, spec, t0:performance.now(), ms:actLoopMs(holder)});
-  trace(LIT.ms ? "the lit card plays its action: "+spec.doing+" ("+slot+", one loop "+Math.round(LIT.ms)+" ms)" : "FAULT the lit card does not move: "+spec.doing+" (the picture library draws it still)");
+  trace(LIT.ms ? "the lit card plays its action: "+spec.doing+" ("+slot+", one loop "+Math.round(LIT.ms)+" ms)" : "the lit card has no loop to play: "+spec.doing+" (the picture library draws this action still: reading)");
 }
 async function litStill(){
   if(!LIT.slot) return; const g=LIT.g, spec=LIT.spec;
