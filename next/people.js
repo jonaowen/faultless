@@ -2846,6 +2846,7 @@ function placePic(spec, draw){
     return mk(rel === "on" ? own("chair") + put(82, 124, 64, 74).s : own("chair", [], { under: put(79, 178, 58, 37).s }));
   if (gk === "box" && rel === "in") return mk(lay(84, 170, 0.92, own("box", ["open"], { inside: put(82, 97 + Math.min(20, put(82, 0, 66, 76).h * 0.35), 66, 76).s })));
   if (gk === "box" && rel === "on") return mk(lay(84, 164, 0.8, own("box")) + put(84, 99, 76, 82).s);
+  if (gk === "bag" && rel === "in"){ const t = window.THINGS && THINGS.ground && THINGS.ground("bag", Object.assign(lookOf({ looks: gc }), { inside: put(80, 109 + Math.min(16, put(80, 0, 70, 96).h * 0.3), 70, 96).s })); if (t) return mk(t); }      // things.js: the new open bag (it draws its own shadow), when it is there
   if (gk === "bag" && rel === "in"){ const P = pal(TINT[gl.cn] || COL.blue), st = `stroke="${P.d}" stroke-width="1.8" stroke-linejoin="round"`;
     return mk(shad(80, 176, 50) + `<path d="M56 96 Q56 46 80 46 Q104 46 104 96" stroke="${P.d}" stroke-width="7.4" fill="none"/><path d="M56 96 Q56 46 80 46 Q104 46 104 96" stroke="${P.b}" stroke-width="4.4" fill="none"/>
       <ellipse cx="80" cy="98" rx="52" ry="15" fill="${P.d}" ${st}/>` + put(80, 109 + Math.min(16, put(80, 0, 70, 96).h * 0.3), 70, 96).s + `<path d="M28 98 Q80 126 132 98 L124 166 Q80 178 36 166Z" fill="${P.a}" ${st}/><path d="M38 110 L44 160" stroke="#fff" stroke-width="3.4" opacity=".3" stroke-linecap="round"/>
@@ -3626,20 +3627,21 @@ function setLearner(spec){ LEARNER = spec ? (typeof spec === "string" ? FIG.spec
    PICS.learnerCard(name, sex): the learner's own card: the learner's figure (the one made in the avatar maker when PICS.setLearner has been
    given it, else the usual learner, a man or with sex "f" a woman) with the name on the tag; a long name goes on two lines, as the stage's
    own card did (the tag's size is left on the picture as g.tagBox = {w, h}, and given to the stage's LEARNER_TAG when it is there) */
+const boxed = fig => { const u = "bx" + (seq++), g = mk(`<clipPath id="${u}"><rect width="160" height="190"/></clipPath><g clip-path="url(#${u})"></g>`); g.lastChild.appendChild(fig); return g; };      // a head and shoulders ends at the bottom edge of its picture
 const flatTag = (lines, w, h, tws, MAXT) => `<g class="nametag"><rect x="${r2(80 - w / 2)}" y="146" width="${r2(w)}" height="${h}" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.5"/><rect x="${r2(80 - w / 2)}" y="146" width="${r2(w)}" height="5" rx="2" fill="#c8453b"/>` +
   lines.map((t, i) => `<text x="80" y="${166 + i * 16}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522"${tws && tws[i] > MAXT ? ` textLength="${MAXT}" lengthAdjust="spacingAndGlyphs"` : ""}>${String(t).replace(/[<&"]/g, ch => ({ "<": "&lt;", "&": "&amp;", '"': "&quot;" }[ch]))}</text>`).join("") + `</g>`;
 function portraitPic(who, name){ who = who === "julie" || who === "marie" ? who : "paul"; const c = traits({ person: who }), ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[who];
   c.top = [tone(ID, 0.14), tone(ID, -0.2)]; if (who === "marie") c.style = "tucked";
-  const g = mk(""); g.appendChild(FIG.bust(c, { head: 80, cy: 82, heads: 5.5, yaw: -8 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
 function learnerCardPic(name, sex){ name = String(name || ""); const cT = traits({ person: "you", sex: sex === "f" ? "f" : "m" }), c = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT;
   let cv = learnerCardPic.cv; const width = t => { try { cv = cv || (learnerCardPic.cv = document.createElement("canvas").getContext("2d")); cv.font = '700 14px "Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return cv.measureText(t).width; } catch (e){ return t.length * 8.4; } };
   const MAXT = 136; let lines = [name];
   if (width(name) > MAXT){ const cuts = [...name.matchAll(/[ -]/g)].map(m => m.index); if (cuts.length){ const q = cuts.reduce((a, b) => Math.abs(b - name.length / 2) < Math.abs(a - name.length / 2) ? b : a); lines = [name.slice(0, name[q] === "-" ? q + 1 : q), name.slice(q + 1)]; } }
   const tws = lines.map(width), w = Math.max(50, Math.min(MAXT + 12, Math.max(...tws) + 14)), h = lines.length > 1 ? 40 : 24;
-  const g = mk(""); g.appendChild(FIG.bust(c, { head: 80, cy: 82, heads: 5.5, yaw: -8 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
   try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
   return g; }
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
-window.PICS = { _fig: FIG, _thingsHook: true, tutor: tutorFig, _portrait: portraitPic, _learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
+window.PICS = { _fig: FIG, _thingsHook: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
   things: Object.keys(THING).filter(k => !/^(book|apple|pen|shoe|flag|card|boy|girl)$/.test(k)) };
 })();
