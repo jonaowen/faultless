@@ -447,13 +447,13 @@ const SHELL = (()=>{
       <div class="exgrid">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<button class="extile ${g ? (g.g?"g":"y") : "u"}" data-ei="${k}" aria-label="Exercise ${k+1}: ${g ? (g.g?"perfect":"had an error") : "done"}"><span class="k">${k+1}</span>${firstMini(x)}<span class="st">${g ? (g.g?ic("star"):"") : ""}</span></button>`; }).join("")}</div>
       <div class="legend"><span><i class="g"></i>Perfect</span><span><i class="y"></i>Had an error</span>${known<L.exercises.length?`<span><i class="u"></i>Done before the record began</span>`:""}</div>
       <button class="btn quiet" id="lvAll">${ic("redo")} The whole lesson again</button>`;
-    o.hidden=false; o.scrollTop=0;
+    o.hidden=false; o.scrollTop=0; freezeMinis(o);
     $("lvBack").onclick=()=>{ tick(); o.hidden=true; };
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
     o.querySelectorAll("[data-ei]").forEach(b=>{ b.onclick=()=>{ tick(); const ei=+b.dataset.ei, g=G.ex[L.exercises[ei].id];
-      info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
+      info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); freezeMinis($("sheet")); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
       $("exGo").onclick=()=>{ tick(); $("sheet").hidden=true; o.hidden=true; pendingEx={li, ei}; pendingAgain=null; $("playBtn").click(); }; }; }); }
-  const firstMini = (x, cls="")=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<span class="mini ${cls}"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1})).outerHTML}</svg></span>`; } }catch(e){} return `<span class="mini ${cls}"></span>`; };
+  const firstMini = (x, cls="")=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<span class="mini ${cls}"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1, still:true})).outerHTML}</svg></span>`; } }catch(e){} return `<span class="mini ${cls}"></span>`; };
 
   /* the one celebration: paper in the four people's colours and the numbers counting up (900 ms). Nothing of it with less movement. */
   let feteT=0;
@@ -492,7 +492,11 @@ const SHELL = (()=>{
   { const ol0=UI.onLog; UI.onLog=function(o){ const r=ol0.apply(this, arguments); try{ if(o && o.result==="correct" && o.task && !/^lead/.test(o.phase||"") && document.body.classList.contains("inLesson")) beadSound(); }catch(e){} return r; }; }
 
   /* ---- home: today's two moments, the week, the next lesson, the path ---- */
-  const mini = spec=>{ try{ return `<div class="mini"><svg viewBox="0 0 160 190" aria-hidden="true">${pic(spec).outerHTML}</svg></div>`; }catch(e){ return ""; } };
+  /* (owner, 16 Nov: "the two figures I circled are flashing") a small picture on a card is a STILL picture: the frozen frame where the drawing has one
+     (spec.still), and whatever still moves by itself (the unnamed people's loops) is stopped at its first frame by freezeMinis after it is put in the page */
+  const stillSpec = spec=>spec && typeof spec==="object" ? Object.assign({}, spec, {still:true}) : spec;
+  const freezeMinis = root=>{ try{ (root||document).querySelectorAll(".mini svg").forEach(v=>{ try{ v.pauseAnimations(); v.setCurrentTime(0); }catch(e){} }); }catch(e){} };
+  const mini = spec=>{ try{ return `<div class="mini"><svg viewBox="0 0 160 190" aria-hidden="true">${pic(stillSpec(spec)).outerHTML}</svg></div>`; }catch(e){ return ""; } };
   const picsOf = (()=>{ const memo={}; return i=>{ if(memo[i]) return memo[i]; const seen=new Set(), out=[];
       for(const ex of LESSONS[i].exercises) for(const p of ex.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; for(const x of row){ if(!x || typeof x!=="object") continue;
         const k=x.person ? "p:"+x.person+(x.doing||"") : (x.is||"")+":"+(x.doing||x.value||""); if(x.person==="you" || seen.has(k)) continue; seen.add(k); out.push(Object.assign({}, x, {count:1})); } }
@@ -534,14 +538,15 @@ const SHELL = (()=>{
     $("hMe").onclick=()=>tab("you"); $("hRank").onclick=()=>{ tick(); wardrobe(()=>home()); };
     ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); MV.count(h.querySelector(".h-top")); store();
     const om=$("offerMaker"); if(om) om.onclick=()=>{ tick(); G.makerOffer=false; store(); maker(false, ()=>home()); };
-    h.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });
+    h.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
+    freezeMinis(h);
     h.querySelectorAll("[data-again]").forEach(b=>{ b.onclick=()=>{ pendingAgain=+b.dataset.again; tick(); const lb=btn.querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(pendingAgain+1)+" again"; h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(pendingAgain+1); }; }); }
   const lessonBadge = L=>{ const n=L.exercises.length, g=L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length, k=L.exercises.filter(x=>G.ex[x.id]).length;
     return G.lp[L.id] ? `<span class="pf">${ic("star")} Perfect</span>` : k ? `<span class="pp">${g} of ${n} perfect</span>` : `<span class="pp">Exercises</span>`; };
   function pathRows(T, st){ const upto = st ? st.s.last : LESSONS.length, from = st ? st.s.first-1 : 0; let out="";
     for(let i=from;i<upto;i++){ const Lk=LESSONS[i], recs=Lk ? (G.lessons[Lk.id]||[]) : [], pass=i<G.furthest, bestRec=recs.filter(r=>r.passed).slice(-1)[0];
       const cls = i===T ? (G.why ? "once" : "now") : pass ? "done" : "later";
-      out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" data-lv="${i}">${lessonBadge(Lk)}${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(mini).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
+      out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"${pass && i!==T && Lk ? ` data-lv="${i}"` : ""}><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" aria-label="Lesson ${i+1}: its exercises">${lessonBadge(Lk)}${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(mini).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
     return out; }
 
   /* ---- the three places at the foot: Today, Words, You ---- */
