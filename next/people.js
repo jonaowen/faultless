@@ -1734,7 +1734,7 @@ function frame(k, B, cam, c, floor, o){
   if (!(o && o.noLegs)) for (const s of ["L", "R"]){
     const hip = J["hip" + s], kn = J["kn" + s], an = J["an" + s], F = J["ft" + s];
     const farLeg = P(hip)[2] < P(J.root)[2], zb = farLeg ? -0.02 : 0.02, Q = chain(hip, kn, an, [B.rHip, B.rTh, B.rKnee, B.rCalf, B.rCuff]), e = B.rCuff * S * 0.3, mat = "leg" + s; lapQ[s] = Q;
-    legsD += sweep(Q, 0, 7)(0, 0, 0); const LM = WD && WD.legSkin ? sk : G, zl = (zmid(hip, kn) + zmid(kn, an)) / 2 + zb, zL = WD && WD.skirt ? Math.min(zl, zt - 0.003) : zl;
+    legsD += sweep(Q, 0, 7)(0, 0, 0); const LM = WD && WD.legSkin ? sk : G, zl = (zmid(hip, kn) + zmid(kn, an)) / 2 + zb, zL = WD && WD.skirt ? Math.min(zl, zt - 0.003) : zl; Q.z = zL;
     parts.push({ id: "tr" + s, z: Math.min(zt - 0.002, zmid(hip, kn) + zb), mat: WD && WD.legSkin ? "legS" + s : mat, layers: form(sweep(Q, 0, 2), LM, e, farLeg, true) });
     parts.push({ id: "lg" + s, z: zL, mat: WD && WD.legSkin ? "legS" + s : part === "body" && !farLeg ? "legN" : mat, layers: form(sweep(Q, 1, 7), LM, e, farLeg, true) });
     if (WD && WD.legParts) for (const p of WD.legParts({ s, Q, sweep, form, P, S, z: Math.max(zL, Math.min(zt - 0.002, zmid(hip, kn) + zb)), far: farLeg, G, sk, e, B })) parts.push(p);
@@ -1749,14 +1749,15 @@ function frame(k, B, cam, c, floor, o){
     parts.push({ id: "sh" + s, z: -99, mat: "shadow" + s, layers: [[ellPath(ellipse(g0, [cam.lin(mul(fd, 0.15)), cam.lin([fd[2] * 0.085, 0, -fd[0] * 0.085]), [0, 0.03 * S]]), 0, 0, 0), c.shadow]], op: f2(Math.max(0, 1 - hgt / 0.24)) });
   }
   if (legsD){ hemS.tag = "clip"; hemS.clip = legsD; hemS.d = hemS.layers[0][0]; hemS.fill = G.f[1]; delete hemS.layers; }
-  /* (the teacher seated, knees together, the thighs toward us: from the front the thighs foreshortened end-on read as two rounds. Her LAP
-     is one surface: the tops of both thighs from the hips to just short of the knees in the lit tone, drawn over the thighs, under the hem;
-     the knees stay as the lower edge, with the soft fold where they meet) */
+  /* (the teacher seated, knees together, the thighs toward us: from the front the knees, foreshortened end-on, read as two separate
+     rounds with the dark of the jumper between them. Her LAP is one surface: the space between the knees filled in the lit tone of the
+     trousers (drawn over both knees, from just under their tops), so the two knees are one lap with the hem resting on it, and a soft
+     fold where they meet) */
   if (B.key === "tutor" && part === "body" && lapQ.L && lapQ.R && !(WD && WD.skirt)){
-    const dk = (q, k) => { const D = disc([q[0], q[1]], q[2] * k); D.n = 18; return D; }, L = lapQ.L, R = lapQ.R, lk = B.lapK == null ? 0.84 : B.lapK;
-    const lap = hullOf([dk(L[0], lk), dk(R[0], lk), dk(L[2], lk * 0.92), dk(R[2], lk * 0.92)], 0, 0, 0), mx = (L[3][0] + R[3][0]) / 2, my = (L[3][1] + R[3][1]) / 2 + Math.min(L[3][2], R[3][2]) * 0.5;
-    parts.push({ id: "lap", z: zt - 0.0012, mat: "lap", layers: [[lap, G.n[0]]] });
-    parts.push({ id: "lapF", z: zt - 0.00115, tag: "clip", clip: legsD, d: `M${f1(mx - 0.004 * S)} ${f1(my)}Q${f1(mx)} ${f1(my - 0.03 * S)} ${f1(mx + 0.002 * S)} ${f1(my - 0.075 * S)}L${f1(mx + 0.006 * S)} ${f1(my - 0.07 * S)}Q${f1(mx + 0.004 * S)} ${f1(my - 0.03 * S)} ${f1(mx + 0.005 * S)} ${f1(my)}Z`, fill: G.n[1] }); }
+    const dk = (q, k, dy) => { const D = disc([q[0], q[1] + (dy || 0)], q[2] * k); D.n = 20; return D; }, L = lapQ.L, R = lapQ.R, lk = B.lapK == null ? 0.78 : B.lapK, zz = Math.max(L.z, R.z) + 0.0002;
+    const lap = hullOf([dk(L[2], lk, L[2][2] * 0.12), dk(R[2], lk, R[2][2] * 0.12), dk(L[3], lk * 0.9), dk(R[3], lk * 0.9)], 0, 0, 0), mx = (L[3][0] + R[3][0]) / 2, my = Math.max(L[3][1], R[3][1]) + Math.min(L[3][2], R[3][2]) * 0.55;
+    parts.push({ id: "lap", z: zz, mat: "lap", layers: [[lap, G.n[0]]] });
+    parts.push({ id: "lapF", z: zz + 0.00005, mat: "lapF", layers: [[`M${f1(mx - 0.006 * S)} ${f1(my)}Q${f1(mx - 0.001 * S)} ${f1(my - 0.03 * S)} ${f1(mx + 0.001 * S)} ${f1(my - 0.06 * S)}L${f1(mx + 0.004 * S)} ${f1(my - 0.058 * S)}Q${f1(mx + 0.003 * S)} ${f1(my - 0.03 * S)} ${f1(mx + 0.004 * S)} ${f1(my)}Z`, G.n[1]]] }); }
   }
   /* arms: the sleeve from the shoulder cap to the wrist in one outline, its cuff, the hand (a palm, the fingers together, a thumb) */
   if (doArms) for (const s of ["L", "R"]){
