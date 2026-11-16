@@ -687,7 +687,7 @@ function dog(k, spec){
     return `<g transform="translate(${hx} ${hy}) rotate(${a}) scale(${sc})">${h}</g>`; };
   const tail = pts => solid(tube(pts, [9, 6.5, 3.4]), B, { k: 2.5, rim: 0.8 });
   const neck = (pts, ws) => solid(tube(pts, ws), B, { k: 4, rim: 1.2 });
-  const chest = d => fill(d, MZ, 'opacity=".75"');
+  const chest = d => fill(d, MZ, 'opacity=".55"');
   let s;
   if (pose === "stand" || pose === "eat"){
     /* the body box, the legs' length and the head's size: a puppy has a big head, a short round body, short legs */
@@ -697,7 +697,7 @@ function dog(k, spec){
       far([[x1 - 10, lt], [x1 - 7, 150], [x1 - 6, 167]], [lw - 2, lw * 0.72, lw * 0.7]) + far([[x0 + 14, lt], [x0 + 8, 150], [x0 + 12, 167]], [lw, lw * 0.72, lw * 0.7]) +
       near([[x1 - 20, lt], [x1 - 19, 150], [x1 - 18, 167]], [lw, lw * 0.76, lw * 0.72]) + near([[x0 + 24, lt + 2], [x0 + 27, 150], [x0 + 22, 167]], [lw + 1, lw * 0.78, lw * 0.72]) +
       "<!--N-->" + solid(body, B, { k: 6, rim: 1.4 }) + spots(body, [[x0 + 30, yT + 14, 9], [x0 + 52, yT + 24, 6], [x0 + 12, yT + 20, 6], [x1 - 14, yT + 8, 5]]) +
-      chest(blob([[x1 - 18, yT + 18], [x1, yT + 16], [x1 + 2, yB - 6], [x1 - 14, yB]]));
+      chest(blob([[x1 - 4, yT + 14], [x1 + 4, yT + 18], [x1 + 3, yB - 8], [x1 - 6, yB - 4]]));
     if (eat) s = s.replace("<!--N-->", neck([[x1 - 8, yT + 10], [x1 + 6, yT + 24], [x1 + 10, yT + 36]], [30, 25, 22])) + head(x1 + 2, yT + 38, 52, hs * 0.9) +
       solid("M112 154H156L151 167Q150 170 146 170H122Q118 170 117 167Z", C.red, { k: 3 }) + `<ellipse cx="134" cy="154" rx="22" ry="4" fill="${C.red.r}"/><ellipse cx="134" cy="154.6" rx="18.5" ry="2.6" fill="${C.red.fs}"/>`;
     else s = s.replace("<!--N-->", neck([[x1 - 10, yT + 14], [x1, yT - 8], [x1 + 2, yT - 22]], [32, 27, 24])) + head(x1 - 2, yT - 26, -4, hs);
@@ -1518,7 +1518,7 @@ function park(k){
   const autumn = k.has("autumn"), L = autumn ? P("#EE9A3A", "#C8682A") : null;
   let s = ground(80, 168, 76, 8, 0.14) + island(C.grass.l, C.grass.s, 150, 76, 22) + fill("M30 166Q70 150 84 140Q100 130 132 130Q104 134 96 146Q84 160 64 170Z", C.paving.l);
   if (k.has("pond")) s += `<ellipse cx="104" cy="152" rx="30" ry="9" fill="#7FBEDF"/><ellipse cx="104" cy="150" rx="26" ry="7" fill="#A8D4EC"/>` + solid(blob([[100, 146], [108, 144], [112, 148], [104, 151]]), C.white, { k: 1, rim: 0 }) + fill("M112 146l4 -1l-3 2Z", C.orange.l);
-  s += roundTree(36, 140, 26, L) + roundTree(120, 128, 22, L) + roundTree(78, 118, 16, L ? far(L, 0.3) : far(P("#6DB46A", "#468C4E"), 0.3));
+  s += roundTree(78, 122, 20, L ? far(L, 0.3) : far(P("#6DB46A", "#468C4E"), 0.3)) + roundTree(36, 144, 32, L) + roundTree(124, 134, 27, L);
   if (k.has("playground")) s += line("M104 156L116 120H124L136 156", C.red.l, 3) + line("M118 122L146 156", C.yellow.l, 4) + line("M98 120H128", C.blue.l, 3);
   else s += bench(60, 150, 30, C.green) + (k.has("benches") ? bench(104, 154, 26, C.green) : "");
   s += line("M112 160V112", "#3A4254", 2.4) + circ(112, 110, 4.4, "#FBF8F0");
