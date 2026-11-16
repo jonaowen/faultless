@@ -1755,8 +1755,10 @@ function frame(k, B, cam, c, floor, o){
      fold where they meet) */
   if (B.key === "tutor" && part === "body" && lapQ.L && lapQ.R && !(WD && WD.skirt)){
     const dk = (q, k, dy) => { const D = disc([q[0], q[1] + (dy || 0)], q[2] * k); D.n = 20; return D; }, L = lapQ.L, R = lapQ.R, lk = B.lapK == null ? 0.78 : B.lapK, zz = Math.max(L.z, R.z) + 0.0002;
-    const lap = hullOf([dk(L[2], lk, L[2][2] * 0.12), dk(R[2], lk, R[2][2] * 0.12), dk(L[3], lk * 0.9), dk(R[3], lk * 0.9)], 0, 0, 0), mx = (L[3][0] + R[3][0]) / 2, my = Math.max(L[3][1], R[3][1]) + Math.min(L[3][2], R[3][2]) * 0.55;
-    parts.push({ id: "lap", z: zz, mat: "lap", layers: [[lap, G.n[0]]] });
+    const lap = hullOf([dk(L[1], lk), dk(R[1], lk), dk(L[2], lk), dk(R[2], lk)], 0, 0, 0), mx = (L[2][0] + R[2][0]) / 2, my = Math.max(L[2][1], R[2][1]) + Math.min(L[2][2], R[2][2]) * 0.7;
+    const ct = Math.cos(Ehm.th), st = Math.sin(Ehm.th), lo = []; for (let i = 0; i <= 20; i++){ const t = i / 20 * Math.PI, x = (Ehm.a + 0.4) * Math.cos(t), y = (Ehm.b + 0.4) * Math.sin(t); lo.push([Ehm.c[0] + x * ct - y * st, Ehm.c[1] + x * st + y * ct]); }
+    const under = poly(lo.concat([[lo[lo.length - 1][0] - 0.3 * S, lo[lo.length - 1][1] + 0.6 * S], [lo[0][0] + 0.3 * S, lo[0][1] + 0.6 * S]]));      // below the hem's lower edge: the lap shows only there (the hem rests on it)
+    parts.push({ id: "lap", z: zz, tag: "clip", clip: under, d: lap, fill: G.n[0] });
     parts.push({ id: "lapF", z: zz + 0.00005, mat: "lapF", layers: [[`M${f1(mx - 0.006 * S)} ${f1(my)}Q${f1(mx - 0.001 * S)} ${f1(my - 0.03 * S)} ${f1(mx + 0.001 * S)} ${f1(my - 0.06 * S)}L${f1(mx + 0.004 * S)} ${f1(my - 0.058 * S)}Q${f1(mx + 0.003 * S)} ${f1(my - 0.03 * S)} ${f1(mx + 0.004 * S)} ${f1(my)}Z`, G.n[1]]] }); }
   }
   /* arms: the sleeve from the shoulder cap to the wrist in one outline, its cuff, the hand (a palm, the fingers together, a thumb) */
