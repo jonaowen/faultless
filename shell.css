@@ -450,5 +450,5 @@ html[data-motion="less"] .mv-soft{animation:none!important} @media (prefers-redu
 }
 /* (.71) "Go for perfect": the run's end shows what it did to "Your French" */
 #done .card.prog{display:grid;gap:6px;padding:14px 16px;margin-top:10px} #done .card.prog .row{display:flex;justify-content:space-between;align-items:center} #done .card.prog .lvl{font:800 15px/1 var(--font-ui);color:#6b4300;background:var(--sun-tint);padding:5px 10px;border-radius:14px} #done .card.prog p{margin:0;font:500 16px/1.4 var(--font-ui);color:var(--ink-2)}
-#lessonV p.small.center{margin:-4px 0 4px;text-align:center}
+#lessonV p.small.center{margin:14px 4px 16px;text-align:center;font-size:15px;line-height:1.35;color:var(--ink-2, #5b6472);text-wrap:balance}      /* (.72) clear of the button's raised edge (the owner: "almost overlapping") */
 #lessonV #lvPerfect{line-height:1.15;text-wrap:balance}
