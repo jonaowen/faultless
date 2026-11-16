@@ -58,7 +58,7 @@
   --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
   /* the old names, still used by the script and the tester panel */
   --bg:var(--paper); --muted:var(--ink-3); --frame:var(--card); --frame-line:var(--line); --go:var(--speak); --stop:var(--listen); --panel:var(--card);
-  --skin:#e9b996; --skin-d:#d49f7a; --tutor-top:#2E4A6B; --tutor-hair:#4a3326; --paul-top:#3f6fb5; --paul-hair:#6b4a2f; --julie-top:#c0453b; --julie-hair:#2a1f1a;
+  --skin:#e9b996; --skin-d:#d49f7a; --paul-top:#3f6fb5; --paul-hair:#6b4a2f; --julie-top:#c0453b; --julie-hair:#2a1f1a;
 }
 @supports (transition-timing-function:linear(0,1)){ :root{ --spring:linear(0,.009,.035 2.1%,.141 4.4%,.723 12.9%,.938 16.7%,1.017,1.077 20.4%,1.121,1.149 24.3%,1.159,1.163 27%,1.154,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1); } }
 html[data-red="loud"]{ --f-listen:14px; --listen:var(--listen-loud); }
@@ -287,134 +287,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
     <g id="askMark"></g>
     <g id="tagMark"></g>
   </g>
-  <!-- tutor, seated: drawn for realism with soft gradients (skin, hair, jumper); every id below is animated by the script -->
-  <g id="tutor">
-    <defs>
-      <radialGradient id="tSkin" gradientUnits="userSpaceOnUse" cx="194" cy="340" r="62"><stop offset="0" stop-color="#f3cfae"/><stop offset="0.62" stop-color="#e8b892"/><stop offset="1" stop-color="#cf9873"/></radialGradient>
-      <linearGradient id="tNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c58d68"/><stop offset="0.5" stop-color="#dba582"/><stop offset="1" stop-color="#e3af8b"/></linearGradient>
-      <linearGradient id="tHair" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#5c4132"/><stop offset="0.55" stop-color="#4a3326"/><stop offset="1" stop-color="#3a271c"/></linearGradient>
-      <linearGradient id="tTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a5980"/><stop offset="1" stop-color="#27405f"/></linearGradient>
-      <linearGradient id="tChair" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6e5140"/><stop offset="0.5" stop-color="#7f604c"/><stop offset="1" stop-color="#6e5140"/></linearGradient>
-      <radialGradient id="tBlush" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#e98a7a" stop-opacity="0.32"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>
-      <radialGradient id="tIris" cx="0.45" cy="0.4" r="0.6"><stop offset="0" stop-color="#8a6240"/><stop offset="0.7" stop-color="#5e3f27"/><stop offset="1" stop-color="#3b2717"/></radialGradient>
-      <clipPath id="eyeClipL"><path d="M175.8 352.2 Q183.6 345.2 192.2 351.6 Q184.4 357.6 175.8 352.2 Z"/></clipPath>
-      <clipPath id="eyeClipR"><path d="M224.2 352.2 Q216.4 345.2 207.8 351.6 Q215.6 357.6 224.2 352.2 Z"/></clipPath>
-    </defs>
-    <rect x="112" y="300" width="176" height="900" rx="28" fill="url(#tChair)"/>
-    <rect x="118" y="306" width="164" height="888" rx="24" fill="none" stroke="#5e4535" stroke-width="2" opacity=".5"/>
-    <!-- back hair: a plain shoulder-length cut -->
-    <path d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="url(#tHair)"/>
-    <!-- torso: a soft crew-neck jumper -->
-    <path d="M118 668 v-188 q0-52 52-60 h60 q52 8 52 60 v188 q-82 12 -164 0z" fill="url(#tTop)"/><path d="M110 1200 V676 q4 -14 20 -12 q70 9 140 0 q16 -2 20 12 V1200z" fill="#2b3545"/><path d="M200 690 V1200" stroke="#1f2734" stroke-width="2" opacity=".6"/><path d="M118 662 q82 12 164 0" stroke="#1f3350" stroke-width="5" fill="none" opacity=".55" stroke-linecap="round"/>
-    <path d="M172 421 q28 16 56 0" stroke="#1f3350" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
-    <path d="M150 470 q8 40 4 180 M250 470 q-8 40 -4 180" stroke="#1f3350" stroke-width="2" fill="none" opacity=".35"/>
-    <!-- the teacher's name tag, as in DISE (Lesson 1: "Point to your name tag and say your name") -->
-    <g id="claireTag" transform="rotate(-3 214 466)"><rect x="189" y="453" width="50" height="23" rx="3.5" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.3"/>
-      <rect x="189" y="453" width="50" height="4.6" rx="2" fill="#c8453b"/>
-      <text x="214" y="471.5" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5" font-weight="700" fill="#2a2522">Marie</text></g>
-    <!-- neck, shaded under the chin -->
-    <path d="M185 394 h30 v22 q-15 12 -30 0z" fill="url(#tNeck)"/>
-    <!-- head (nods as a group) -->
-    <g id="head" style="transform-box:view-box;transform-origin:200px 400px;transition:transform .16s ease-in-out">
-    <ellipse cx="158.5" cy="356" rx="5.5" ry="9.5" fill="#d9a27c"/><ellipse cx="241.5" cy="356" rx="5.5" ry="9.5" fill="#d9a27c"/>
-    <path d="M200 302 C227 302 243 323 243 351 C243 379 228 400 200 403 C172 400 157 379 157 351 C157 323 173 302 200 302 Z" fill="url(#tSkin)"/>
-    <ellipse cx="177" cy="371" rx="12" ry="7" fill="url(#tBlush)"/><ellipse cx="223" cy="371" rx="12" ry="7" fill="url(#tBlush)"/>
-    <!-- hair over the forehead: parted, falling to each side -->
-    <path d="M156 354 q-2-58 44-60 q46 2 44 60 q-4-26-16-38 q-14-6-30-3 q-10 4-22 3 q-6 4-10 12 q-6 10-10 26z" fill="url(#tHair)"/>
-    <path d="M188 297 q-14 8-22 26 M190 302 q-12 10-17 22 M214 299 q12 8 18 26 M222 302 q10 10 13 24" stroke="#6b4b39" stroke-width="1.2" fill="none" opacity=".5" stroke-linecap="round"/>
-    <!-- eyebrows: soft, tapered, gently raised (an open, friendly look) -->
-    <path d="M174.5 341.5 q8.5-6.2 18-2.4 q-8.5-2.2-18 3.6z" fill="#4a3326"/><path d="M225.5 341.5 q-8.5-6.2-18-2.4 q8.5-2.2 18 3.6z" fill="#4a3326"/>
-    <!-- eyes: whites, brown irises with a catch-light (so it is clear whom the teacher looks at), lids and lashes -->
-    <g id="eyes">
-      <path d="M175.8 352.2 Q183.6 345.2 192.2 351.6 Q184.4 357.6 175.8 352.2 Z" fill="#fbf7f1"/>
-      <path d="M224.2 352.2 Q216.4 345.2 207.8 351.6 Q215.6 357.6 224.2 352.2 Z" fill="#fbf7f1"/>
-      <g id="pupils" style="transition:transform .25s ease-in-out">
-        <g clip-path="url(#eyeClipL)"><circle cx="184" cy="351.6" r="3.9" fill="url(#tIris)"/><circle cx="184" cy="351.6" r="1.7" fill="#17110d"/><circle cx="185.3" cy="350.3" r="0.95" fill="#fff"/></g>
-        <g clip-path="url(#eyeClipR)"><circle cx="216" cy="351.6" r="3.9" fill="url(#tIris)"/><circle cx="216" cy="351.6" r="1.7" fill="#17110d"/><circle cx="217.3" cy="350.3" r="0.95" fill="#fff"/></g>
-      </g>
-      <g id="lids" style="transition:transform .25s ease-in-out;transform-box:view-box">
-        <path d="M173 351.2 Q183.6 340.2 194.6 350.8 Q190 341 183.6 340.4 Q177 341 173 351.2 Z" fill="url(#tSkin)"/>
-        <path d="M227 351.2 Q216.4 340.2 205.4 350.8 Q210 341 216.4 340.4 Q223 341 227 351.2 Z" fill="url(#tSkin)"/>
-        <path d="M175.4 352.2 Q183.6 344.9 192.6 351.4" stroke="#2b1d16" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <path d="M224.6 352.2 Q216.4 344.9 207.4 351.4" stroke="#2b1d16" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <path d="M177 346.5 Q184 342.6 191.5 346.4 M223 346.5 Q216 342.6 208.5 346.4" stroke="#b9805e" stroke-width="0.9" fill="none" opacity=".7"/>
-      </g>
-      <!-- smiling eyes: lower lids slightly lifted -->
-      <path d="M177 355.4 Q184 358.6 191 355.2 M223 355.4 Q216 358.6 209 355.2" stroke="#c9906d" stroke-width="1" fill="none" opacity=".75" stroke-linecap="round"/>
-    </g>
-    <!-- nose: a soft shadow down one side, the tip and the nostrils -->
-    <path d="M196.5 350 Q194 361 193.2 368.5 Q195 371.5 198 371" stroke="#c98f6a" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".45"/>
-    <ellipse cx="196.4" cy="371.2" rx="1.7" ry="1" fill="#9c6448" opacity=".55"/><ellipse cx="203.6" cy="371.2" rx="1.7" ry="1" fill="#9c6448" opacity=".55"/>
-    <ellipse cx="200.4" cy="363" rx="1.8" ry="5" fill="#f8dcc2" opacity=".45"/>
-    <path d="M196 375.5 Q200 377 204 375.5" stroke="#d29b77" stroke-width="1" fill="none" opacity=".35"/>
-    <!-- mouth: drawn sound by sound from each sound of the recording (see MOUTH below); a gentle smile at rest -->
-    <g id="mouthG">
-      <clipPath id="mouthClip"><path id="mClip" d=""/></clipPath>
-      <path id="mLips" d="" fill="#c4626a"/>
-      <path id="mIn" d="" fill="#4a1c22"/>
-      <g clip-path="url(#mouthClip)">
-        <rect id="mTeethU" x="190" y="380" width="20" height="3" fill="#f7f3ec"/>
-        <rect id="mTeethL" x="190" y="388" width="20" height="2" fill="#ece6dc"/>
-        <ellipse id="mTongue" cx="200" cy="390" rx="7" ry="3" fill="#cf6b74"/>
-      </g>
-      <path id="mLine" d="" stroke="#8e3d45" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-      <path id="mHi" d="" stroke="#e39aa0" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>
-      <rect id="mTeethF" x="193" y="381" width="14" height="3" rx="1" fill="#f7f3ec" opacity="0"/>
-      <path id="mDimples" d="" stroke="#c98d6c" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".6"/>
-    </g>
-    </g>
-    <!-- arms: shoulder → elbow → wrist, drawn each frame by the ARMS rig (two-joint reach), with hand shapes at the wrist.
-         Gestures recreated from the DISE training videos: "my turn" = hand flat on the chest (Zig, Part 3, 4:57);
-         "your turn" = arm reaching towards the learner, open palm up (Zig, Part 3, 4:53), with the teacher facing the learner. -->
-    <g id="arms">
-      <g id="armRig_L"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #223a58)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
-      <g id="armRig_R"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #223a58)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
-      <g id="hand_L" class="hand"></g>
-      <g id="hand_R" class="hand"></g>
-    </g>
-    <defs>
-      <!-- hand shapes, drawn pointing down (+y) from the wrist at 0,0 -->
-      <linearGradient id="hSkin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#efc29f"/><stop offset="1" stop-color="#d49f7a"/></linearGradient>
-      <g id="hs_relaxed"><path d="M-9 2 C-12 12 -11 22 -7 28 C-4 31 4 31 7 28 C11 22 12 12 9 2 Z" fill="url(#hSkin)"/><path d="M-5.5 26 v5 M-1.8 27 v5.5 M1.8 27 v5.5 M5.5 26 v5" stroke="#efc29f" stroke-width="3.4" stroke-linecap="round"/><path d="M-5.5 24 v6 M-1.8 25 v6.5 M1.8 25 v6.5 M5.5 24 v6" stroke="#c48e6a" stroke-width=".7" opacity=".5"/><path d="M-9 8 q-5 6 -3 13" stroke="#e2b08b" stroke-width="5" stroke-linecap="round" fill="none"/></g>
-      <g id="hs_point"><!-- index finger extended on the thumb side, other fingers curled, thumb resting along them --><g transform="scale(1.3)">
-        <path d="M-8.5 0 C-10 6 -10.5 11 -9.5 16 C-9 20 -6 23 -1 23.5 L7 23 C10 21 10.5 16 9.6 11 C9.2 6 8.6 3 8 0 Z" fill="url(#hSkin)"/>
-        <path d="M-9 16 C-9.5 20.5 -7 24.5 -2.5 25 C0.5 25.3 2 24 2 22" fill="#e2b08b"/>
-        <path d="M-7.8 19.8 q2.6 1.4 5.2 0.6 M-8.6 15.8 q2.8 1.6 6 0.8" stroke="#c48e6a" stroke-width=".8" fill="none" opacity=".6"/>
-        <path d="M3.2 18 C3 26 3.6 34 4.2 40 C4.5 43.2 8.8 43.2 9 40 C9.4 34 9.6 26 9.4 17.5 Z" fill="#ecbe9b"/>
-        <path d="M4.7 39.6 q2 1.6 3.8 0" stroke="#f7e0cf" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-        <path d="M4.2 30.5 h4.6" stroke="#c99472" stroke-width=".7" opacity=".6"/>
-        <path d="M9.5 6 C12.5 10 12.6 15 10.5 19 C9.2 21.5 6.5 22 5.5 20.5" fill="#e6b490" stroke="#c99472" stroke-width=".6"/>
-      </g></g>
-      <g id="hs_flat"><path d="M-11 0 C-12 12 -11 26 -9 32 C-4 35 4 35 9 32 C11 26 12 12 11 0 Z" fill="url(#hSkin)"/><path d="M-5.5 18 v13 M0 18 v14.5 M5.5 18 v13" stroke="#c48e6a" stroke-width=".9" stroke-linecap="round" opacity=".55"/><ellipse cx="-12.5" cy="10" rx="4.4" ry="9" transform="rotate(25 -12.5 10)" fill="#e6b490"/></g>
-      <g id="hs_palmup"><!-- open hand, palm up, fingers together reaching towards the learner (foreshortened), thumb out to the side -->
-        <path d="M-15 -1 C-18.5 4 -18 11 -14 15 L14 15 C18 11 18.5 4 15 -1 C9 -5 -9 -5 -15 -1 Z" fill="url(#hSkin)"/>
-        <path d="M-9.5 2.5 C-11.5 6.5 -9 10.5 -3 11.5 C3 12.5 9.5 10.5 10.5 6.5 C11.2 3.5 7.5 1 2 0.6 C-3.5 0.3 -7.5 0.8 -9.5 2.5 Z" fill="#f4d5bd" opacity=".9"/>
-        <path d="M-5.5 6 q6 3 12.5 0.2 M-3 3.6 q4 2 9 0.4" stroke="#d3a07e" stroke-width=".8" fill="none" opacity=".6"/>
-        <g fill="#eab994" stroke="#cf9a76" stroke-width=".6">
-          <path d="M-14.6 12.5 C-15.6 17 -14.4 20.5 -11.2 20.8 C-8.4 21 -7.4 17.5 -7.8 13.5 Z"/>
-          <path d="M-8 13.6 C-8.4 19 -6.8 23.2 -3.6 23.4 C-0.6 23.6 0.4 19.5 0 14 Z"/>
-          <path d="M0 14 C-0.2 19.6 1.2 23.6 4.3 23.5 C7.3 23.4 8.2 19 7.8 13.6 Z"/>
-          <path d="M7.8 13.5 C7.4 17.6 8.4 21 11.2 20.8 C14.3 20.5 15.5 17 14.6 12.5 Z"/>
-        </g>
-        <path d="M-12.6 19.6 q1.4 .8 2.8 0 M-5.2 22.2 q1.6 .9 3.2 0 M2.9 22.3 q1.6 .9 3.2 0 M10.2 19.6 q1.4 .8 2.8 0" stroke="#f7e1d1" stroke-width="1" fill="none"/>
-        <path d="M-14.8 3 C-18.5 6 -21.5 9.5 -23.4 13 C-24.6 15.4 -22 17.2 -20.4 15.6 C-18 13 -15.6 10.4 -13.4 8.6 Z" fill="#e6b490" stroke="#cf9a76" stroke-width=".6"/>
-        <path d="M-23 14.2 q1.4 1.2 2.6 0" stroke="#f7e1d1" stroke-width="1" fill="none"/>
-      </g>
-      <g id="hs_cup"><!-- hand cupped behind the ear (Écoute), as people really do it: the open hand flat against the side of the
-           head, palm forward, fingers up behind the ear, the thumb side flush against the cheek; the ear in front of the palm.
-           Drawn fingers-up (unlike the other shapes). -->
-        <path d="M-11.5 0 C-13 -8 -13 -16 -12 -23 L11.5 -23 C12.5 -15 12 -7 10.5 0 Z" fill="url(#hSkin)"/>
-        <rect x="-11.7" y="-34.5" width="5.0" height="16.5" rx="2.5" fill="url(#hSkin)" transform="rotate(-7 -9.2 -22)"/><rect x="-6.4" y="-38.5" width="5.6" height="20.5" rx="2.8" fill="url(#hSkin)" transform="rotate(-2.5 -3.6 -22)"/><rect x="-0.6999999999999997" y="-40.5" width="5.8" height="22.5" rx="2.9" fill="url(#hSkin)" transform="rotate(1.5 2.2 -22)"/><rect x="5.2" y="-37.5" width="5.4" height="19.5" rx="2.7" fill="url(#hSkin)" transform="rotate(5 7.9 -22)"/>
-        <path d="M-11.6 -20.5 q5.6 2.2 11 1.4 M-1 -19.6 q6 -.6 11.6 -1.6" stroke="#c48e6a" stroke-width=".8" fill="none" opacity=".55"/>
-        <path d="M-7 -8 q6 -6.5 14 -8.5 M-8.5 -13.5 q7 -1 13 -4" stroke="#c99472" stroke-width=".75" fill="none" opacity=".5"/>
-        <path d="M9.6 -1 C14.4 -5 17.6 -12 18.6 -19.5 C19 -23.4 15.6 -24.6 14.4 -21.2 C13.4 -16 11.4 -12 8.4 -9.6 Z" fill="#e8b792" stroke="#cf9a76" stroke-width=".6"/>
-        <!-- the ear, in front of the palm: its rim outwards (towards the hand), its flat side joined to the cheek -->
-        <path d="M17.5 -29 C11 -31.5 6.5 -26.5 7.4 -20.5 C8 -16.5 9.8 -14.6 10.6 -12 C11.2 -10 13.4 -8.6 15.8 -9.4 L19.5 -9.4 L19.5 -29 Z" fill="#e3ad89"/>
-        <path d="M17.5 -29 C11 -31.5 6.5 -26.5 7.4 -20.5 C8 -16.5 9.8 -14.6 10.6 -12 C11.2 -10 13.4 -8.6 15.8 -9.4" stroke="#c48e6a" stroke-width=".7" fill="none"/>
-        <path d="M14.4 -26 C11.6 -26.6 10.6 -23 11.4 -20 C12 -18 13.2 -17.4 13.6 -15.6" stroke="#b9805e" stroke-width=".8" fill="none" opacity=".75"/>
-      </g>
-    </defs>
-  </g>
+  <!-- the teacher: the figure of the picture library (people.js: PICS.tutor()) is put here when the page starts (see "the teacher on the figures' rig") -->
+  <g id="tutor"></g>
   </g><!-- /room -->
   </g>
   <!-- the phone's own border, as the learner's border: brown = no response, green = respond -->
@@ -542,7 +416,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.69";      // must equal version.json
+const APP_VERSION="2026-11-16.70";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1522,7 +1396,6 @@ function buildVisemes(features, prof){
 const VIS = buildVisemes(IPA_FEATURES, PROFILE_FR);
 const VOWELS = new Set(["i","y","u","e","ø","o","ɛ","œ","ɔ","a","ɑ","ə","ɛ̃","ɑ̃","ɔ̃","œ̃"]);
 const MOUTH = (()=>{
-  const el = id => document.getElementById(id);
   let cur = VIS.rest.slice(), target = VIS.rest.slice(), raf=null, play=null;
   const keyOf = t => t.toLowerCase().replace(/[.,!?;:«»"…]/g," ").replace(/\s+/g," ").trim();
   function phones(ipa){ const out=[]; for(const ch of ipa){ if(ch==="̃" && out.length) out[out.length-1]+=ch; else out.push(ch); } return out; }
@@ -1538,37 +1411,6 @@ const MOUTH = (()=>{
   }
   // a gentle smile at rest; broader for a moment after a correct answer (smile(true)); rounded lips cannot smile much
   let smileNow=0.8, smileTarget=0.8;
-  const f2 = n => n.toFixed(2);
-  function draw(v){
-    const [open,width,protr,closed,teeth,fv,tongue]=v, cx=200, cy=384;
-    const sm = smileNow*(1-0.8*protr);
-    const W = 6 + 10*width - 3*protr + 2.4*sm;                      // half-width of the opening
-    let H = closed>0.5 ? 0.1 : Math.max(0.1, 0.6 + 8*open);         // half-height of the opening
-    if(closed<0.5 && protr>0.3) H = Math.max(H, W*0.75*protr);      // rounded lips make a round opening
-    const L = 2.3 + 1.8*protr;                                      // lip thickness: protruded lips look fuller
-    const lift = 2.6*sm;                                            // the corners of the mouth turn up
-    const xl=cx-W-L*0.75, xr=cx+W+L*0.75, yc=cy-lift+0.4;
-    const up=cy-H-L*1.05, dn=cy+H+L*1.4;
-    el("mLips").setAttribute("d", `M${f2(xl)} ${f2(yc)} Q${f2(cx-W*0.55)} ${f2(up-0.8)} ${f2(cx-1.8)} ${f2(up+0.2)} Q${f2(cx)} ${f2(up+1.1)} ${f2(cx+1.8)} ${f2(up+0.2)} Q${f2(cx+W*0.55)} ${f2(up-0.8)} ${f2(xr)} ${f2(yc)} Q${f2(cx+W*0.6)} ${f2(dn+0.8)} ${f2(cx)} ${f2(dn)} Q${f2(cx-W*0.6)} ${f2(dn+0.8)} ${f2(xl)} ${f2(yc)} Z`);
-    el("mLips").setAttribute("fill", protr>0.5? "#b5535c" : "#c4626a");
-    const hIn = fv>0.5 ? 0.8 : H, yi = cy-lift*0.7;
-    const inner = `M${f2(cx-W)} ${f2(yi)} Q${f2(cx)} ${f2(cy-hIn*1.05-lift*0.25)} ${f2(cx+W)} ${f2(yi)} Q${f2(cx)} ${f2(cy+hIn*1.05+lift*0.6)} ${f2(cx-W)} ${f2(yi)} Z`;
-    el("mIn").setAttribute("d", inner); el("mClip").setAttribute("d", inner);
-    el("mIn").setAttribute("opacity", H>0.7 || fv>0.5 ? 1 : 0);
-    el("mLine").setAttribute("d", `M${f2(xl+1.2)} ${f2(yc+0.2)} Q${f2(cx)} ${f2(cy+lift*0.95+0.3)} ${f2(xr-1.2)} ${f2(yc+0.2)}`);
-    el("mLine").setAttribute("opacity", H>1.2 ? 0 : 1);
-    el("mHi").setAttribute("d", `M${f2(cx-W*0.38)} ${f2(dn-1.3)} Q${f2(cx)} ${f2(dn-0.6)} ${f2(cx+W*0.38)} ${f2(dn-1.3)}`);
-    el("mDimples").setAttribute("d", `M${f2(xl-1.6)} ${f2(yc-3.4)} q-2.2 3.2 0 6.6 M${f2(xr+1.6)} ${f2(yc-3.4)} q2.2 3.2 0 6.6`);
-    el("mDimples").setAttribute("opacity", f2(Math.max(0, sm-0.35)*0.9));
-    const th = teeth>0.05 ? Math.min(H*1.2, 2.2+1.4*teeth) : 0;
-    el("mTeethU").setAttribute("x",f2(cx-W)); el("mTeethU").setAttribute("width",f2(2*W));
-    el("mTeethU").setAttribute("y",f2(cy-H-lift*0.3)); el("mTeethU").setAttribute("height",f2(th));
-    el("mTeethL").setAttribute("x",f2(cx-W)); el("mTeethL").setAttribute("width",f2(2*W));
-    el("mTeethL").setAttribute("y",f2(cy+H-Math.min(1.6,H*0.4))); el("mTeethL").setAttribute("height",((open>0.25 || teeth>0.95)?1.6:0).toFixed(2));
-    el("mTongue").setAttribute("cy",f2(cy+H-1.5-3.5*tongue*open)); el("mTongue").setAttribute("rx",f2(W*0.7));
-    el("mTongue").setAttribute("opacity", (open>0.15 ? 0.55+0.45*tongue : 0).toFixed(2));
-    el("mTeethF").setAttribute("opacity", fv>0.5? 1:0);
-  }
   let lastFrame=0;
   function loop(){
     const nowF=performance.now(); if(play && play.clock && lastFrame) AV.gap=Math.max(AV.gap, nowF-lastFrame); lastFrame=nowF;
@@ -1581,12 +1423,12 @@ const MOUTH = (()=>{
     }
     for(let i=0;i<cur.length;i++) cur[i] += (target[i]-cur[i])*0.45;   // smooth: about 40 ms to settle
     smileNow += (smileTarget-smileNow)*0.12;                          // the smile grows and fades over about 300 ms
-    API.draw(cur, smileNow);      // (next) the one drawing call of the mouth, replaceable: a new tutor rig draws the mouth from the same shape (TUTOR.adopt)
+    API.draw(cur, smileNow);      // the one drawing call of the mouth: the teacher's figure draws the mouth from this shape (TUTOR.adopt)
     raf = (play || Math.abs(smileNow-smileTarget)>0.005 || cur.some((c,i)=>Math.abs(c-target[i])>0.01)) ? requestAnimationFrame(loop) : null;
   }
   const kick=()=>{ if(!raf) raf=requestAnimationFrame(loop); };
   const API = {
-    draw(v, smile){ draw(v); },      // (next) default: the drawing in this page (v: [open, width, protrusion, closed, teeth, fv, tongue]; smile 0..1)
+    draw(v, smile){},      // the teacher's figure draws the mouth (TUTOR.adopt gives its own draw): v: [open, width, protrusion, closed, teeth, fv, tongue]; smile 0..1.3
     plan,
     start(pl, rate){
       if(pl.missing){ trace("no IPA for: "+pl.text); return; }
@@ -2495,8 +2337,8 @@ const svgNS="http://www.w3.org/2000/svg";
      portrait(who)            Pierre / Sylvie head and shoulders with a name tag (.nametag)      <- PICS.portrait(who, name)
      learnerCard()            the learner's own card with their name tag (.nametag)             <- PICS.learnerCard(name, sex)
      objectPicture(), onePicture(), fingerCard(), numberCard(), cardOf(), placeholder()         (things of Lessons 1-4, numerals, a card in the hand)
-     the tutor (#tutor in the page: head, eyes, mouth, arms, hands)                              <- PICS.tutor(), through TUTOR below
-   A library picture is used only if it is there and has what the script needs from it (the name tag); otherwise the drawing here stands. */
+   A library picture is used only if it is there and has what the script needs from it (the name tag); otherwise the drawing here stands.
+   The teacher (#tutor: head, eyes, mouth, arms, hands, and the hand shapes) is the library's alone: PICS.tutor(), through TUTOR below. */
 const libPic = (fn, ...a) => { try{ if(window.PICS && typeof PICS[fn]==="function"){ const g=PICS[fn](...a); if(g && g.querySelector && g.querySelector(".nametag")) return g; } }catch(e){} return null; };
 let portSeq=0;
 function portrait(who){
@@ -3052,40 +2894,14 @@ async function thingGoes(it){
   await sleep(350);
 }
 /* ============================================================
-   ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
-   the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
+   ARMS — the teacher's arms. A pose gives each wrist a target point on the stage and a hand shape; poses are eased over ~0.3 s here
+   (go, the easing, the change of hand shape half-way). The teacher's figure draws each pose (API.draw, given by TUTOR.adopt).
    ============================================================ */
-const ARMS = (()=>{ const API = {};      // (next) API.draw: a new rig draws the arms (TUTOR.adopt gives it); go, the easing, the hand shapes' change and the gold border stay the page's
-  const SH = {L:{x:146,y:448}, R:{x:254,y:448}}, UP=72, FORE0=66;
-  const svgns="http://www.w3.org/2000/svg";
-  const hands = {L:document.getElementById("hand_L"), R:document.getElementById("hand_R")};
-  const sleeves = {L:document.querySelector("#armRig_L .sleeve"), R:document.querySelector("#armRig_R .sleeve")};
-  const edges = {L:document.querySelector("#armRig_L .sleeveEdge"), R:document.querySelector("#armRig_R .sleeveEdge")};
-  for(const s of ["L","R"]){ const u=document.createElementNS(svgns,"use"); u.setAttribute("href","#hs_relaxed"); hands[s].appendChild(u); }
+const ARMS = (()=>{ const API = {};
+  const SH = {L:{x:146,y:448}, R:{x:254,y:448}};      // where the poses reckon her shoulders (pointPose)
   const REST = {L:{x:150,y:582,shape:"relaxed",rot:"auto",scale:1,fs:1}, R:{x:250,y:582,shape:"relaxed",rot:"auto",scale:1,fs:1}};
   let cur = JSON.parse(JSON.stringify(REST)), from=null, to=null, t0=0, dur=300, raf=null, done=null;
-  function solve(s, T){
-    // fs < 1: the forearm points towards the viewer, so it looks shorter (foreshortening)
-    const FORE = FORE0*(T.fs==null?1:T.fs);
-    const S=SH[s]; let dx=T.x-S.x, dy=T.y-S.y; let d=Math.hypot(dx,dy);
-    const dmax=UP+FORE-1, dmin=Math.abs(UP-FORE)+4; const dd=Math.min(dmax, Math.max(dmin,d));
-    const ux=dx/(d||1), uy=dy/(d||1); const W={x:S.x+ux*dd, y:S.y+uy*dd};
-    const phi=Math.atan2(uy,ux), a=Math.acos(Math.min(1,Math.max(-1,(UP*UP+dd*dd-FORE*FORE)/(2*UP*dd))));
-    const e1={x:S.x+UP*Math.cos(phi+a), y:S.y+UP*Math.sin(phi+a)}, e2={x:S.x+UP*Math.cos(phi-a), y:S.y+UP*Math.sin(phi-a)};
-    const out = s==="L" ? (e1.x<e2.x?e1:e2) : (e1.x>e2.x?e1:e2);          // the elbow bends away from the body
-    return {E:out, W};
-  }
-  function draw(){ if(API.draw){ API.draw(cur); return; }
-    for(const s of ["L","R"]){
-      const p=cur[s], {E,W}=solve(s,p);
-      const dpath=`M${SH[s].x} ${SH[s].y} L${E.x.toFixed(1)} ${E.y.toFixed(1)} L${W.x.toFixed(1)} ${W.y.toFixed(1)}`;
-      sleeves[s].setAttribute("d",dpath); edges[s].setAttribute("d",dpath);
-      const fore=Math.atan2(W.y-E.y, W.x-E.x)*180/Math.PI - 90;            // forearm direction; hand shapes point down (+y)
-      const rot = p.rot==="auto" ? fore : p.rot;
-      hands[s].setAttribute("transform",`translate(${W.x.toFixed(1)},${W.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${(s==="R"?-p.scale:p.scale).toFixed(3)},${p.scale.toFixed(3)})`);   // the left hand mirrors the right
-      hands[s].firstChild.setAttribute("href","#hs_"+p.shape);
-    }
-  }
+  function draw(){ if(API.draw) API.draw(cur); }
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
   function frame(now){
     const k=Math.min(1,(now-t0)/dur), e=ease(k);
@@ -3104,7 +2920,7 @@ const ARMS = (()=>{ const API = {};      // (next) API.draw: a new rig draws the
     return new Promise(res=>{ done=res; raf=requestAnimationFrame(frame); });
   }
   draw();
-  return Object.assign(API, { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } });
+  return Object.assign(API, { go, REST, SH, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } });
 })();
 // Poses (the teacher's right hand is on the viewer's left)
 const POSE = {
@@ -3191,11 +3007,7 @@ function innerColour(go){ document.getElementById("innerBorder").style.stroke = 
 function glow(on){ innerColour(on); }
 /* Gaze: the teacher looks out of the screen only when addressing the real learner. In the demo the teacher
    looks down at the model learner holding the phone, the whole time. */
-function gaze(where){
-  const down = where==="learner";
-  document.getElementById("pupils").style.transform = down ? "translate(0px,2.3px)" : "translate(0px,0px)";
-  document.getElementById("lids").style.transform = down ? "translate(0px,2.4px)" : "translate(0px,0px)";
-}          // the model learner's turn: the border on their phone turns green
+function gaze(where){}      // the teacher's figure moves her eyes (TUTOR.adopt gives its own gaze)          // the model learner's turn: the border on their phone turns green
 async function gestureLead(){ ARMS.go(POSE.together, 320); }      // the arm moves while she speaks: nothing waits for it (Jon 9 Nov 14:21: every millisecond between responses counts)      // "Avec moi": hand on my chest, hand reaching to you
 async function gestureEar(){ offering=false; ARMS.go(POSE.ear, 300); }   // "Écoute" (listen): hand cupped behind the ear
 // "À toi" (your turn): one arm reaches towards the learner, palm up, and stays there through the question and the answer;
@@ -3233,7 +3045,7 @@ async function ding(big=false){
   await sleep(big? 1000 : 200);      // Jon 9 Nov 14:21: the next item comes as soon as possible after a right answer
 }
 // a nod: the affirmation that goes with the ding (DISE: "nod and have him do it again")
-async function nod(){ const h=document.getElementById("head"); for(let k=0;k<2;k++){ h.style.transform="translateY(7px) rotate(0.01deg)"; await sleep(170); h.style.transform="translateY(0px)"; await sleep(170); } }
+async function nod(){ await sleep(680); }      // the teacher's figure nods (TUTOR.adopt gives its own nod: two nods, 170 ms down and up each); without it the same time passes
 
 /* ============================================================
    ENGINE — Jon's flowchart, without individual turns
@@ -3650,7 +3462,7 @@ HANDL.innerHTML=`<circle id="touchPulse" cx="0" cy="0" r="0" fill="none" stroke=
   <rect id="tapRing" x="0" y="0" width="10" height="10" rx="12" fill="none" stroke="var(--tap)" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
   <g id="theHand" opacity="0" style="transition:transform .2s ease-out, opacity .15s"><g transform="rotate(180) scale(${HAND_K})"><use href="#hs_point"/></g>
     <rect x="${-11.4*HAND_K}" y="-3" width="${22.8*HAND_K}" height="${22.8*HAND_K}" rx="${4.5*HAND_K}" fill="#2E4A6B" id="handSleeve"/><g id="handTag" transform="translate(0,${(22.8*HAND_K-20).toFixed(1)})"></g></g>`;
-const HAND_LEN = 56*HAND_K, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
+const HAND_LEN = 56*HAND_K, SELF_BOUNDS = {x:112, y:292, w:176, h:340, r:20};      // the teacher's own outline as a thing to tap (Lesson 1): from the top of her hair to under her hands at rest
 const boundsOf = slot => slot==="self" ? SELF_BOUNDS : BOUNDS[slot==="strip" ? "strip" : sideOf(slot)] || BOUNDS[slot];
 const handName = by => by==="teacher"||by==="both" ? VOCAB.claire.name : by==="paul"||by==="julie" ? VOCAB[by].name : by==="you" ? "You" : "";
 const SLEEVE = {teacher:"#2E4A6B", both:"#2E4A6B", paul:"#3F6FB5", julie:"#C0453B", you:"#5AA86D"};      // (next) the four identity colours (design language 9.1): the sleeve is its owner's top
@@ -4919,7 +4731,7 @@ function startListenerLoad(){
     if(performance.now()-lastSign>25000){ clearInterval(watch); trace("FAULT in-app listener neither ready nor failed 25 s after its last sign of life: the start is let through"); through(); } }, 1000);
   // before the shell's own handler (this one is registered first): the tap is kept, the loading screen shown, the sound let out by this touch
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || !b.classList.contains("loading")) return;
-    e.stopImmediatePropagation(); e.preventDefault(); if(startAsked) return; startAsked=true; try{ audioUnlock(); }catch(_){} try{ UI.haptic("tick"); }catch(_){}
+    e.stopImmediatePropagation(); e.preventDefault(); if(startAsked) return; startAsked=true; try{ audioUnlock(); }catch(_){} try{ UI.haptic("tick"); }catch(_){} try{ window.UISOUND && UISOUND("go"); }catch(_){}
     trace("start asked while the listener is loading: the loading screen");
     try{ SPLASH.show(); SPLASH.progress(frac!=null && frac<1 ? frac*0.9 : null, LABEL); }catch(_){} }, true);
 }
@@ -5136,11 +4948,13 @@ function alertish(m){ setStatus(m); }
 { let leaveT=0; const lv=$("leave");
   lv.onclick=()=>{ UI.haptic("tick");
     if(!lv.classList.contains("ask")){ trace("leave asked"); lv.classList.add("ask"); lv.setAttribute("aria-label","Leave the lesson: tap again to leave"); clearTimeout(leaveT); leaveT=setTimeout(()=>{ lv.classList.remove("ask"); lv.setAttribute("aria-label","Leave the lesson"); }, 3000); return; }
-    trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
-/* (next) THE TUTOR'S INTERFACE. Everything the script asks of the teacher's figure goes through these: MOUTH (plan, start, startTimeline, word,
+    trace("left the lesson (the exercise starts again next time)"); try{ window.SPLASH && SPLASH.show(); }catch(e){}      // (.70) seen at once: the page's new start can take seconds on a slow link
+    try{ save(); }catch(e){} try{ stopRec(); }catch(e){} try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
+/* THE TUTOR'S INTERFACE. Everything the script asks of the teacher's figure goes through these: MOUTH (plan, start, startTimeline, word,
    stop, smile, smiling: the mouth, sound by sound), ARMS (go(pose, ms), SH: the arms and hand shapes), gaze(where), nod(), faceZoom(on),
-   tagLit(slot). A new rig (people.js: PICS.tutor() returning {node, rig}) replaces them call for call with TUTOR.adopt(rig); until one is
-   offered the drawing in this page stands. The rig keeps #handSleeve and the fingertip's place relative to the wrist. */
+   tagLit(slot). The figure is the picture library's (people.js: PICS.tutor() returning {node, rig}): TUTOR.adopt(rig) gives the page its drawing
+   of the mouth, the arms, the eyes and the nod. The page draws no teacher of its own. The figure brings the hand shapes (#hs_point ...) the
+   page's tapping hand is drawn with, the fingertip in its place relative to the wrist. */
 const TUTOR = { mouth:MOUTH, arms:ARMS, get gaze(){ return gaze; }, get nod(){ return nod; }, get faceZoom(){ return faceZoom; }, get tagLit(){ return tagLit; },
   adopt(rig){ if(!rig) return false; try{ if(rig.mouth) Object.assign(MOUTH, rig.mouth); if(rig.arms) Object.assign(ARMS, rig.arms);
       if(rig.gaze) gaze=rig.gaze; if(rig.nod) nod=rig.nod; if(rig.faceZoom) faceZoom=rig.faceZoom; if(rig.tagLit) tagLit=rig.tagLit; trace("tutor: a new rig adopted"); return true; }catch(e){ trace("FAULT tutor rig: "+e.message); return false; } } };
@@ -5149,8 +4963,9 @@ document.addEventListener("pointerup", e=>{ const b=e.target && e.target.closest
 /* (the teacher on the figures' rig: dev/design/TUTOR_RIG.md 5, TUTOR_MOUNT.md) PICS.tutor() takes the place of the drawing of the teacher in this
    page and is adopted. The page still decides everything she does (MOUTH, ARMS.go, gaze, nod, faceZoom, tagLit); the rig only draws it. She
    blinks by herself when nothing is being said or shown: never in a scripted run (navigator.webdriver: the harness), never with less motion
-   (the phone's setting or the app's). Without the library, or if it fails, the drawing in this page stands. What happened is written to the
-   trace once the saved state is loaded (a line written before load() would be lost with the empty state). */
+   (the phone's setting or the app's). Without the library, or if it fails, no teacher is drawn (the place stays empty, the lesson runs, the
+   mouth, arms, eyes and nod draw nothing) and a FAULT line says so. What happened is written to the trace once the saved state is loaded
+   (a line written before load() would be lost with the empty state). */
 { const note=m=>setTimeout(()=>{ try{ trace(m); }catch(e){} }, 0);
   try{ const t = window.PICS && typeof PICS.tutor==="function" ? PICS.tutor({autoBlink: !navigator.webdriver}) : null;
     if(t && t.node && t.rig && t.node.querySelector("#claireTag") && t.node.querySelector("#hs_point")){
@@ -5162,12 +4977,11 @@ document.addEventListener("pointerup", e=>{ const b=e.target && e.target.closest
          drawing's was at 292, and a board of four lines ends at 292 (BOARD_FLOOR): a board must never touch her hair. tip() says where the finger is on the stage. */
       { const DOWN=4, tip=t.rig.arms.tip; t.node.setAttribute("transform", "translate(0 "+DOWN+")"); if(tip) t.rig.arms.tip=s=>{ const q=tip(s); return q ? {x:q.x, y:q.y+DOWN} : q; }; }
       document.getElementById("tutor").replaceWith(t.node); TUTOR.adopt(t.rig); TUTOR.rig=t.rig; MOUTH.stop(); ARMS.set({});
-      SELF_BOUNDS.h=340;      // her own outline as a thing to tap (Lesson 1): this figure's hands at rest are a little lower than the old drawing's
       if(t.rig.still){ const mq=window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null, calm=()=>t.rig.still(document.documentElement.dataset.motion==="less" || !!(mq && mq.matches));
         calm(); try{ if(mq && mq.addEventListener) mq.addEventListener("change", calm); new MutationObserver(calm).observe(document.documentElement, {attributes:true, attributeFilter:["data-motion"]}); }catch(e){} }
       note("tutor: the figure of the picture library is on the stage");
-    } else note("FAULT tutor mount: no figure from the picture library; the drawing in the page stands");
-  }catch(e){ note("FAULT tutor mount: "+e.message); } }
+    } else note("FAULT tutor mount: no figure from the picture library: no teacher is drawn");
+  }catch(e){ note("FAULT tutor mount: "+e.message+": no teacher is drawn"); } }
 READY=true; load(); renderVoiceSelect(); renderPanel(); rest(); lessonHead(false); UI.layout(); UI.fonts();
 // asked once, at the very start of the course; changeable in the tester panel. First name (typed), then gender (pictures).
 function cleanName(v){ return String(v||"").replace(/[^\p{L}\p{M}' \-]/gu," ").replace(/\s+/g," ").trim().slice(0,30); }
@@ -5176,7 +4990,7 @@ function askWho(){
   if(!S.learnerGender){ $("gender").hidden=false; }
 }
 $("whoName").oninput=e=>{ $("whoOk").disabled=!cleanName(e.target.value); };
-$("whoForm").onsubmit=e=>{ e.preventDefault(); const v=cleanName($("whoName").value); if(!v) return;
+$("whoForm").onsubmit=e=>{ e.preventDefault(); const v=cleanName($("whoName").value); if(!v) return; try{ window.UISOUND && UISOUND("go"); }catch(_){}
   S.learnerName=v; delete S.ownAlias; trace("learner's first name typed"); if(/^User \d+$/.test(currentUser().name) || USERS.list.length===1){ currentUser().name=v; saveUsers(); } save(); try{ $("whoName").blur(); }catch(e){} $("who").hidden=true; };
 askWho();
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };

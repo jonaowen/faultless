@@ -35,17 +35,32 @@ async function fillVoices(){ try{ const c = await caches.open(CACHE);
   for (const who of ["teacher", "learner", "narrator"]){ const r = await fetch(UP + "audio/" + who + "/index.json").catch(() => null); if (!r || !r.ok) continue; const ix = await r.json();
     for (const k of Object.keys(ix)){ const p = UP + "audio/" + who + "/" + k + ".mp3"; if (await c.match(p)) continue; const a = await fetch(p).catch(() => null); if (a && a.ok && a.status === 200) await c.put(p, a); } } }catch(e){} }
 
+/* (.70, the owner's phone, 16 Nov: "Leave" did nothing for seconds, then a blank page) The page asks for more than a thousand voice clips at every
+   start, and every one went to the site first; code and lessons waited behind them with no limit of time, and an answer that was an error was
+   passed on although a good copy was kept. Now:
+   - a voice clip, a font or a brand picture that is kept is answered from the kept copy at once, with no request (they do not change under one
+     name from one day to the next); a kept copy more than a day old is looked at again in the background, one request, after it has been given;
+   - code, lessons and the page are still asked of the site first, but for 4 seconds at most when a copy is kept (the page: 6), and an answer
+     that is an error (a busy or failing site) gives way to the kept copy;
+   - nothing kept: the site's answer, as before. */
+const DAY = 24 * 3600e3, old = r => { const d = Date.parse(r.headers.get("date") || ""); return !d || Date.now() - d > DAY; };
+const late = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("slow")), ms))]);
 self.addEventListener("fetch", e => { const req = e.request; if (req.method !== "GET") return; const u = new URL(req.url); if (skip(u)) return;
   if (req.headers.get("range")) return;      // a part of a file (a media element's request): left to the network and the browser
-  e.respondWith((async () => { const c = await caches.open(CACHE), key = req.mode === "navigate" ? new URL("index.html", self.registration.scope).href : req;
+  e.respondWith((async () => { const c = await caches.open(CACHE), nav = req.mode === "navigate", key = nav ? new URL("index.html", self.registration.scope).href : req;
     const kept = await c.match(key, { ignoreSearch: true });
+    const keep = r => { if (r && r.ok && r.status === 200 && r.type === "basic" && !same(r, kept)) return c.put(key, r.clone()).catch(() => {}); };
+    if (kept && !nav && /\.(mp3|woff2|png|svg)$/.test(u.pathname)){
+      if (old(kept)) e.waitUntil(fetch(req.url, { cache: "no-cache" }).then(keep).catch(() => {}));
+      return kept; }
     try {
       // (.66) the app's own code and lessons are asked of the site afresh (a conditional request: "not changed" costs one short answer), so that the
-      // page of a new release never runs with the browser's ten-minute-old copy of shell.js, people.js or a lesson; voices and the listener as before
-      const fresh = req.mode !== "navigate" && /\.(js|css)$/.test(u.pathname) && !/\/listener\//.test(u.pathname);
-      const net = fresh ? fetch(req.url, { cache: "no-cache" }) : fetch(req); const r = await (req.mode === "navigate" && kept ? Promise.race([net, new Promise((_, no) => setTimeout(() => no(new Error("slow")), 6000))]) : net);
-      if (r && r.ok && r.status === 200 && r.type === "basic" && !same(r, kept)) e.waitUntil(c.put(key, r.clone()).catch(() => {}));
-      return r;
+      // page of a new release never runs with the browser's ten-minute-old copy of shell.js, people.js or a lesson
+      const fresh = !nav && /\.(js|css)$/.test(u.pathname) && !/\/listener\//.test(u.pathname);
+      const net = fresh ? fetch(req.url, { cache: "no-cache" }) : fetch(req);
+      const r = await (kept ? late(net, nav ? 6000 : 4000) : net);
+      if (kept && !(r && (r.ok || r.type === "opaque"))) return kept;      // the site answered with an error: the kept copy
+      e.waitUntil(keep(r)); return r;
     } catch (err) { if (kept) return kept; throw err; }
   })()); });
 self.addEventListener("message", e => { if (e.data === "skipWaiting") self.skipWaiting(); });

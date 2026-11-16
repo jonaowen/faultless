@@ -18,7 +18,7 @@ const SHELL = (()=>{
     POINTS_PERFECT_LESSON: 5,         // (owner, 15 Nov late) a lesson that becomes perfect, first time through OR by repairs, once per lesson; (superseded: "first time only") (it still counts for the badges)
     // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
     BADGES: [5,10,20,50,100,200,500,1000,2000],      // (owner) perfect lessons; never a badge for lessons merely finished
-    BEAD_SOUND: "A",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
+    BEAD_SOUND: "D",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
     REST_DAYS_MAX: 2, REST_DAY_EARNED_EVERY: 5,      // (work)
     RETURN_AFTER_DAYS: 2,             // (work) whole days with no lesson before the welcome back and its bonus
     AWAY_STEPS: [[3,0],[7,3],[14,5],[30,8],[1e9,12]],      // (owner R-151: the step back scales with the absence; these numbers are the working table) [days away up to, lessons back]
@@ -51,7 +51,7 @@ const SHELL = (()=>{
   const esc = t=>String(t).replace(/[<&"]/g,c=>({"<":"&lt;","&":"&amp;",'"':"&quot;"}[c]));
   const ic = n=>`<svg class="icon" aria-hidden="true"><use href="#i-${n}"/></svg>`;
   const $ = id=>document.getElementById(id);
-  const tick = ()=>{ try{ UI.haptic("tick"); }catch(e){} };
+  const tick = kind=>{ try{ UI.haptic("tick"); }catch(e){} if(kind==="go") uiSound("go"); };      // tick("go"): a press that is a step toward learning (the brighter sound); every other press gets the quiet one by itself (uiTaps)
   const allDone = i=>LESSONS[i].exercises.every(e=>S.finished[e.id]);
   const last = LESSONS.length-1;
   const dayOf = (d=new Date())=>{ const x=new Date(d.getTime()-RULES.DAY_STARTS_HOUR*3600e3); return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"); };
@@ -127,6 +127,7 @@ const SHELL = (()=>{
   // before the page's own start handler: the microphone's primer if it is needed; then the place where the rules say, only when that differs
   // from what the page would do by itself
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || b.classList.contains("loading")) return;
+    if(e.isTrusted!==false) uiSound("go");      // the start of a lesson: the brighter sound, on the press itself
     if(MIC.primerNeeded()){ e.stopPropagation(); e.preventDefault(); MIC.primer(); return; }
     beadCtx(); try{ const hm=$("home"); if(hm && !hm.closest("[hidden]")) MV.openCard(hm.querySelector(".hero")); }catch(e){}
     if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
@@ -479,7 +480,7 @@ const SHELL = (()=>{
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
     o.querySelectorAll("[data-ei]").forEach(b=>{ b.onclick=()=>{ tick(); const ei=+b.dataset.ei, g=G.ex[L.exercises[ei].id];
       info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); freezeMinis($("sheet")); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
-      $("exGo").onclick=()=>{ tick(); $("sheet").hidden=true; o.hidden=true; pendingEx={li, ei}; pendingAgain=null; $("playBtn").click(); }; }; }); }
+      $("exGo").onclick=()=>{ tick("go"); $("sheet").hidden=true; o.hidden=true; pendingEx={li, ei}; pendingAgain=null; $("playBtn").click(); }; }; }); }
   const firstSvg = x=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1, still:true})).outerHTML}</svg>`; } }catch(e){} return ""; };
   const firstMini = (x, cls="")=>`<span class="mini ${cls}">${firstSvg(x)}</span>`;
 
@@ -506,6 +507,10 @@ const SHELL = (()=>{
   /* ---- a soft sound on a right answer (the owner's trial): made here with Web Audio, nothing fetched; under 150 ms, well below Marie;
      never while Marie (or the phone's voice) is speaking or about to; never on an error; never delays anything (it is only scheduled) ---- */
   const BEAD = {
+    /* (owner, 16 Nov: "the sounds that play when I get an answer right are not high pitched enough. It's not clear enough that I'm getting
+       answers correct") D: sound A an octave higher (C6, D6, E6 in turn), a little longer and louder, with a short bright octave above it:
+       where a phone's small speaker is strongest, so it is heard plainly; still one soft note, under 200 ms, well below Marie */
+    D:(ac,t,k,g)=>{ const f=[1046.5,1174.66,1318.51][k%3]; tone(ac,t,f,0.19,g*1.7,0.004); tone(ac,t,f*2,0.07,g*0.5,0.003); },
     A:(ac,t,k,g)=>{ const f=[523.25,587.33,659.25][k%3]; tone(ac,t,f,0.13,g,0.006); tone(ac,t,f*3,0.035,g*0.10,0.004); },                   // a soft marimba: the fundamental, a faint third partial gone in 35 ms
     B:(ac,t,k,g)=>{ const f=[440,493.88,554.37][k%3]; tone(ac,t,f,0.14,g,0.008); tone(ac,t,f*2.76,0.05,g*0.07,0.006); },                  // a felt bell: low, one faint inharmonic partial
     C:(ac,t,k,g)=>{ const f=[392,440,493.88][k%3]; tone(ac,t,f,0.11,g,0.007, 1.12); },                                                      // a drop: a pure tone that settles a little in pitch
@@ -514,6 +519,23 @@ const SHELL = (()=>{
     o.frequency.setValueAtTime(f*(glide||1), t); if(glide) o.frequency.exponentialRampToValueAtTime(f, t+0.06);
     lp.type="lowpass"; lp.frequency.value=2200; v.gain.setValueAtTime(0.0001, t); v.gain.exponentialRampToValueAtTime(gain, t+att); v.gain.exponentialRampToValueAtTime(0.0001, t+dur);
     o.connect(lp).connect(v).connect(ac.destination); o.start(t); o.stop(t+dur+0.02); }
+  /* ---- the sounds of pressing (the owner, 16 Nov: "satisfying audible feedback when the user selects something that indicates progress
+     towards learning. For example, selecting the user's name from the initial menu, or selecting the start lesson button, gets a positive
+     noise. Selecting anything else should get a noise, but a fairly low-key one that's satisfying but subtle"). Made here, nothing fetched.
+     "go": two rising notes of the right-answer sound's family (higher = "right", the owner), for a step toward learning: choosing who is
+     learning, starting a lesson or an exercise, the figure made, the two moments chosen. "tap": one soft low tock, for every other press.
+     Never inside a lesson (Marie's voice and the right-answer note are the only sounds there). The setting "Sounds when you press" turns both off. */
+  const UISND = {
+    tap:(ac,t)=>{ tone(ac, t, 392, 0.05, 0.03, 0.003, 1.35); },
+    go:(ac,t)=>{ tone(ac, t, 659.25, 0.12, 0.06, 0.005); tone(ac, t, 659.25*3, 0.03, 0.006, 0.004); tone(ac, t+0.09, 987.77, 0.17, 0.065, 0.005); tone(ac, t+0.09, 987.77*3, 0.035, 0.006, 0.004); },
+  };
+  let uiSoundAt=0;
+  function uiSound(kind){ try{ if(!UI.pref.sound || document.body.classList.contains("inLesson")) return; beadCtx(); if(!beadAC) return;
+      uiSoundAt=performance.now(); (UISND[kind]||UISND.tap)(beadAC, beadAC.currentTime+0.004); }catch(e){} }
+  window.UISOUND=uiSound;      // the page's own first screens (the name typed, a start asked while the listener loads) use it
+  // every press of a control that made no sound of its own gets the quiet one (after the control's own handler has run)
+  function uiTaps(){ document.addEventListener("click", e=>{ try{ if(e.isTrusted===false || performance.now()-uiSoundAt<120) return;
+      const b=e.target && e.target.closest && e.target.closest("button, [role=button], [data-lv], [data-u], label, select, summary, a[href]"); if(!b || b.disabled) return; uiSound("tap"); }catch(_){} }); }
   let beadAC=null, beadK=0;
   function beadCtx(){ try{ if(!beadAC){ const A=window.AudioContext||window.webkitAudioContext; beadAC=new A(); } if(beadAC.state!=="running") beadAC.resume(); }catch(e){} }
   function beadSound(){ if(UI.pref.beadSound===false || !beadAC || beadAC.state!=="running") return;
@@ -639,7 +661,7 @@ const SHELL = (()=>{
     if(!force && (USERS.list.length<2 || chosen || running)) return false;
     o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && force?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), "portrait")}<span${u.name.length>9?' class="ln"':""}>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div><div class="foot">Each of you has your own place, your own words and your own record.</div>${force?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
     o.hidden=false;
-    o.querySelectorAll("[data-u]").forEach(b=>{ b.onclick=()=>{ try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} if(b.dataset.u===uid){ o.hidden=true; afterWho(); return; } switchUser(b.dataset.u); }; });
+    o.querySelectorAll("[data-u]").forEach(b=>{ b.onclick=()=>{ tick("go"); try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} if(b.dataset.u===uid){ o.hidden=true; afterWho(); return; } switchUser(b.dataset.u); }; });
     $("whoAdd").onclick=()=>ask({title:"Add someone", label:"Their first name", ok:"Add", value:""}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name."; try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} return addUser(nm); });
     const bk=$("whoBack"); if(bk) bk.onclick=()=>{ o.hidden=true; };
     return true; }
@@ -688,7 +710,7 @@ const SHELL = (()=>{
       o.querySelectorAll("[data-f]").forEach(b=>{ b.onclick=()=>{ const f=b.dataset.f, raw=b.dataset.v; set(f, FIELDS[f].vals ? raw : +raw); }; });
       $("mkUndo").onclick=()=>{ if(hist.length){ spec=hist.pop(); draw(); } };
       $("mkRnd").onclick=()=>{ const r={}; for(const f of ["skin","face","eyes","hair","hairc","top","legs","girth"]){ const vs=valsOf(f); r[f]=vs[Math.floor(Math.random()*vs.length)]; } set(r); };
-      $("mkDone").onclick=finish; const bk=$("mkBack"); if(bk) bk.onclick=()=>{ o.hidden=true; if(done) done(); }; }
+      $("mkDone").onclick=()=>{ tick("go"); finish(); }; const bk=$("mkBack"); if(bk) bk.onclick=()=>{ o.hidden=true; if(done) done(); }; }
     o.hidden=false; draw(); }
 
   /* ---- the two moments of the day: "After ___ I do my first lesson." Never rewarded or penalised for the time. ---- */
@@ -714,7 +736,7 @@ const SHELL = (()=>{
       o.querySelectorAll("[data-m]").forEach(b=>{ b.onclick=()=>{ tick(); A[b.dataset.k].time=shift(A[b.dataset.k].time, +b.dataset.m); draw(); }; });
       o.querySelectorAll("[data-g]").forEach(b=>{ b.onclick=()=>{ tick(); goal=+b.dataset.g; draw(); }; });
       const bk=$("anBack"); if(bk) bk.onclick=()=>{ o.hidden=true; if(done) done(); };
-      $("anOk").onclick=()=>{ tick(); o.querySelectorAll(".otherIn").forEach(i=>{ const v=i.value.replace(/^after\s+/i,"").trim().slice(0,28); if(v) A[i.dataset.k].after=v; });
+      $("anOk").onclick=()=>{ tick("go"); o.querySelectorAll(".otherIn").forEach(i=>{ const v=i.value.replace(/^after\s+/i,"").trim().slice(0,28); if(v) A[i.dataset.k].after=v; });
         A.set=true; G.anchors=A; G.goal=goal; store(); o.hidden=true; try{ trace("the two moments: after "+A.first.after+" ("+A.first.time+"), after "+A.second.after+" ("+A.second.time+"); "+goal+" a day"); }catch(e){} if(done) done(); else home(); }; }
     o.hidden=false; draw(); o.scrollTop=0; }
 
@@ -736,7 +758,7 @@ const SHELL = (()=>{
       $("micLater").onclick=()=>{ tick(); o.hidden=true; };
       $("micAllow").onclick=async()=>{ tick(); const r=await MIC.ask(); if(r==="ok") MIC.ready(n); else MIC.help(false, r); }; },
     ready(n){ const o=$("mic"); o.innerHTML=`<div class="okmark">${ic("check")}</div><h1>Thank you</h1><div class="lede center">Marie can hear you now.</div><div class="spacer"></div><button class="btn" id="micGo">${ic("play")} Start lesson ${n}</button>`;
-      o.hidden=false; $("micGo").onclick=()=>{ o.hidden=true; $("playBtn").click(); }; },
+      o.hidden=false; $("micGo").onclick=()=>{ tick("go"); o.hidden=true; $("playBtn").click(); }; },
     help(inLesson, why){ const o=$("mic"), denied = why!=="none";
       o.innerHTML=`<div class="offmark">${ic("micoff")}</div><h1>${denied?"The microphone is off":"No microphone found"}</h1>
         <div class="lede">${denied ? "Flawless French needs to hear your answers, and your phone is not letting it use the microphone." : "Flawless French needs to hear your answers, and no microphone could be started. Another app may be using it."}</div>
@@ -774,7 +796,7 @@ const SHELL = (()=>{
       <h3 class="gh">Badges</h3><div class="miles">${bs.map(n=>`<div class="ms">${badgeSvg(n)}<span>${badgeName(n)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${perfectCount()} of ${nextB} perfect lessons</span></div>` : ""}</div>
       ${st ? `<div class="sline">${st.text} lessons · best run ${G.bestRun} day${G.bestRun===1?"":"s"}</div>` : ""}
       <h3 class="gh">Your two moments</h3><div class="card grp">${row("setA1","First lesson","After "+esc(A.first.after),"sun",`<span class="num">${hm(atToday(A.first.time))}</span>`)}${G.goal!==1?row("setA2","Second lesson","After "+esc(A.second.after),"moon",`<span class="num">${hm(atToday(A.second.time))}</span>`):row("setA2","Lessons a day","One for now","moon","")}</div>
-      <h3 class="gh">Sound and touch</h3><div class="card grp">${sw("setBead", UI.pref.beadSound!==false, "Sound for right answers", "One soft note for each right answer. Never over Marie.", "speaker")}${sw("setSound", !!UI.pref.sound, "Other sounds", "Cards turning up. Marie's voice is always on.", "speaker")}${sw("setVibe", !!UI.pref.haptics, "Vibration", "A light tap when you press. Never while you speak.", "vibe")}</div>
+      <h3 class="gh">Sound and touch</h3><div class="card grp">${sw("setBead", UI.pref.beadSound!==false, "Sound for right answers", "One soft note for each right answer. Never over Marie.", "speaker")}${sw("setSound", !!UI.pref.sound, "Sounds when you press", "A soft sound for each press, a brighter one when you start. Marie's voice is always on.", "speaker")}${sw("setVibe", !!UI.pref.haptics, "Vibration", "A light tap when you press. Never while you speak.", "vibe")}</div>
       <h3 class="gh">Seeing</h3><div class="card grp"><div class="grow"><div class="ic">${ic("text")}</div><div class="l">Text size</div></div><div class="seg size" role="group" aria-label="Text size">${[1,2,3].map(k=>`<button class="${tz===k?"on":""}" data-tz="${k}" aria-pressed="${tz===k}" aria-label="Text size: ${["standard","large","largest"][k-1]}"><span style="font-size:${[16,20,24][k-1]}px">A</span></button>`).join("")}</div>${sw("setMotion", UI.pref.motion==="less", "Less movement", "Celebrations become still. The lessons do not change.", "eye")}</div>
       <h3 class="gh">You and this phone</h3><div class="card grp">${row("setName","Your first name","",  "you", esc(S.learnerName||""))}${row("youWho","Who is learning?", USERS.list.length>1 ? USERS.list.length+" learners on this phone" : "Add someone", "you")}</div>
       <h3 class="gh">Help improve the course</h3><div class="card grp">${row("setRun","Save the run file","Everything you said and tapped, for the course's makers.","file")}${row("setIntro","See the introduction again","How a lesson works, shown.","play")}</div>
@@ -925,7 +947,7 @@ const SHELL = (()=>{
   for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl","ward"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
+  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); uiTaps(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
     if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); seed(); rankSync(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
