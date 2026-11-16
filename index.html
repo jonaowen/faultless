@@ -4713,7 +4713,11 @@ async function runExercise(li, ei){
   BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
   S.lesson=li; S.ex=ei; save();
   curSceneKey=null;
-  const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};
+  const hadError = await exerciseRuns(ex, {afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)});
+  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save(); try{ UI.exerciseDone(); }catch(e){}
+}
+// an exercise's own run (every part, with its corrections) and, after an error, step 5; true when it had an error (runExercise; runCarried, R4c)
+async function exerciseRuns(ex, anchor){
   const firstSeen=new Set(), errorsByTask={};
   let hadError = await runParts(ex.parts, {firstSeen, errorsByTask, anchor});
   if(hadError){
@@ -4722,7 +4726,59 @@ async function runExercise(li, ei){
     if(only.size){ ph("the tasks with an error again (step 5)"); trace("step 5: the tasks with an error again: "+[...only].join(", "));
       await runParts(ex.parts, {run:{only}, firstSeen, errorsByTask, anchor}); }
   }
-  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save(); try{ UI.exerciseDone(); }catch(e){}
+  return hadError;
+}
+/* (R4c; the plan, dev/plan/repeats.md 5.2 and repeats.tsv: "Not firm after a duplicate: those exercises only") On a duplicate's LAST copy
+   (R2's third presentation; R3's duplicate when there is one), an exercise that is still not firm comes back at the start of the next
+   lesson, before that lesson's own first exercise: those exercises only, never the whole lesson (DISE, TG L1 p.35: "repeat those parts,
+   but not the entire lesson"). The app already brings a part at the seven-trial limit back there (a delayed test); this brings the
+   exercise.
+   Not firm, as the app records it: the exercise had an error in that lesson (S.exHadError, set by the exercise's own run; a part left at
+   the seven-trial limit or after its repeats always has one), or a delayed test of it is still pending. (repeats.tsv R2: "The third
+   presentation is the firm check: an exercise with an error there is re-presented by R4c.") S.exHadError is carried at every migration,
+   so a learner who did the lesson before R4c existed is read the same way. When that lesson was repeated (below 90 %), its record is the
+   repeat's, the one that passed.
+   Given once, on the first start of the next lesson: never again when that lesson is repeated, done again or left half way (S.r4c keeps
+   what is left of it, so leaving in the middle of these exercises brings back the one that was running, from its start), and never for a
+   learner who had started that lesson before (any exercise of it has a record). A learner with nothing not firm gets no record at all.
+   The exercise is presented in full, as in its lesson (its models, its board, the correction procedure), with nothing announced, as a
+   delayed test is; its log lines are marked delayed (they count neither in this lesson's percentage nor in its progress bar, as a carried
+   part's do not); an error in it is carried as any error is (its delayed test after this lesson's first exercise and at the next lesson's
+   start). The exercise's own record in its lesson is left as it was. A pending delayed test of the same exercise is part of it: it is
+   dropped, so that nothing is asked twice. */
+const R4C_LESSONS = {12:true};      // lessons (by number: "L12" is 12) that are a duplicate's last copy. Extend as the course grows (R3's duplicate). A lesson file may say firmCheck:true instead.
+const isFirmCheck = L => !!L && (!!R4C_LESSONS[+String(L.id).replace(/^L/,"")] || !!(window.COURSE && window.COURSE[L.id] && window.COURSE[L.id].firmCheck));
+function r4cFor(lesson){
+  const li=LESSONS.indexOf(lesson), P=li>0 ? LESSONS[li-1] : null;
+  if(!isFirmCheck(P)) return null;
+  const R=S.r4c && S.r4c[P.id];
+  if(R) return R.to===lesson.id ? R : null;      // given already (or being given): what is left of it
+  if(lesson.exercises.some(e=>e.id in (S.exHadError||{}))) return null;      // this lesson was started before: not now
+  const pend=new Set((S.delayed||[]).map(d=>d.ex));
+  const ids=P.exercises.filter(e=>(S.exHadError||{})[e.id]===true || pend.has(e.id)).map(e=>e.id);
+  if(!ids.length) return null;
+  const dup=(S.delayed||[]).filter(d=>ids.includes(d.ex)); S.delayed=(S.delayed||[]).filter(d=>!dup.includes(d));
+  S.r4c=S.r4c||{}; S.r4c[P.id]={to:lesson.id, ids, left:ids.slice(), t:new Date().toISOString()};
+  logEntry({result:"NOT FIRM AFTER "+P.id+" (R4c): "+ids.join(", ")+" again at the start of "+lesson.id+(dup.length?"; their delayed tests are part of it: "+dup.map(d=>d.key).join(", "):""), heard:[]});
+  trace("R4c: not firm after "+P.id+": "+ids.join(", ")+(dup.length?" (delayed tests folded in: "+dup.map(d=>d.key).join(", ")+")":""));
+  save(); return S.r4c[P.id];
+}
+// an exercise of an earlier lesson, presented in full where it is carried to (R4c); the learner's place stays where it is
+async function runCarried(id, anchor){
+  const L=LESSONS.find(l=>l.exercises.some(e=>e.id===id)), ex=L && L.exercises.find(e=>e.id===id); if(!ex) return null;
+  ctx={lesson:L.id, ex:ex.id, exKey:ex.id, delayedRec:{key:ex.id+" (R4c)", r4c:true}, part:null};
+  BOARD_EX=ex.id; textHide();
+  BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
+  curSceneKey=null;
+  trace("R4c: "+ex.id+" again (not firm in "+L.id+")");
+  return await exerciseRuns(ex, anchor);
+}
+async function runR4c(lesson){
+  const R=r4cFor(lesson); if(!R || !R.left.length) return;
+  const anchor={afterEx: lesson.exercises[0].id, lessonStart: nextLessonId(lesson.id)};
+  while(R.left.length){ const id=R.left[0]; const had=await runCarried(id, anchor);
+    R.left.shift(); if(had!==null){ R.had=R.had||{}; R.had[id]=had; } save(); }
+  trace("R4c: done ("+R.ids.join(", ")+")");
 }
 // a delayed test: the part's test tasks (since .45 opened with no symbol). Passed when it runs with no error;
 // an error resets the count and schedules it again (end of the next exercise, start of the next lesson).
@@ -4760,6 +4816,7 @@ async function main(){
   const lesson=LESSONS[S.lesson];
   // start of a lesson: delayed tests due at the start of this lesson
   if(S.ex===0 && !S.finished[lesson.exercises[0].id]){
+    await runR4c(lesson);      // (R4c) after a duplicate's last copy: its exercises that are not firm, first
     for(const d of S.delayed.filter(x=>x.dueLessonStart===lesson.id)){ d.dueLessonStart=null; await runDelayed(d, {afterEx: lesson.exercises[0].id, lessonStart: nextLessonId(lesson.id)}); }
   }
   /* Every exercise of the lesson that is not finished, from the first: not only those from the saved place on. Run of 10 Nov
