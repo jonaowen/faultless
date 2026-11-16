@@ -366,3 +366,85 @@ html[data-motion="less"] :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv
 .lcard[data-lv]{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 120ms var(--ease-out, ease-out), box-shadow 120ms var(--ease-out, ease-out)}
 .lcard[data-lv]:active{transform:scale(.985)}
 @media (prefers-reduced-motion: reduce){.lcard[data-lv]{transition:none} .lcard[data-lv]:active{transform:none}}
+
+/* ==== QA, 16 Nov (after .66): fit, reach and ease. Every rule here mends something seen on a phone-sized screen; dev/design/QA_20261116.md lists them. ==== */
+/* home: the start button stands straight after the lesson's title, so that nothing can push it under the tab bar; the two reminders follow it.
+   (Not on the screen after the demonstration, where the reminders are read first.) */
+#play:not(.afterDemo) #heroSlot > #playBtn{order:-1}
+/* ...and on a short screen (shell.js fitHome: under 780 px of height, or wherever the button would still not be wholly above the tab bar: the largest
+   text, a very small phone) the lesson's card leads and the rings follow it */
+#home.lead{display:flex;flex-direction:column} #home.lead > *{flex:none} #home.lead > .h-top{order:-2} #home.lead > .hero{order:-1;margin-top:0} #home.lead > .rhythm{margin-top:12px}
+/* the greeting: a long name takes a smaller face, then two lines; the rank chip gives way to it and never leaves the screen */
+.h-top.n1 .h-hello b{font-size:28px} .h-top.n2 .h-hello b{font-size:24px} .h-top.n3 .h-hello b{font-size:21px;line-height:1.12;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.h-hello{text-wrap:balance} .h-rank{min-width:0} .hr-t > span i{font-style:normal;white-space:pre}
+.h-top.n1 .hr-t > span i, .h-top.n2 .hr-t > b{display:none} .h-top.n2 .h-rank{padding-right:12px}
+@media (max-width:350px){ .hr-t > span i{display:none} .h-rank{padding:5px 10px 5px 6px;gap:6px} .h-rank .emb.s{width:30px;height:35px} .h-top{gap:8px} .h-me{width:52px;height:52px} }
+/* the two moments on a phone's width: the words on their own line, the sign and the time under them (they wrapped to three lines, and broke inside a word at 320) */
+.mo .v .num{white-space:nowrap} .mo .k{overflow-wrap:break-word}
+@media (max-width:430px){ .mo{padding:8px 10px;row-gap:5px} .mo .k{grid-column:1/3;grid-row:1;align-self:auto} .mo .orb{grid-row:2;grid-column:1;width:26px;height:26px} .mo .orb .icon{width:16px;height:16px} .mo .v{grid-row:2;grid-column:2;align-self:center} }
+/* the second lesson's moment has come (its tile says "Now"): the start button is the green one again, and its two reminders are back. After the day's
+   first lesson the page makes it a quiet white one (right while the lesson should wait), and it stayed so all day. */
+#play.dayDone #home.due2 #playBtn{background:var(--accent);color:var(--on-colour);border:0;box-shadow:0 4px 0 var(--accent-press), 2px 12px 22px -10px rgba(14,110,54,.55)}
+#play.dayDone #home.due2 #playBtn:active{box-shadow:0 1px 0 var(--accent-press), 1px 4px 8px -6px rgba(14,110,54,.5)}
+#play.dayDone #home.due2 #howtoBox{display:grid}
+/* small pictures in a row: whole ones only (the last was cut in half at the card's edge) */
+.minis{flex-wrap:wrap;max-height:54px} .headrow .minis{justify-content:flex-end;min-width:44px}
+.eyebrow{align-items:flex-start} .eyebrow .icon{margin-top:-2px}
+.setmoments{width:100%;margin:0}
+/* a picture not yet drawn (shell.js LZ) keeps its place, quietly */
+.wcard[data-lz]{background:var(--paper)}
+/* who is learning / the maker's first choices: a name is never cut ("Add some...", "Marie-Ch...", "With gla..."): two lines, a smaller face for a long one */
+.pcard span{white-space:normal;overflow-wrap:anywhere;line-height:1.12;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding:5px 12px}
+.pcard span.ln{font-size:18px} .pcard.add span{font-size:18px;overflow-wrap:normal}
+@media (max-width:379px){ .big4 .pcard span{font-size:19px;padding:5px 9px} }
+/* the path: "Lesson 4" is never broken in two; on a narrow phone the count stands without its last word (the star says it) */
+.lcard .t{white-space:nowrap} .again{flex:none} .again .pp{white-space:nowrap;display:inline-flex;align-items:center;gap:4px} .again .pp .icon{width:15px;height:15px;color:var(--ring-gold);display:none}
+@media (max-width:379px){ .again .pp i{display:none} .again .pp .icon{display:block} } .again .pp i{font-style:normal}
+/* You: the level card's heading stacks rather than breaking both halves; a rank's stars stay with its name */
+.cefr .row{flex-wrap:wrap;gap:3px 10px} .cefr .row b{white-space:nowrap}
+/* ...and at the largest text the tokens' box drops under the rank instead of lying over its name */
+.card.rankc{flex-wrap:wrap} .rankc .l{flex:1 1 140px}
+/* the wardrobe on the narrowest phones: two to a row, and words break between words */
+.wfr,.wen{overflow-wrap:break-word}
+@media (max-width:339px){ .wgrid2{grid-template-columns:repeat(2,minmax(0,1fr))} #ward .wtop{grid-template-columns:96px 1fr} .wfig svg{width:96px;height:114px} }
+/* a screen's one green button is always in reach (the microphone's "Allow" lay under the fold at 360 x 740; the two moments' "Done" after two screens of scrolling) */
+#mic > .btn:not(.quiet), #anch > .btn:not(.quiet), #back > .btn:not(.quiet), #lvl > .btn:not(.quiet){position:sticky;bottom:calc(10px + var(--sab));z-index:2;box-shadow:0 4px 0 var(--accent-press), 0 -12px 18px 8px var(--paper), 0 14px 0 10px var(--paper)}
+/* short screens: the art gives way to the words */
+@media (max-height:780px){
+  .mic-art{margin:4px 0 2px} .mic-art .ph{width:92px;height:140px;border-radius:20px} .mic-art .ph i{inset:6px;border-radius:14px;box-shadow:inset 0 0 0 7px var(--speak), inset 0 0 14px 7px var(--speak-glow)} .mic-art .tab{bottom:6px;height:26px}
+  .facts > div{padding:10px 0} .facts p{font:var(--t-body)}
+  .okmark,.offmark{width:88px;height:88px;margin-top:22px} .okmark .icon,.offmark .icon{width:50px;height:50px}
+  .wb-art{width:124px;height:124px;margin-top:10px} .wb-art svg{left:-17px;top:-5px;width:158px;height:187px}
+  .lvbig{width:132px;height:132px;margin-top:22px} .lvbig span{font-size:58px}
+  /* the maker: more room for the choices */
+  .mk-stage{height:218px} .mk-stage > svg{left:6px;top:2px;width:188px;height:223px} .mk-small{top:10px;right:10px;gap:5px} .mk-small .mini{width:62px;height:74px} .mk-tabs{padding:10px 16px 8px}
+  /* lesson complete: the sentence is on the first screen, above the bar and the button */
+  #done .seal{width:88px;height:110px;margin-top:0} #done .sunmark{width:76px;height:76px;margin-top:8px;box-shadow:0 0 0 8px var(--sun-tint)} #done .sunmark .icon{width:44px;height:44px}
+  #done .celebfig{width:96px;height:114px} #done .celebfig + .seal{width:64px;height:80px;margin-top:-8px}
+  #done h1{margin-top:10px} #done .say{margin-top:12px;padding:10px 14px 16px} #done .perfect-tag{margin-top:6px}
+}
+@media (max-width:400px){ #done h1{font-size:34px} #whoL h1{font-size:32px} }
+#done h1.ln{font-size:30px} #done h1{overflow-wrap:anywhere;text-wrap:balance}
+@media (max-height:640px){ .big4 .pcard{height:196px} .big4 .pcard svg.av{width:150px;height:178px} .donefoot{gap:8px;padding-top:8px} .rankbar{padding:6px 12px 7px 8px} .rankbar .emb.s{width:30px;height:35px} .rb-t{gap:4px} #done .btn{min-height:56px}
+  #done .seal{width:72px;height:90px} #done h1{font-size:30px} #done .sub{font:var(--t-body)} #done .say{font-size:19px;line-height:1.5} #done .say b{font-size:30px} #done .say b.first{font-size:40px} }
+/* words: nothing yet */
+.card.owned .orb{background:var(--speak-tint);color:var(--speak-deep);width:56px;height:56px} .card.owned .orb .icon{width:30px;height:30px}
+/* a question the app asks itself (it used the browser's own grey boxes): two buttons side by side, the careful one on the left */
+#sheet .two .btn{width:100%;margin:0;padding:0 12px} #sheet .btn.warn{background:var(--ink);box-shadow:0 4px 0 #000}
+#sheet .sh:focus{outline:none}
+/* a long sheet (About): its Close stays in reach while the words scroll */
+#sheet .sh > #infoOk{position:sticky;bottom:4px;box-shadow:0 4px 0 var(--accent-press), 0 -10px 14px 8px var(--paper), 0 16px 0 10px var(--paper)} #sheet .sh > #infoOk.quiet{box-shadow:0 3px 0 var(--line-strong), 0 -10px 14px 8px var(--paper), 0 16px 0 10px var(--paper)}
+/* the lesson view's and the sheets' long labels keep to one line where they can */
+#lvAll{padding:0 18px;font-size:19px}
+/* the maker and the two moments are drawn again at each choice: what changed comes in softly instead of snapping */
+@keyframes mvSoft{from{opacity:.35;transform:translateY(6px)}} .mv-soft{animation:mvSoft 220ms var(--ease-out) both}
+html[data-motion="less"] .mv-soft{animation:none!important} @media (prefers-reduced-motion:reduce){ .mv-soft{animation:none!important} }
+/* a phone on its side (the installed app stays upright; in the browser it can turn): nothing is out of reach. The maker's choices and its button lay
+   under a screen that did not scroll; the tab bar and lesson complete's foot took most of the height. */
+@media (max-height:520px){
+  #nav{height:calc(62px + var(--sab));padding:3px 20px calc(4px + var(--sab))} .tab{gap:1px} .pillbg{height:30px}
+  #home{padding-bottom:84px} .over.tabbed{padding-bottom:calc(80px + var(--sab))}
+  #maker{overflow:auto} #maker .mk-tray{flex:none;overflow:visible} #maker .big4{flex:none;overflow:visible} .mk-stage{height:170px;flex:none} .mk-stage > svg{width:150px;height:178px}
+  .donefoot{position:static;margin-top:16px;box-shadow:none}
+  #mic > .btn:not(.quiet), #anch > .btn:not(.quiet), #back > .btn:not(.quiet), #lvl > .btn:not(.quiet){position:static;box-shadow:0 4px 0 var(--accent-press)}
+}
