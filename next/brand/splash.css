@@ -1,4 +1,4 @@
-/* Faultless French: the loading screen (see splash.js). Paper, the mark, the name; a quiet bar only if it takes a while.
+/* Flawless French: the loading screen (see splash.js). Paper, the mark, the name; a quiet bar only if it takes a while.
    Its paper is the manifest's background_color, so the browser's own splash and this one join without a seam. */
 #splash{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;
   background:#F7F2E8;color:#1B2433;opacity:1;transition:opacity 240ms cubic-bezier(.22,1,.36,1);

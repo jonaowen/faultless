@@ -262,3 +262,98 @@ html[data-motion="less"] #bar.perfect:after, html[data-motion="less"] #bar .chee
 #done #doneBtn{position:sticky;bottom:calc(10px + var(--sab));z-index:2;box-shadow:0 4px 0 var(--accent-press), 0 -14px 22px 6px var(--paper)}
 /* (the owner, §13) the perfected share inside the level's bar is GOLD: it grows when old exercises are perfected */
 .lvc i{background:linear-gradient(90deg,var(--sun) var(--q),#8DCB9F var(--q),#8DCB9F var(--p),var(--paper-3) var(--p))}
+/* ---- M3c (ui3): the three rings, ranks and the rank bar, the wardrobe, teen ---- */
+:root{--ring-day:#16934A;--ring-week:#2B7C93;--ring-lvl:#7B4F9E;--ring-gold:#E3A417}
+.h-top{display:flex;align-items:center;gap:10px;padding:4px 0 14px}
+.h-top .h-hello{flex:1}
+.h-me{flex:none;width:58px;height:58px;border-radius:50%;overflow:hidden;background:var(--paper-2);border:2.5px solid var(--card);box-shadow:var(--e1);padding:0;cursor:pointer}
+.h-me svg{width:100%;height:100%;display:block}
+.h-rank{flex:none;display:flex;align-items:center;gap:8px;padding:5px 14px 5px 7px;border-radius:var(--r-pill);background:var(--card);border:1px solid var(--line);box-shadow:var(--e1);min-height:56px;cursor:pointer;max-width:48%}
+.h-rank .emb.s{width:36px;height:41px;flex:none}
+.hr-t{display:grid;gap:2px;text-align:left;min-width:0} .hr-t > b{font:700 15px/1.15 var(--font-ui);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-t > span{display:flex;align-items:center;gap:3px;font:600 15px/1.15 var(--font-ui);color:var(--ink-2);white-space:nowrap} .hr-t .tokn{width:17px;height:17px;flex:none} .hr-t .num{font-size:17px;color:var(--ink)}
+.rhythm{padding:14px 14px 12px;display:grid;gap:12px}
+.rbody{display:grid;grid-template-columns:136px 1fr;gap:14px;align-items:center}
+svg.rings{width:136px;height:136px;display:block}
+.rings .trk{stroke-opacity:.15} .rings .day{stroke:var(--ring-day)} .rings .week{stroke:var(--ring-week)} .rings .lvl{stroke:var(--ring-lvl)} .rings .arc.gold{stroke:var(--ring-gold)}
+.rings .arc{transition:stroke-dasharray 950ms var(--ease-out)} .rings.still .arc{transition:none}
+.rings .midc{fill:var(--speak)} .rings .midt{fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+html[data-motion="less"] .rings .arc{transition:none} @media (prefers-reduced-motion:reduce){ .rings .arc{transition:none} }
+.rrows{display:grid;gap:12px;min-width:0} .rrows.c{gap:10px}
+.rr{display:flex;gap:9px;align-items:flex-start;min-width:0} .rr > i{flex:none;width:15px;height:15px;border-radius:50%;border:4.5px solid var(--c);margin-top:2px}
+.rr.day{--c:var(--ring-day)} .rr.week{--c:var(--ring-week)} .rr.lvl{--c:var(--ring-lvl)}
+.rr > div{min-width:0} .rr > div > span{display:block;font:700 15px/1.15 var(--font-ui);color:var(--ink-2)}
+.rr b{display:flex;align-items:center;gap:4px;font:700 18px/1.2 var(--font-ui);color:var(--ink);margin-top:1px} .rr b .icon{width:18px;height:18px;stroke-width:3.4;color:var(--speak-deep);flex:none}
+.rr small{display:block;font:500 15px/1.25 var(--font-ui);color:var(--ink-2)} .rr .gold{color:var(--lit-deep);font-weight:700;font-style:normal;white-space:nowrap} .rr small .icon{width:15px;height:15px;vertical-align:-2px;color:var(--ring-gold)}
+.rrows.c .rr b{font-size:17px}
+.moments{display:grid;grid-template-columns:1fr 1fr;gap:8px} .moments.one{grid-template-columns:1fr}
+.mo{display:grid;grid-template-columns:auto 1fr;column-gap:9px;row-gap:1px;align-items:center;padding:7px 10px;border-radius:var(--r2);min-height:56px;min-width:0}
+.mo .orb{grid-row:1/3;width:36px;height:36px} .mo .orb .icon{width:21px;height:21px}
+.mo.am{background:var(--sun-tint)} .mo.am .orb{background:var(--sun);color:#5a3600} .mo.pm{background:var(--moon-tint)} .mo.pm .orb{background:var(--moon);color:#fff}
+.mo .k{font:700 15px/1.1 var(--font-ui);color:var(--ink-2);overflow-wrap:anywhere;align-self:end} .mo .v{font:700 17px/1.15 var(--font-ui);color:var(--ink);display:flex;align-items:center;gap:4px;align-self:start}
+.mo .v .num{font:600 20px/1.05 var(--font-display);font-variation-settings:"SOFT" 100} .mo .v .icon{width:18px;height:18px;stroke-width:3.4;color:var(--speak-deep)}
+.mo.next{box-shadow:inset 0 0 0 2.5px var(--moon)} .mo.am.next{box-shadow:inset 0 0 0 2.5px var(--sun-deep)}
+/* lesson complete: the rings, a new rank, the bar along the bottom */
+.card.ringc{margin-top:12px;padding:14px;display:grid;gap:10px}
+.ringc .rhead{display:flex;align-items:center;gap:8px;font:var(--t-head);color:var(--speak-deep)} .ringc .rhead .icon{width:24px;height:24px;stroke-width:3.2;flex:none} .ringc .rhead.gold{color:var(--lit-deep)}
+.ringc.big{background:var(--speak-tint);border-color:#BFDCC8}
+.card.rankup{margin-top:12px;padding:14px 16px;display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,var(--sun-tint),var(--card) 70%);border-color:#EBD7A6}
+.rankup .emb.big{width:78px;height:89px;display:block;filter:drop-shadow(2px 6px 6px rgba(var(--shade),.25));animation:rkIn 800ms var(--spring) 250ms both}
+@keyframes rkIn{from{transform:scale(.3) rotate(-14deg);opacity:0}}
+.rankup small{display:block;font:700 15px/1.2 var(--font-ui);color:var(--sun-deep)} .rankup > div > b{display:block;font:600 30px/1.1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink);margin-top:2px}
+.rankup p{display:flex;align-items:center;gap:6px;margin:6px 0 0;font:600 17px/1.3 var(--font-ui);color:var(--ink-2)} .rankup p .tokn{width:24px;height:24px;flex:none} .rankup p .num{font-size:21px;color:var(--ink)}
+.donefoot{position:sticky;bottom:calc(-26px - var(--sab));z-index:2;display:grid;gap:10px;margin:auto -18px calc(-26px - var(--sab));padding:12px 18px calc(16px + var(--sab));background:var(--paper);box-shadow:0 -16px 16px -2px var(--paper);width:calc(100% + 36px)!important;max-width:496px!important}
+#done #doneBtn{position:static;box-shadow:0 4px 0 var(--accent-press)}
+.rankbar{display:flex;align-items:center;gap:10px;padding:9px 14px 10px 9px;border-radius:var(--r3);background:var(--card);border:1px solid var(--line);box-shadow:var(--e1)}
+.rankbar .emb.s{width:38px;height:44px;flex:none}
+.rb-t{flex:1;display:grid;gap:7px;min-width:0} .rb-l{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.rb-l > b{font:700 16px/1.2 var(--font-ui);color:var(--ink)} .rb-l > span{font:600 15px/1.2 var(--font-ui);color:var(--ink-2)} .rb-l .num{font-size:18px;color:var(--ink)}
+.rb-track{display:block;height:12px;border-radius:6px;background:var(--paper-3);overflow:hidden}
+.rb-track i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--sun),var(--ring-gold));transform-origin:left center;transform:scaleX(var(--b));animation:rbFill 1200ms var(--ease-out) 350ms both}
+@keyframes rbFill{from{transform:scaleX(var(--a))}}
+html[data-motion="less"] .rb-track i, html[data-motion="less"] .rankup .emb.big{animation:none} @media (prefers-reduced-motion:reduce){ .rb-track i, .rankup .emb.big{animation:none} }
+/* You: the rank */
+.card.rankc{margin-top:12px;display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;text-align:left;cursor:pointer}
+.rankc .emb.m{width:52px;height:60px;flex:none} .rankc .l{flex:1;display:grid;gap:2px;min-width:0} .rankc .l small{font:700 15px/1.2 var(--font-ui);color:var(--ink-2)}
+.rankc .l > b{font:600 24px/1.1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink)} .rankc .l > span{font:500 15px/1.3 var(--font-ui);color:var(--ink-2)} .rankc .l .num{font-size:17px;color:var(--ink)}
+.rankc .wtok{flex:none;display:grid;justify-items:center;gap:2px;padding:6px 10px;border-radius:var(--r2);background:var(--sun-tint)} .rankc .wtok .tokn{width:24px;height:24px} .rankc .wtok .num{font-size:22px;line-height:1} .rankc .wtok small{font:700 15px/1 var(--font-ui);color:var(--sun-deep)}
+.lvc i{background:linear-gradient(90deg,var(--ring-gold) var(--q),var(--ring-lvl) var(--q),var(--ring-lvl) var(--p),var(--paper-3) var(--p))}
+/* the wardrobe */
+#ward .mk-bar h2{margin:0}
+#ward .wtop{display:grid;grid-template-columns:118px 1fr;gap:12px;align-items:center;padding:10px 14px;margin-top:6px}
+.wfig svg{width:118px;height:140px;display:block}
+.wme{display:grid;justify-items:start;gap:5px;min-width:0} .wme .emb.m{width:46px;height:53px} .wme > b{font:600 24px/1.1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink)}
+.wtok{display:flex;align-items:center;gap:6px;font:700 17px/1 var(--font-ui);color:var(--ink-2)} .wme .wtok .tokn{width:26px;height:26px} .wme .wtok .num{font-size:28px;color:var(--ink)}
+.wme small{font:500 15px/1.3 var(--font-ui);color:var(--ink-2)} .wme small b{color:var(--ink)}
+.card.wrule{margin-top:12px;padding:14px 16px;background:var(--sun-tint);border-color:#EBD7A6;box-shadow:none} .wrule p{margin:0;font:600 18px/1.45 var(--font-ui);color:var(--ink)}
+.gh.wh{display:flex;justify-content:space-between;align-items:center;gap:8px} .wtier{display:flex;align-items:center;gap:4px;font:700 15px/1 var(--font-ui);color:var(--ink-2);white-space:nowrap} .wtier .tokn{width:18px;height:18px}
+.wgrid2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.witem{display:flex;flex-direction:column;gap:3px;padding:6px 6px 10px;border-radius:var(--r3);background:var(--card);border:1px solid var(--line);box-shadow:var(--e1);text-align:center;cursor:pointer;min-width:0}
+.witem .wthumb{position:relative;display:block;aspect-ratio:160/190;border-radius:12px;background:var(--paper)} .wthumb svg{width:100%;height:100%;display:block}
+.ph-box{fill:none;stroke:var(--line-strong);stroke-width:3;stroke-dasharray:9 7} .ph-g{stroke:var(--ink-3);opacity:.5} .ph-t{font:800 13px var(--font-ui);fill:var(--ink-3);letter-spacing:.08em}
+.wfr{font:700 15px/1.2 var(--font-ui);color:var(--ink);overflow-wrap:anywhere;margin-top:3px} .wen{font:500 15px/1.2 var(--font-ui);color:var(--ink-2);overflow-wrap:anywhere}
+.wprice{display:flex;justify-content:center;align-items:center;gap:4px;margin-top:auto;padding-top:5px;font:700 15px/1 var(--font-ui);color:var(--ink-2)} .wprice .tokn{width:19px;height:19px} .wprice .num{font-size:20px;color:var(--ink)}
+.witem.can{box-shadow:var(--e1),inset 0 0 0 2px var(--ring-gold)} .witem.own .wprice{color:var(--speak-deep)} .witem.on{border:2.5px solid var(--speak)}
+.won{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:var(--speak);color:#fff;display:grid;place-items:center} .won .icon{width:18px;height:18px;stroke-width:3.6}
+.witem.got{animation:wGot 650ms var(--spring)} @keyframes wGot{from{transform:scale(.88)}}
+.witem:active,.h-rank:active,.h-me:active,.card.rankc:active{transform:translateY(2px)}
+#sheet .wbig{width:150px;margin:0 auto 4px} #sheet .wbig svg{width:100%;display:block} #sheet .wsub{text-align:center;margin-top:0} #sheet .btn .tokn{width:22px;height:22px;vertical-align:-4px}
+/* the maker's age row names its four choices */
+.opt .ol{position:absolute;left:0;right:0;bottom:0;padding:3px 0 4px;background:rgba(255,253,248,.92);font:700 15px/1 var(--font-ui);color:var(--ink)}
+#sheet .sh-body .btn{width:100%;margin:8px 0 4px} #sheet .sh-body p.small{margin-top:14px}
+/* ---- motion and ease (brief 18): screens, tabs, lists, sheets, presses; nothing of it in a lesson; none with less movement ---- */
+@keyframes mvRise{from{transform:translateY(28px);opacity:0}} @keyframes mvPush{0%{transform:translateX(40px);opacity:0}45%{opacity:1}} @keyframes mvFade{from{opacity:0}}
+@keyframes mvSettle{from{transform:scale(.982);opacity:.6}} @keyframes mvTabL{0%{transform:translateX(-22px);opacity:0}40%{opacity:1}} @keyframes mvTabR{0%{transform:translateX(22px);opacity:0}40%{opacity:1}}
+@keyframes stIn{from{transform:translateY(14px);opacity:0}} @keyframes shDown{to{transform:translateY(48px);opacity:0}} @keyframes shDim{from{opacity:0}} @keyframes shUndim{to{opacity:0}}
+.mv-rise{animation:mvRise 380ms var(--ease-out) both} .mv-push{animation:mvPush 320ms var(--ease-out) both} .mv-fade{animation:mvFade 260ms var(--ease-out) both}
+.mv-settle{animation:mvSettle 300ms var(--ease-out) both} .mv-tab-l{animation:mvTabL 260ms var(--ease-out) both} .mv-tab-r{animation:mvTabR 260ms var(--ease-out) both}
+.mv-stag > *{animation:stIn 420ms var(--ease-out) both;animation-delay:calc(70ms + var(--i,0) * 40ms)}
+.mv-stag > .donefoot,.mv-stag > .btn,.mv-stag > .spacer{animation:none}
+#sheet:not([hidden]){animation:shDim 200ms var(--ease-out) both} #sheet.out{animation:shUndim 190ms var(--ease-in-out) forwards} #sheet.out .sh{animation:shDown 190ms var(--ease-in-out) forwards}
+.mv-ghost{position:fixed;z-index:60;background:var(--card);border-radius:16px;pointer-events:none;transform-origin:0 0;box-shadow:var(--e2)}
+/* every press answers within a frame: down onto its edge, then a spring back */
+:where(#home,.over,#nav,#sheet) :where(button){transition:transform 280ms var(--spring, var(--ease-out)), box-shadow 160ms var(--ease-out), background-color 160ms var(--ease-out)}
+:where(#home,.over,#nav,#sheet) :where(button):active{transform:translateY(2px) scale(.985);transition-duration:70ms}
+:where(#nav) .tab .pillbg{transition:background-color 200ms var(--ease-out), transform 260ms var(--spring, var(--ease-out))} :where(#nav) .tab.on .pillbg{transform:scale(1.04)}
+html[data-motion="less"] :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv-tab-r,.mv-stag > *,#sheet,#sheet .sh){animation:none!important}
+@media (prefers-reduced-motion:reduce){ :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv-tab-r,.mv-stag > *,#sheet,#sheet .sh){animation:none!important} .mv-ghost{display:none} }

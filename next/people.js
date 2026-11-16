@@ -323,18 +323,18 @@ function traits(spec, variant){
       top: M ? ["#4a6b86", "#36536b"] : COL.green, topName: M ? "slate" : "green", iris: M ? "#5e3f27" : "#4a3524", style: M ? "marie" : "you", beard: false,
       brow: M ? "#4a3326" : "#2a2422", lip: M ? "#c4626a" : "#bf6660", cap: "orange", hat: "felt", band: "#2b2b30", pack: "orange", umb: "yellow", scarf: "mustard",
       coat: "camel", suit: "charcoal", tie: null, glasses: "#26262b", round: false, bag: "mustard" };
-    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });
+    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "youF", lip: "#c75a64", bow: "#3fa9a3" });
     /* (the overhaul) the learner's own figure (PICS.setLearner): "you" is the person the learner made, in every picture. On the new figure
        the whole spec is drawn (c.av); the pictures still on the older drawing take from it what they can show: man or woman, skin, hair
        (its colour and the nearest of their own cuts), eyes, beard, glasses, the colour of the top */
     if (!M && LEARNER){ const A = FIG.person(LEARNER), sp = FIG.specParse(FIG.specString(LEARNER)), tn = FIG.AV.top[Math.min(FIG.AV.top.length - 1, sp.top | 0)];
       Object.assign(c, { kind: A.fem ? "woman" : "man", skin: A.skin, hair: A.hair, top: A.top, topName: tn, iris: A.iris, beard: !!A.beard, brow: A.brow, lip: A.lip, bow: A.bow,
-        style: A.headwear ? (A.fem ? "bun" : "crew") : ({ short: "you", side: "sidepart", crop: "crew", bald: "bald", pony: "pony", long: "long", loose: A.fem ? "marie" : "longM", wavy: "wavy", bob: "bob", tucked: "marie" })[A.style] || (A.fem ? "pony" : "you"), av: A });
-      if (A.glassesOn) L.glasses = 1; }      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
+        style: A.headwear ? (A.fem ? "bun" : "crew") : ({ short: "you", side: "sidepart", crop: "crew", bald: "bald", pony: "pony", long: "long", loose: A.fem ? "marie" : "longM", wavy: "wavy", bob: "bob", tucked: "marie", pixie: "bob", pixieS: "bob" })[A.style] || (A.fem ? "pony" : "you"), av: A });
+      if (A.glassesOn) L.glasses = 1; }      // "you" as a woman: the same skin, black hair and green top, her hair to the shoulder, framing the face (Marie's is brown and tucked behind the ears, Sylvie's long and down; a ponytail hid behind the head seen from the front)
   } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
-      top: P ? COL.blue : COL.julieRed, topName: P ? "blue" : "julieRed", iris: P ? "#4b6f8f" : "#5a3a22", style: P ? "paul" : "julie", beard: P,
+      top: P ? COL.blue : COL.julieRed, topName: P ? "blue" : "julieRed", iris: P ? "#4b6f8f" : "#5a3a22", style: P ? "paul" : "julie", beard: P, face: P ? 0 : 4,
       cap: P ? "green" : "yellow", hat: P ? "felt" : "straw", band: P ? "#2b2b30" : "#3fa9a3", pack: P ? "orange" : "green", umb: P ? "yellow" : "purple",
       scarf: P ? "mustard" : "teal", coat: P ? "olive" : "camel", suit: "charcoal", tie: P ? "blue" : null, glasses: "#26262b", round: !P, bag: "mustard" };
   } else {
@@ -407,6 +407,7 @@ function hairOf(style, u, c){
   switch (style){
     case "paul": return { front: `<path d="M47 84 q-2-40 33-42 q35 2 33 42 q-4-14-12-20 q-12 4-24 2 q-12-2-18-6 q-8 8-12 24z" fill="${H}"/>
          <path d="M58 54 q8-6 22-6 M64 50 q10-4 22 0 M72 47 q10-2 20 2" stroke="#8c6545" stroke-width="1.1" fill="none" opacity=".6"/>` };
+    case "youF":       // the learner as a woman (no figure made yet): hair to the shoulder, framing the face (on these older drawings, Marie's cut)
     case "marie": { const T = `transform="translate(80 48) scale(.744) translate(-200 -302)"`;   // the tutor's own hair paths, at the size of these heads
       return { back: `<path ${T} d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="${H}"/>`,
         front: `<path ${T} d="M156 354 q-2-58 44-60 q46 2 44 60 q-4-26-16-38 q-14-6-30-3 q-10 4-22 3 q-6 4-10 12 q-6 10-10 26z" fill="${H}"/>
@@ -1347,14 +1348,22 @@ const f1 = v => Math.round(v * 10) / 10, f2 = v => Math.round(v * 100) / 100;
 const MAN = { hw: 0.058, sw: 0.118, sy: 0.08, sz: -0.008, thigh: 0.236, shin: 0.238, ankle: 0.042, foot: 0.104, toe: 0.046, spine: 0.2, nb: 0.1, neck: 0.05,
   ua: 0.178, fa: 0.146, hand: 0.108, chest: [0.115, 0.112, 0.086], waist: [0.102, 0.06, 0.08], hem: [0.107, 0.05, 0.083],
   rHip: 0.064, rTh: 0.06, rKnee: 0.048, rCalf: 0.047, rCuff: 0.041, rSh: 0.049, rUa: 0.043, rEl: 0.037, rFa: 0.038, rWr: 0.03, rNeck: 0.039, palm: 0.048, shoe: 1.28 };
-const WOMAN = Object.assign({}, MAN, { hw: 0.06, sw: 0.1, chest: [0.098, 0.108, 0.08], waist: [0.084, 0.06, 0.07], hem: [0.106, 0.05, 0.083], rHip: 0.064, rTh: 0.057, rKnee: 0.044, rCalf: 0.042, rCuff: 0.036,
+const WOMAN = Object.assign({}, MAN, { hw: 0.058, sw: 0.088, sy: 0.078, nb: 0.098, neck: 0.04, chest: [0.086, 0.108, 0.078], waist: [0.064, 0.06, 0.062], hem: [0.1, 0.05, 0.08], rHip: 0.062, rTh: 0.054, rKnee: 0.04, rCalf: 0.039, rCuff: 0.033,
+  rSh: 0.035, rUa: 0.031, rEl: 0.027, rFa: 0.028, rWr: 0.021, rNeck: 0.03, palm: 0.036, hand: 0.1, shoe: 1.08 });
+/* (the teacher: her round-three proportions were set from these, the earlier woman's; TUT0 scales them) */
+const TWOMAN = Object.assign({}, MAN, { hw: 0.06, sw: 0.1, chest: [0.098, 0.108, 0.08], waist: [0.084, 0.06, 0.07], hem: [0.106, 0.05, 0.083], rHip: 0.064, rTh: 0.057, rKnee: 0.044, rCalf: 0.042, rCuff: 0.036,
   rSh: 0.041, rUa: 0.036, rEl: 0.032, rFa: 0.032, rWr: 0.025, rNeck: 0.033, palm: 0.042, shoe: 1.14 });
 /* the whole figure is `tall` units of the picture box at size 1 and `heads` heads high (the head is drawn larger than life so that the face
    can be known on a phone: an adult here is four and a half heads, a child four) */
-function build(kind, heads, girth){ const b0 = kind === "woman" ? WOMAN : MAN, gw = [0.9, 1, 1.09, 1.2][girth == null ? 1 : girth], gl = [0.92, 1, 1.06, 1.14][girth == null ? 1 : girth], b = Object.assign({}, b0, { sw: b0.sw * (0.94 + 0.06 * gw), chest: [b0.chest[0] * gw, b0.chest[1], b0.chest[2] * gw], waist: [b0.waist[0] * (girth === 3 ? 1.36 : gw), b0.waist[1] * (girth === 3 ? 1.3 : 1), b0.waist[2] * (girth === 3 ? 1.5 : gw)], hem: [b0.hem[0] * (girth === 3 ? 1.22 : gw), b0.hem[1], b0.hem[2] * (girth === 3 ? 1.3 : gw)] }), n = heads || (kind === "kid" ? 4 : 4.5), hh = 0.866 / (2 * n - 1.84), tall = kind === "kid" ? 112 : kind === "woman" ? 138 : 146;
+const PORT = { rSh: 0.72, rUa: 0.9, sy: 0.016, nkY: 1.75, syM: 0.01, nkYM: 1.6, sw: 0.97 };
+function build(kind, heads, girth){ const teen = kind === "teen" || kind === "teenf", b0 = kind === "woman" || kind === "teenf" ? WOMAN : kind === "teacher" ? TWOMAN : MAN, gw = [0.9, 1, 1.09, 1.2][girth == null ? 1 : girth], gl = [0.92, 1, 1.06, 1.14][girth == null ? 1 : girth], b = Object.assign({}, b0, { sw: b0.sw * (0.94 + 0.06 * gw), chest: [b0.chest[0] * gw, b0.chest[1], b0.chest[2] * gw], waist: [b0.waist[0] * (girth === 3 ? 1.36 : gw), b0.waist[1] * (girth === 3 ? 1.3 : 1), b0.waist[2] * (girth === 3 ? 1.5 : gw)], hem: [b0.hem[0] * (girth === 3 ? 1.22 : gw), b0.hem[1], b0.hem[2] * (girth === 3 ? 1.3 : gw)] }), n = heads || (kind === "kid" ? 4 : teen ? 4.25 : 4.5), hh = 0.866 / (2 * n - 1.84), tall = kind === "kid" ? 112 : kind === "teenf" ? 127 : teen ? 130 : kind === "woman" || kind === "teacher" ? 138 : 146;
   for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff", "rSh", "rUa", "rEl", "rFa", "rWr", "rNeck"]) b[r] = b0[r] * gl;
+  if (n > 4.5) b.neck = b0.neck * hh / (0.866 / 7.16);
+  if (n > 4.5 && kind !== "teacher"){ const P = PORT, m = b0 === MAN; b.rSh *= P.rSh; b.rUa *= P.rUa; b.rEl *= P.rUa; b.sy -= m ? P.syM : P.sy; b.nkY = m ? P.nkYM : P.nkY; b.sw *= P.sw; }      // (the portraits and the close-ups: the shoulders slope from a wider foot of the neck and their rounds are smaller, so that they are not square knobs)
+  if (teen){ b.sw *= 0.93; b.chest = [b.chest[0] * 0.92, b.chest[1], b.chest[2] * 0.92]; b.waist = [b.waist[0] * 0.95, b.waist[1], b.waist[2] * 0.95]; b.hem = [b.hem[0] * 0.94, b.hem[1], b.hem[2] * 0.94];      // a teenager (13 to 17): between the child and the adult: a head between theirs, a narrower build, thinner limbs
+    for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rSh", "rUa", "rEl", "rFa", "rWr", "rNeck"]) b[r] *= 0.93; }          // (a figure of more heads, as the portraits are: the neck keeps its length against the head, not the body)
   return Object.assign({}, b, { hh, H: tall / (0.866 + 1.84 * hh), key: kind + n + "g" + girth }); }
-const BUILDS = {}, bodyOf = (c, o) => { const kind = c.kid ? "kid" : c.fem ? "woman" : "man", k = kind + (o && o.heads || "") + "g" + c.girth; return BUILDS[k] || (BUILDS[k] = build(kind, o && o.heads, c.girth)); };
+const BUILDS = {}, bodyOf = (c, o) => { const kind = c.kid ? "kid" : c.teen ? (c.fem ? "teenf" : "teen") : c.fem ? "woman" : "man", k = kind + (o && o.heads || "") + "g" + c.girth; return BUILDS[k] || (BUILDS[k] = build(kind, o && o.heads, c.girth)); };
 
 /* ---------- the keyed actions ---------- */
 const CLIPS = {
@@ -1368,8 +1377,8 @@ const CLIPS = {
     data: "OOZFOOe[OGOOOWe0K)Q,aI]#eYOSNLP)a<]>OOOOOOOOOOOONIe?RteVPMN;NceGRKNO?yA6Uq?>[QUq?>[Q;mGnOVM&>nBhL|C4aOL|C4aObWERJ}W4PYd.JC<IGzR@KCe#TFW&cZJfQ@e!Sw<*HCKmGLcbK~FccEOQZKOje[O)O0OueZNqQF_2_VeXOWN2P@_s^}OOOOOOOOOOOON>e4SUeVP`NKNMeFRHNiAq?DUA=;XMUA=;XM<MG>K:LJ@n@YL`@W_3L`@W_3aoEPHbVdPCdAJ^<UGKRRJfdrTFVScmJcQ\"e#Sv<7G~KOG?cVK]Ffc@OT[6PEeZNdO(P<eXPDQ<]Ua\"eXOVN?P=^t_zOOOOOOOOOOOON>e-SveVPjNYNBeERNO9A{?:U&;~UJU&;~UJ=%H'HCL(@{@SLK>b[zLK>b[za<F$FoV'NDdTK-=#F3RTJ;dhT&UXd4K$Nwe.SX<^FrK:G.cJK@Fpc?OU]AQ#eZN_OAPAeKR+Q;]Ja+eZOKNVP4^l`%OOOOOOOOOOOON8e5SLeXPiO&N<eIR/OB@z@1Tp;ISKTp;ISK<VI*HXL/?mAfKs='Y2Ks='Y2`PFgDoUYK^dBKZ=NE.RkJ!d]SzUud.KJL2d|S?=(ErJ]Frc0JIH*c]O^^tQ^eZNkN}P;e?S!Q2][`|eZOUN^P&_9_ZOOOOOOOOOOOON-eGR2eXPhOCN8eSP|O6@F@dTQ;BSOTQ;BSO<7IKI6LJ?%BWKU;wVGKU;wVGa4H@DeT|HDc[L'=^DeRtIedSShVNc}KkHtd6Rw==E=JAFmc'J(HscnOf`QR;eZO'N`P(e8SMQ.^J`<eYOwNLOt`(^iOOOOOOOOOOOOM{eRPreXPlOLN3eXOiO2?tA9Sj;NTlSj;NTl<6IaI'Lq>IC>KE;>T6KE;>T6bUI^F6T:E.b<LU=QDkRzIZdOSPW@cdL=EcbzR:=9E2J<Fmc%J&I7cyOlb,S%eXO7N:O|e;S>Q._j_!eVP:N1Oba8]DOOOOOOOOOOOOMceTOJeWPvOSN*eVNlO'?%B7S.<#VrS.<#Vr<2ISI=MK=eD7K9;&RmK9;&RmcBJ<GOS]B1`DM&=5E2RiI^dSS,WIcgLqBba*Q[='EDJ<Fwc)J)J,d4OtcXSzeWOBN(OpeGRSQ(aB].eTPPMxOJbXZGOOOOOOOOOOOOMTeON4eWP{O[N%eTNENt=xCjRq<vX}Rq<vX}<%I7J+N+<nEcK3:~R;K3:~R;cjJOHJRv?R]wMU<pEiR[I]dURhWucZM:@!^cQ'<kEmJ8G\"c-J+K*dKOzd{T}eVO@MxOjeVQ+P{bkY}eQP^MaO1cpW~OOOOOOOOOOOOM`eKMKeXPkOrN6eVNNNk<lE`Rp=rZ_Rp=rZ_;|HsJsNf;{GNK?;$RgK?;$Rgd7JVIlR-=;YtN0<DFWREI_dYR:X=cPMn=aZgPF<GFMJMG*c6JHJXdHP%f\"U~eVO:MwOhe[OrP`c~WVeQPXM`N}dcUaOOOOOOOOOOOOMreFLqeYPNP$NReWNUNf;yGSS->d[mS->d[m;xHNKdO6;6IRKW;5S|KW;5S|d]JaK:Q4;aV^Nm;tG^R%IOdYQcXPcNN9<$W]O`;zGLJvG-cBJvI5d.P&fgVneVO0M|One[ODPWdqU(eSPKMnNse8SLOOOOOOOOOOOON'eCLQeYP8P/NieYNcNr;AI0SN?A]SSN?A]S;mHBL`OS:hKLK~;VUYK~;VUYdzK#LZPP:iSKOF;IHsQfI=dVQ,Y=c.Ne;!TWO0;RHXK*G0cGK+I0d1P%g+WNeVO$N&Oze[O5PTe>R}eUP@N#NleRQJOOOOOOOOOOOONCeFLVeZOvP@O*e[O+O&:xJ_Sr?c]pSr?c]p;dHAMOO[:LMIK~<+W/K~<+W/drJ_LTP,:FP]Of;'J+QLI$dQPhY^b~O\":RR(No;6IUKDG>cSKEH.ctP#g4WxeWNnN5P/eZO9PSePQVeWP8N5NieZOwOOOOOOOOOOOON_eFLOeZOSPAOKe[ONO1:]L+T@?e]cT@?e]c;aH<N/Ob:CO?K~<hXZK~<hXZdqJILuP#:DNlOt:vJiQ9HydPPSY_c!O':FP^Ni;+I|K^GFc]K^G~csP\"g5X3eXNaNQP=eZO7POeUPteWP4N7NieZO$OOOOOOOOOOOON~eELCeZO'P:Owe[OfN|:KMWTs?)[aTs?)[a;NHdO2Or:FP[K}=;YZK}=;YZd{JRM_O~:GN7Ot:uJnQ3HrdNPNYdb|O':DP(Nn;*J!KZG?cXK[HCd\"" },
   "sitdown": { n: 14, dur: 1.3, loop: false, yaw: 78, still: 0.8, curl: 0.3, trav: 0.000, once: [0.1,0.45],      // CMU 75_18 high sit: sitting down, 0.45 s, at its own speed; then held
     data: "OOg*OOe[O3OOOleXPgP]dVU~e[O]O6OJdQV9OOOOOOOOOOOOOvbCZieYNLO~PVeOM?Mo;QHlR\"<HX8R\"<HX8;4K%KZOT:ULWMn<&WZMn<&WZd#K\"HkO^:LQXO;;0IfQ9HZdFPyY=c0NL:bS%NT;1IiK,G)cDK0Hpd)OLfuNBe[O1O<OpeOQqPec;Y*e[O[OBOKc3YAOOOOOOOOOOOOP'`e^#eXN=OhPbeWP,NA<JFHQT<9X\"QT<9X\";EK2JYO$:}JIN(<'WbN(<'WbcoK#H6Ou:pS|O0;/IiQ0HxdQP}X[cONF;.U'NZ;+J!K5G2cKK8Hnd)OJfJM$e[O%O1O~e7SPPla0]He[O^O`O:a-]ROOOOOOOOOOOOP;^}_seWN(ONPveDRJO#=|CcQ#</WtQ#</Wt;VKIIhN9;fH-N7<+WnN7<+WncPJpGSP<;`VjN|;2IaQ$IDd`Q\"XJcWN/<&W`Nr;(J)K@G.cKKAH<cxOGe]Kce[NzO/P,dkUEPm^J`>e[OeODOJ^S`;OOOOOOOOOOOOPG]*aJeWN$O9P}d{TWOi?jADP_<9X0P_<9X0;XKYISMC<lEsN8<8X.N8<8X.c;JSG2Px=.YrNO;;IFP}IhdkQ9X!ciMc=SZOO<;+IxKTG9cTKSH/cwO@dNJ]eZN^O:PDdIVLPrZebAe[OiO2OZZxb:OOOOOOOOOOOOPWZ>bZeVM|N~Q*dJV=P?A9?uPv<JXRPv<JXR;oK%I0LK=vD2Mz<GXJMz<GXJblIoFWQj?4]jN$;RHgPnJ#drQDW!d0M-?[^8Ox;9IGKRGGcZKOH1cwO>c'IxeZNjO-P<dIVMPwXecKe[OcO=OVX}cEOOOOOOOOOOOOP|Y'c;eTMmNoQ=d#WCPfB>?#QL<GXAQL<GXA<#JMH~KI>sC*MO<EX=MO<EX=b>I9E~RKAb`6MJ;wGnPsJ-duQbV)dKL=B6`[Pf;UHXKUGFcZKPH*ctO/a<IJeXNUNUPadWUzQCW^cve[OAO4OnX#coOOOOOOOOOOOOQ6XYcNeSM[NuQKcxWVP}BY>nR3<-WRR3<-WR<-J*H~JV?QBVLo<:WrLo<:WrakHdEGSADpb@Lt<?G!Q-J&dqR-UOdWKcE?b[Qd;}GcK+G:cLJzHud%O'_MI'eTNZMsPjdtTxQWW$d-e[O-N{P.WlcxOOOOOOOOOOOOQ?YGc'eTM_O&QDdHV;PrBT>qS#;zVdS#;zVd<HIRH^I~?|B9L&<1WAL&<1WAa:H5DvT*H3ckL<<[FSQ`I~dkRrUxdAK@H`d&R@<AG$JkG9cDJSI<d(O\"]cHdeNNWM5Pte)T#QbWIc{eYNwNSPYX3ceOOOOOOOOOOOOQ<[;azeTMcO2Q?e0SOP/B2?*Sz<9W#Sz<9W#<IHdIHI`@0B1KI<?WFKI<?WFa0GaE+TRKgdaL!<`FUQuJ#diS5VId+K#L+dsRl<MFuJ_G>cCJDI<d%Nu[8HFeJNALzQ$e?RfQtXacDeUNlM|Q1YCc+OOOOOOOOOOOOQ(^=`GeUMnOMQ1eUP%OGA-?~TJ<uX6TJ<uX6;wHPKeI]?kB]K#<gX0K#<gX0a+F|EYU!NtduKh<PG\"QeJ+dmS-U$dUJaO(e'SE<GG<JaG0c>JKHGchNlZ3H0eKN@M!PqeRQ$Q}Zvb+eRNWMXQW[9axOOOOOOOOOOOOPq`I^=eWN-O^PseELXO%?HAjTI=iYuTI=iYu;UHiMNI|>dCwJv=WYeJv=WYeaIF7FsUMQ;dbKL<;G`QrJ9dpSQV>d)J;QFduSx<8G|JxG/cCJlGdcVNWZ5H#eTNPMwP?eQMLRE]b`heNNDM<Qu^F`6OOOOOOOOOOOOPTbLZVeYNFOYPVdTHwN_=bD/TC?2]\"TC?2]\";GH}NmJb=NERK&>u[lK&>u[lajEZHEVEQ4dFJ~<<GwR.JhdwS~VoclJ3QEdrT<<7H8KCG;cRKUFSc6NDZHGueXNdNWP)e5KBRC_{^ZeNNAM<Qn`7^FOOOOOOOOOOOOPUchX-eXN;OXP[cNF;N-<^F%TR@W^YTR@W^Y;4IcPYKj<MG(K4@&^;K4@&^;bdF!JRW%Pod3Jg<7H5QwK%e\"SpV+d)J4Q%duTX<7HJKZG3cSKdFqcGNCZHGxeZO'NcObdpIkQvb;Z^ePNFMSQMb9ZjOOOOOOOOOOOOPEd]UpeXN5OMPWbIDCN1;qGmTIBy`hTIBy`h;(J[QyL_;XH|KmB+`IKmB+`IcJF^LKW<Phd*JR<;H6Q{K%e\"S{Uxd-ItQ'dmTy<>HNKdG2cUKqFbcB" },
-  "dance": { n: 18, dur: 0.62, loop: true, yaw: 15, still: 0.33, curl: 0.2, trav: 0.000,      // CMU 93_08 xtra fancy charleston: 0.6 s of it at its own speed (arms swung out wide in turn, knees bending, a cross-step and a kick behind); the last third of the loop is blended back to its start; the card: both arms flung out, up on the toes
-    data: "OOegOOeQMAOOQ]eIQEQ#d7Vte>LMQRQhdLV#OOOOOOOOOOOOQ}cxWI_<LQ_<Q9eGQzPK;^H>Rx;PUJRx;PUJ<`IyGaJv;,L7Iz<CVVIz<CVVU+G\"<|ME=oZvHD<:JCQ]Fpc_SyM;e$R):SPKSb>%D?O@EEc&LeS-e-O_exNHeJLjNnR;e:R7P6ccX<e@LtQnQ(d)W:OOOOOOOOOOOOQ+d1W$]8M^a8PWeTQ!P!;wGUM0<YXaM0<YXaA%J6A!JE;=KyJ2<FVpJ2<FVpS8G-<KNy>l]IJ8;nIpID@u^OIjC&`XR*:XQ/SK=AEGNyFBcSLiRwe1OpfAMdeRMOO\"QSe8RvP9c?Y(e8LiRDPscoWwOOOOOOOOOOOOO}d)WHZVN/bJO0eTQ;R^<?G1I,>[ZQI,>[ZQIpEv=SI';|JZHT<VUqHT<VUqQRH-;lO+>I[{N`<GFLG]@}]bG@EXa<Qn:^R&R1<sErRLFJcCP=S1e<P+fGM5eXN6OcPce4SUOfc7Y8e!LwSxP,ctWtOOOOOOOOOOOOOld/W:Y:N;c3O+eVQ'WA=]GDH$?f[IH$?f[IM*CT>6G#=AHgF'<xS(F'<xS(P8K-:oO9=:Z3T\"?XB@Gz=sXDEFF=`[R':gRUO0<OF7Z5HvaMV}X$b?P<f$M!eZNkOvP,e7SNO6cOXgdkMNU%O<d+WBOOOOOOOOOOOOOldDV^X0NdchOdeZP9[v@$H1Jz?$[zJz?$[zO|B`>cE5?8FeC6>=NmC6>=NmPKO_:EP0<<X<U*CF?*Nu:JMnK6<MW_Rc:rRiOe<dEoVdH5b}UQQ{dYPEeuLyeTMwPLPue9S1N&c`X9dYN*UpNMd3W)OOOOOOOOOOOOO]dSV5WJOGd(Ope[OK^lAFHvRK>6[=RK>6[=QtCx=|E8@9E%AG@IJqAG@IJqU&PV;-PY;5UBSZDy=_PS;YHINX:EOwRT:~SZP+<zEEUVGNc)T*RjdrPdf,LseOOjQvNke9SBN%cnWxd7N!VtN5d8VwOOOOOOOOOOOOO)dLVGVbO6dCOBe[Oo^#@`HtYD?1XWYD?1XWL|D.=qE~@#DaAM@YJ1AM@YJ1WYNp;~P0:MQUP7C5>>O$:CO3Nj:lSeR!;9U%R9=jD?PxCfa~O/OOe[Ptf/LneJP;R5N-e'T/M~d!WOd0N%W)N6dCVVOOOOOOOOOOOONpdNV@UxO5d[O%e[Oy[B?[H.]/?mUr]/?mUrD{A}C-G:?&E(Bl?)KLBl?)KLY@LG=%OW:FN?LnC(>YT/;oU`UhDdaUQA;1T~VL>LE+G@Bz_GE6Jdb@PxedLheMP1QyN6dzTaMpd*W5d<NXVpN\"dUU|OOOOOOOOOOOOO,dYV!UhODdaOLe[O]Yg>lGV].?*Se].?*SeA1B?G8Hg=WFTDM=PN<DM=PN<Y_JL=_O/:NM:LMC->[Tp=2XWUa@o^FQE:xS|UT>5DyH&ESaXFJPbcTPfeOLdeQN^QTOqe'TBMOcwWXdVNsV&N\"dVUzOOOOOOOOOOOOO6diULU{P#dZOleZNqXO>aFFZc=oRQZc=oRQ@qDHE$Ib<]GwFH<IPLFH<IPLWfJZ<_PK:ENtOED*=cP$:gSIP);qW8Ql:sSMUd>&E>GgFLa{FBNjcSP_eaLieUNuQ,Oge/SyMocrWkdsNiU(NCdOV7OOOOOOOOOOOON~ddU_V;P$dPOKe[NyX.>fE|Y,<mQbY,<mQbC*GA@KId<MH@GV<*R6GV<*R6U(JI;hP]:RQrTzCV>xO0;7IMO+;5IVQ~:pS6U>=zE9HjEpb&G)QYciPWf\"L{ePNnQdOje<S8M}cmWydnNSU3NLdFVSOOOOOOOOOOOONodVV'VHO_dLO.e[OKX>?+ENX0<:PrX0<:PrDRIA>QI\"<cH?GO<2RVGO<2RVRtJr;0P.:rT$[#C+BoLn:UPOIn;USYRH:|SVRf=oDAO$DObRM#Rwe4PWf0M3e=NrS1OLe<S7MYcjWzdFN(VLN?d9VtOOOOOOOOOOOONwdUV+VLO]dKO?e[OGY*?uD|X\"<0OzX\"<0OzEMJ_=RHO<mHSFc<LR-Fc<LR-RyK);+Oj;AUq_nBSHrIE<XVc?\"HAZ[RV:vS,PD=LDPUIEvbCR}UHdNPPf*MRe(NIT0OneCRkLpcdWud6N&VwN&d0W+OOOOOOOOOOOOO'dUV-VZObdFOTe[O:Y_?|EDX^<JO:X^<JO:F}K`<RHe<cHYF)<aQPF)<aQPSaK5;6O4<5X._(@PLKFG>}Y&>=IBZ.RG:`QUR0=1E=QQF`cXOtQ>eTPTf>MZdxNbTqOCeDRhLScSX1dLN#V:N%czW]OOOOOOOOOOOOO`dJVOW`O8c}P&e[OTY/?KEbXy<XOtXy<XOtEKJG=ZI(<KH|FM<OQRFM<OQRT/J|;EN?=?Z5YC<vMXEi@'Z0?NI_]!RI:[Q+R@<tEvOwGMd%NQSMe6PPfhMke.N`SzONeHRJLycSX=dlM]U'NSchX/OOOOOOOOOOOOP#d+WAYdN2bzP(eXPZWL>TEdX.<<Q3X.<<Q3BgHz?|I?<&I|GX<(R1GX<(R1S0Jx;3Mq>.[KQw:[M1G@BN_\"DQL6b9R|:bPjRj<fFAMUFLcPLlOOeKP5fiN,eLN+QhP+eBRlN@cqWve/MASGOMcvWqOOOOOOOOOOOOPQcqWx[vM.aJP!ePQaTx=)F^Vo;qR,Vo;qR,@PHhB4Im;`JtH{;rSmH{;rSmSlIO;bN:><[dJ%;?L@O@DCbLPJI<daSq:nP%T.<RGGHgFMbDH[Hnc@OifAN`eLL}P6QDe:RxOrd2W1e>L~R.P^d9VvOOOOOOOOOOOOQBcqWk^XL[_}P_eJR\"R,<)GUTp;OSfTp;OSf=jH}F\"JF;>KnIs<)U`Is<)U`ToGr<RN*=jZxGf<3KhQ}FAcES>HKd&T.:tOFT`<_GHGTGFb?FOL'c=" },
+  "dance": { n: 24, dur: 0.67, loop: true, yaw: 55, still: 0.4, curl: 0.2, trav: 0.000, ground: true,      // CMU 90_30 russian dance (the squat-and-kick of a Cossack dance, arms flung out): frames 836 to 969, one whole cycle (a kick of each leg, 1.11 s), played 1.66 times faster so that the loop keeps within the page's wait (750 ms); the last part blended back to its start; the card: both arms out wide, one leg kicked forward; the lowest foot kept on the ground in every frame (ground: the capture hops between the kicks, which read as jumping)
+    data: "OOXgOOeBL+OORMbrEMQ}eBQleUNFPoPHeKR#OOOOOOOOOOOOP6dnIheNPlQ]NDeQM[QYVVd=;iT7UE;iT7UEPW@|_mCTSjaF`6Q;^N`6Q;^NDAD6^MLlNIeIL!C|arK,>kC?L9B_?#L=X/cPG%@4[EIx^M_@MHc9X~OYYzOQeCL?PJRgbtEXPCeXPKeXOLPeOMeZPIOOOOOOOOOOOOP1e'JbePPEQTN^eYO!SOWbcU?^W1[2?^W1[2R<?w^OClT9aJYdV7aeYdV7aeD6B1[HL&L}e3Kl@]_&NgCD>3OxI#;DK=WzcGH@=!VmX%b2Gc`5[4GXOZ[0OceIMNQZR=bTDsO4eYNSeWOjPxO6e[OFOOOOOOOOOOOOP-e?K|eQP2QSNdeXPSTnXCbxF'YZ`MF'YZ`MTx?p]ZD3SUatRzYFbqRzYFbqKM=UYyL,Moe<Lk?i^AS[Jn;=SWSo;5I_VzcEHJ?S[IT]D/>HQU=zCuOV]'OleHO7RLQCb\"CnN]eQMSeUOpQ1O1e[O.OOOOOOOOOOOOP*eMM$eQP%Q]NeeOQdVXX[b2K~Zoa~K~Zoa~U2>{[BCERmaOLtZ1bTLtZ1bTS.=nZNLeP;eINQ?}^mRRLn:hQ~TC;)GWT:cPH3Av^zTxAX@SR.<fF-OK]HOZe8PLSEPvazC_N)eMM@eOP'QkNye[O@OOOOOOOOOOOOP-eUM|eQOzQ_NfeFRRY=X9a%P[Zvb8P[Zvb8Sp=|ZMA$Qf_gH+YGa]H+YGa]Td>n[DMrSGe4PB>d]=PjL,:`P<Qj:OF/PXcHH2BZ_VU3B@?}TB@?AYO9]5O5drQ?ToPobDD=MBeLMseCP/RfNfeYP+OOOOOOOOOOOOP<eXNOeQOUQeO(eARv[qW:_jU\"ZZaYU\"ZZaYQn=TZG>dP;]>C[W^_|C[W^_|Qw=gZcO?UWdfQ>;qW(JY`ABFMZccFsEpM7c0I9AM_#T9B??`SwAA@IO.[HN]dCQ|V8PNc4EdLMeGO6e+PFT)N0ePQ?OOOOOOOOOOOOPJeWNPeOO0QtOJeCRm_aUX]sX^Z6`7X^Z6`7OW>\"[C<YN2Xs@9UX]n@9UX]nQ7=0YsPfV5dOQ7?1]mOjXYcUPBQQeQFCK$c#KA>b[[UjC8?LTw@5AzO-Z3M{d+Q~V{P&d&GPKWe3Q4diPrU>M.e7RmOOOOOOOOOOOOPJeUN+eNO&QtOZeIRBb(STZO],Y;^@],Y;^@MJ?8]r;aKzUw=PSXYl=PSXYlRa>Y[lQ%UBdgQRG=csOgbuYuPB^j`&G'J]c9Kl?A]ZUV>fD/SI;EJ?O;XrMYd(RsVbO%d&GQJrdpRod`Q6UVL?dqT6OOOOOOOOOOOOP<eTMoeOO)QsO_eQQdcFQkX__FX([k_FX([kJ|AU_e;DJ^Sh;rR'Vs;rR'VsSGAN_nO[S^e5PvNveVM*eKN:Mnd,W0F~M^chJNC~aPRb;=J-P&:QR\"O>WiM^c|S{VFNhc,ESJ;d^S.dmQMT~L&dYU!OOOOOOOOOOOOP#eVN&eSO7QFOWeSQKc_PFXC_{W%[i_{W%[iHeCH`L;HKVTl;1Q'U*;1Q'U*ScEGbWNRT`d|OxOje[LOeGNsM&c,Y3F}PTcmI?I-caPf:FOQNd;3U=OCW1M_cvTBV<NtbLDEIid]RBdvQfTNL$ddTXOOOOOOOOOOOOP$eVN)eVO*P|OgeQQ`c'O;YW_=U|^,_=U|^,F7D?_r<,K8Vk<*S/W$<*S/W$U^HicUN!Vhd<NlL[eHMTdpTtMS`i]pFSQKcSHXKKd&P#:aS+N%<7X(OLW>MOc^ToV`Nyb-CrIUd`Q]drQwTXL\"dvSeOOOOOOOOOOOOP9eMM'eUNqQ)P%eWPha|O&[D]pUt_X]pUt_XC_El_'=-L:YJ>'U4Z!>'U4Z!X'HQbPM-W#d*N7ICdaMqc}WPMV`'^_EqR#c-GqKecoP':ZR`Mw<$WVORX%M3cDTtW=O7b1CwIfdhQ4dmQ^TwLEe+RzOOOOOOOOOOOOPve8KkeMNHQjPWeYON`XPV^/ZlVh`nZlVh`nDLC/]]>'Mq[@@pWH]O@pWH]OX%Dr`]LXVOd6N#F,cDMZb;ZhM<]Ga(ECQRbxGkIMc6Q<:JO'Nr:}TSOTY'L{cSTHW6OMbBD3Jae$Pfd{PgT]M^eHQkOOOOOOOOOOOOQce'K1eEN)R?P{eWO2^ZS-_lW`XNakW`XNakI/>~[(>AO^[qDAY:_UDAY:_UR8>v]=LWVcd/M9B:`oN$_i_%M@W~cfE2P9bxHUF1b.R~;FI}Pb:FOTOKZ0L}d+SRV9Oib<D+LTeHOPe,O:T)OReZPIOOOOOOOOOOOORPd~K?e8MfS)Q9eUO_[7UIa$RDYwb_RDYwb_NX=8Z,=iQ!ZuIdYBb:IdYBb:H|=*WXM\"WMcvL.=jZQSW[ra.S7YObfEMPHc(I6DMaGSc>cCDRx=5EKO<[1M%dYQqUTQ'arCUNDeVN=e)MpS|Q5eUOCOOOOOOOOOOOORte#Kme.M`S^Q3eTP>X`Vwb$KzZ(bJKzZ(bJRY=iZV=vPi[.O_WhczO_WhczF(>+V{M1W]crK!>W[@P!Fr<5PgJ-;)F7QdcCI|C+`cROAZ?pR,@P@oO=[iLsdtPUT{QuaQC4O~eUMqe!LgSkRJeGNpOOOOOOOOOOOOS(e&L2e(MkS~P{eSPlUdW9c.EYY@`CEYY@`CSd?1]7>EO-[uU>U#d%U>U#d%E1>kW=L^UgdNJABE`8PrBd>eR?HJ;jFqSwc:KR?']2ORE_<lNaB!?8O=[mLJd{O*TiRrafCfQReON2drKxSsS8e<O\"OOOOOOOOOOOOS4e\"L\"e%M}T2PleUPYRPVed-?{Wj[2?{Wj[2R+@1^n?1Lz]`Y{R'baY{R'baEH>mW_L@RLe2JSDGalQyBN?#SQJD;EGGU#c6Ms;9UB[3`nHw`']BI;O?[@Ksd{METBSrb4DnRyeAO&daK+S|Sye0OgOOOOOOOOOOOOSGdvKZe!N/TIPeeWP1NvUadc<-UZU@<-UZU@Ns?v^g@'Jx^3^9OM`R^9OM`REh>cWpL@NUeCKDCJaBQdC{=xRwK];!GsTHcWI;A\"^WDV]|[UFhb9VtOLZDK8e!KeRxTGbvFAT4e(PIdUJESfTGe!PwOOOOOOOOOOOOS`dhK/dwN<ToPheXOKK@T=d^:iSHN@:iSHN@K_>x]$@WIN^4`bM^]z`bM^]zFH>JX'LIKde'L+@=^kP3EV<qQdOg:MH,RTd'F2JUbnLpdqTQOreYNWO[X|JddwJ=Q5Tzc@G]U,dcR(dZIvReTadkRCOOOOOOOOOOOOSUd^JYd~NXTXP^eWNYHfS+d3;tR%H%;tR%H%I)>eZ^@<I.]fbDLdZHbDLdZHGC>,XCLHKbe&KRAz`5K[?rAnM%Do=HGwRdc{F_Psc^T3djKpUtc)GgOcWfJxdsJ%PiTzbmFLUFdHS@dnJCR4T#ddScOOOOOOOOOOOOSpdQJ?e(N@T.Q/eLMJH*Rqd!=FRfE'=FRfE'FI@#Zb?nJ6]_bmL}YgbmL}YgGE?#Y{LIOReGJrGuc_K!<?GnLU?<B8HgUmcOE+Q/boUFdYLgWfbIGyOKWDLoe8KYP=S6bFDvU-dTS)e%K3QtS/dpSwOOOOOOOOOOOOR}dbJ?e6NuSUPVeNM:JCSUdX<qTAFm<qTAFmFk@F[K@ZKq_%b0NZ[&b0NZ[&F~@=[ML@Q\"e@KJIqdKJL<?H/M+A%@9JNXLb|DvKXbCQmdEV9U*drP,O4WrNoe@K|OmR`bPDvS^e%R2eALRQ9R#e/S2OOOOOOOOOOOOQcdkJ#eGOfRSOWeRMKNATjdx;+T:LZ;+T:LZJw?{^(B(Ny`ma8P6]Ba8P6]BG'@O[iLmO>eKL(FgcHJC<hG2Jf>OCsKxXqc+EhER`DN=az[BPjdEVP" },
   "talk": { n: 14, dur: 0.66, loop: true, yaw: 24, still: 0.47, curl: 0.12, trav: 0.000,      // CMU 18_08 conversation, explaining with the hands: 0.63 s round frame 1572, where one open hand is raised to the height of the chest; own speed; the last third blended back to the start
     data: "OOg:OOeZNWOOPGeTQ(R(eMOgeELHN]RZeBPuOOOOOOOOOOOOVQdAQ;dZKHTRSHe6PZ_G@cQndrKSSPdrKSSPKOO{e8=*E/PX;DU>R<;DU>R<SiT[dTMn:OQ,MD;_HRNLHOdGNtLCeEKl:hMpKk;@J@ItG`c>KLP$e7OPg:OPeZNjOaP3eUQ'R0eLOleDLENQRae?Q3OOOOOOOOOOOOVAdGQ<dYKXTcS9e:PQ_%@;QCduL4S{duL4S{JzOAe-=;DlOw;HURR6;HURR6SWSvdhMd:OQ\"MM;_HPNGHLdFNkL*eAKg:hMxKi;AJ>IvGQc8K_PYe8OSg9OPe[O!OdO}eVP|R.eLOqeELHN[R[e@Q,OOOOOOOOOOOOV@dFQHd[KUTXS>e9PL^[?qQ#dkLHTTdkLHTTJ:N[d{=NDIOY;SUjRQ;SUjRQSrS]dhM[:OPvMO;ZH[NHHDdCNpLJeFKc:gN=Kj;JIzIxGGc5KTOne9ORg9OOeZNzOtP#eVP|R(eLOueGLRNuRPeAQ3OOOOOOOOOOOOV<dGQLd[KUTWS?e9PJ^<?SPndRL3UDdRL3UDI=Mld]=aD,O@;dUnSD;dUnSDTHRGdpM]:OPzMO;[HWNFHBdBNgKje;Kd:fNDKl;JIzIqG`c=KSP@e7OSg:OMeZO$P$OxeVQ\"R&eMOyeGLONqRSe?QFOOOOOOOOOOOOV.dMQAd^KcTYS3e<PA]d?$PUd-KvVJd-KvVJH%LYd&>(CSNt<$UmTj<$UmTjU<PDdlMW:OPtMT;YHZNGHHdDNjL*eAKe:fNDKk;HJ#IoGXc9KPP9e7OPg;OJeZNoP/P+eUQ%Q|eMP!eKLjO?R5eBQNOOOOOOOOOOOOV0dMQ7d^KjTaS1e=P+[q>BP+cQKVWocQKVWoFJK(c(>_BjNA<aUhVl<aUhVlVqNPd;MY:OP}MT;ZHXNGH@dBNhKee;Kf:gN5Kl;CJ8IqGac=KMP2e6ORg:OIeYNsP;P&eVQ\"QzeNP'eNM$OEQzeDQ^OOOOOOOOOOOOV,dOQ0dcKnTNS.e=P&Ze=XO<bCJuYkbCJuYkD8IiaK?PAlM_=LU+X~=LU+X~X/KHcAMP:PPwM];YHZNIH>dANiKie;Kc:gN:Kl;BJ9IlGZc9KKP=e6OSg;OFeYNxPOO~eUQ(QseNP5eNM%O/Q|eBQpOOOOOOOOOOOOUwdWPvdjL\"T@S$e@O`Y6<hNU`vIi[Q`vIi[QB2Gq_#@X@kL`>HSb[5>HSb[5Y4GRaOMP:PPuMZ;XH]NEH>d@NcK_e9K`:gNEKk;BJ9IiG[c8K;Oce4OTg;OCeXNrPUP%eUQ.QkeNP>ePM:ODQeeCQ}OOOOOOOOOOOOUwdXPadkL*TAS#e@O?WV<&MW^iGi^$^iGi^$@)EeZ/Al?oKn?RQ5^6?RQ5^6ZPDD^cMJ:QPzM[;XH[NNH>dANtLNeFK^:gNCKk;@JDIeGSc4KEPAe4OUg;ODeXNqPYP&eUQ(QfeOPCeQM?O9QbeBR%OOOOOOOOOOOOUsd[PHdkL)T?S,e>NzUZ;ILx[XE7^L[XE7^L>~CLTzC4>sK)@HN+_7@HN+_7[(A:Y~MI:QPzM[;XH[NPH=dANzLxeLK[:hNDKk;@JBIjGQc5KGP/e5ORg<OCeWNkPgP+eUQ+QheNPDeQMCOEQZeCR)OOOOOOOOOOOOUld_P5dmL2T;S(e>NdSL:wLnYbBH]YYbBH]Y>nBQOKDW>&J`ARJ6_KARJ6_K])?`U[MJ:QPzM_;YHYNPHBdCNwLieJK^:hN9Kl;<JRIlGGc1K>Oee5OTg;ODeXN|PSOzeVQ$QueMP:ePM9O6QfeBR&OOOOOOOOOOOOUnd]PLdmL.T:S)e>NvTj;)M|[BBG[*[BBG[*>aBcP!C#>vKO@=JJ^<@=JJ^<]W@2UvMV:OPzMK;YH_N]HHdEO9NNeYK^:gNHKk;BJ;IoGKc4KRPBe7OUg;OGeZNtP#P(eVPxQzeNP\"eLL|NpR'eBQaOOOOOOOOOOOOU|dTQ$deK|TRS1e=ORY*<`Ou`PEJXy`PEJXy@HGK[y?oAMM?=9NyZ1=9NyZ1[KE-^PMW:OPxMJ;WHdNTHGdEO&M?eQK^:gN?Ki;DJ2IrGOc6KJOje7OVg9OJe[NrONP.eVPxR$eMOleHL^NiRFeAQBOOOOOOOOOOOOV7dIQOd`KaTQS6e;PG^%?GQZcnIeUncnIeUnHTMldD=TD@OP;mSnUq;mSnUqV*PVdSMd:OQ$M?;ZHaNOHKdFO&MgeTKa:gN8Kh;GJ(IqGVc9KRP5e7" },
   "stand": { n: 2, dur: 1, loop: false, yaw: -20, still: 0, curl: 0.2, trav: 0.000,      // CMU 13_42, standing still before a jump, made the same on both sides; arms and feet set to an easy stance
@@ -1481,19 +1490,27 @@ const STYLE = {
   side:  { v: 0.1, top: 0.1, quiff: 0.14, at: SHORT.map(q => [-q[0], q[1]]).reverse(), flip: -1 },
   crop:  { v: 0.05, top: 0.02, quiff: 0, at: TIGHT },
   kid:   { v: 0.13, top: 0.12, quiff: 0.2, at: SHORT },
-  pony:  { v: 0.06, top: 0.05, quiff: 0.04, at: TIGHT, tail: { a: [0, 0.34, -0.93], len: 1.05, r: [0.25, 0.12] } },
+  pony:  { v: 0.07, top: 0.05, quiff: 0.04, ears: false, at: [[-180, -40], [-140, -36], [-112, -34], [-97, -32], [-86, -30], [-75, -4], [-62, 22], [-36, 38], [0, 42], [36, 38], [62, 22], [75, -4], [86, -30], [97, -32], [112, -34], [140, -36], [180, -40]], tail: { a: [0.36, 0.5, -0.8], len: 1.4, r: [0.3, 0.14] },
+    mass: [{ a: [0.78, 0.3, 0.26], drop: 0.4, r: [0.1, 0.4, 0.12], fwd: 1, lock: [[-0.02, 0, 0.08, 0.08], [0.04, 0.4, 0.07, 0.14], [0.02, 0.8, 0.05, 0.08], [-0.04, 1.0, 0.025, 0.025]] }, { a: [-0.78, 0.3, 0.26], drop: 0.4, r: [0.1, 0.4, 0.12], fwd: 1, lock: [[0.02, 0, 0.08, 0.08], [-0.04, 0.4, 0.07, 0.14], [-0.02, 0.8, 0.05, 0.08], [0.04, 1.0, 0.025, 0.025]] }] },      // (and a lock left loose before each ear, down to the jaw)      // swept back over the ears; tied high at the back and a little to one side, so it shows beside the head from the front
   long:  { v: 0.09, top: 0.05, quiff: 0, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.98, r: [0.9, 1.32, 0.5] }, { a: [0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }, { a: [-0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }] },
-  loose: { v: 0.1, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.62, r: [0.93, 0.96, 0.52] }, { a: [0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }, { a: [-0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }] },
+  loose: { v: 0.11, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.6, r: [0.97, 0.94, 0.52] }, { a: [0.8, 0.1, -0.06], drop: 0.6, r: [0.2, 0.7, 0.3], fwd: 1, lock: [[0, 0, 0.14, 0.1], [0.03, 0.6, 0.16, 0.2], [0.07, 1.14, 0.2, 0.07]] },
+    { a: [-0.8, 0.1, -0.06], drop: 0.6, r: [0.2, 0.7, 0.3], fwd: 1, lock: [[0, 0, 0.14, 0.1], [-0.03, 0.6, 0.16, 0.2], [-0.07, 1.14, 0.2, 0.07]] }] },      // to the shoulder, falling past the ears as one curtain beside the face (the learner as a woman: framing the face, read as a woman from the front at 80 px)
   wavy:  { v: 0.12, top: 0.06, quiff: 0.04, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.8, r: [1.02, 1.12, 0.56] }, { a: [0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }, { a: [-0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }] },
+  sylvie: { v: 0.1, top: 0.06, quiff: 0.06, at: [[-180, -52], [-112, -52], [-84, -46], [-68, -22], [-56, 6], [-36, 22], [-10, 28], [20, 38], [46, 26], [62, 2], [74, -30], [88, -48], [112, -52], [180, -52]], ears: false,      // long and straight, a side parting, the forehead framed (Sylvie)
+    mass: [{ a: [0, -0.1, -0.3], drop: 1.0, r: [0.9, 1.34, 0.5] }, { a: [0.76, -0.2, -0.06], drop: 0.66, r: [0.19, 0.92, 0.27] }, { a: [-0.76, -0.2, -0.06], drop: 0.66, r: [0.19, 0.92, 0.27] }] },
   tucked: { v: 0.1, top: 0.06, quiff: 0.05, at: [[-180, -52], [-128, -50], [-108, -34], [-97, -2], [-86, -6], [-75, 4], [-60, 16], [-36, 30], [-10, 34], [20, 42], [46, 30], [62, 14], [75, 4], [86, -6], [97, -2], [108, -34], [128, -50], [180, -52]],      // to the shoulder, behind the ears (the teacher on the stage)
     mass: [{ a: [0, -0.1, -0.36], drop: 0.6, r: [0.97, 0.98, 0.5] }] },
-  bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.34, r: [0.97, 0.74, 0.62] }, { a: [0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }, { a: [-0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }] },
+  pixie: { v: 0.12, top: 0.08, quiff: 0.12, ears: false, at: [[-180, -44], [-140, -40], [-112, -36], [-97, -26], [-86, -20], [-75, 0], [-62, 16], [-40, 22], [-12, 26], [18, 34], [45, 30], [62, 16], [75, 0], [86, -20], [97, -26], [112, -36], [140, -40], [180, -44]],      // a woman's short cut: soft and full, over the tops of the ears, a little longer at the nape, a wisp before each ear
+    mass: [{ a: [0, -0.2, -0.5], drop: 0.12, r: [0.62, 0.36, 0.36] }, { a: [0.8, 0.14, 0.24], drop: 0.3, r: [0.1, 0.3, 0.12], fwd: 1, lock: [[-0.02, 0, 0.09, 0.08], [0.02, 0.32, 0.07, 0.12], [-0.02, 0.56, 0.035, 0.035]] }, { a: [-0.8, 0.14, 0.24], drop: 0.3, r: [0.1, 0.3, 0.12], fwd: 1, lock: [[0.02, 0, 0.09, 0.08], [-0.02, 0.32, 0.07, 0.12], [0.02, 0.56, 0.035, 0.035]] }] },
+  bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.36, r: [0.95, 0.74, 0.6] }, { a: [0.82, 0.1, -0.02], drop: 0.4, r: [0.2, 0.5, 0.3], fwd: 1, lock: [[0, 0, 0.13, 0.1], [-0.02, 0.5, 0.14, 0.16], [-0.12, 0.92, 0.13, 0.07]] },
+    { a: [-0.82, 0.1, -0.02], drop: 0.4, r: [0.2, 0.5, 0.3], fwd: 1, lock: [[0, 0, 0.13, 0.1], [0.02, 0.5, 0.14, 0.16], [0.12, 0.92, 0.13, 0.07]] }] },      // to the jaw, straight, its ends a little in: one curtain from the crown (never ear-muffs)
   scarf: { v: 0.07, top: 0.03, quiff: 0, cloth: true, ears: false, at: [[-180, -62], [-100, -62], [-72, -50], [-58, -12], [-46, 20], [-24, 34], [0, 38], [24, 34], [46, 20], [58, -12], [72, -50], [100, -62], [180, -62]],
     mass: [{ a: [0, -0.2, -0.3], drop: 0.72, r: [0.92, 0.98, 0.52] }, { a: [0, -0.88, 0.06], drop: 0.42, r: [0.84, 0.46, 0.78] }] },
   bald:  { v: 0.02, top: 0, quiff: 0, at: [[-180, -30], [-120, -24], [-97, 6], [-80, 10], [-60, 40], [0, 88], [60, 40], [80, 10], [97, 6], [120, -24], [180, -30]] }
 };
-const HAIR_OF = { you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "tucked", longM: "loose",
-  julie: "long", long: "long", xlong: "long", klong: "long", wavy: "wavy", curlyF: "wavy", bob: "bob", kbob: "bob", kmid: "bob", kpig: "bob", pig: "bob", bald: "bald" };
+STYLE.pixieS = Object.assign({}, STYLE.pixie, { at: STYLE.pixie.at.map(q => [-q[0], q[1]]).reverse(), flip: -1 });      // (the same, parted on the other side: the avatar's "side-parted" on a woman)
+const HAIR_OF = { youF: "loose", you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "tucked", longM: "loose",
+  julie: "sylvie", long: "long", xlong: "long", klong: "long", wavy: "wavy", curlyF: "wavy", bob: "bob", kbob: "bob", kmid: "bob", kpig: "bob", pig: "bob", bald: "bald" };
 /* the edge of the hair at an angle round the head: a smooth curve through the points (Catmull-Rom) */
 function lineAt(L, az){ const a = L.at, n = a.length; let i = 1; while (i < n - 1 && az > a[i][0]) i++;
   const p0 = a[Math.max(0, i - 2)], p1 = a[i - 1], p2 = a[i], p3 = a[Math.min(n - 1, i + 1)], u = Math.max(0, Math.min(1, (az - p1[0]) / (p2[0] - p1[0]))), m1 = (p2[1] - p0[1]) / Math.max(1, p2[0] - p0[0]) * (p2[0] - p1[0]), m2 = (p3[1] - p1[1]) / Math.max(1, p3[0] - p1[0]) * (p2[0] - p1[0]), u2 = u * u, u3 = u2 * u;
@@ -1525,11 +1542,16 @@ function head(J, B, cam, c, out, zb){
   const hair = patches(cr0, crR, -180, 180, 44, 6, az => lineAt(L, az), () => 90, (u, t) => { const up = Math.max(0, u[1]), back = Math.max(L.mass ? 0 : sm((0.25 - u[2]) / 0.5), big ? sm((Math.abs(u[0]) - 0.5) / 0.3) : 0);      // (large: thin at its edge at the temples too, so that it meets the head there)
     return 1 + (L.v * (1 - back * (1 - sm(t * 2.6))) + L.top * up * up + L.quiff * Math.max(0, u[2]) * up * (1 + 0.5 * fl * u[0])); });
   /* a beard: the same, on the jaw, from under the nose down and back to the ears */
-  const beard = c.beard ? patches(jw0, jwR, -112, 112, 24, 4, () => -90, az => { const t = Math.min(1, Math.abs(az) / 100); return -4 + 34 * t * t; }, () => 1.07) : "";
+  const BEARD = { at: [[-112, 28], [-100, 20], [-85, 6], [-65, -6], [-45, -14], [-26, -16], [-14, -9], [0, -7], [14, -9], [26, -16], [45, -14], [65, -6], [85, 6], [100, 20], [112, 28]] };      // a trimmed full beard: the moustache, the cheek line rising from the corners of the mouth to the sideburns
+  const beard = c.beard ? patches(jw0, jwR, -112, 112, 28, 4, () => -90, az => lineAt(BEARD, az), (u, t) => 1.035 + 0.025 * Math.min(1, t * 3)) : "";
   /* hair that hangs: each mass hangs straight down from the head (it keeps to the upright when the head tilts), turned with the head */
   const hx = nrm([Bh.x[0], 0, Bh.x[2]]), hz = [-hx[2], 0, hx[0]], extra = [];
-  (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
-    extra.push({ id: "hm" + i, z: m.a[2] < 0 ? (vl[2] > 0.3 ? Math.min(q[2] - 0.004, cam.pt(J.chest)[2] - 0.006) : q[2] - 0.004) : q[2] + 0.033 /* hair down the back: behind the neck and the shoulders of a head that faces the viewer */, mat: "hm" + i, layers: [[ellPath(E, 0, 0, 0), hr.n[1]], [ellPath(E, -me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
+  (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E0 = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
+    /* a lock (m.lock: [[across, down, half-width, half-height], ...] from where it hangs, across in the head's own sideways direction, down
+       straight down): the outline round those ellipses, so hair can fall as one curtain beside the face and end bluntly */
+    let E = E0; if (m.lock){ E = { lock: m.lock.map(k => { const Ek = ellipse(cam.pt(add(add(top, mul(hx, k[0] * hh)), [0, -k[1] * hh, 0])), [cam.lin(mul(hx, k[2] * hh)), cam.lin([0, k[3] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]); Ek.n = 16; return Ek; }) }; }
+    const shape = (g, dx, dy) => E.lock ? hullOf(E.lock, g, dx, dy) : ellPath(E, g, dx, dy);
+    extra.push({ id: "hm" + i, z: m.fwd ? (vl[2] > 0.3 ? z - 0.001 : q[2] - 0.004) /* (hair to the shoulder: in front of the jumper, behind the face) */ : m.a[2] < 0 ? (vl[2] > 0.3 ? Math.min(q[2] - 0.004, cam.pt(J.chest)[2] - 0.006) : q[2] - 0.004) : q[2] + 0.033 /* hair down the back: behind the neck and the shoulders of a head that faces the viewer */, mat: "hm" + i, layers: [[shape(0, 0, 0), hr.n[1]], [shape(-me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
   if (L.tail){ const t = L.tail, A = at(o, Bh, mul(t.a, hh)), Z = add(add(A, [0, -t.len * hh, 0]), mul(Bh.z, -0.22 * hh)), M = [(A[0] + Z[0]) / 2 - Bh.z[0] * 0.14 * hh, (A[1] + Z[1]) / 2, (A[2] + Z[2]) / 2 - Bh.z[2] * 0.14 * hh];
     const Es = [disc(cam.pt(A), t.r[0] * px), disc(cam.pt(M), t.r[0] * 0.92 * px), disc(cam.pt(Z), t.r[1] * px)]; Es.forEach(E => E.n = 14); const te = 0.05 * px, zq = cam.pt(M)[2];
     extra.push({ id: "tail", z: zq - 0.004, mat: "tail", layers: [[hullOf(Es, 0, 0, 0), hr.n[1]], [hullOf(Es, -te, LIGHT[0] * te, LIGHT[1] * te), hr.n[0]]] });
@@ -1545,26 +1567,31 @@ function head(J, B, cam, c, out, zb){
   const feat = (id, p, az, inner, min) => { const a = az * Math.PI / 180, U = cam.lin(at([0, 0, 0], Bh, [Math.cos(a), 0, -Math.sin(a)])), Vv = cam.lin(Bh.y), q = cam.pt(at(o, Bh, mul(p, hh)));
     const facing = dot(at([0, 0, 0], Bh, [Math.sin(a), 0, Math.cos(a)]), cam.view);
     return { id, tag: "g", clip: "skc", m: [U[0] * hh, U[1] * hh, -Vv[0] * hh, -Vv[1] * hh, q[0], q[1]].map(x => Math.round(x * 1000) / 1000), inner, hide: facing < (min == null ? 0.42 : min) }; };
-  const iris = c.iris || "#4a3524", lid = "#2a1c15";
+  const iris = c.iris || "#4a3524", lid = "#2a1c15", fine = c.live || big;          // fine: the face as the teacher's is drawn (lashes, a firm lid line, a tapered brow) wherever a face is large
   /* (c.live: the teacher's eyes: the irises in a group that can look down, the upper lid in a group that comes down with them, and a shut lid for a blink) */
   const LV = c.live ? ` style="transition:transform .25s ease-in-out"` : "";
-  const eyeArt0 = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><g class="pup"${LV}><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g></g>
-      <g class="lid"${LV}>${c.live ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${c.live ? "#2e1f18" : lid}" stroke-width="${c.live ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (c.live ? `<path d="M${0.13 * sg} -.084Q${0.2 * sg} -.064 ${0.212 * sg} -.008" stroke="#2e1f18" stroke-width=".044" fill="none" stroke-linecap="round"/><path d="M${0.2 * sg} -.03q${0.04 * sg} -.008 ${0.052 * sg} -.034M${0.165 * sg} -.064q${0.03 * sg} -.014 ${0.034 * sg} -.04" stroke="${lid}" stroke-width=".017" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity="${c.live ? 0.4 : 0.8}"/>`
-      + (c.live ? `<g class="blk" visibility="hidden"><path d="M-.2 0Q0 -.19 .2 -.01Q0 .15 -.2 0Z" fill="${sk.n[0]}"/><path d="M-.18 .012Q0 .1 .18 .004" stroke="${lid}" stroke-width=".04" fill="none" stroke-linecap="round"/></g>` : "")
+  /* (the close-ups: c.eyeMode = { lid: how far the upper lids come down, pup: how far the eyes look down, squint: 0 .. 1 the lower lids raised
+     by a broad smile, shut: the eyes closed }, in head heights) */
+  const EM = big && c.eyeMode || null, emT = v => v ? ` transform="translate(0 ${f2(v * 1000) / 1000})"` : "";
+  const eyeArt0 = sg => big ? `<path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z" fill="#fbf7f1"/><clipPath id="${c.u}e${sg}"><path d="M-.18 0Q0 -.166 .18 -.01Q0 .13 -.18 0Z"/></clipPath><g clip-path="url(#${c.u}e${sg})"><g class="pup"${LV}${emT(EM && EM.pup)}><circle cy="-.012" r=".092" fill="${iris}"/><circle cy="-.012" r=".04" fill="#120d0a"/><circle cx=".03" cy="-.043" r=".022" fill="#fff"/></g>${EM && EM.squint ? (y0 => `<path d="M-.25 .2L-.25 ${f2(y0 * 100) / 100}Q0 ${f2((y0 - 0.09 * EM.squint) * 100) / 100} .25 ${f2((y0 - 0.02) * 100) / 100}L.25 .2Z" fill="${sk.n[0]}"/>`)(0.08 - 0.075 * EM.squint) : ""}</g>
+      <g class="lid"${LV}${emT(EM && EM.lid)}>${c.live || EM ? `<path d="M-.205 .004Q0 -.188 .205 -.01Q.11 -.215 0 -.22Q-.11 -.215 -.205 .004Z" fill="${sk.n[0]}"/>` : ""}<path d="M-.19 0Q0 -.177 .19 -.013" stroke="${fine ? "#2e1f18" : lid}" stroke-width="${fine ? 0.04 : c.fem ? 0.05 : 0.038}" fill="none" stroke-linecap="round"/>` + (c.fem ? (fine ? `<path d="M${0.13 * sg} -.084Q${0.2 * sg} -.064 ${0.212 * sg} -.008" stroke="#2e1f18" stroke-width=".044" fill="none" stroke-linecap="round"/><path d="M${0.2 * sg} -.03q${0.04 * sg} -.008 ${0.052 * sg} -.034M${0.165 * sg} -.064q${0.03 * sg} -.014 ${0.034 * sg} -.04" stroke="${lid}" stroke-width=".017" fill="none" stroke-linecap="round"/>` : `<path d="M${0.19 * sg} -.016l${0.075 * sg} -.057M${0.14 * sg} -.068l${0.06 * sg} -.066" stroke="${lid}" stroke-width=".028" fill="none" stroke-linecap="round"/>`) : "") + `</g><path d="M-.14 .083Q0 .146 .14 .078" stroke="${sk.n[1]}" stroke-width=".022" fill="none" opacity="${fine ? 0.4 : 0.8}"/>`
+      + (EM && EM.squint ? `<path d="M-.15 ${f2((0.13 - 0.07 * EM.squint) * 100) / 100}Q0 ${f2((0.08 - 0.09 * EM.squint) * 100) / 100} .15 ${f2((0.12 - 0.07 * EM.squint) * 100) / 100}" stroke="${sk.n[1]}" stroke-width=".026" fill="none" stroke-linecap="round" opacity=".75"/>` : "")
+      + (c.live || (EM && EM.shut) ? `<g class="blk" visibility="${EM && EM.shut ? "visible" : "hidden"}"><path d="M-.21 .01Q0 -.2 .21 -.01Q0 .16 -.21 .01Z" fill="${sk.n[0]}"/><path d="M-.18 .012Q0 .1 .18 .004" stroke="${lid}" stroke-width=".04" fill="none" stroke-linecap="round"/>${EM && EM.shut && c.fem ? `<path d="M-.1 .05l-.025 .05M0 .06v.055M.1 .05l.025 .05" stroke="${lid}" stroke-width=".018" fill="none" stroke-linecap="round"/>` : ""}</g>` : "")
     : `<ellipse rx=".1" ry=".135" fill="${c.ink}"/><circle cx="-.03" cy="-.05" r=".036" fill="#fff" opacity=".9"/>` + (c.fem ? `<path d="M${0.06 * sg} -.1Q${0.14 * sg} -.15 ${0.19 * sg} -.2" stroke="${c.ink}" stroke-width=".05" fill="none" stroke-linecap="round"/>` : "");
-  const eyeArt = sg => c.live ? `<g transform="scale(.9 .95)">${eyeArt0(sg)}</g>` : eyeArt0(sg);      // (the teacher's eyes a little narrower than the cards' faces: calm, not wide)
-  const browArt = sg => c.live ? `<path d="M${0.24 * sg} .055Q${0.08 * sg} -.13 ${-0.19 * sg} -.04Q${-0.225 * sg} -.015 ${-0.2 * sg} .008Q${0.07 * sg} -.065 ${0.24 * sg} .055Z" fill="${mixc(c.browC, "#1d1410", 0.25)}"/>` : big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
+  const eyeArt = sg => EM && EM.shut ? `<g transform="scale(.9 .95)"><path d="M-.2 -.01Q0 .11 .2 -.02" stroke="#2e1f18" stroke-width=".045" fill="none" stroke-linecap="round"/><path d="M-.1 .05l-.03 .055M0 .06v.06M.1 .045l.03 .055" stroke="#2e1f18" stroke-width="${c.fem ? 0.02 : 0.014}" fill="none" stroke-linecap="round" opacity="${c.fem ? 1 : 0.7}"/></g>` : fine ? `<g transform="scale(.9 .95)">${eyeArt0(sg)}</g>` : eyeArt0(sg);      // (the teacher's eyes a little narrower than the cards' faces: calm, not wide)
+  const browArt = sg => fine && (c.fem || c.kid) ? `<path d="M${0.24 * sg} .055Q${0.08 * sg} -.13 ${-0.19 * sg} -.04Q${-0.225 * sg} -.015 ${-0.2 * sg} .008Q${0.07 * sg} -.065 ${0.24 * sg} .055Z" fill="${mixc(c.browC, "#1d1410", 0.25)}"/>`
+    : fine ? `<path d="M${0.25 * sg} .05Q${0.06 * sg} -.11 ${-0.2 * sg} -.065Q${-0.24 * sg} -.02 ${-0.21 * sg} .035Q${0.05 * sg} -.025 ${0.25 * sg} .05Z" fill="${mixc(c.browC, "#1d1410", 0.2)}"/>`      /* (a man's: heavier, flatter) */ : big ? `<path d="M${0.21 * sg} .03q${-0.21 * sg} -.13 ${-0.42 * sg} -.04q${0.21 * sg} -.04 ${0.42 * sg} .08z" fill="${c.browC}"/>` : `<path d="M${0.15 * sg} .03Q${0.02 * sg} -.07 ${-0.15 * sg} -.01" stroke="${c.browC}" stroke-width=".07" fill="none" stroke-linecap="round"/>`;
   const sm2 = c.smile || 0, my = f2(-0.05 - 0.035 * sm2), mouthArt = c.mouthInner ? c.mouthInner(px) : big && c.speaks ? `<ellipse cy=".05" rx=".2" ry=".13" fill="#5a2326"/><path d="M-.2 .05A.2 .13 0 0 1 .2 .05" stroke="${c.lip}" stroke-width=".05" fill="none"/><path d="M-.2 .05A.2 .13 0 0 0 .2 .05" stroke="${c.lip}" stroke-width=".06" fill="none"/>` : big ? `<path d="M-.27 ${my}Q0 ${f2(0.135 + 0.07 * sm2)} .27 ${my}Q0 ${f2(0.03 + 0.03 * sm2)} -.27 ${my}Z" fill="${c.lip}"/>`
     : c.speaks ? `<ellipse cy=".04" rx=".15" ry=".12" fill="#5a2326"/><path d="M-.15 .04A.15 .12 0 0 1 .15 .04" stroke="${c.lipC}" stroke-width=".05" fill="none"/>`
     : `<path d="M-.2 ${f2(-0.03 - 0.03 * sm2)}Q0 ${f2(0.13 + 0.06 * sm2)} .2 ${f2(-0.03 - 0.03 * sm2)}" stroke="${c.lipC}" stroke-width="${c.fem ? 0.09 : 0.075}" fill="none" stroke-linecap="round"/>`;
   const noseArt = `<path d="M-.05 -.2Q-.09 .03 -.11 .15Q-.07 .2 -.01 .19" stroke="${sk.n[1]}" stroke-width=".034" fill="none" opacity=".75" stroke-linecap="round"/><ellipse cx="-.078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/><ellipse cx=".078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/>`;
   const nb = cam.pt(at(o, Bh, [0, -0.2 * hh, 0.74 * hh])), nt = cam.pt(at(o, Bh, [0, -0.38 * hh, 0.83 * hh])), nr = 0.075 * px, side = Math.abs(vl[0]) > 0.5;
   const parts = [];
-  parts.push({ id: "earF", z: z - 0.02, mat: "earF", layers: [[farEars, sk.f[0]]] });
+  if (L.ears !== false) parts.push({ id: "earF", z: z - 0.02, mat: "earF", layers: [[farEars, sk.f[0]]] });      // (hair that covers the ears covers the far one too)
   parts.push({ id: "skull", z, mat: "skin", layers: [[skullD, sk.n[2]], [hullOf(skull, -rim / 2, -LIGHT[0] * rim / 2, -LIGHT[1] * rim / 2), sk.n[1]], [hullOf(skull, -e, LIGHT[0] * (e - rim), LIGHT[1] * (e - rim)), sk.n[0]]], cast: (dx, dy) => hullOf(skull, 0, dx, dy) });
   /* the nose stands out of the face: seen from the front it is the colour of the face (its line and nostrils are drawn on it); from the side it is the outline */
   parts.push({ id: "nose", z: z + 0.001, mat: "nose", layers: side ? [[capsule(nb[0], nb[1] + 0.02 * px, nr * 0.6, nt[0] + 0.02 * px, nt[1] + 0.03 * px, nr), sk.n[1]], [capsule(nb[0], nb[1], nr * 0.6, nt[0], nt[1], nr), sk.n[0]]] : [[capsule(nb[0], nb[1], nr * 0.6, nt[0], nt[1], nr), sk.n[0]]] });
-  if (beard) parts.push({ id: "beard", z: z + 0.0015, mat: "beard", layers: [[beard, hr.n[0]]] });
+  if (beard) parts.push({ id: "beard", z: z + 0.0015, mat: "beard", layers: [[beard, big ? hr.gh : hr.n[0]]] });
   parts.push({ id: "hair", z: z + 0.002, mat: "hair", layers: [[hair, hr.gh]] });
   for (const x of extra) parts.push(x);
   if (L.ears !== false) nearEars.forEach((x, i) => parts.push({ id: "earN" + i, z: z + 0.003, mat: "ear", layers: [[x.d, sk.n[1]], [x.d2, sk.n[0]]] }));
@@ -1658,12 +1685,21 @@ function frame(k, B, cam, c, floor, o){
   const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
   const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = doBody ? trunkFn(0, 0, 0) : "";
+  const trunkL = form(trunkFn, T, 0.03 * S);
   if (doBody){
-  parts.push({ id: "trunk", z: zt, mat: "top", layers: form(trunkFn, T, 0.03 * S) });
+  parts.push({ id: "trunk", z: zt, mat: "top", layers: trunkL });
+  /* the tops of the shoulders face the light from above: lit on both sides (the trunk's shade begins under them), so that the sleeve's top,
+     lit as well, lies on the shoulder without a ring */
+  parts.push({ id: "trunkS", z: zt + 0.0001, mat: "top", layers: [[ellPath(EsL, 0, 0, 0) + ellPath(EsR, 0, 0, 0), T.n[0]]] });
   /* its ribbed hem: a band that follows the lower edge (the lower half of the ring, and the same line again a band's width higher) */
   const band = (E, w) => { const ct = Math.cos(E.th), st = Math.sin(E.th), lo = [], hi = []; for (let i = 0; i <= 14; i++){ const t = i / 14 * Math.PI, x = (E.a + 0.4) * Math.cos(t), y = (E.b + 0.4) * Math.sin(t), X = E.c[0] + x * ct - y * st, Y = E.c[1] + x * st + y * ct; lo.push([X, Y]); hi.push([X, Y - w]); }
     return poly(lo.concat(hi.reverse())); };
   parts.push({ id: "rib", z: zt + 0.0003, mat: "rib", layers: [[band(Ehm, 0.03 * S), T.rib]] });
+  if (c.fem && !c.kid && B.chest[0] * S > 10 && dot(J.Bc.z, cam.view) > 0.5){      // (large, and the chest toward the viewer: see wearer())
+    const Bc = J.Bc, on = (x, y, zk) => P(at(J.chest, Bc, [x, y, B.chest[2] * zk])), cv = on(0, B.chest[1] * 0.42, 0.95), cs0 = on(0, -B.chest[1] * 0.05, 0.9), cs1 = P(lerp(J.root, J.chest, 0.15));
+    const Ev = ellipse(cv, [cam.lin(mul(Bc.x, B.chest[0] * 1.05)), cam.lin(mul(Bc.y, B.chest[1] * 0.6)), [0, 0, 0]]), wS = B.chest[0] * S * 1.3;
+    parts.push({ id: "chV", z: zt + 0.00031, tag: "clip", clip: trunkD, d: ellPath(Ev, 0, 0, 0), fill: `url(#${c.u}cv)` });
+    parts.push({ id: "chS", z: zt + 0.00032, tag: "clip", clip: trunkD, d: poly([[cs0[0] - wS, cs0[1]], [cs0[0] + wS, cs0[1]], [cs1[0] + wS, cs1[1]], [cs1[0] - wS, cs1[1]]]), fill: `url(#${c.u}cs)` }); }
   /* a name tag on the chest: it lies on the chest and turns with it (it is gone when the chest has turned away) */
   if (c.tag){ const Bc = J.Bc, U = cam.lin(Bc.x), Vv = cam.lin(Bc.y), TA = c.tagAt || [0, 0.02], q = P(at(J.chest, Bc, [TA[0], TA[1], B.chest[2] * 0.96 * Math.sqrt(Math.max(0.2, 1 - (TA[0] / B.chest[0]) ** 2))])), w = c.tagBox ? c.tagBox[0] : Math.min(B.chest[0] * 1.5, 0.03 + 0.021 * c.tag.length), h = c.tagBox ? c.tagBox[1] : 0.052, fs = c.tagBox ? Math.min(h * 0.545, w * 1.25 / c.tag.length) : Math.min(h * 0.77, w * 1.7 / c.tag.length), r3 = v => Math.round(v * 1000) / 1000;
     parts.push({ id: "tag", z: zt + 0.0008, tag: "g", m: [U[0], U[1], -Vv[0], -Vv[1], q[0], q[1]].map(r3), hide: dot(Bc.z, cam.view) < 0.3,
@@ -1675,9 +1711,9 @@ function frame(k, B, cam, c, floor, o){
   parts.push({ id: "neck", z: zt + 0.002, mat: "neck", layers: [[nk(P(add(J.nb, mul(sub(J.nb, J.skull), 0.05))), P(J.skull)), sk.n[1]]] });
   parts.push({ id: "collarF", z: zt + 0.0025, mat: "collarF", layers: [[band(Ecl, 0.017 * S), T.rib]] });
   /* legs: thigh and shin in one outline (its root lies under the hem), the shoe; the hips in the colour of the legs */
-  const Epv = ellipse(P(at(J.root, J.Bp, [0, -0.012, 0])), lax(J.Bp, [B.hw + B.rHip * 0.92, 0.062, 0.07]));
-  parts.push({ id: "hips", z: zt - 0.004, mat: "hips", layers: [[ellPath(Epv, 0, 0, 0), G.n[1]]] });
-  for (const s of ["L", "R"]){
+  const Epv = ellipse(P(at(J.root, J.Bp, [0, -0.012, 0])), lax(J.Bp, [(B.hw + B.rHip * 0.92) * (B.hipK || 1), 0.062, 0.07]));
+  if (!(o && o.noLegs)) parts.push({ id: "hips", z: zt - 0.004, mat: "hips", layers: [[ellPath(Epv, 0, 0, 0), G.n[1]]] });
+  if (!(o && o.noLegs)) for (const s of ["L", "R"]){
     const hip = J["hip" + s], kn = J["kn" + s], an = J["an" + s], F = J["ft" + s];
     const farLeg = P(hip)[2] < P(J.root)[2], zb = farLeg ? -0.02 : 0.02, Q = chain(hip, kn, an, [B.rHip, B.rTh, B.rKnee, B.rCalf, B.rCuff]), e = B.rCuff * S * 0.3, mat = "leg" + s;
     parts.push({ id: "tr" + s, z: Math.min(zt - 0.002, zmid(hip, kn) + zb), mat, layers: form(sweep(Q, 0, 2), G, e, farLeg, true) });
@@ -1697,8 +1733,14 @@ function frame(k, B, cam, c, floor, o){
   if (doArms) for (const s of ["L", "R"]){
     const sh = J["sh" + s], el = J["el" + s], wr = J["wr" + s], hd = J["hd" + s], pn = J["pn" + s], Q = chain(sh, el, wr, [B.rSh, B.rUa, B.rEl, B.rFa, B.rWr * 1.08]), e = B.rWr * S * 0.34, mat = "arm" + s;
     const zu = zmid(sh, el), zf = zmid(el, wr), farU = !part && zu < zt - 0.012, far = !part && zf < zt - 0.012;
-    if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 0, 7), T, e, far, true) });
-    else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(sweep(Q, 0, 4), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
+    /* the shoulder is the jumper's, not a ball joint: the sleeve's round top lies under the yoke's own outline (the trunk's shoulder cap is
+       the same round), and it is drawn all in the lit tone (no shade crescent round it), so that no circle shows on the shoulder: the
+       sleeve's shade edge begins below, at the armpit, as the cloth's fold does */
+    const cap = (() => { const c0 = P(sh), rr = B.rSh * S * (B.capK == null ? 1 : B.capK) + 0.5, q1 = Q[1], k = 0;
+      return (g, dx, dy) => g < 0 ? capsule(c0[0] + LIGHT[0] * k, c0[1] + LIGHT[1] * k, rr, q1[0] + dx, q1[1] + dy, Math.max(0.3, q1[2] + g)) : ""; })();
+    const swA = sweep(Q, 0, 7), swU = sweep(Q, 0, 4), withY = fn => B.capK === 0 ? fn : (g, dx, dy) => fn(g, dx, dy) + cap(g, dx, dy);
+    if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(withY(swA), T, e, far, true) });
+    else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(withY(swU), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
     const kz = z => Math.max(1, Math.min(3.2, 1 + (z - zt - 0.03) / 0.035));          // a part held well out from the body throws its shadow further from itself
     if (zu > zt) cast.push(sweep(Q, 0, 4)); if (zf > zt){ const k2 = kz(zf), sw = sweep(Q, 3, 7); cast.push((g, dx, dy) => sw(g, dx * k2, dy * k2)); }
     { const a0 = add(wr, mul(J["fd" + s], -0.026)), A = P(a0), Z = P(wr); parts.push({ id: "cf" + s, z: zf + 0.0005, mat: "cuff" + s, layers: [[capsule(A[0], A[1], B.rWr * 1.2 * S, Z[0], Z[1], B.rWr * 1.2 * S), far ? T.f[1] : T.rib]] }); }
@@ -1720,6 +1762,7 @@ function frame(k, B, cam, c, floor, o){
   }
   const headParts = []; if (doBody) head(J, B, Object.assign({}, cam, { pt: P }), c, headParts, 0.03);
   for (const p of headParts) parts.push(p);
+  if (o && o.extra) for (const p of o.extra(J, P, S)) parts.push(p);          // (the close-ups: what the figure holds, placed by its joints and drawn among its parts by depth)
   const skull = headParts.find(p => p.id === "skull");
   /* the shadows that the arms, the hands and the head throw on the trunk: their own shapes, moved away from the light, kept inside the trunk */
   { const ck = B.castK || 1, dx = -LIGHT[0] * 0.028 * S * ck, dy = -LIGHT[1] * 0.032 * S * ck; let d = ""; for (const fn of cast) d += fn(0.003 * S, dx, dy);
@@ -1757,6 +1800,10 @@ function wearer(c, o, u){
   defs.push(`<radialGradient id="${u}sh"><stop offset="0" stop-color="#1d2233" stop-opacity=".34"/><stop offset=".55" stop-color="#1d2233" stop-opacity=".16"/><stop offset="1" stop-color="#1d2233" stop-opacity="0"/></radialGradient>`);
   defs.push(`<radialGradient id="${u}bl"><stop offset="0" stop-color="#e98a7a" stop-opacity="${c.kid ? 0.5 : 0.34}"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>`);
   const top = material(c.top[0], c.top[1]); top.rib = mixc(c.top[0], c.top[1], 0.55);
+  /* a woman's chest in a jumper: no drawn lines, only the cloth's light: a soft lit volume across the upper chest, and a broad soft shade
+     below it where the knit falls to the waist */
+  if (c.fem && !c.kid) defs.push(`<radialGradient id="${u}cv"><stop offset="0" stop-color="${mixc(c.top[0], "#ffffff", 0.16)}" stop-opacity=".42"/><stop offset=".6" stop-color="${mixc(c.top[0], "#ffffff", 0.08)}" stop-opacity=".2"/><stop offset="1" stop-color="${c.top[0]}" stop-opacity="0"/></radialGradient>`,
+    `<linearGradient id="${u}cs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${darker(c.top[1], 0.1)}" stop-opacity="0"/><stop offset=".45" stop-color="${darker(c.top[1], 0.1)}" stop-opacity=".2"/><stop offset="1" stop-color="${darker(c.top[1], 0.1)}" stop-opacity="0"/></linearGradient>`);
   const W0 = { u, skinM: material(mixc(c.skin[0], c.skin[1], 0.62), mixc(c.skin[1], c.skin[2], 0.3)), hairM: Object.assign(material(c.hair[1], c.hair[2]), { hi: mixc(c.hair[0], "#ffffff", 0.2), gh: `url(#${u}hg)` }), topM: top, legM: material(legs[0], legs[1]),
     shoeM: { n: ["#4a4340", "#2c2623"], f: ["#3a3431", "#231e1c"], sole: "#e6dfd2", soleF: "#bdb6aa" }, style: c.style, ink: "#2a2422", browC: c.brow || c.hair[2], lip: c.lip || "#bf6660", lipC: mixc(c.lip || "#bf6660", "#7a3030", 0.3), iris: c.iris,
     curl: o.curl, smile: o.smile, speaks: o.speaks, shadow: `url(#${u}sh)`, defs: defs.join(""), fem: c.fem, kid: c.kid, beard: c.beard, bow: c.bow, tag: o.tag, face: c.face, freckles: c.freckles, old: c.old,
@@ -1788,9 +1835,10 @@ function figure(c, o){
   if (o.curl == null) W.curl = C.curl;
   const cam = camera(yaw, pitch, B.H * (o.k || 1), o.x != null ? o.x : 80, o.y != null ? o.y : GY), floor = floorOf(C, B);
   const once = C.once, prog = ph => once ? Math.max(0, Math.min(1, (ph - once[0]) / (once[1] - once[0]))) : ph;      // a movement made once: held at its start, made, held at its end
-  const listAt = ph => frame(keyAt(C, prog(ph)), B, cam, W, floor, o);
+  const flAt = k => C.ground ? lowest(skeleton(k, B)) : floor;      // (a dance: the lowest foot on the ground in every frame)
+  const listAt = ph => { const k = keyAt(C, prog(ph)); return frame(k, B, cam, W, flAt(k), o); };
   const g = mk(""), ph0 = o.phase != null ? o.phase : (C.still || 0), html = L => L.map(n => nodeHTML(n, u)).join("");
-  const first = o.still ? frame(keyAt(C, ph0), B, cam, W, floor, o) : listAt(0);
+  const first = o.still ? (k => frame(k, B, cam, W, flAt(k), o))(keyAt(C, ph0)) : listAt(0);
   if (o.still || C.n < 2){ g.innerHTML = `<defs>${W.defs}</defs>` + html(first); return g; }
   const dur = o.dur || C.dur, NF = Math.max(8, Math.round(dur * 60)), kept = new Array(NF);
   g.innerHTML = `<defs>${W.defs}</defs><g class="fig">` + (once ? `<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.82;0.93;1" dur="${f2(dur)}s" repeatCount="indefinite"/>` : "") + html(first) + `</g><g opacity="1"><animate attributeName="opacity" values="1;1" dur="${f2(dur)}s" repeatCount="indefinite"/></g>`;
@@ -1807,14 +1855,14 @@ function figure(c, o){
 /* how far the figure reaches in an action, seen by the action's camera: left, right and up from the middle of its feet's ground, in body
    heights (over the whole loop, so that the frozen card and the moving one are framed alike) */
 function extent(C, B, yaw){ const key = B.key + "|" + yaw; C.ext = C.ext || {}; if (C.ext[key]) return C.ext[key];
-  const cam = camera(yaw * Math.PI / 180, 7 * Math.PI / 180, 1, 0, 0), fl = floorOf(C, B), E = { x0: 1e9, x1: -1e9, top: 0 };
+  const cam = camera(yaw * Math.PI / 180, 7 * Math.PI / 180, 1, 0, 0), E = { x0: 1e9, x1: -1e9, top: 0 }; let fl = floorOf(C, B);
   const put = (p, r) => { const q = cam.pt([p[0], p[1] - fl, p[2]]); E.x0 = Math.min(E.x0, q[0] - r); E.x1 = Math.max(E.x1, q[0] + r); E.top = Math.max(E.top, -q[1] + r); };
   const n = C.loop || C.once ? 12 : 1;
-  for (let i = 0; i < n; i++){ const J = skeleton(keyAt(C, C.loop ? i / n : n > 1 ? i / (n - 1) : (C.still || 0)), B);
+  for (let i = 0; i < n; i++){ const J = skeleton(keyAt(C, C.loop ? i / n : n > 1 ? i / (n - 1) : (C.still || 0)), B); if (C.ground) fl = lowest(J);
     put(J.head, B.hh * 1.16); for (const s of ["L", "R"]){ put(J["sh" + s], B.rSh); put(J["el" + s], B.rEl); put(add(J["wr" + s], mul(J["hd" + s], B.hand * 0.8)), B.palm); put(J["kn" + s], B.rKnee); put(J["ft" + s].heel, 0.035); put(J["ft" + s].toe, 0.03); } put(J.root, B.hem[0]); }
   return C.ext[key] = E; }
 /* the part of the 160 x 190 box a figure may fill in each action's card (the rest is for what stands round it) */
-const FRAME = { run: [30, 152, 14], talk: [6, 122, 18], dance: [24, 136, 16], standup: [14, 126, 14], sitdown: [14, 126, 14], jump: [16, 144, 12], stand: [20, 140, 14] };
+const FRAME = { run: [30, 152, 14], talk: [6, 122, 18], dance: [12, 148, 16], standup: [14, 126, 14], sitdown: [14, 126, 14], jump: [16, 144, 12], stand: [20, 140, 14] };
 /* FIG.act(act, c, o): the picture of an action in the 160 x 190 box: the figure and what stands round it (the ground that goes by under a
    walker or a runner at the speed of the feet, the lines behind a runner, the arcs under a jump). o.still: the frozen frame (the card);
    o.k, o.ox: size and place (the action's own in MOVES) */
@@ -1858,7 +1906,7 @@ function act(name, c, o){
   }
   if (name === "dance" && !o.bare){                         // music in the air: two notes that bob
     const note = (nx, ny, sc) => `<g transform="translate(${nx} ${ny}) scale(${sc})"><ellipse rx="6" ry="4.4" fill="#6a55b8" transform="rotate(-20)"/><path d="M5.4 -1V-22q9 2 11 10" stroke="#6a55b8" stroke-width="3" fill="none" stroke-linecap="round"/></g>`, bob = v => still ? "" : `<animateTransform attributeName="transform" type="translate" values="${v}" dur="${D1}s" repeatCount="indefinite"/>`;
-    front += `<g>${bob("0 0;0 -5;0 0")}${note(22, 56, 1)}</g><g>${bob("0 -5;0 0;0 -5")}${note(132, 44, 0.85)}</g>`;
+    front += `<g>${bob("0 0;0 -5;0 0")}${note(16, 40, 0.9)}</g><g>${bob("0 -5;0 0;0 -5")}${note(140, 30, 0.8)}</g>`;      // (in the corners, clear of the larger figure)
   }
   if (name === "run" && !o.bare) front += `<g>` + (still ? "" : `<animate attributeName="opacity" values="1;0.4;1;0.4;1" keyTimes="0;0.25;0.5;0.75;1" dur="${C.dur}s" repeatCount="indefinite"/>`) + `<path d="M16 92h20M9 108h24M18 124h15" stroke="#414B5E" stroke-opacity=".3" stroke-width="2.8" stroke-linecap="round"/></g>`;
   if (name === "jump" && still && !o.bare) front += `<path transform="translate(${f1(x - 80)} 0)" d="M62 157Q80 165 98 157M69 165Q80 169.5 91 165" stroke="#414B5E" stroke-opacity=".3" stroke-width="3" fill="none" stroke-linecap="round"/>`;
@@ -1868,7 +1916,7 @@ function act(name, c, o){
 /* ---------- a person from a spec (the avatar the learner makes; and, in time, everybody in the course) ----------
    One small object describes a person; the same spec draws the head and shoulders, the whole figure standing, and every action, from any
    camera. Each field is an index into a list below (so a spec is saved as a short string: specString / specParse).
-     body "m" | "f"; age "c" (a child) | "a" | "o" (older: lines on the brow); girth 0 slim .. 3 heavy; skin; face (0 oval, 1 round, 2 long,
+     body "m" | "f"; age "c" (a child) | "t" (a teenager, 13 to 17) | "a" | "o" (older: lines on the brow); girth 0 slim .. 3 heavy; skin; face (0 oval, 1 round, 2 long,
      3 square, 4 narrow); eyes (colour); hair (style); hairc (colour); beard, glasses, freckles 0 | 1; head 0 | 1 (a headscarf); scarf
      (its colour, from the clothes' colours); top (colour of the jumper); legs (colour of the trousers) */
 const AV = { skin: ["fair", "light", "julie", "tan", "brown", "dark"], eyes: ["#4a3524", "#5a3a22", "#3b2a1e", "#4b6f8f", "#5d7a4a", "#6b6f76"],
@@ -1884,7 +1932,7 @@ const specParse = str => { const a = String(str || "").split("."), sp = Object.a
 const HAIRW = { white: ["#f6f6f3", "#e2e2de", "#bdbdb8"] };
 function person(sp){ sp = Object.assign({}, AV_DEFAULT, typeof sp === "string" ? specParse(sp) : sp);
   const pick = (a, i) => a[Math.min(a.length - 1, Math.max(0, i | 0))], fem = sp.body === "f", hc = pick(AV.hairc, sp.hairc), hair = HAIRW[hc] || HAIR[hc], top = COL[pick(AV.top, sp.top)], skinName = pick(AV.skin, sp.skin), deep = skinName === "brown" || skinName === "dark";
-  return { kid: sp.age === "c", fem, old: sp.age === "o", girth: sp.girth, skin: SKIN[skinName], hair, style: pick(AV.hair, sp.hair), top, legs: pick(AV.legs, sp.legs), beard: !!sp.beard && !fem && sp.age !== "c", face: sp.face, iris: pick(AV.eyes, sp.eyes),
+  return { kid: sp.age === "c", teen: sp.age === "t", fem, old: sp.age === "o", girth: sp.girth, skin: SKIN[skinName], hair, style: fem ? ({ short: "pixie", side: "pixieS" })[pick(AV.hair, sp.hair)] || pick(AV.hair, sp.hair) : pick(AV.hair, sp.hair), top, legs: pick(AV.legs, sp.legs), beard: !!sp.beard && !fem && sp.age !== "c" && sp.age !== "t", face: sp.face, iris: pick(AV.eyes, sp.eyes),
     brow: hc === "grey" || hc === "white" ? "#9a9a94" : hair[2], lip: fem ? (deep ? "#a8404e" : "#cf5266") : (deep ? "#8a4a44" : "#b8645f"), glassesOn: !!sp.glasses, freckles: !!sp.freckles, headwear: sp.head ? "scarf" : "", scarfCol: COL[pick(AV.top, sp.scarf)], bow: "#3fa9a3" }; }
 /* FIG.bust(c, o): the head and shoulders of a person (c: traits) in the 160 x 190 box, turned a little as the portraits are (o.yaw), the head
    o.head units high about y = o.cy, a small smile (o.smile) */
@@ -1892,9 +1940,187 @@ function bustOf(c, o){ o = o || {}; const B = bodyOf(c, o), k = (o.head || 78) /
   return act("stand", c, { still: true, legs: o.legs || c.legs, k, y: (o.cy || 90) + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: o.smile == null ? 0.5 : o.smile, yaw: o.yaw == null ? -12 : o.yaw, heads: o.heads }); }
 /* FIG.avatar(spec, o): o.view "portrait" (head and shoulders) | "standing" | "doing" (o.doing: an action; o.still: its frozen frame) */
 function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
-  if (o.view === "portrait"){ const k = 78 / (2 * B.hh * B.H); return act("stand", c, { still: true, legs: c.legs, k, y: 90 + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: 0.5, yaw: o.yaw == null ? -12 : o.yaw }); }
+  if (o.view === "portrait"){ const heads = o.heads || (c.kid ? null : c.teen ? 5 : 5.6), Bp = bodyOf(c, { heads }), k = 78 / (2 * Bp.hh * Bp.H);      // (head and shoulders: an adult's shoulders against the head, as the course's portraits; a teenager's between)
+    return act("stand", c, { still: true, legs: c.legs, k, y: 90 + (0.842 + 0.74 * Bp.hh) * Bp.H * k, bare: true, smile: 0.5, yaw: o.yaw == null ? -12 : o.yaw, heads }); }
   if (o.view === "doing" && CLIPS[o.doing]) return act(o.doing, c, { still: !!o.still, legs: c.legs, k: o.k || (o.doing === "jump" ? 0.88 : 1), ox: o.doing === "run" || o.doing === "walk" ? -2 : 0, yaw: o.yaw, phase: o.phase });
   return act("stand", c, { still: true, legs: c.legs, k: o.k || 1, smile: 0.5, yaw: o.yaw }); }
+/* ---------- the close-ups: smiling, not smiling, eating, drinking, sleeping, singing, reading, writing ----------
+   The same body, head and camera as every other figure, seen close: the head and shoulders (smiling and not smiling: the face alone, filling
+   the card), the arms put where the action needs the hands by the lengths of the two bones (the elbow found as an elbow bends), the hands
+   with fingers, what is held placed by the hand and drawn among the body's parts by its depth. Each card means what the earlier drawing
+   meant (the learners have learned those): the apple bitten at the mouth; the glass tipped at the lips; the head on a pillow, the eyes shut,
+   z z z; the microphone, the mouth wide open, the notes; the open book held up in both hands, the eyes on it; the sheet on a table, the pen
+   at the end of a written line, the eyes on it; the broad smile (lips parted on the teeth, the corners up, the cheeks raising the lower
+   lids) against the face that does not smile (the lips closed and level, the eyes open). The mouth is the teacher's (her mouth shapes). */
+HANDS.grip = { f: [[1.0, 1.2], [1.05, 1.25], [1.1, 1.25], [1.15, 1.25]], sp: 0, th: [0.75, 0.8, 0.35] };          // round a glass or a microphone
+HANDS.ball = { f: [[0.55, 0.62], [0.6, 0.66], [0.66, 0.7], [0.72, 0.76]], sp: 0.05, th: [0.8, 0.45, 0.25] };       // round an apple
+HANDS.pen = { f: [[0.55, 0.5], [0.95, 1.05], [1.2, 1.3], [1.3, 1.4]], sp: 0, th: [0.5, 0.75, 0.3] };               // a pen between the thumb and the first two fingers
+HANDS.book = { f: [[0.12, 0.18], [0.14, 0.2], [0.16, 0.22], [0.2, 0.26]], sp: 0.01, th: [0.7, -0.1, 0.1] };        // the fingers on the cover, the thumb round its edge
+/* a mouth shape drawn once (the teacher's drawing, rig.mouth.draw, as a still picture): v = [open, width, protrusion, closed, teeth, fv,
+   tongue], smile 0 .. 1.3; in the teacher's units (a head height of 50.5), scaled to the head's own */
+function mouthSVG(v, smile, u, lipC, dimC, grin){
+  const [open, width, protr, closed, teeth, fv, tongue] = v, T = TUT0, F = n => n.toFixed(2), gr = grin || 0;      // grin: the close-up's smile, broader than the teacher's (it is a taught picture: it must read at 80 px)
+  const bs = (closed > 0.5 || open < 0.08) ? Math.max(0, Math.min(1, (smile - 1) / 0.3)) : 0, sm = smile * (1 - 0.8 * protr), Wd = 6 + 10 * width - 3 * protr + 2.4 * sm + (T.smW + 2.2 * gr) * bs;
+  let H = closed > 0.5 ? 0.1 : Math.max(0.1, 0.6 + 8 * open); if (closed < 0.5 && protr > 0.3) H = Math.max(H, Wd * 0.75 * protr); if (bs) H = Math.max(H, (T.smH + 1.6 * gr) * bs);
+  const L = 2.3 + 1.8 * protr, lift = 2.6 * sm + (T.smLift + 1.8 * gr) * bs, xl = -Wd - L * 0.75, xr = Wd + L * 0.75, yc = -lift + 0.4, up = -H - L * 1.05, dn = H + L * 1.4;
+  const lips = `M${F(xl)} ${F(yc)}Q${F(-Wd * 0.55)} ${F(up - 0.8)} -1.8 ${F(up + 0.2)}Q0 ${F(up + 1.1)} 1.8 ${F(up + 0.2)}Q${F(Wd * 0.55)} ${F(up - 0.8)} ${F(xr)} ${F(yc)}Q${F(Wd * 0.6)} ${F(dn + 0.8)} 0 ${F(dn)}Q${F(-Wd * 0.6)} ${F(dn + 0.8)} ${F(xl)} ${F(yc)}Z`;
+  const yi = -lift * 0.7, hIn = fv > 0.5 ? 0.8 : H, inner = `M${F(-Wd)} ${F(yi)}Q0 ${F(-hIn * 1.05 - lift * 0.25)} ${F(Wd)} ${F(yi)}Q0 ${F(hIn * 1.05 + lift * 0.6)} ${F(-Wd)} ${F(yi)}Z`;
+  const th = teeth > 0.05 ? Math.min(H * 1.2, 2.2 + 1.4 * teeth) : bs ? H * 1.15 : 0;
+  let s = `<g transform="scale(${(1 / 50.5).toFixed(5)})"><path d="${lips}" fill="${lipC}"/>`;
+  if (H > 0.7) s += `<path d="${inner}" fill="#4a1c22"/><clipPath id="${u}"><path d="${inner}"/></clipPath><g clip-path="url(#${u})"><rect x="${F(-Wd)}" y="${F(-H - lift * 0.3)}" width="${F(2 * Wd)}" height="${F(th)}" fill="#f7f3ec"/>`
+    + (open > 0.25 ? `<rect x="${F(-Wd)}" y="${F(H - Math.min(1.6, H * 0.4))}" width="${F(2 * Wd)}" height="1.6" fill="#ece6dc"/>` : "") + (open > 0.15 ? `<ellipse cy="${F(H - 1.5 - 3.5 * tongue * open)}" rx="${F(Wd * 0.7)}" ry="3" fill="#cf6b74" opacity="${(0.55 + 0.45 * tongue).toFixed(2)}"/>` : "") + `</g>`;
+  if (H <= 1.2) s += `<path d="M${F(xl + 1.2)} ${F(yc + 0.2)}Q0 ${F(lift * 0.95 + 0.3)} ${F(xr - 1.2)} ${F(yc + 0.2)}" stroke="#8e3d45" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+  s += `<path d="M${F(-Wd * 0.38)} ${F(dn - 1.3)}Q0 ${F(dn - 0.6)} ${F(Wd * 0.38)} ${F(dn - 1.3)}" stroke="#e39aa0" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".4"/>`;
+  const dm = Math.min(1, Math.max(0, sm - 0.95) * 1.2); if (dm > 0) s += `<path d="M${F(xl - 1.6)} ${F(yc - 3.4)}q-2.2 3.2 0 6.6M${F(xr + 1.6)} ${F(yc - 3.4)}q2.2 3.2 0 6.6" stroke="${dimC}" stroke-width="1.1" fill="none" stroke-linecap="round" opacity="${dm.toFixed(2)}"/>`;
+  return s + `</g>`;
+}
+const sm01c = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+/* each close-up: how long its loop is (the earlier drawing's: the page waits for a whole loop, so these are teaching times and stay as they
+   were; reading had no loop and has none), which phase is the card, where the card puts the head (x, y of the head's middle, its height) */
+const CLOSE = { smile: { dur: 3.2, still: 0.5, at: [80, 74, 146], yaw: -8 }, neutral: { dur: 3.2, still: 0, at: [80, 74, 146], yaw: -8 },
+  eat: { dur: 2.2, still: 0.42, at: [84, 66, 64] }, drink: { dur: 2.4, still: 0.45, at: [86, 66, 64] }, sleep: { dur: 2.8, still: 0.3, at: [86, 74, 64] },
+  sing: { dur: 2.8, still: 0.25, at: [82, 64, 64] }, read: { dur: 0, still: 0.3, at: [80, 58, 62] }, write: { dur: 1.6, still: 0.6, at: [80, 52, 60], pitch: 16 } };
+/* FIG.close(name, c, o): name smile | neutral | eat | drink | sleep | sing | read | write; o.still (the card), o.phase, o.tag, o.legs */
+function closeUp(name, c, o){
+  o = o || {}; const card = o.still && o.phase == null, D = CLOSE[name] || CLOSE.neutral, heads = c.kid ? null : c.teen ? 5 : 5.6, B = bodyOf(c, { heads }), u = "cu" + (seq++) + "_", hh = B.hh;
+  const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
+  const rot = (v, ax, a) => { ax = nrm(ax); const cs = Math.cos(a), sn = Math.sin(a), d = dot(ax, v), cr = cross(ax, v); return [v[0] * cs + cr[0] * sn + ax[0] * d * (1 - cs), v[1] * cs + cr[1] * sn + ax[1] * d * (1 - cs), v[2] * cs + cr[2] * sn + ax[2] * d * (1 - cs)]; };
+  const base = Float32Array.from(clipOf("seat").keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]); setv(base, 24, [0, 1, 0.12]);
+  const rest = (k, i, sg) => { setv(k, i, [0.14 * sg, -0.99, 0.02]); setv(k, i + 3, [0.08 * sg, -0.95, 0.3]); setv(k, i + 6, [0.03 * sg, -0.93, 0.36]); setv(k, i + 9, [-0.94 * sg, -0.05, -0.3]); };
+  rest(base, 33, 1); rest(base, 45, -1);
+  const J0 = skeleton(base, B), floor = lowest(J0), yawD = D.yaw != null ? D.yaw : -14, yaw = yawD * Math.PI / 180, pitch = (D.pitch || 7) * Math.PI / 180, S = D.at[2] / (2 * hh);
+  const cam0 = camera(yaw, pitch, S, 0, 0), q0 = cam0.pt([J0.head[0], J0.head[1] - floor, J0.head[2]]), cam = camera(yaw, pitch, S, D.at[0] - q0[0], D.at[1] - q0[1]);
+  const lipC = c.fem ? "#c4626a" : mixc(c.lip || "#b8645f", "#c4626a", 0.3), dimC = mixc(c.skin[1], c.skin[2], 0.55);
+  /* the arm: the wrist at wr (the body's own frame), the elbow down and out (pole), the hand pointing hd with its palm toward pn */
+  const arm = (k, J, side, wr, hd, pn, pole) => { const sg = side === "L" ? 1 : -1, off = side === "L" ? 33 : 45, sh = J["sh" + side], a = B.ua, b = B.fa;
+    let d = sub(wr, sh), L = Math.hypot(d[0], d[1], d[2]); const mx = (a + b) * 0.995, mn = Math.abs(a - b) + 0.02; if (L > mx){ d = mul(d, mx / L); L = mx; } if (L < mn){ d = mul(d, mn / (L || 1)); L = mn; }
+    const uu = mul(d, 1 / L), x = (a * a - b * b + L * L) / (2 * L), h = Math.sqrt(Math.max(0, a * a - x * x)); let pl = pole || [sg * 0.55, -1, 0.1]; pl = nrm(sub(pl, mul(uu, dot(pl, uu))));
+    const el = add(add(sh, mul(uu, x)), mul(pl, h)); setv(k, off, sub(el, sh)); setv(k, off + 3, sub(add(sh, d), el)); setv(k, off + 6, hd); setv(k, off + 9, sub(pn, mul(nrm(hd), dot(pn, nrm(hd))))); };
+  const hand = (shape, sc) => handFlat(HANDS[shape] || HANDS.relaxed).concat([sc || 1]);
+  /* the head turned on the neck: pitch (down +), roll (toward its own right +), yaw */
+  const headTo = (k, pch, roll, yw) => { let X = getv(k, 27), Y = getv(k, 30); const Z = cross(X, Y);
+    if (yw){ X = rot(X, [0, 1, 0], yw); Y = rot(Y, [0, 1, 0], yw); }
+    if (pch) Y = rot(Y, X, pch);
+    if (roll){ const Zn = nrm(cross(X, Y)); X = rot(X, Zn, roll); Y = rot(Y, Zn, roll); }
+    setv(k, 27, X); setv(k, 30, Y); const n = getv(k, 24); setv(k, 24, rot(n, X, pch * 0.4)); };
+  const mouthAt = J => at(J.head, J.Bh, [0, -0.64 * hh, 0.74 * hh]);
+  const R3 = v => Math.round(v * 1000) / 1000, F1 = f1;
+  /* the things held, drawn in the figure's light: a lit tone and a shade tone */
+  const ball = (id, p, r, lit, shade, P, S2, z) => { const q = P(p), e = r * S2 * 0.18; return { id, z: z == null ? q[2] : z, mat: id, layers: [[ellPath(disc(q, r * S2), 0, 0, 0), shade], [ellPath(disc(q, r * S2), -e, LIGHT[0] * e, LIGHT[1] * e), lit]] }; };
+  function pose(ph){
+    const k = Float32Array.from(base); let J = skeleton(k, B); const E = { mouth: [0, 0.42, 0, 1, 0, 0, 0], smile: 0.3, eyes: null, hands: { L: hand("relaxed"), R: hand("relaxed") }, extra: [] };
+    const tw = ph * 2 * Math.PI;
+    if (name === "smile" || name === "neutral"){
+      const s = name === "smile" ? (card ? 1 : sm01c((ph - 0.1) / 0.18) * (1 - sm01c((ph - 0.8) / 0.15))) : 0;
+      E.smile = 1.32 * s; E.grin = s; E.mouth = [0, 0.42 + 0.12 * s, 0, 1, 0, 0, 0]; E.eyes = s > 0.02 ? { squint: 0.8 * s, lid: 0.012 * s } : null; headTo(k, -0.02 * s, 0, 0); }
+    else if (name === "eat"){
+      /* the apple brought up to the mouth, bitten, taken a little away while the mouth chews */
+      const up = card ? 1 : sm01c(ph / 0.3) * (1 - 0.35 * sm01c((ph - 0.55) / 0.2)) , bite = card ? 1 : Math.max(0, Math.sin(Math.min(1, Math.max(0, (ph - 0.28) / 0.2)) * Math.PI));
+      headTo(k, -0.04 - 0.05 * bite, 0, -0.1); J = skeleton(k, B); const M = mouthAt(J), rA = 0.55 * hh;
+      const A = add(add(M, mul(J.Bh.z, rA * 0.75)), [-0.045 - 0.02 * (1 - up), -0.02 - 0.16 * (1 - up), 0.02 * (1 - up)]), hd = nrm([0.35, 0.82, 0.25]), pn = nrm([0.25, -0.15, 0.95]);
+      const wr = sub(sub(A, mul(hd, B.hand * 0.42)), mul(nrm(sub(pn, mul(hd, dot(pn, hd)))), rA * 0.95));
+      arm(k, J, "R", wr, hd, pn, [-0.6, -1, 0.25]); E.hands.R = hand("ball");
+      const chew = card ? 0 : Math.max(0, Math.sin((ph - 0.45) * 6 * Math.PI)) * (ph > 0.45 ? 1 : 0);
+      E.mouth = bite > 0.05 ? [0.32 * bite, 0.42, 0.05, 0, 0.9, 0, 0] : [0.04 + 0.1 * chew, 0.4, 0.1, chew > 0.3 ? 0 : 1, 0, 0, 0]; E.smile = 0.25;
+      E.extra.push((J2, P, S2) => { const A2 = A, q = P(A2), r = rA * S2, bt = disc([q[0] + r * 0.62, q[1] - r * 0.15], r * 0.48);
+        const L = ball("apple", A2, rA, "#d8443a", "#a8302a", P, S2, P(A2)[2] + 0.004), st = P(add(A2, [0, rA * 1.05, 0])), st0 = P(add(A2, [0, rA * 0.7, 0]));
+        return [L, { id: "appleB", z: L.z + 0.0002, tag: "clip", clip: ellPath(disc(q, r), 0, 0, 0), d: ellPath(bt, 0, 0, 0), fill: "#f4e7c4" },
+          { id: "appleH", z: L.z + 0.0003, mat: "appleH", layers: [[ellPath({ c: [q[0] - r * 0.4, q[1] - r * 0.38], a: r * 0.22, b: r * 0.13, th: -0.6 }, 0, 0, 0), "#f2a28f"]] },
+          { id: "appleS", z: L.z + 0.0004, mat: "appleS", layers: [[capsule(st0[0], st0[1], r * 0.07, st[0] + r * 0.12, st[1], r * 0.05), "#6b4a2a"], [ellPath({ c: [st[0] + r * 0.42, st[1] + r * 0.02], a: r * 0.34, b: r * 0.14, th: -0.35 }, 0, 0, 0), "#5aa04a"]] }]; }); }
+    else if (name === "drink"){
+      /* the glass tipped at the lips, the head back a little */
+      const up = card ? 1 : sm01c(ph / 0.28) * (1 - sm01c((ph - 0.78) / 0.18)), tip = up * (card ? 1 : sm01c((ph - 0.2) / 0.2));
+      headTo(k, -0.1 * tip, 0, -0.08); J = skeleton(k, B); const M = mouthAt(J), rg = 0.42 * hh, hg = 1.3 * hh;
+      const ax = nrm([0.8 * tip, 1 - 0.45 * tip, -0.35 * tip]), rim = add(add(M, mul(J.Bh.z, 0.01)), [-0.01, -0.012 - 0.15 * (1 - up), 0.03 * (1 - up)]), rc = add(rim, mul(ax, -rg * 0.15)), bc = sub(rim, mul(ax, hg));
+      const gc = add(rim, mul(ax, -hg * 0.55)), hd = nrm(cross(ax, [0, 0, 1])), hd2 = nrm([hd[0] > 0 ? hd[0] : -hd[0], 0.35, 0.15]), pn = nrm(sub([0, 0, -1], mul(ax, dot([0, 0, -1], ax))));
+      const wr = add(add(gc, mul(nrm([-1, -0.2, 0.3]), rg * 1.9)), [0, -0.01, 0.02]);
+      arm(k, J, "R", wr, nrm(add(hd2, mul(ax, 0.2))), nrm([0.2, 0.1, -1]), [-0.7, -1, 0.1]); E.hands.R = hand("grip");
+      E.mouth = [0.06, 0.32, 0.6, 0, 0, 0, 0]; E.smile = 0;
+      E.extra.push((J2, P, S2) => { const a1 = nrm(cross(ax, [1, 0, 0])), a2 = nrm(cross(ax, a1)), el = (p, r) => { const Q = ellipse(P(p), [cam.lin(mul(a1, r)), cam.lin(mul(a2, r)), [0, 0, 0]]); Q.n = 24; return Q; };
+        const Er = el(rc, rg), Eb = el(bc, rg * 0.82), lvl = add(bc, mul(ax, hg * 0.55)), Ew = el(lvl, rg * 0.92), z = P(gc)[2] + 0.01, Eb2 = el(add(bc, mul(ax, rg * 0.15)), rg * 0.78);
+        return [{ id: "glass", z, mat: "glass", layers: [[hullOf([Er, Eb], 0, 0, 0), "#cfe6f6"], [hullOf([Ew, Eb2], 0, 0, 0), "#7cc0ee"]] },
+          { id: "glassE", z: z + 0.0001, mat: "glassE", layers: [[ellPath(Er, 0, 0, 0), "#9cc4e4"], [ellPath(Er, -Math.max(0.6, rg * S2 * 0.12), 0, 0), "#e8f4fc"]] },
+          { id: "glassH", z: z + 0.0002, mat: "glassH", layers: [[capsule(...(p => [p[0], p[1]])(P(add(rc, mul(a1, rg * 0.55)))), Math.max(0.5, rg * S2 * 0.08), ...(p => [p[0], p[1]])(P(add(bc, mul(a1, rg * 0.5)))), Math.max(0.4, rg * S2 * 0.06)), "rgba(255,255,255,.75)"]] }]; }); }
+    else if (name === "sleep"){
+      /* the head laid over on a pillow, the eyes shut, breathing */
+      const br = card ? 0 : Math.sin(tw) * 0.5 + 0.5; headTo(k, 0.06, 0.36, 0.1); J = skeleton(k, B);
+      E.eyes = { shut: 1 }; E.mouth = [0.05 + 0.04 * br, 0.14, 0.55, 0, 0, 0, 0]; E.smile = 0;
+      E.extra.push((J2, P, S2) => { const hc = P(J2.head), w = 2.6 * hh * S2, h = 1.7 * hh * S2, cx = hc[0] - 0.55 * hh * S2, cy = hc[1] + 0.25 * hh * S2, a = -18, rr = h * 0.3;
+        const rect = (g, dx, dy) => { const x0 = -w / 2 - g, y0 = -h / 2 - g, ww = w + 2 * g, hh2 = h + 2 * g, r = Math.max(1, rr + g); return `M${F1(x0 + r)} ${F1(y0)}H${F1(x0 + ww - r)}Q${F1(x0 + ww)} ${F1(y0)} ${F1(x0 + ww)} ${F1(y0 + r)}V${F1(y0 + hh2 - r)}Q${F1(x0 + ww)} ${F1(y0 + hh2)} ${F1(x0 + ww - r)} ${F1(y0 + hh2)}H${F1(x0 + r)}Q${F1(x0)} ${F1(y0 + hh2)} ${F1(x0)} ${F1(y0 + hh2 - r)}V${F1(y0 + r)}Q${F1(x0)} ${F1(y0)} ${F1(x0 + r)} ${F1(y0)}Z`; };
+        return [{ id: "pillow", z: P(J2.head)[2] - 0.25, tag: "g", m: [Math.cos(a * Math.PI / 180), Math.sin(a * Math.PI / 180), -Math.sin(a * Math.PI / 180), Math.cos(a * Math.PI / 180), cx, cy].map(R3),
+          inner: `<path d="${rect(0)}" fill="#a9c2e6"/><path d="${rect(-w * 0.04)}" transform="translate(${F1(-w * 0.03)} ${F1(-h * 0.05)})" fill="#d4e3f7"/><path d="M${F1(-w * 0.38)} ${F1(-h * 0.3)}Q0 ${F1(-h * 0.2)} ${F1(w * 0.38)} ${F1(-h * 0.3)}" stroke="#eef4fc" stroke-width="${F1(h * 0.04)}" fill="none" stroke-linecap="round" opacity=".8"/>` }]; }); }
+    else if (name === "sing"){
+      /* the microphone held up before the mouth, the mouth wide open on the notes */
+      const op = card ? 1 : 0.55 + 0.45 * Math.abs(Math.sin(tw * 3)); headTo(k, -0.1, 0.06, -0.05); J = skeleton(k, B); const M = mouthAt(J), rb = 0.3 * hh;
+      const G = add(add(M, mul(J.Bh.z, 0.075)), [-0.02, -0.025, 0]), hax = nrm([0.12, 1, 0.45]), h0 = sub(G, mul(hax, rb + 0.01)), h1 = sub(G, mul(hax, 0.13));
+      const wr = sub(add(mul(add(h0, h1), 0.5), mul(nrm([-0.6, 0, 0.3]), 0.012)), mul(hax, 0.05));
+      arm(k, J, "R", wr, nrm([0.9, 0.15, 0.3]), nrm([0.1, -0.2, -1]), [-0.25, -1, 0.3]); E.hands.R = hand("grip");
+      E.mouth = [0.5 * op, 0.4, 0.15, 0, 0.7, 0, 0.3]; E.smile = 0.2; E.eyes = { lid: 0.03 };
+      E.extra.push((J2, P, S2) => { const a = P(h0), b = P(h1), g = P(G), z = g[2] - 0.004, r = rb * S2;
+        return [{ id: "micH", z: (a[2] + b[2]) / 2, mat: "micH", layers: [[capsule(a[0], a[1], 0.085 * hh * S2, b[0], b[1], 0.13 * hh * S2), "#2c2f36"], [capsule(a[0] - 0.4, a[1] - 0.2, 0.05 * hh * S2, b[0] - 0.4, b[1] - 0.3, 0.08 * hh * S2), "#4a4e58"]] },
+          { id: "micG", z, mat: "micG", layers: [[ellPath(disc(g, r), 0, 0, 0), "#7e848f"], [ellPath(disc(g, r), -r * 0.16, LIGHT[0] * r * 0.16, LIGHT[1] * r * 0.16), "#b9bec7"]] },
+          { id: "micM", z: z + 0.0001, tag: "g", m: [r, 0, 0, r, g[0], g[1]].map(R3), inner: `<path d="M-.7 -.35H.7M-.85 0H.85M-.7 .35H.7M-.35 -.7V.7M0 -.85V.85M.35 -.7V.7" stroke="#6a707b" stroke-width=".07" opacity=".7"/>` }]; }); }
+    else if (name === "read"){
+      /* the open book held up in both hands, its covers to the viewer, the eyes on its pages */
+      headTo(k, 0.36, 0, 0); J = skeleton(k, B); E.eyes = { lid: 0.06, pup: 0.05 }; E.mouth = [0, 0.38, 0, 1, 0, 0, 0]; E.smile = 0.25;
+      const sp0 = add(J.chest, [0, -0.03, 0.2]), Wb = 0.95 * hh * 1.6, Hb = 1.6 * hh * 1.25, open = 0.5;
+      const cov = sg => [sp0, add(sp0, [sg * Wb * Math.cos(open), 0, -Wb * Math.sin(open)])];
+      for (const [side, sg] of [["L", 1], ["R", -1]]){ const e = cov(sg)[1], wr = add(e, [sg * 0.03, -Hb * 0.12, -0.01]);
+        arm(k, J, side, wr, nrm([-sg * 0.85, 0.2, 0.35]), nrm([sg * 0.3, 0, -1]), [sg * 0.8, -1, -0.2]); E.hands[side] = hand("book"); }
+      E.extra.push((J2, P, S2) => { const out = [], c0 = P(add(sp0, [0, -Hb / 2, 0])), c1 = P(add(sp0, [0, Hb / 2, 0]));
+        for (const sg of [1, -1]){ const e = cov(sg)[1], q = [P(add(sp0, [0, -Hb / 2, 0])), P(add(e, [0, -Hb / 2, 0])), P(add(e, [0, Hb / 2, 0])), P(add(sp0, [0, Hb / 2, 0]))];
+          const pg = [P(add(sp0, [0, Hb / 2 - 0.004, -0.004])), P(add(add(e, mul(sub(sp0, e), 0.04)), [0, Hb / 2 - 0.004, -0.01])), P(add(add(e, mul(sub(sp0, e), 0.04)), [0, Hb / 2 + 0.008, -0.03])), P(add(sp0, [0, Hb / 2 + 0.01, -0.03]))];
+          const z = Math.max(q[0][2], q[1][2]) + 0.002;
+          out.push({ id: "pages" + sg, z: z - 0.001, mat: "pages" + sg, layers: [[poly(pg.map(p => [p[0], p[1]])), "#f4efe2"]] });
+          out.push({ id: "cover" + sg, z, mat: "cover" + sg, layers: [[poly(q.map(p => [p[0], p[1]])), sg > 0 ? "#c23a32" : "#d8483f"]] }); }
+        out.push({ id: "spine", z: P(sp0)[2] + 0.003, mat: "spine", layers: [[capsule(c0[0], c0[1], 0.7, c1[0], c1[1], 0.7), "#a52e27"]] });
+        const t0 = P(add(cov(-1)[1], [0.02, Hb * 0.22, 0])), t1 = P(add(add(sp0, mul(sub(cov(-1)[1], sp0), 0.35)), [0, Hb * 0.22, 0])), t2 = P(add(cov(-1)[1], [0.02, Hb * 0.1, 0])), t3 = P(add(add(sp0, mul(sub(cov(-1)[1], sp0), 0.5)), [0, Hb * 0.1, 0]));
+        out.push({ id: "title", z: P(sp0)[2] + 0.004, mat: "title", layers: [[capsule(t0[0], t0[1], 0.9, t1[0], t1[1], 0.9) + capsule(t2[0], t2[1], 0.9, t3[0], t3[1], 0.9), "#f08a80"]] });
+        return out; }); }
+    else if (name === "write"){
+      /* at a table: the sheet on it, the pen at the end of the line being written, the other hand on the sheet; the eyes on the pen */
+      headTo(k, 0.26, -0.04, 0); J = skeleton(k, B); E.eyes = { lid: 0.06, pup: 0.05 }; E.mouth = [0, 0.36, 0, 1, 0, 0, 0]; E.smile = 0.2;
+      const yT = J.chest[1] - 0.13, z0 = J.chest[2] + 0.08, P0 = [0.0, yT, z0 + 0.14], ux = nrm([1, 0, 0.12]), uz = nrm([0.12, 0, -1]), pw = 0.3, ph2 = 0.18;
+      const onP = (a, b) => add(add(P0, mul(ux, a)), mul(uz, b));          // a point of the sheet: a across (to the figure's right), b toward the figure
+      const lines = [0.045, 0.085, 0.125], wl = 0.2, prog = card ? 0.6 : 0.1 + 0.85 * ph, li = 2, pen = onP(-wl / 2 + wl * prog, ph2 / 2 - lines[li]);
+      const wr = add(pen, [0.03, 0.035, -0.045]); arm(k, J, "L", wr, nrm([-0.4, -0.35, 0.85]), nrm([-0.2, -0.9, -0.1]), [0.5, -1, -0.3]); E.hands.L = hand("pen", 0.95);
+      arm(k, J, "R", add(onP(-0.17, -0.01), [0, 0.012, 0]), nrm([0.55, -0.12, 0.8]), nrm([0, -1, 0]), [-0.5, -1, -0.3]); E.hands.R = hand("flat", 0.95);
+      E.extra.push((J2, P, S2) => { const out = [], tq = [P([-0.6, yT, J.chest[2] + 0.06]), P([0.6, yT, J.chest[2] + 0.06]), P([0.6, yT, z0 + 0.6]), P([-0.6, yT, z0 + 0.6])], te = [tq[0], tq[1], P([0.6, yT - 0.03, J.chest[2] + 0.06]), P([-0.6, yT - 0.03, J.chest[2] + 0.06])];
+        const zt = P(J.chest)[2] + 0.06, xy = p => [p[0], p[1]];
+        out.push({ id: "table", z: zt, mat: "table", layers: [[poly(tq.map(xy)), "#b98a58"], [poly(tq.map(xy)), "#c99a62"]] });
+        const sq = [onP(-pw / 2, -ph2 / 2), onP(pw / 2, -ph2 / 2), onP(pw / 2, ph2 / 2), onP(-pw / 2, ph2 / 2)].map(p => P([p[0], p[1] + 0.002, p[2]]));
+        out.push({ id: "sheet", z: zt + 0.001, mat: "sheet", layers: [[poly(sq.map(p => [p[0] + 0.8, p[1] + 1.2])), "#a3784a"], [poly(sq.map(xy)), "#fbf9f3"]] });
+        let ink = ""; lines.forEach((b, i) => { const n = i < li ? 1 : i === li ? prog : 0; if (n <= 0) return; let d = ""; const N = Math.max(2, Math.round(24 * n));
+          for (let j = 0; j <= N; j++){ const a = -wl / 2 + wl * n * j / N, w = Math.sin(j / N * n * 26) * 0.006, p = P(add(onP(a, ph2 / 2 - b + w), [0, 0.003, 0])); d += (j ? "L" : "M") + F1(p[0]) + " " + F1(p[1]); } ink += d; });
+        out.push({ id: "ink", z: zt + 0.002, mat: "ink", stroke: [ink || "M0 0", "#2f4fb0", 1.8] });
+        const pt = P(pen), pb = P(add(pen, [0.03, 0.09, 0.06]));
+        out.push({ id: "pen", z: P(wr)[2] + 0.01, mat: "pen", layers: [[capsule(pt[0], pt[1], 0.5, pb[0], pb[1], 1.3), "#2a2d36"]] });
+        return out; }); }
+    return { k, E };
+  }
+  const listAt = ph => { const { k, E } = pose(ph), W = wearer(c, { legs: o.legs, tag: o.tag, smile: E.smile }, u);
+    W.eyeMode = E.eyes; W.mouthInner = px => mouthSVG(E.mouth, E.smile, u + "m" + Math.round(ph * 1000), lipC, dimC, E.grin);
+    const list = frame(k, B, cam, W, floor, { hands: E.hands, noLegs: 1, extra: (J, P, S2) => [].concat(...E.extra.map(f => f(J, P, S2))) });
+    return { list, defs: W.defs }; };
+  /* round the picture: the z z z of sleep, the notes of a song (as the earlier drawings had them) */
+  let front = "";
+  if (name === "sleep"){ const z = (x, y, s, d) => `<g opacity="${o.still ? 1 : 0}">${o.still ? "" : `<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;${d};${f2(d + 0.15)};0.85;1" dur="${D.dur}s" repeatCount="indefinite"/>`}${zed(x, y, s)}</g>`; front = z(114, 52, 9, 0) + z(124, 34, 12, 0.2) + z(136, 12, 15, 0.4); }
+  if (name === "sing"){ const note = (nx, ny, sc, d) => `<g transform="translate(${nx} ${ny}) scale(${sc})">${o.still ? "" : `<animateTransform attributeName="transform" type="translate" values="${nx} ${ny};${nx + 4} ${ny - 12}" dur="${D.dur}s" begin="${d}s" repeatCount="indefinite" additive="replace"/>`}<ellipse rx="5" ry="3.7" fill="#6a55b8" transform="rotate(-20)"/><path d="M4.6 -1V-17q7 2 9 8" stroke="#6a55b8" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>`;
+    front = note(120, 52, 0.9, 0) + note(136, 30, 1.05, -0.5) + note(112, 22, 0.75, -1); }
+  const g = mk(""), ph0 = o.phase != null ? o.phase : D.still, html = L => L.map(n => nodeHTML(n, u)).join("");
+  if (o.still || !D.dur){ const F = listAt(ph0); g.innerHTML = `<defs>${F.defs}</defs>` + html(F.list) + front; return g; }
+  /* the loop: drawn by script at sixty phases a second, with the clock of the page (as figure() is) */
+  const dur = D.dur, NF = Math.round(dur * 30), kept = new Array(NF), F0 = listAt(0);
+  g.innerHTML = `<defs>${F0.defs}</defs><g class="fig">${html(F0.list)}</g><g opacity="1"><animate attributeName="opacity" values="1;1" dur="${f2(dur)}s" repeatCount="indefinite"/></g>` + front;
+  const mark = g.children[2].firstChild; let order = F0.list.map(n => n.id).join(" "), byId = null;
+  play(g, mark, dur, (root, ph) => { const host = root.children[1], i = ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF).list; return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
+    if (root._fi === i) return; root._fi = i;
+    if (!byId){ byId = {}; for (const el of host.children) if (el.hasAttribute("data-p")) byId[el.getAttribute("data-p")] = el; }
+    if (K.ord !== order){ order = K.ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; }
+      for (const id in byId) if (!seen[id]){ byId[id].remove(); delete byId[id]; } }
+    for (const n of list){ const el = byId[n.id]; if (!el) continue; nodeSet(el, n); if (n.tag === "g" && el._in !== n.inner){ if (el._in != null) el.firstChild.innerHTML = n.inner; el._in = n.inner; } } });      // (a face that changes: the mouth's and the eyes' drawing)
+  return g;
+}
 /* ---------- the teacher: a half figure, seated, facing the learner, in the 400 x 700 space of the stage ----------
    The same body and the same camera as every other figure, at a large size (five and a half heads, so that the head is the size it has
    always had on the stage: its middle at 200, 348; the shoulders at 146, 448 and 254, 448; the mouth at 200, 385). Seated as a person sits
@@ -1911,14 +2137,14 @@ function avatar(sp, o){ o = o || {}; const c = person(sp), B = bodyOf(c, o);
      rig.nod()                  two small nods, 170 ms down and 170 ms up each (a promise, as the page's own)
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
-const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0.8, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
+const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, palmK: 1.2, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
   legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
-  const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "woman", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
+  const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "teacher", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
   for (const r of ["rUa", "rEl", "rFa"]) B[r] *= TUT.arm;
   const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
-  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
+  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rKnee *= TUT.kneeK == null ? 1 : TUT.kneeK; B.rTh *= TUT.thK == null ? 1 : TUT.thK; B.hipK = TUT.hipK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
   const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
@@ -2024,7 +2250,7 @@ function tutor(c, o){
     else if (sh === "palmup"){ const H = TUT.palmHd, N = TUT.palmPn; hd = nrm([H[0] * sg, H[1], H[2]]); pn = perp([N[0] * sg, N[1], N[2]], hd); }            // offered to the learner: fingers toward him and a little out, the palm up
     else if (r === "auto" || r == null){ hd = fd; pn = sh === "relaxed" ? perp([-sg * 0.42, -0.62, -0.66], hd) : perp([sg * 0.2, -0.3, -1], hd); }      // at rest the palm lies on the thigh (down, and turned a little inward, as the capture's hands lie)
     else { const a = r * Math.PI / 180; hd = nrm([-Math.sin(a), -Math.cos(a), sh === "point" ? -0.1 : -0.03]); pn = perp([0, 0, -1], hd); }      // on her chest: the hand lies on it, turned as the page says
-    return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([p.scale || 1]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
+    return { hd, pn, hp: handFlat(HANDS[sh] || HANDS.relaxed).concat([(p.scale || 1) * (sh === "palmup" ? TUT.palmK : 1)]) }; }      // the page's own size for the hand in this pose (a hand held out to the viewer is nearer, and larger)
   const ST = { L: {}, R: {} }, mixv = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t), TIP = {};
   let pose = REST, blendUntil = 0, armsT = 0, lastArmsDraw = 0, armCast = "", castEl = null, headCast = "";
   function armsList(k, t){
@@ -2116,7 +2342,7 @@ function tutor(c, o){
     gaze, nod, blink, still(on){ held = !!on; }, _: { B, S, cam, quiet } };
   return { node: g, rig };
 }
-return { figure, act, avatar, person, tutor, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
+return { figure, act, avatar, person, tutor, close: closeUp, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
 })();
 /* the figure >>> */
 const ACT_SPEED = 2;
@@ -2131,6 +2357,14 @@ function action(act, who, opts){
   if (opts.sex === "f" && spec.person === "you") spec.sex = "f";      // the learner as a woman (opts.sex "f"; "m", the default, is the man)
   /* (the overhaul) the close-ups of "you" (smile, not smiling, eat, drink, sleep, sing, read, write) are still the older head, which cannot
      show all of a learner's own figure (a headscarf, freckles, a build): until they are redrawn on the new head they show the default learner */
+  /* (the overhaul) the close-ups on the new head: the same body and camera as every figure, the learner's own figure (a headscarf, freckles,
+     a build) included. Only a close-up with a look worn on it (a hat, a coat ...) is still the older drawing, and that one still shows the
+     default learner (it cannot show all of the learner's figure) */
+  const CLOSEFIG = { smile: "smile", "not smiling": "neutral", eat: "eat", drink: "drink", sleep: "sleep", sing: "sing", read: "read", write: "write" };
+  if (CLOSEFIG[act] && FIG.close && !opts.card && !opts.size && !opts.old && !opts.bare && !opts.shift && !(opts.looks && opts.looks.length)){
+    const cT = traits(spec), c0 = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT, ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[spec.person];
+    if (ID) c0.top = [tone(ID, 0.14), tone(ID, -0.2)];
+    return FIG.close(CLOSEFIG[act], c0, { still: act === "not smiling" || still, tag: name || "", phase: opts.phase }); }
   if (LEARNER && who === "you" && !opts._noLearner && CLOSE_OF_YOU[act]){ const keep = LEARNER; LEARNER = null;
     try { return action(act, who, Object.assign({}, opts, { _noLearner: 1 })); } finally { LEARNER = keep; } }
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
@@ -3685,7 +3919,8 @@ function together(act, opts){
 /* PICS.setLearner(spec): the learner's own figure (the spec of the avatar maker: an object, or the string PICS.avatarString gives; null:
    the usual learner again). From then on every picture of "you" is that person. PICS.learner(): the spec now set, or null */
 function setLearner(spec){ LEARNER = spec ? (typeof spec === "string" ? FIG.specParse(spec) : Object.assign({}, spec)) : null; return LEARNER; }
-/* PICS.portrait(who, name): Pierre ("paul"), Sylvie ("julie") or Marie, head and shoulders in the 160 x 190 box, on the new figure, with
+/* PICS.portrait(who, name): Pierre ("paul"), Sylvie ("julie") or Marie, head and shoulders in the 160 x 190 box, on the new figure (drawn at
+   5.6 heads: an adult's shoulders against the head), with
    the name tag where the stage expects it (class nametag: x 80 - w/2, y 146, w 50 or 56 for Sylvie, h 24).
    PICS.learnerCard(name, sex): the learner's own card: the learner's figure (the one made in the avatar maker when PICS.setLearner has been
    given it, else the usual learner, a man or with sex "f" a woman) with the name on the tag; a long name goes on two lines, as the stage's
@@ -3695,13 +3930,13 @@ const flatTag = (lines, w, h, tws, MAXT) => `<g class="nametag"><rect x="${r2(80
   lines.map((t, i) => `<text x="80" y="${166 + i * 16}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700" fill="#2a2522"${tws && tws[i] > MAXT ? ` textLength="${MAXT}" lengthAdjust="spacingAndGlyphs"` : ""}>${String(t).replace(/[<&"]/g, ch => ({ "<": "&lt;", "&": "&amp;", '"': "&quot;" }[ch]))}</text>`).join("") + `</g>`;
 function portraitPic(who, name){ who = who === "julie" || who === "marie" ? who : "paul"; const c = traits({ person: who }), ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[who];
   c.top = [tone(ID, 0.14), tone(ID, -0.2)]; if (who === "marie") c.style = "tucked";
-  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6, heads: 5.6 })); g.appendChild(mk(flatTag([name || WHO_NAME[who]], who === "julie" ? 56 : 50, 24)).firstChild); return g; }
 function learnerCardPic(name, sex){ name = String(name || ""); const cT = traits({ person: "you", sex: sex === "f" ? "f" : "m" }), c = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT;
   let cv = learnerCardPic.cv; const width = t => { try { cv = cv || (learnerCardPic.cv = document.createElement("canvas").getContext("2d")); cv.font = '700 14px "Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return cv.measureText(t).width; } catch (e){ return t.length * 8.4; } };
   const MAXT = 136; let lines = [name];
   if (width(name) > MAXT){ const cuts = [...name.matchAll(/[ -]/g)].map(m => m.index); if (cuts.length){ const q = cuts.reduce((a, b) => Math.abs(b - name.length / 2) < Math.abs(a - name.length / 2) ? b : a); lines = [name.slice(0, name[q] === "-" ? q + 1 : q), name.slice(q + 1)]; } }
   const tws = lines.map(width), w = Math.max(50, Math.min(MAXT + 12, Math.max(...tws) + 14)), h = lines.length > 1 ? 40 : 24;
-  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
+  const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6, heads: 5.6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
   try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
   return g; }
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
