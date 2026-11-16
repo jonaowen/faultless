@@ -4948,7 +4948,8 @@ function alertish(m){ setStatus(m); }
 { let leaveT=0; const lv=$("leave");
   lv.onclick=()=>{ UI.haptic("tick");
     if(!lv.classList.contains("ask")){ trace("leave asked"); lv.classList.add("ask"); lv.setAttribute("aria-label","Leave the lesson: tap again to leave"); clearTimeout(leaveT); leaveT=setTimeout(()=>{ lv.classList.remove("ask"); lv.setAttribute("aria-label","Leave the lesson"); }, 3000); return; }
-    trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
+    trace("left the lesson (the exercise starts again next time)"); try{ window.SPLASH && SPLASH.show(); }catch(e){}      // (.70) seen at once: the page's new start can take seconds on a slow link
+    try{ save(); }catch(e){} try{ stopRec(); }catch(e){} try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
 /* THE TUTOR'S INTERFACE. Everything the script asks of the teacher's figure goes through these: MOUTH (plan, start, startTimeline, word,
    stop, smile, smiling: the mouth, sound by sound), ARMS (go(pose, ms), SH: the arms and hand shapes), gaze(where), nod(), faceZoom(on),
    tagLit(slot). The figure is the picture library's (people.js: PICS.tutor() returning {node, rig}): TUTOR.adopt(rig) gives the page its drawing
