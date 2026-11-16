@@ -170,5 +170,13 @@
 "futur_q_intro": {
 "text": "Now Marie asks about it before she does it. Watch Pierre and Sylvie answer her. Then she will ask you.",
 "dur": 5.77
+},
+"dis_moi_de_intro": {
+"text": "Next, Marie asks you to tell her what to do. Listen to what she asks for, and tell her. Then she does it. Watch Pierre and Sylvie tell her first.",
+"dur": 8.2
+},
+"mirror_intro3": {
+"text": "Next, somebody does something, and asks about it while doing it. First Marie asks, then Pierre or Sylvie asks the other. Then each of them will ask you.",
+"dur": 8.8
 }
 }

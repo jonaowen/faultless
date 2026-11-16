@@ -60,11 +60,12 @@ function rpoly(pts, r){                                    // a polygon with its
    on the lower right; a thin rim of the lighter tone stays on the lit edge. k: how wide the shade is; rim: how wide the rim (0: none) */
 function solid(d, p, o){
   o = o || {};
-  const k = o.k == null ? 5 : o.k, rim = o.rim == null ? 1.2 : o.rim, a = uid(), b = uid(), sx = r1(-0.6 * k), sy = r1(-0.8 * k);
+  const k = (o.k == null ? 5 : o.k) * KMUL, rim = o.rim == null ? 1.2 : o.rim, a = uid(), b = uid(), sx = r1(-0.6 * k), sy = r1(-0.8 * k);
   return `<clipPath id="${a}"><path d="${d}"/></clipPath><clipPath id="${b}"><path d="${d}" transform="translate(${sx} ${sy})"/></clipPath>` +
     `<path d="${d}" fill="${p.s}"/><g clip-path="url(#${a})"><path d="${d}" transform="translate(${sx} ${sy})" fill="${rim ? p.r : p.l}"/>` +
     (rim ? `<g clip-path="url(#${b})"><path d="${d}" transform="translate(${r1(rim * 0.6)} ${r1(rim * 0.8)})" fill="${p.l}"/></g>` : "") + `</g>`;
 }
+let KMUL = 1;                                              // T4: a pale (white) subject is drawn with a wider shade side (one() sets it)
 const clipped = (d, inner) => { const a = uid(); return `<clipPath id="${a}"><path d="${d}"/></clipPath><g clip-path="url(#${a})">${inner}</g>`; };
 function ground(cx, cy, rx, ry, op){                       // the soft shadow a thing stands on
   const a = uid(), o = op || 0.26;
@@ -659,7 +660,7 @@ function tube(pts, ws){                                    // a tapered band thr
 const eye = (x, y, r, c) => circ(x, y, r, c || "#262B36") + circ(x - r * 0.32, y - r * 0.36, r * 0.36, "#FFFFFF");
 const rot = (a, x, y, inner) => `<g transform="rotate(${a} ${x} ${y})">${inner}</g>`;
 const shift = (dx, dy, s, inner, cx, cy) => `<g transform="translate(${r1(dx)} ${r1(dy)})${s && s !== 1 ? ` translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})` : ""}">${inner}</g>`;
-const COAT = { brown: P("#A8693F", "#7C4A2A"), golden: P("#E6AD5C", "#BD8236"), black: P("#454A5A", "#2A2E3A"), grey: P("#A9B0BC", "#7E8696"), white: P("#EFE8DA", "#C2B6A0"),
+const COAT = { brown: P("#A8693F", "#7C4A2A"), golden: P("#E6AD5C", "#BD8236"), black: P("#454A5A", "#2A2E3A"), grey: P("#A9B0BC", "#7E8696"), white: P("#F8F5EE", "#B3BBC8"),
   ginger: P("#EE9845", "#C46F28"), cream: P("#F2DFBA", "#CFB487"), chestnut: P("#B4572C", "#86391C"), tabby: P("#B9A68C", "#8D7A62") };
 const coatOf = (k, def) => { const n = k.has("golden") ? "golden" : k.has("ginger", "orange") ? "ginger" : k.has("chestnut") ? "chestnut" : k.cn === "yellow" ? "golden" : k.cn === "silver" ? "grey" : k.cn; return COAT[n] || COAT[def]; };
 
@@ -772,8 +773,8 @@ function cat(k){
    and a white blaze; chestnut, black, white, grey) */
 function horse(k){
   const n = k.has("white") ? "white" : k.has("grey") ? "grey" : k.has("black") ? "black" : k.has("chestnut") ? "chestnut" : "bay";
-  const B = { bay: P("#A9653A", "#7A4426"), chestnut: P("#C0703A", "#8F4E24"), black: P("#454A5A", "#2A2E3A"), white: P("#F4EEE2", "#CABEA8"), grey: P("#C3C7CF", "#959BA8") }[n];
-  const M = { bay: P("#3A3132", "#231D1F"), chestnut: P("#D88A4C", "#A9622E"), black: P("#2E323E", "#1B1E27"), white: P("#E4DCCB", "#BCAF98"), grey: P("#7E8594", "#5B6271") }[n];
+  const B = { bay: P("#A9653A", "#7A4426"), chestnut: P("#C0703A", "#8F4E24"), black: P("#454A5A", "#2A2E3A"), white: P("#F8F4EB", "#B5BCC9"), grey: P("#C3C7CF", "#959BA8") }[n];
+  const M = { bay: P("#3A3132", "#231D1F"), chestnut: P("#D88A4C", "#A9622E"), black: P("#2E323E", "#1B1E27"), white: P("#E6E2DA", "#A9AFBC"), grey: P("#7E8594", "#5B6271") }[n];
   const FL = { l: B.fl, s: B.fs }, HOOF = "#3A3436", LOW = n === "bay" ? M : B;
   const leg = (pts, ws, far) => far ? fill(tube(pts, ws), FL.s) + (n === "bay" ? fill(tube(pts.slice(-2), ws.slice(-2)), mix(M.s, INK, 0.2)) : "")
     : solid(tube(pts, ws), B, { k: 2.5, rim: 0 }) + (n === "bay" ? solid(tube([[pts[pts.length - 2][0], pts[pts.length - 2][1] + 4], pts[pts.length - 1]], ws.slice(-2)), M, { k: 2, rim: 0 }) : "");
@@ -828,7 +829,7 @@ function shoe(k){
       fill("M30 82Q38 84 44 96Q58 118 86 132Q60 126 44 106Q36 94 30 92Z", mix(B.s, INK, 0.3)) + fill("M96 158H140Q150 158 150 152L148 160H98Z", DK) +
       line("M24 84Q24 80 30 80", B.r, 1.4);
   }
-  const B = tr ? C.white : k.cn && C[k.cn] ? C[k.cn] : P("#A0603A", "#723F24"), S2 = tr ? (k.cn && C[k.cn] ? C[k.cn] : C.blue) : null, SOLE = tr ? C.white : P("#4A3B36", "#2F2522");
+  const B = tr ? P("#F8F6F1", "#B6BECB") : k.cn && C[k.cn] ? C[k.cn] : P("#A0603A", "#723F24"), S2 = tr ? (k.cn && C[k.cn] ? C[k.cn] : C.blue) : null, SOLE = tr ? C.white : P("#4A3B36", "#2F2522");
   const up = tr ? "M18 146Q12 118 20 100Q30 90 44 96Q56 102 66 96Q76 90 86 96Q110 108 132 116Q150 124 150 140L148 148H18Z"
                 : "M18 148Q14 120 18 102Q26 96 38 100Q52 104 64 94Q74 90 84 96Q108 110 128 118Q146 124 148 138L146 148H18Z";
   let s = ground(82, 162, 70, 6);
@@ -838,7 +839,7 @@ function shoe(k){
   else s += clipped(up, fill("M104 108Q128 118 148 132V150H122Q122 126 104 108Z", B.s, 'opacity=".5"')) + line("M104 109Q120 120 122 148", mix(B.s, INK, 0.3), 1.3, 'opacity=".7"') +      // the toe cap
     fill("M62 98Q74 92 86 98L94 110Q80 112 68 108Z", mix(B.l, B.s, 0.35)) + line("M66 99L84 106M70 96L88 103M66 104L80 97M72 106L90 100", "#F2E6CF", 1.8) +           // the lacing
     fill("M14 146H148Q154 148 152 154Q150 158 142 158H44V164H16Z", SOLE.l) + line("M18 147.5H146", mix(SOLE.l, "#FFFFFF", 0.25), 1.2) + fill("M16 158H44V164H16Z", SOLE.s);   // the sole and the heel
-  return `<g transform="translate(0 -10)">${ch ? `<g transform="translate(80 162) scale(0.7) translate(-80 -162)">${s}</g>` : s}</g>`;
+  return `<g transform="translate(80 146) scale(1.0) translate(-82 -162)">${ch ? `<g transform="translate(80 162) scale(0.7) translate(-80 -162)">${s}</g>` : s}</g>`;      // T4: larger and higher in the card (it sat low)
 }
 
 /* ================================================================ bread (un pain) ================================================================
@@ -1248,9 +1249,16 @@ function tomato(k){
 function cheese(k){
   const Y = k.cn && C[k.cn] ? C[k.cn] : P("#F7D36A", "#D9AE3E"), RIND = P("#E8B54A", "#C48E2A");
   if (k.has("round", "box")){
-    const W = P("#FBF6EA", "#D9CFBA"), box = k.has("box");
-    let s = ground(82, 156, 70, 9) + `<ellipse cx="80" cy="132" rx="64" ry="22" fill="${W.s}"/>` + rect(16, 104, 128, 28, W.m) + `<ellipse cx="80" cy="104" rx="64" ry="22" fill="${W.l}"/>`;
-    s += fill("M80 104L112 124V152L80 132Z", "#FBEBB8") + fill("M80 104L132 112V140L80 132Z".replace(/.*/, ""), "none") + fill("M80 104L112 124L132 116Z".replace(/.*/, ""), "none") + fill("M80 104L112 124L138 116L80 104Z", mix(W.l, "#F7E7B0", 0.6));
+    /* T4: a white-rinded wheel (a brie, a camembert) with a wedge cut out toward us: the two cut faces show the yellow paste under the thin
+       white rind, the cut piece lies in front (the cut was faint) */
+    const W = P("#FBF6EA", "#D3CAB6"), box = k.has("box"), PA = P("#F8E3A0", "#E2BF63"), cx = 80, cy = 94, rx = 66, ry = 25, h = 36;
+    const E = (t, dy) => [cx + rx * Math.cos(t * RAD), cy + ry * Math.sin(t * RAD) + (dy || 0)], arc = (t0, t1, dy) => { const o = []; for (let i = 0; i <= 16; i++) o.push(E(t0 + (t1 - t0) * i / 16, dy)); return o; };
+    const t1 = 52, t2 = 118, P1 = E(t1), P2 = E(t2);
+    let s = ground(84, 156, 76, 11) + fill(poly([[cx, cy]].concat(arc(t2, t1 + 360))), W.l) +                                               // the top: the round less the wedge
+      fill(poly([[cx, cy], P1, E(t1, h), [cx, cy + h]]), PA.l) + fill(poly([[cx, cy], P2, E(t2, h), [cx, cy + h]]), PA.s) +                 // the cut faces: lit, shaded
+      line(`M${r1(cx)} ${cy}L${r1(P1[0])} ${r1(P1[1])}M${r1(cx)} ${cy}L${r1(P2[0])} ${r1(P2[1])}`, "#FFFFFF", 2.2) + line(`M${r1(cx)} ${cy}V${cy + h}`, mix(PA.s, INK, 0.12), 1) +
+      fill(poly(arc(0, t1).concat(arc(t1, 0, h))), W.s) + fill(poly(arc(t2, 180).concat(arc(180, t2, h))), W.m) +                     // the rind of the side, turned from / to the light
+      line(pth(arc(0, t1, h)), W.s, 1.6) + line(pth(arc(t2, 180, h)), mix(W.m, W.s, 0.5), 1.6);
     if (box) s = ground(82, 160, 72, 9) + `<ellipse cx="80" cy="136" rx="68" ry="24" fill="${C.wood.s}"/>` + rect(12, 104, 136, 32, C.wood.m) + `<ellipse cx="80" cy="104" rx="68" ry="24" fill="${C.wood.l}"/><ellipse cx="80" cy="104" rx="62" ry="20" fill="${W.l}"/>` + line("M12 120Q80 146 148 120", C.wood.s, 1.4, 'opacity=".6"');
     return s;
   }
@@ -1316,10 +1324,11 @@ function key(k){
    A shirt laid flat: a collar, a button front, a pocket, long sleeves with cuffs. Against a jumper (later: no collar, ribbed), a dress,
    a T-shirt. looks: a colour (white-blue the usual one) | "checked" | "short-sleeved" */
 function shirt(k){
-  const B = k.cn === "white" ? P("#F4F0E6", "#C9C0AE") : k.cn && C[k.cn] ? C[k.cn] : P("#BFD9EE", "#8EB4D6"), short = k.has("short", "short-sleeved");
+  const B = k.cn === "white" ? P("#F8F6F1", "#B6BECB") : k.cn && C[k.cn] ? C[k.cn] : P("#BFD9EE", "#8EB4D6"), short = k.has("short", "short-sleeved");
   const body = "M48 30L36 36L40 172H120L124 36L112 30Q96 40 80 40Q64 40 48 30Z";
   const sl = short ? ["M48 30L36 36L14 76L34 88L42 64Z", "M112 30L124 36L146 76L126 88L118 64Z"] : ["M48 30L36 36L8 150L28 156L44 76Z", "M112 30L124 36L152 150L132 156L116 76Z"];
-  let s = ground(80, 176, 56, 4, 0.14) + sl.map(d => solid(d, B, { k: 4, rim: 1 })).join("") + solid(body, B, { k: 6, rim: 1.4 });
+  let s = ground(80, 176, 56, 4, 0.14) + sl.map(d => solid(d, B, { k: 4, rim: 1 })).join("") + solid(body, B, { k: 6, rim: 1.4 }) +
+    fill("M50 29Q80 22 110 29L80 47Z", mix(B.s, INK, 0.3)) + fill("M50 29Q80 22 110 29L108 33Q80 27 52 33Z", B.s);                                  // T4: the inside of the back of the neck, and the collar band behind it
   if (k.has("checked")) s += clipped(body + sl.join(""), [...Array(14)].map((_, i) => rect(0, i * 13, 160, 4.6, B.s, 0, 'opacity=".55"') + rect(i * 13, 0, 4.6, 190, B.s, 0, 'opacity=".55"')).join(""));
   if (!short) s += [[8, 150, 28, 156], [132, 156, 152, 150]].map(([a, b, c, d]) => line(`M${a + 1} ${b - 8}L${c} ${d - 8}`, B.s, 3)).join("");
   s += line("M80 46V170", B.s, 1.8) + [60, 84, 108, 132, 156].map(y => circ(84, y, 2.2, "#FFFFFF") + circ(84, y, 1, B.s)).join("") + fill(rrd(96, 64, 16, 18, 2), B.s, 'opacity=".45"') +
@@ -1481,11 +1490,15 @@ function plane(k){
       solid(rrd(54, 80, 54, 8, 3), Y, { k: 2, rim: 0 }) + solid(rrd(50, 120, 60, 8, 3), Y, { k: 2, rim: 0 }) + line("M62 88V120M98 88V120M62 88L98 120", "#5A6274", 1.6) +
       fill("M78 92Q82 84 92 86L94 96H78Z", "#2E3442") + rect(140, 98, 5, 12, "#5A6274", 2) + `<ellipse cx="146" cy="104" rx="3" ry="22" fill="#5A6274" opacity=".7"/>` + line("M60 128L56 142M100 128L104 142", "#5A6274", 2) + circ(56, 144, 5, "#2E3442") + circ(104, 144, 5, "#2E3442"));
   }
-  const body = "M10 104Q12 90 30 88H128Q150 90 154 100Q150 108 128 110H30Q14 110 10 104Z";
-  let s = fill(blob([[18, 60], [30, 50], [46, 54], [52, 62], [40, 66], [20, 66]]), "#FFFFFF", 'opacity=".9"') + fill(blob([[112, 148], [126, 140], [144, 144], [146, 152], [116, 154]]), "#FFFFFF", 'opacity=".9"');
-  s += rot(-8, 80, 100, `<g transform="translate(74 100) scale(1.04) translate(-80 -100)">` + solid("M64 102L92 102L60 150L44 150Z", P(mix(W.l, W.s, 0.3), W.s), { k: 3, rim: 0 }) + solid("M26 88L14 60H28L48 88Z", B, { k: 3, rim: 1 }) + solid(body, W, { k: 5, rim: 1.4 }) +
-    clipped(body, rect(0, 102, 160, 4, B.l)) + [...Array(13)].map((_, i) => rect(40 + i * 7, 94, 3.6, 4.6, "#3A4D6E", 1.4)).join("") + fill("M138 94Q146 95 149 99H138Z", "#3A4D6E") +
-    solid("M70 104L100 104L56 128L44 128Z", W, { k: 3, rim: 1 }) + solid(rrd(62, 116, 22, 9, 4.5), P("#C9CFD8", "#9AA2B0"), { k: 2, rim: 0 }) + solid("M18 96L8 96L4 102H22Z", W, { k: 2, rim: 0 }) + `</g>`);
+  /* T4: an airliner seen a little from below and in front, climbing: a full round body, the near wing sweeping toward us with its engine,
+     the far wing behind, a tall coloured fin (it was a thin diagonal at 80 px) */
+  const body = "M8 102Q8 84 32 82H122Q146 82 156 98Q148 116 122 118H32Q8 118 8 102Z", GW = P(mix(W.l, W.s, 0.25), W.s);
+  let s = cloud(40, 54, 0.8) + cloud(122, 152, 0.75);
+  s += rot(-10, 80, 100, `<g transform="translate(80 104) scale(0.86) translate(-80 -100)">` + fill("M78 86L100 86L70 44L58 44Z", GW.s) + fill(rrd(62, 52, 14, 8, 4), W.s) +            // the far wing and its engine
+    solid("M30 84L12 40H32L58 84Z", B, { k: 3, rim: 1 }) + fill("M26 88L12 74H24L40 88Z", GW.s) + solid(body, W, { k: 6, rim: 1.5 }) +
+    clipped(body, rect(0, 104, 160, 5, B.l) + fill("M0 112H160V120H0Z", W.s, 'opacity=".5"')) + [...Array(12)].map((_, i) => rect(42 + i * 7.4, 92, 4, 5.4, "#3A4D6E", 2)).join("") + fill("M138 90Q148 91 151 97H138Z", "#3A4D6E") +
+    solid("M62 108L100 108L54 160L38 160Z", GW, { k: 3, rim: 1 }) + solid(rrd(46, 120, 30, 13, 6.5), P("#C9CFD8", "#9AA2B0"), { k: 3, rim: 0 }) + `<ellipse cx="75" cy="126.5" rx="3" ry="6" fill="#4C5366"/>` +
+    solid("M22 104L4 116H18L40 106Z", GW, { k: 2, rim: 0 }) + `</g>`);
   return k.has("toy") ? `<g transform="translate(80 100) scale(.75) translate(-80 -100)">${s}</g>` + ground(80, 168, 40, 5) : s;
 }
 
@@ -1514,45 +1527,71 @@ const island = (fillC, edge, y, rx, ry) => `<ellipse cx="80" cy="${y + 4}" rx="$
 const roundTree = (x, y, r, L, T) => solid(tube([[x, y], [x, y - r * 0.9]], [r * 0.32, r * 0.24]), T || P("#9B6A43", "#6E4A2E"), { k: 2, rim: 0 }) +
   [[0, -r * 1.3, r * 0.82], [-r * 0.5, -r, r * 0.6], [r * 0.5, -r, r * 0.6], [0, -r * 1.8, r * 0.55]].map(([dx, dy, rr]) => solid(cd(x + dx, y + dy, rr), L || P("#6DB46A", "#468C4E"), { k: rr * 0.3, rim: 1.2 })).join("");
 const bench = (x, y, w, B) => { B = B || C.green; return line(`M${x} ${y}V${y + 12}M${x + w} ${y}V${y + 12}`, "#3A4254", 2.4) + fill(rrd(x - 2, y - 2, w + 4, 4.4, 1.5), B.l) + fill(rrd(x - 2, y - 12, w + 4, 4, 1.5), B.l) + fill(rrd(x - 2, y - 6.6, w + 4, 3.4, 1.5), B.s) + line(`M${x + 1} ${y - 12}V${y}M${x + w - 1} ${y - 12}V${y}`, B.s, 2); };
+/* T4: each outdoor place stands in its own patch of sky (a round-topped window of air, no frame, no outline) on a ground that spills out
+   of it at the foot: the whole card is the place, read at once at 80 px; the sky says "outside", the ground says which place. */
+const skyArch = (cols, top) => { const g = uid(), t = top == null ? 12 : top, d = `M12 176V${t + 68}A68 68 0 0 1 148 ${t + 68}V176Z`;
+  return { d, s: `<linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${cols[0]}"/><stop offset="1" stop-color="${cols[1]}"/></linearGradient>` + fill(d, `url(#${g})`) }; };
+const cloud = (x, y, s) => fill(blob([[x - 18 * s, y + 5 * s], [x - 14 * s, y - 3 * s], [x - 5 * s, y - 6 * s], [x + 3 * s, y - 11 * s], [x + 13 * s, y - 6 * s], [x + 19 * s, y + 1 * s], [x + 16 * s, y + 6 * s]]), "#FFFFFF", 'opacity=".92"');
+const lawn = (top, G, x0, x1) => { x0 = x0 == null ? 4 : x0; x1 = x1 == null ? 156 : x1;
+  const d = b => `M12 ${top + 7}Q80 ${top - 6} 148 ${top + 7}Q${x1} ${top + 12} ${x1} ${top + 30}V${b - 12}Q${x1} ${b} ${x1 - 14} ${b}H${x0 + 14}Q${x0} ${b} ${x0} ${b - 12}V${top + 30}Q${x0} ${top + 12} 12 ${top + 7}Z`;
+  return fill(d(182), G.s) + fill(d(177), G.l); };
+const treeLine = (y, L, xs) => xs.map(([x, r]) => circ(x, y - r * 0.5, r, L.l)).join("") + rect(8, y - 2, 144, 6, L.l);
+const lampPost = (x, y, h) => line(`M${x} ${y}V${y - h}`, "#3A4254", 2.6) + line(`M${x - 3} ${y}H${x + 3}`, "#3A4254", 3) + fill(`M${x - 5} ${y - h - 2}H${x + 5}L${x + 3.4} ${y - h - 11}H${x - 3.4}Z`, "#3A4254") + rect(x - 3, y - h - 9, 6, 6, "#FFE9A6", 1) + fill(`M${x - 6} ${y - h - 11}H${x + 6}L${x} ${y - h - 16}Z`, "#3A4254");
 function park(k){
-  const autumn = k.has("autumn"), L = autumn ? P("#EE9A3A", "#C8682A") : null;
-  let s = ground(80, 168, 76, 8, 0.14) + island(C.grass.l, C.grass.s, 150, 76, 22) + fill("M30 166Q70 150 84 140Q100 130 132 130Q104 134 96 146Q84 160 64 170Z", C.paving.l);
-  if (k.has("pond")) s += `<ellipse cx="104" cy="152" rx="30" ry="9" fill="#7FBEDF"/><ellipse cx="104" cy="150" rx="26" ry="7" fill="#A8D4EC"/>` + solid(blob([[100, 146], [108, 144], [112, 148], [104, 151]]), C.white, { k: 1, rim: 0 }) + fill("M112 146l4 -1l-3 2Z", C.orange.l);
-  s += roundTree(78, 122, 20, L ? far(L, 0.3) : far(P("#6DB46A", "#468C4E"), 0.3)) + roundTree(36, 144, 32, L) + roundTree(124, 134, 27, L);
-  if (k.has("playground")) s += line("M104 156L116 120H124L136 156", C.red.l, 3) + line("M118 122L146 156", C.yellow.l, 4) + line("M98 120H128", C.blue.l, 3);
-  else s += bench(60, 150, 30, C.green) + (k.has("benches") ? bench(104, 154, 26, C.green) : "");
-  s += line("M112 160V112", "#3A4254", 2.4) + circ(112, 110, 4.4, "#FBF8F0");
-  if (k.has("flowers") || !k.has("trees")) s += [[24, 160, C.red], [32, 164, C.yellow], [130, 160, C.pink], [138, 156, C.red], [20, 154, C.purple]].map(([x, y, c]) => circ(x, y, 3, c.l) + circ(x, y, 1.2, C.yellow.l)).join("");
-  if (autumn) s += [[48, 162], [96, 166], [128, 150], [64, 140]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="4" ry="2" fill="${L.l}"/>`).join("");
+  const autumn = k.has("autumn"), L = autumn ? P("#EE9A3A", "#C8682A") : P("#6DB46A", "#468C4E"), A = skyArch(autumn ? ["#BFD6E6", "#F1F0E4"] : ["#A6D8F0", "#E6F5FB"]);
+  let s = ground(80, 176, 78, 7, 0.14) + A.s + clipped(A.d, cloud(46, 44, 1) + cloud(116, 30, 0.75) + treeLine(112, far(L, 0.5), [[20, 12], [36, 15], [54, 11], [70, 14], [92, 12], [110, 15], [128, 12], [144, 14]]));
+  s += lawn(108, C.grass) + fill("M54 180C62 162 104 154 99 140C96 130 82 124 83 113L88 113C89 123 113 129 115 141C119 158 94 166 106 180Z", C.paving.l) +
+    fill("M54 180C62 162 104 154 99 140C96 130 82 124 83 113L85 113C86 124 104 132 105 142C107 158 74 166 70 180Z", C.paving.s, 'opacity=".45"');
+  if (k.has("pond")) s += `<ellipse cx="124" cy="132" rx="26" ry="8" fill="#7FBEDF"/><ellipse cx="124" cy="130.5" rx="22.5" ry="6" fill="#A8D4EC"/>` + solid(blob([[118, 127], [125, 125], [129, 128], [122, 131]]), C.white, { k: 1, rim: 0 }) + fill("M129 127l4 -1l-3 2Z", C.orange.l);
+  s += roundTree(60, 116, 13, far(L, 0.25)) + roundTree(120, 118, 16, far(L, 0.2));
+  if (k.has("playground")) s += line("M110 168L122 132H130L142 168", C.red.l, 3.4) + line("M124 134L150 168", C.yellow.l, 4.4) + line("M104 132H134", C.blue.l, 3.4);
+  else s += bench(112, 160, 32, C.green) + (k.has("benches") ? bench(16, 150, 26, C.green) : "");
+  s += lampPost(78, 172, 50) + roundTree(28, 168, 30, L) + (k.has("playground") ? "" : roundTree(140, 140, 18, L));
+  if (k.has("flowers") || !k.has("trees", "pond", "playground")) s += [[64, 172, C.red], [72, 176, C.yellow], [110, 176, C.pink], [118, 172, C.red], [126, 177, C.purple], [58, 177, C.purple]].map(([x, y, c]) => circ(x, y, 3.4, c.l) + circ(x, y, 1.3, C.yellow.l)).join("");
+  if (autumn) s += [[48, 172], [92, 176], [128, 150], [64, 150], [140, 170]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="4.4" ry="2.2" fill="${L.l}"/>`).join("");
   return s;
 }
 function beach(k){
-  const sunset = k.has("sunset"), SEA = sunset ? P("#4A7FB5", "#2F5F92") : P("#5AAFDB", "#3A8EC0"), SAND = P("#F3DCA6", "#D9BC7C");
-  let s = ground(80, 168, 76, 8, 0.12);
-  s += (sunset ? circ(80, 96, 26, "#FBC56A") + circ(80, 96, 19, "#FFE7A3") : circ(132, 46, 12, "#FFE38A")) + `<ellipse cx="80" cy="112" rx="76" ry="22" fill="${SEA.l}"/>` + line("M14 108Q30 104 46 108T78 108T110 108T146 108", "#FFFFFF", 2, 'opacity=".8"') + line("M24 118Q40 114 56 118T88 118T120 118", "#FFFFFF", 1.6, 'opacity=".7"') +
-    island(SAND.l, SAND.s, 146, 78, 28) + fill("M4 136Q40 124 80 128Q120 124 156 134", "none") + line("M6 134Q40 124 80 128Q120 122 154 132", "#FFFFFF", 3, 'opacity=".85"');
-  if (k.has("boats")) s += fill("M110 102L118 84V102Z", "#FFFFFF") + fill("M106 103H124L120 107H110Z", C.red.l);
-  if (k.has("palm")) s += solid(tube([[30, 160], [26, 120], [34, 82]], [7, 6, 4]), P("#B88A5A", "#8A6340"), { k: 2, rim: 0 }) + [[-30, 10], [-10, -16], [16, -14], [30, 10], [0, 18]].map(([dx, dy]) => solid(blob([[34, 82], [34 + dx * 0.5, 82 + dy * 0.5 - 6], [34 + dx, 82 + dy], [34 + dx * 0.5, 82 + dy * 0.5 + 2]]), P("#4FA35A", "#357A42"), { k: 2, rim: 0 })).join("");
-  if (k.has("rocks")) s += solid(blob([[110, 150], [118, 132], [134, 128], [146, 140], [140, 152]]), C.stone, { k: 4, rim: 1 }) + solid(blob([[132, 156], [138, 146], [152, 146], [154, 156]]), C.stone, { k: 3, rim: 1 });
-  if (!k.has("palm") && !k.has("rocks") || k.has("parasol")) s += line("M70 158L92 70", "#5A6274", 2.4) + solid("M50 82Q66 50 104 58Q128 66 130 92Q114 82 98 84Q84 74 68 80Q60 76 50 82Z", C.red, { k: 3, rim: 1 }) +
-    clipped("M50 82Q66 50 104 58Q128 66 130 92Q114 82 98 84Q84 74 68 80Q60 76 50 82Z", fill("M84 50L68 82H80L96 54ZM110 56L104 86H116L124 64Z", "#FFFFFF")) + rot(-8, 60, 156, solid(rrd(36, 150, 44, 14, 2), C.blue, { k: 2, rim: 0 }) + line("M40 157H76", "#FFFFFF", 2.4));
-  return s + solid("M118 162L120 150H130L132 162Z", C.yellow, { k: 1.5, rim: 0 }) + line("M120 150Q125 142 130 150", C.yellow.s, 1.2);
+  const sunset = k.has("sunset"), SEA = sunset ? P("#4A7FB5", "#2F5F92") : P("#4FA9DA", "#2F86BD"), SAND = P("#F3DCA6", "#D9BC7C"), H = 94;
+  const A = skyArch(sunset ? ["#F2A65A", "#F9DDA8"] : ["#8FD0F0", "#DDF2FB"]);
+  let sky = sunset ? circ(80, H, 24, "#FFE7A3") + circ(80, H, 17, "#FFF4D0") : circ(122, 40, 12, "#FFE38A") + circ(122, 40, 16, "#FFE38A", 'opacity=".35"') + cloud(42, 44, 0.9);
+  sky += rect(0, H, 160, 60, SEA.l) + rect(0, H, 160, 3, SEA.s) + line("M10 106Q26 102 42 106T74 106T106 106T138 106T170 106", "#FFFFFF", 1.8, 'opacity=".75"') + line("M0 116Q16 112 32 116T64 116T96 116T128 116T160 116", "#FFFFFF", 1.6, 'opacity=".6"');
+  if (sunset) sky += [0, 1, 2].map(i => rect(80 - 16 + i * 4, H + 6 + i * 8, 32 - i * 8, 2.6, "#FFD98A", 1.3)).join("");
+  if (k.has("boats") || !k.has("palm", "rocks", "parasol")) sky += fill(`M108 ${H - 1}L116 ${H - 20}V${H - 1}Z`, "#FFFFFF") + fill(`M117 ${H - 18}L124 ${H - 2}H117Z`, "#F3EEE3") + fill(`M104 ${H}H126L122 ${H + 4}H108Z`, C.red.l);
+  let s = ground(80, 178, 78, 6, 0.12) + A.s + clipped(A.d, sky);
+  const sd = b => `M12 129Q40 120 80 124Q120 120 148 126Q156 132 156 146V${b - 12}Q156 ${b} 142 ${b}H18Q4 ${b} 4 ${b - 12}V146Q4 134 12 129Z`;
+  s += fill(sd(182), SAND.s) + fill(sd(177), SAND.l) + line("M6 130Q40 119 80 123Q120 119 154 127", "#FFFFFF", 3.4, 'opacity=".9"') + line("M10 136Q44 127 80 130Q118 126 150 133", SEA.l, 1.4, 'opacity=".35"');
+  if (k.has("palm")) s += solid(tube([[28, 172], [22, 120], [32, 72]], [8, 7, 5]), P("#B88A5A", "#8A6340"), { k: 2, rim: 0 }) + [[-30, 12], [-12, -18], [18, -16], [34, 10], [2, 22]].map(([dx, dy]) => solid(blob([[32, 72], [32 + dx * 0.5, 72 + dy * 0.5 - 7], [32 + dx * 1.15, 72 + dy * 1.15], [32 + dx * 0.5, 72 + dy * 0.5 + 2]]), P("#4FA35A", "#357A42"), { k: 2, rim: 0 })).join("");
+  if (k.has("rocks")) s += solid(blob([[104, 160], [112, 138], [130, 132], [146, 146], [140, 162]]), C.stone, { k: 4, rim: 1 }) + solid(blob([[132, 170], [138, 156], [152, 156], [154, 170]]), C.stone, { k: 3, rim: 1 });
+  if (!k.has("palm", "rocks") || k.has("parasol")){
+    const cn = "M36 82Q56 44 100 50Q130 58 136 90Q118 78 100 80Q84 70 68 76Q50 72 36 82Z";
+    s += line("M72 172L94 62", "#5A6274", 2.8) + solid(cn, C.red, { k: 3, rim: 1 }) + clipped(cn, fill("M80 40L58 82H72L94 46ZM112 48L102 84H116L130 62Z", "#FFFFFF")) + circ(95.5, 52, 2.6, "#5A6274") +
+      ground(66, 170, 30, 5, 0.18) + rot(-8, 54, 164, solid(rrd(30, 156, 50, 16, 2), C.blue, { k: 2, rim: 0 }) + line("M34 162H76M34 167H76", "#FFFFFF", 2.2));
+  }
+  s += solid(cd(128, 166, 9), C.white, { k: 2.5, rim: 0 }) + clipped(cd(128, 166, 9), fill("M128 166L120 156H134ZM128 166L138 168L132 178Z", C.red.l) + fill("M128 166L118 170L122 178Z", C.blue.l)) + circ(128, 166, 2, "#FFFFFF");
+  return s + solid("M100 176L102 162H114L116 176Z", C.yellow, { k: 1.5, rim: 0 }) + line("M102 162Q108 152 114 162", C.yellow.s, 1.4);
 }
 function garden(k){
-  let s = ground(80, 168, 76, 8, 0.14) + island(C.grass.l, C.grass.s, 148, 76, 24);
-  for (let x = 12; x <= 148; x += 12) s += fill(`M${x - 4.5} 136V96L${x} 89L${x + 4.5} 96V136Z`, "#FFFFFF") + fill(`M${x + 1.5} 136V94L${x + 4.5} 96V136Z`, "#E3DCCB");
-  s += rect(6, 102, 148, 5, "#F3EEE3") + rect(6, 122, 148, 5, "#F3EEE3");
-  if (k.has("tree") || !k.has("flowers")) s += roundTree(124, 142, 27);
+  const A = skyArch(["#A6D8F0", "#E6F5FB"]), W = C.cream, R = C.tile;
+  let back = cloud(118, 36, 0.8) + solid("M6 120V58L44 30L82 58V120Z", W, { k: 4, rim: 1 }) + fill("M0 62L44 24L88 62L84 66L44 32L4 66Z", R.l) + fill("M44 24L88 62L84 66L44 32Z", R.s) +
+    rect(24, 66, 20, 24, "#FFFFFF", 2) + rect(26, 68, 16, 20, "#8FB8D4", 1) + line("M34 68V88M26 78H42", "#FFFFFF", 1.6) + rect(20, 64, 4, 28, C.green.l, 1) + rect(44, 64, 4, 28, C.green.s, 1) + rect(22, 90, 24, 3, "#E6DCC6");
+  let s = ground(80, 178, 78, 6, 0.14) + A.s + clipped(A.d, back);
+  s += lawn(112, C.grass);
+  if (k.has("fence") || !k.has("bench", "lawn")) { for (let x = 10; x <= 150; x += 11) s += fill(`M${x - 4.4} 136V100L${x} 93L${x + 4.4} 100V136Z`, "#FFFFFF") + fill(`M${x + 1.4} 136V98L${x + 4.4} 100V136Z`, "#DDD5C3");
+    s += rect(6, 106, 148, 5, "#F3EEE3") + rect(6, 124, 148, 5, "#F3EEE3") + rect(6, 109, 148, 2, "#DDD5C3", 0, 'opacity=".7"') + rect(6, 127, 148, 2, "#DDD5C3", 0, 'opacity=".7"'); }
+  if (k.has("tree") || !k.has("flowers", "roses")) s += roundTree(132, 150, 24);
   const fl = k.has("roses") ? [C.red, C.pink, C.red] : [C.red, C.yellow, C.purple, C.pink, C.orange];
-  s += `<ellipse cx="54" cy="150" rx="40" ry="10" fill="#8C6A44"/><ellipse cx="54" cy="148" rx="38" ry="8" fill="#A77E52"/>` +
-    [...Array(9)].map((_, i) => { const x = 22 + i * 8.4, y = 146 + (i % 3) * 3 - 16 - (i % 2) * 9, c = fl[i % fl.length]; return line(`M${x} ${y + 5}V${150}`, "#468C4E", 2) + solid(cd(x, y, 6.4), c, { k: 2, rim: 0 }) + circ(x, y, 2.4, C.yellow.l); }).join("");
-  if (k.has("bench")) s += bench(100, 160, 30, C.blue);
-  else s += solid("M98 158H114L112 168H100Z", C.green, { k: 1.5, rim: 0 }) + line("M114 160L124 154", C.green.s, 2) + line("M100 158Q106 148 112 158", C.green.s, 1.6);          // a watering can
+  s += `<ellipse cx="56" cy="160" rx="48" ry="12" fill="#8C6A44"/><ellipse cx="56" cy="158" rx="46" ry="10" fill="#A77E52"/>`;
+  for (let row = 0; row < 2; row++) for (let i = 0; i < 9 - row; i++){ const x = 18 + i * 9.6 + row * 4.8, y = 150 - row * 14 - (i % 2) * 5, c = fl[(i + row * 2) % fl.length];
+    s += line(`M${x} ${y + 5}V${158 - row * 2}`, "#468C4E", 2) + fill(`M${x} ${y + 12}q-6 -2 -7 -7q6 0 7 5Z`, C.leaf.l) + solid(cd(x, y, row ? 6 : 7), c, { k: 2, rim: 0 }) + circ(x, y, 2.4, C.yellow.l); }
+  if (k.has("bench")) s += bench(102, 168, 30, C.blue);
+  else s += solid("M104 170H122L120 180H106Z", C.green, { k: 1.5, rim: 0 }) + line("M122 172L134 165", C.green.s, 2.2) + line("M106 170Q113 159 120 170", C.green.s, 1.8);          // a watering can
   return s;
 }
 function station(k){
   const B = k.cn && C[k.cn] ? C[k.cn] : k.has("brick") ? C.brick : C.cream, R = C.slate;
-  let s = ground(80, 170, 76, 6, 0.14) + solid("M14 108V54H146V108Z", B, { k: 4, rim: 1.2 }) + fill("M8 58L80 30L152 58Z", R.l) + fill("M80 30L152 58H120Z", R.s) +
+  const A = skyArch(["#A6D8F0", "#E6F5FB"], 8);
+  let s = ground(80, 178, 78, 6, 0.14) + A.s + clipped(A.d, cloud(28, 40, 0.7) + cloud(134, 30, 0.6)) + solid("M14 108V54H146V108Z", B, { k: 4, rim: 1.2 }) + fill("M8 58L80 30L152 58Z", R.l) + fill("M80 30L152 58H120Z", R.s) +
     [30, 58, 102, 130].map(x => fill(`M${x - 9} 104V74Q${x - 9} 66 ${x} 66Q${x + 9} 66 ${x + 9} 74V104Z`, "#5D6E8C")).join("") + fill("M70 108V70Q70 60 80 60Q90 60 90 70V108Z", mix(B.s, INK, 0.3)) +
     solid(cd(80, 44, 11), C.white, { k: 2, rim: 0 }) + `<circle cx="80" cy="44" r="11" fill="none" stroke="#3A4254" stroke-width="2"/>` + line("M80 44V37M80 44L85 47", "#2A2E3A", 1.8) +
     rect(4, 108, 152, 10, C.paving.l) + rect(4, 116, 152, 3, "#F3C64B") + rect(4, 119, 152, 4, C.paving.s);
@@ -1562,6 +1601,7 @@ function station(k){
     s += solid(body, T, { k: 5, rim: 1.4 }) + clipped(body, rect(0, 136, 160, 4, C.blue.l)) + [14, 32, 50, 68, 86, 104].map(x => rect(x, 118, 13, 12, "#3A4D6E", 2)).join("") + fill("M124 118H138Q146 120 148 130H124Z", "#3A4D6E") +
       [24, 46, 104, 126].map(x => circ(x, 152, 5, "#2E3442")).join("");
   }
+  s += fill(rrd(4, 159, 152, 20, 4), C.paving.s) + fill(rrd(4, 159, 152, 16, 4), C.paving.l) + rect(4, 159, 152, 3.4, "#F3C64B") + [24, 64, 104, 144].map(x => rect(x - 12, 168, 24, 1.2, C.paving.s, 0, 'opacity=".6"')).join("");
   return s;
 }
 function kitchen(k){
@@ -1638,7 +1678,19 @@ function lookOf(spec){
 }
 const DRAW = { house, train, book, car, town, restaurant, bus, phone, heart, coffee, door, photo, street, dog, cat, horse, fish, shoe, bread, soup, bottle, table, box, newspaper, radio, computer, leaf, mountain, sea, shop, glass, plate, ball, hat, flower, tomato, cheese, lamp, key, shirt, trousers, dress, chair, bag, tree, bicycle, motorbike, plane, window: windowPic, park, beach, garden, station, kitchen };
 const PLACED = /^(in an open box|on a table|under a table)$/;
-const FOOT = { car: 140, book: 152, train: 160, bus: 146, heart: 170, coffee: 160, photo: 168, fish: 100, shoe: 160, bread: 154, soup: 160, box: 160, plate: 150, ball: 166, hat: 150, key: 120, plane: 110, tomato: 160, cheese: 156 };      // where each stands in its card (the line a small one shares with a big one)
+const FOOT = { car: 140, book: 152, train: 160, bus: 146, heart: 170, coffee: 160, photo: 168, fish: 100, shoe: 146, bread: 154, soup: 160, box: 160, plate: 150, ball: 166, hat: 150, key: 120, plane: 110, tomato: 160, cheese: 156 };      // where each stands in its card (the line a small one shares with a big one)
+/* T4: a white animal or a white shirt on the cream card: no outline in this style, so it gets form and contrast instead: a wider, cooler
+   shade side (KMUL), and (an animal, when not put on / in something: spec.placed) a patch of lawn to stand on with its cast shadow. */
+const PALE = { dog: 1, cat: 1, horse: 1, shirt: 1 };
+function paint(f, k, spec, is){
+  const pale = PALE[is] && (k.cn === "white" || (is === "dog" || is === "cat") && k.has("spotted"));
+  if (!pale) return f(k, spec);
+  KMUL = is === "shirt" ? 1.5 : 1.6; let s; try { s = f(k, spec); } finally { KMUL = 1; }
+  if (s == null || spec && spec.placed) return s;
+  if (is === "shirt") return `<path d="M14 176V92A66 66 0 0 1 146 92V176Z" fill="#E6EDF2"/>` + s;
+  const y = is === "horse" ? 170 : 171, G = C.grass;
+  return `<path d="M14 ${y}V96A66 66 0 0 1 146 96V${y}Z" fill="#E6EDF2"/><ellipse cx="80" cy="${y + 3}" rx="70" ry="13" fill="${G.s}"/><ellipse cx="80" cy="${y}" rx="70" ry="12" fill="${G.l}"/>` + ground(92, y + 1, 58, 7, 0.3) + s;
+}
 function one(spec){
   spec = spec || {};
   const is = String(spec.is || "").toLowerCase().trim(), f = DRAW[is];
@@ -1659,12 +1711,12 @@ function one(spec){
     const big = looks.indexOf("big") >= 0 && !own, sm = looks.indexOf("small") >= 0 && is !== "car" && is !== "coffee" && !own;
     if (big && is === "door") return null;
     if (big || sm){
-      const base = f(lookOf({ looks: looks.filter(x => x !== "big" && x !== "small") }), spec); if (base == null) return null;
+      const base = paint(f, lookOf({ looks: looks.filter(x => x !== "big" && x !== "small") }), spec, is); if (base == null) return null;
       const y = FOOT[is] || 174, kx = /^(town|street|restaurant)$/.test(is) ? 0.72 : is === "train" ? 0.7 : 0.55;
       return mk(sm ? `<g transform="translate(80 ${y}) scale(${kx}) translate(-80 ${-y})">${base}</g>` : base);
     }
-    const s = f(lookOf(spec), spec); return s == null ? null : mk(s);
-  } catch (e) { return null; }
+    const s = paint(f, lookOf(spec), spec, is); return s == null ? null : mk(s);
+  } catch (e) { KMUL = 1; return null; }
 }
 const can = spec => !!one(spec);
 

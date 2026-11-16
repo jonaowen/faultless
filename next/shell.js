@@ -343,8 +343,8 @@ const SHELL = (()=>{
     info(it.fr, `<div class="wbig">${wardThumb(it)}</div><p class="wsub">${esc(it.en)}</p>
       ${own ? `<button class="btn" id="wdWear">${on ? "Take it off" : "Wear it"}</button>`
         : short<=0 ? `<p>${it.price} token${it.price>1?"s":""}. You have ${tok}.</p><button class="btn" id="wdBuy">${tokenIcon()} Buy it for ${it.price}</button>`
-        : `<p>${it.price} tokens. You have ${tok}: ${short} more to go. Every rank brings tokens, and higher ranks bring more.</p>`}
-      <p class="small">The picture is a placeholder: it will be drawn on your own figure.</p>`);
+        : `<p>${it.price} tokens. You have ${tok}: ${short} more to go. Every rank brings tokens, and higher ranks bring more.</p>`}`);
+    if(it.slot==="dance" && !lessMotion()){ try{ const big=document.querySelector("#sheet .wbig svg"), g=PICS.wardrobeThumb(it.id, PICS.avatarParse(AV.get()), {live:true}); if(big && g){ big.innerHTML=""; big.appendChild(g); } }catch(e){} }  // (figures7) the dance plays on the item's own sheet
     const bb=$("wdBuy"); if(bb) bb.onclick=()=>{ if((G.tokens||0)<it.price) return; G.tokens-=it.price; w.owned[it.id]=new Date().toISOString(); w.worn[it.slot]=it.id; if(it.slot==="outfit"){ for(const s of ["top","head"]) delete w.worn[s]; } else if(["top","head"].includes(it.slot)) delete w.worn.outfit;
       store(); try{ trace("wardrobe: bought "+it.id+" for "+it.price+" token(s); "+G.tokens+" left"); }catch(e){} try{ UI.haptic("done"); }catch(e){} $("sheet").hidden=true; again(); const c=$("ward").querySelector(`[data-it="${it.id}"]`); if(c && !lessMotion()){ c.classList.add("got"); } };
     const bw=$("wdWear"); if(bw) bw.onclick=()=>{ if(on) delete w.worn[it.slot]; else { w.worn[it.slot]=it.id; if(it.slot==="outfit"){ for(const s of ["top","head"]) delete w.worn[s]; } else if(["top","head"].includes(it.slot)) delete w.worn.outfit; }
@@ -404,6 +404,8 @@ const SHELL = (()=>{
       + (r.R1 ? ringsCard(r.R1, r.R0) : "")
       + (r.stageDone && r.stageDone.canDo ? `<div class="card cando"><b>Stage ${r.stageDone.id} is done.</b><p>${esc(r.stageDone.canDo)}</p></div>` : "")
       + `<div class="spacer"></div><div class="donefoot">${rankBar(r.p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
+    if((r.passed || r.runPerfect) && W().worn.dance && AV.has() && !lessMotion()){ try{ const c=document.createElementNS("http://www.w3.org/2000/svg","svg"); c.setAttribute("viewBox","0 0 160 190"); c.setAttribute("class","celebfig"); c.setAttribute("aria-hidden","true");
+        c.appendChild(PICS.avatar(PICS.avatarParse(AV.get()), {view:"celebrate", wear:wearing()})); o.insertBefore(c, o.firstChild); }catch(e){} }  // (figures7) the dance the learner wears, at the celebration
     store(); o.hidden=false; o.scrollTop=0; wireCards(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1);
     $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); if(r.level) levelParty(r.level, ()=>home()); else home(); };
     fete(o, r.passed || r.runPerfect || !!(r.ranks && r.ranks.length) || !!(r.R1 && r.R1.week.closed && !r.R0.week.closed)); }

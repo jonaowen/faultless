@@ -382,7 +382,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-15.63";
+const APP_VERSION="2026-11-16.64";
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -799,7 +799,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY="frDI.u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:63, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:64, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -830,6 +830,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=61.1)) migrate61(s.courseRev);      // (.61) a state saved before Lesson 8 came (Lessons 1-7 unchanged), or by the first working copy of .61
   if(!(s.courseRev>=62)) migrate62();      // (.62) a state saved before il / elle was taught on several men and women (R-154) and Lesson 9 came
   if(!(s.courseRev>=63)) migrate63();      // (.63) a state saved before Lesson 10 came (Lessons 1-9 unchanged)
+  if(!(s.courseRev>=64)) migrate64();      // (.64) a state saved before Lessons 6-10 were rebuilt (Pierre and Sylvie ask too, on with them, sur / sous on chairs)
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -908,6 +909,40 @@ function migrate58(){
   if(here || had || old.length)
     S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 4 and 5 are built anew (other exercises)"+(here?"; this learner starts Lesson 4 from its beginning":"")+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
   S.courseRev=58;
+}
+/* (.64) Lessons 6-10 rebuilt (dev ce17a9e9): "Je fais quoi ?" asked by Pierre and Sylvie too (taught in L6E17), "on" done with Pierre or
+   Sylvie (taught in L8E23), sur / sous on chairs as well as tables, c'était asked both ways; Lessons 1-5 are the files of .63. The coordinator's
+   ruling: the records (finished, errors, delayed tests) of the changed exercises are dropped: 23 in Lessons 6-9 (CHANGED_64) and 13 in
+   Lesson 10 (L10E5, E12 and E26 changed only in their notes and keep theirs). A learner inside Lesson 10 goes back to the start of the first
+   changed exercise they had done (their place if none). A learner already past L6E17 (in a later lesson) is sent once through L6E17, and one
+   past L8E23 through L8E23 too, then back to their place (S.detour, as migrate62); a learner inside Lesson 6 or 8 needs no detour: the
+   exercise is no longer finished, and the lesson runs every exercise not finished from its first. A .62 detour still running gets these
+   exercises added before its way back. A learner who had finished the lesson they are in (Lessons 6-9) keeps it finished, so that the next
+   start goes on into the next lesson. */
+const CHANGED_64 = ["L6E6","L6E10","L6E13","L6E17","L6E37","L6E38","L6E39","L7E4","L7E16","L7E23","L7E34","L8E13","L8E23","L8E28","L8E36","L8E42","L8E48",
+  "L9E5","L9E8","L9E24","L9E29","L9E38","L9E42",
+  "L10E15","L10E18","L10E19","L10E22","L10E27","L10E28","L10E33","L10E39","L10E47","L10E49","L10E51","L10E52","L10E53"];
+function migrate64(){
+  const exOf = k => String(k).replace(/^(L\d+E\d+).*$/, "$1"), ch = k => CHANGED_64.includes(exOf(k));
+  const place = S.detour ? S.detour.back : {lesson:S.lesson, ex:S.ex};
+  const wasDone = id => !!(S.finished||{})[id];
+  const L=LESSONS[S.lesson], done = !S.detour && S.lesson<9 && !!(L && L.exercises.every(e=>wasDone(e.id)));
+  // Lesson 10: the first changed exercise the learner had done (finished, or before their place)
+  let back10=null;
+  if(place.lesson===9 && LESSONS[9]) LESSONS[9].exercises.forEach((e,i)=>{ if(back10===null && ch(e.id) && (wasDone(e.id) || i<place.ex)) back10=i; });
+  const had = Object.keys(S.finished||{}).filter(k=>S.finished[k] && ch(k));
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>ch(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  if(done) for(const e of L.exercises) S.finished[e.id]=true;      // the lesson the learner had finished stays finished
+  if(back10!==null && back10<place.ex) place.ex=back10;
+  const legs=[]; if(place.lesson>5) legs.push({lesson:5, ids:["L6E17"]}); if(place.lesson>7) legs.push({lesson:7, ids:["L8E23"]});
+  if(S.detour){ S.detour.more=(S.detour.more||[]).concat(legs); }
+  else if(legs.length){ S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}}; S.lesson=legs[0].lesson; S.ex=16; }
+  else { S.lesson=place.lesson; S.ex=place.ex; }
+  if(had.length || old.length || legs.length || back10!==null)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 6-10 rebuilt; records dropped of "+(had.length ? had.join(", ") : "no finished exercise")+(old.length?"; delayed tests dropped: "+old.length:"")+(back10!==null?"; Lesson 10 goes on at exercise "+(place.ex+1):"")+(legs.length?"; this learner does "+legs.map(l=>l.ids.join(", ")).join(" and ")+" once, then goes back to Lesson "+(place.lesson+1)+", exercise "+(place.ex+1):""), heard:[]});
+  S.courseRev=64;
 }
 /* (.63) Lesson 10 is new; Lessons 1-9 are as .62 (their files are the same). A place anywhere in Lessons 1-9 stands, with its delayed
    tests and its detour; a learner who has finished Lesson 9 goes on into Lesson 10 at the next start, as at the end of any lesson. Only a
@@ -2444,6 +2479,23 @@ function swimmer(e){
     <path d="M122 76 l6 -9 M131 80 l10 -5 M116 72 l1 -10" stroke="#8fd0f3" stroke-width="3" stroke-linecap="round"/>
     <rect x="8" y="16" width="144" height="158" rx="10" fill="none" stroke="#b8cfe0" stroke-width="2"/>`);
 }
+/* (.64; the reader of the rebuild, N4) a thing under a chair: people.js draws it small (58 x 37 in a 160-wide picture) and behind the
+   chair's front rung, so that an open book or a phone under a chair could hardly be made out at phone size. Here the thing is taken out
+   from behind the rung and the legs and drawn again in front of them, as large as the space under the seat allows (between the front
+   legs, from the seat down to the floor): it is still plainly under the seat, and whole. */
+function underChair(pic){
+  try{ const t=pic.querySelector("[data-placed]"), wrap=t && t.parentNode; if(!wrap || wrap===pic) return pic;
+    const NSs="http://www.w3.org/2000/svg", tmp=document.createElementNS(NSs,"svg"); tmp.setAttribute("style","position:absolute;left:-9999px;top:0;visibility:hidden");
+    const host=document.createElementNS(NSs,"g"); host.appendChild(pic); tmp.appendChild(host); document.body.appendChild(tmp);
+    const outer=document.createElementNS(NSs,"g"); wrap.parentNode.insertBefore(outer, wrap); outer.appendChild(wrap);
+    const b=outer.getBBox(); document.body.removeChild(tmp); host.removeChild(pic);
+    if(!(b.width>0 && b.height>0)) return pic;
+    const k=Math.min(54/b.width, 50/b.height, 1.6), cx=b.x+b.width/2, yb=b.y+b.height;
+    outer.setAttribute("transform", `translate(69 183) scale(${(k).toFixed(3)}) translate(${(-cx).toFixed(2)} ${(-yb).toFixed(2)})`);
+    outer.parentNode.removeChild(outer); pic.appendChild(outer);      // in front of the legs and the rung
+  }catch(err){ trace("underChair: "+err.message); }
+  return pic;
+}
 const placedThing = x => OWN_THING.includes(String(x.is)) ? onePicture(x) : x.is==="key" && window.PICS ? PICS.key(x) : x.is==="dog" && window.PICS && PICS.dog ? PICS.dog(x) : x.is==="car" && window.PICS && PICS.car ? PICS.car(x) : thingPicture(x);      // (.62) a thing on / under a table: drawn as it is anywhere else
 const OWN_THING=["book","apple","pen","shoe"];         // drawn in this file since Lesson 1 (objectPicture)
 /* (.25, the eighth round: faces as cards) the hand sign that goes with a face: thumb up (feeling good), the flat hand that rocks
@@ -2485,9 +2537,12 @@ function genPicture0(e){
      the book, the apple, the pen and the shoe: in L6E6, the teaching of sur / sous, every picture was one or the other, and "Sur." / "Sous."
      could not be seen in L6E38, L7E34, L8E36, L9E38 either.) The place is now looked at first, for every kind, and the thing on or under
      the table is drawn as it is drawn anywhere else: this file's own picture for the book, apple, pen and shoe, the library's for the rest. */
-  { const REL = (e.looks||[]).includes("on a table") ? "on" : (e.looks||[]).includes("under a table") ? "under" : null;
-    if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!=="on a table" && x!=="under a table")});
-      return PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:"table", looks:["wooden"]}}, x=>placedThing(Object.assign({}, rest, x, {count:1}))); } }
+  /* (.64) the ground can be a chair too (the rebuild of Lessons 6-10: sur / sous on tables and chairs); people.js draws both */
+  { const PL = (e.looks||[]).find(x=>/^(on|under) a (table|chair)$/.test(x)), REL = PL ? PL.split(" ")[0] : null, GR = PL ? PL.split(" ")[2] : null;
+    if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!==PL)});
+      const draw = x=>{ const el=placedThing(Object.assign({}, rest, x, {count:1})); if(el && el.setAttribute) el.setAttribute("data-placed","1"); return el; };
+      const pic = PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:GR, looks:GR==="table" ? ["wooden"] : []}}, draw);
+      return GR==="chair" && REL==="under" ? underChair(pic) : pic; } }
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
   if(e.is==="car") return (window.PICS && PICS.car) ? PICS.car(e) : blank();
@@ -2598,7 +2653,12 @@ async function setPortraits(sc){
       sc=Object.assign({}, sc, {row:[], side, alias}); }
     /* (.25) one person who is doing something or holds a card ("Je vais danser, tu vas danser.": Marie holds the card, so does
        Pierre): the box goes to the left half and the person's picture to the right half */
-    else if(sc.row.length===1 && sc.row[0] && sc.row[0].person){ sc=Object.assign({}, sc, {row:[null, sc.row[0]], boxLeft:true, alias:Object.assign({}, sc.alias||{}, {s0:"s1"})}); }
+    else if(sc.row.length===1 && sc.row[0] && sc.row[0].person){
+      /* (.64; the reader of the rebuild, N1) the learner doing it together with Pierre or Sylvie ("On fait quoi ?" asked by them, L8E23 …):
+         the box says so, "Pierre and you:", as it says "Marie and you:" when Marie does it with the learner */
+      const p0=sc.row[0], same = a => a && p0.doing && (ACT_NAME[p0.doing]||p0.doing)===a,
+            withP = !sc.bothDoing && ((sc.learnerDoing && !sc.teacherDoing && same(sc.learnerDoing)) || (sc.teacherDoing && !sc.learnerDoing && same(sc.teacherDoing))) ? p0.person : null;      // (also Marie with Pierre or Sylvie: "Marie and Sylvie:", L8E22, E23)
+      sc=Object.assign({}, sc, {row:[null, p0], boxLeft:true, alias:Object.assign({}, sc.alias||{}, {s0:"s1"})}, withP ? {boxWith:withP} : {}); }
     else trace("FAULT LAYOUT: the action box and "+sc.row.length+" picture(s) are on the screen together"); }
   const first = curSceneKey===null;
   goldOff(); tagLit(null); lastPoint=null;
@@ -2608,17 +2668,43 @@ async function setPortraits(sc){
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
   { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
-  { const b=boxOf(sc); if(b) actBox(b[0], b[1], Object.assign({}, b[2], sc.boxLeft ? {left:true} : {})); else actBox(null); }
+  { const b=boxOf(sc); if(b) actBox(b[0], b[1], Object.assign({}, b[2], sc.boxLeft ? {left:true} : {}, sc.boxWith ? {withP:sc.boxWith} : {})); else actBox(null); }
   curScene=sc; curSceneKey=key;
   if(sc.row && sc.row.some(x=>x && x.appears)){ trace("a card comes in"); await sleep(650); }      // before the line is said
+  if(SLIDE_IN){ SLIDE_IN=false; if(sc.row && sc.row.length){      // (.64) the second thing of a "C'était" chain comes in from the right (thingGoes)
+    frameRow.style.transition="none"; frameRow.style.transform="translateX(240px)"; frameRow.style.opacity=0; void frameRow.getBoundingClientRect();
+    frameRow.style.transition="opacity .6s ease-out, transform .6s ease-out"; frameRow.style.transform=""; frameRow.style.opacity=1;
+    await sleep(700); frameRow.style.transition=""; } }
   if(TXT.g.firstChild && TXT.cur!=="board") TXT.g.setAttribute("opacity", 0.3);      // (.28) not the exercise's board: it stays as it is       // writing left by the task before, under new pictures: faint until the next thing is said
 
 }
 /* (.63) "C'était quoi ?" (Lesson 10): the thing that was just named is seen to be taken away, not a blank screen that comes as the next
    item (the reader of Lesson 10, C1 (e)). When an item asks about what WAS there and the pictures on the screen are things, they slide off
-   to the side and fade (0.7 s), and the screen stands empty a moment before the question; then the item's own scene is set as usual. */
+   to the side and fade (0.7 s), and the screen stands empty a moment before the question; then the item's own scene is set as usual.
+   (.64; the reader of the rebuild, C3) The rebuilt "C'était quoi ?" (L10E27, E53) never empties the screen: a thing alone is named, then
+   ANOTHER thing stands in its place and both questions are asked on that screen, nothing pointed at. So the change itself must be an
+   event: on the chain's change (an item marked `changeIn` by markChanges: its one thing differs from the item's before, and a "C'était"
+   question is asked while it stands) the first thing slides off to the left and fades, and the second slides in from the right, a
+   moment apart. A change of thing between two chains (a new chain opening) is a plain cut, as everywhere. The two rules never both run:
+   the first needs a screen with no thing on it, the second a thing on it. */
+const qOf = it => [].concat(it && (it.teacherUnits || it.teacher) || []).join(" ");
+const oneThingKey = sc => { sc=sceneOf(sc); return sc && sc.row && sc.row.length===1 && sc.row[0] && sc.row[0].is ? JSON.stringify(sc.row[0]) : null; };
+function markChanges(lessons){
+  for(const L of lessons) for(const E of L.exercises){ const its=E.parts.flatMap(P=>P.items).filter(it=>it && it.scene!==undefined);
+    if(!its.some(it=>/c'était/i.test(qOf(it)))) continue;
+    for(let i=1;i<its.length;i++){ const k=oneThingKey(its[i].scene), k0=oneThingKey(its[i-1].scene); if(!k || !k0 || k===k0) continue;
+      for(let j=i;j<its.length && oneThingKey(its[j].scene)===k;j++) if(/c'était/i.test(qOf(its[j]))){ its[i].changeIn=true; break; } } }
+}
+let SLIDE_IN=false;      // setPortraits: the next row comes in from the right (the second thing of a "C'était" chain)
+markChanges(LESSONS);
+async function slideOff(){
+  goldOff(); frameRow.style.transition="opacity .6s ease-in, transform .6s ease-in"; frameRow.style.transform="translateX(-240px)"; frameRow.style.opacity=0;
+  await sleep(650); frameRow.style.transition="none"; frameRow.style.transform=""; void frameRow.getBoundingClientRect(); frameRow.style.transition="";
+}
 async function thingGoes(it){
-  const q=[].concat(it && (it.teacherUnits || it.teacher) || []).join(" ");
+  const q=qOf(it);
+  if(it && it.changeIn && curScene && oneThingKey(curScene) && oneThingKey(it.scene) && oneThingKey(curScene)!==oneThingKey(it.scene)){
+    trace("the thing changes: one goes, another comes in its place"); await slideOff(); await sleep(250); SLIDE_IN=true; return; }
   if(!/c'était/i.test(q) || !curScene || !curScene.row || !curScene.row.some(x=>x && x.is)) return;
   const sc=sceneOf(it.scene); if(sc && sc.row && sc.row.some(x=>x && x.is)) return;      // a thing is still there: nothing goes
   goldOff(); frameRow.style.transition="opacity .7s ease-in, transform .7s ease-in"; frameRow.style.transform="translateX(240px)"; frameRow.style.opacity=0;
@@ -3648,8 +3734,8 @@ function actBox(who, act, opt){
     const t=/^smil/.test(String(opt.you)) ? null : learnerCard().querySelector(".nametag"); if(t){ const k=1; t.setAttribute("transform",`translate(${(290-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); }
     g.setAttribute("opacity",1); return; }
   const BX = opt.left ? 28 : 120;      // (.25) opt.left: the box stands at the left, a picture of one person beside it (setPortraits)
-  const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||"", opt.alsoWill||"", BX].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
-  const mine = who==="you" || who==="both", label = who==="you" ? "You:" : who==="both" ? VOCAB.claire.name+" and you:" : (who==="paul" || who==="julie") ? VOCAB[who].name+":" : VOCAB.claire.name+":";
+  const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||"", opt.alsoWill||"", BX, opt.withP||""].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
+  const mine = who==="you" || who==="both", label = who==="you" ? (opt.withP && VOCAB[opt.withP] ? VOCAB[opt.withP].name+" and you:" : "You:") : who==="both" ? VOCAB.claire.name+" and you:" : (who==="paul" || who==="julie") ? VOCAB[who].name+":" : (opt.withP && VOCAB[opt.withP] ? VOCAB.claire.name+" and "+VOCAB[opt.withP].name+":" : VOCAB.claire.name+":");
   g.innerHTML=`<text x="${BX+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
     <g transform="translate(${BX},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
   try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
@@ -4332,9 +4418,10 @@ async function runDelayed(d, anchor){
 async function main(){
   /* (.62) a detour (migrate62): the exercises it names are done first, from the lesson it names; then the learner goes back to the place
      they were at. It is kept in the saved state until it is over, so that a lesson stopped half way through it comes back to it. */
-  if(S.detour){ const d=S.detour, DL=LESSONS[d.lesson];
-    trace("detour: "+d.ids.join(", ")+", then back to Lesson "+(d.back.lesson+1)+", exercise "+(d.back.ex+1));
-    for(const id of d.ids){ const ei=DL ? DL.exercises.findIndex(e=>e.id===id) : -1; if(ei>=0 && !S.finished[id]) await runExercise(d.lesson, ei); }
+  if(S.detour){ const d=S.detour, legs=[{lesson:d.lesson, ids:d.ids}].concat(d.more||[]);      // (.64) d.more: further exercises, each in its own lesson (migrate64)
+    trace("detour: "+legs.map(l=>l.ids.join(", ")).join("; ")+", then back to Lesson "+(d.back.lesson+1)+", exercise "+(d.back.ex+1));
+    for(const leg of legs){ const DL=LESSONS[leg.lesson];
+      for(const id of leg.ids){ const ei=DL ? DL.exercises.findIndex(e=>e.id===id) : -1; if(ei>=0 && !S.finished[id]){ S.lesson=leg.lesson; S.ex=ei; save(); lessonTag(); await runExercise(leg.lesson, ei); } } }
     S.detour=null; S.lesson=Math.min(d.back.lesson, LESSONS.length-1); S.ex=d.back.ex;
     const B=LESSONS[S.lesson];
     if(B.exercises.every(e=>S.finished[e.id]) && S.lesson+1<LESSONS.length){ S.lesson++; S.ex=0; LESSONS[S.lesson].exercises.forEach(e=>delete S.finished[e.id]); }      // they had finished that lesson: on to the next
