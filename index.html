@@ -188,10 +188,9 @@ svg#scene text.numeral{font-family:var(--font-display);font-variation-settings:"
 #play.dayDone #howtoBox{display:none}
 #playBtn{width:100%;position:relative;overflow:hidden}
 #playBtn .lbl{position:relative}
-#playBtn.loading{background:var(--paper-3);color:var(--ink-2);box-shadow:0 4px 0 var(--line-strong);cursor:progress}
-#playBtn.loading:before{content:"";position:absolute;inset:0;background:var(--speak-tint);transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform .3s linear}
-#playBtn.loading .icon{display:none}
-#playBtn .ready{display:inline} #playBtn .wait{display:none} #playBtn.loading .ready{display:none} #playBtn.loading .wait{display:inline}
+/* (owner, 16 Nov: "you can always tap Start Lesson, and then, when you enter the lesson, you hit a loading screen where it loads") the button
+   looks and answers the same while the listener loads (class "loading" is only the page's own note of it); a tap then shows the loading screen */
+#playBtn .ready{display:inline} #playBtn .wait{display:none}
 #play.dayDone #playBtn{background:var(--card);color:var(--ink);box-shadow:0 3px 0 var(--line-strong);border:1.5px solid var(--line-strong)}
 #playNext{font:var(--t-body);color:var(--ink-2);text-align:center;margin-top:-8px}
 #playNext:empty{display:none}
@@ -533,6 +532,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson8.js"></script>
 <script src="course/lesson9.js"></script>
 <script src="course/lesson10.js"></script>
+<script src="course/lesson11.js"></script>
+<script src="course/lesson12.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -541,7 +542,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.66";      // must equal version.json
+const APP_VERSION="2026-11-16.67";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -1031,7 +1032,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:64, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:67, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1063,6 +1064,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=62)) migrate62();      // (.62) a state saved before il / elle was taught on several men and women (R-154) and Lesson 9 came
   if(!(s.courseRev>=63)) migrate63();      // (.63) a state saved before Lesson 10 came (Lessons 1-9 unchanged)
   if(!(s.courseRev>=64)) migrate64();      // (.64) a state saved before Lessons 6-10 were rebuilt (Pierre and Sylvie ask too, on with them, sur / sous on chairs)
+  if(!(s.courseRev>=67)) migrate67();      // (.67) a state saved before Lessons 11 and 12 came (Lessons 1-10 unchanged)
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -1180,6 +1182,20 @@ function migrate64(){
    tests and its detour; a learner who has finished Lesson 9 goes on into Lesson 10 at the next start, as at the end of any lesson. Only a
    record of Lesson 10 from a build no longer served (finished exercises, errors, delayed tests) is dropped, with a log line if there was one;
    no record of Lessons 1-9 is dropped. */
+/* (.67) Lessons 11 and 12 are new (the two duplicates of Lesson 10); Lessons 1-10 are the files of .64: no place moves and no record of Lessons
+   1-10 is dropped. A learner who has finished Lesson 10 goes on into Lesson 11 at the next start. Only records of an older Lesson 11 or 12
+   (from builds no longer served) are dropped, with one log line; a delayed test of Lesson 10 that had no next lesson is due at Lesson 11's start. */
+function migrate67(){
+  const NEW = k => /^L1[12]E\d+/.test(k);
+  const had = Object.keys(S.finished||{}).some(NEW) || Object.keys(S.exHadError||{}).some(NEW);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!NEW(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const old=(S.delayed||[]).filter(d=>NEW(d.ex||"")); S.delayed=(S.delayed||[]).filter(d=>!old.includes(d));
+  for(const d of S.delayed) if(/^L10E\d+/.test(d.ex||"") && !d.dueLessonStart) d.dueLessonStart="L11";
+  if(had || old.length)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 11 and 12 are new; records of an older Lesson 11 or 12 dropped"+(old.length?"; delayed tests dropped: "+old.length:""), heard:[]});
+  S.courseRev=67;
+}
 function migrate63(){
   const L10 = k => /^L10E\d+/.test(k);
   const had = Object.keys(S.finished||{}).some(L10) || Object.keys(S.exHadError||{}).some(L10);
@@ -4889,12 +4905,23 @@ function startListenerLoad(){
   /* (owner's report, 16 Nov: "this greyed out getting ready button now for ages and can't start") the start button must never stay dead: when the
      model has neither arrived nor failed 25 s after its last sign of life, the start is let through (the phrase listener answers by itself) and a
      FAULT line says so. If the model does arrive later it is used from then on. */
-  let lastSign=performance.now(), settled=false;
-  listenerLoad = LISTENER.load((got,total)=>{ lastSign=performance.now(); if(total) btn.style.setProperty("--p", Math.min(1, got/total).toFixed(3)); })
-    .then(r=>{ settled=true; btn.classList.remove("loading"); trace("in-app listener ready ("+r.ms+" ms)"); })
-    .catch(e=>{ settled=true; btn.classList.remove("loading"); trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); });
+  /* (owner, 16 Nov: "you can always tap Start Lesson, and then, when you enter the lesson, you hit a loading screen where it loads") a tap on the
+     start while the listener is still loading puts the loading screen up (the app's own: SPLASH, with how far the download is); the lesson starts
+     by itself the moment the listener is there (or has failed, or has given no sign of life for 25 s). */
+  let lastSign=performance.now(), settled=false, startAsked=false, frac=null;
+  const LABEL="Getting ready to hear you";
+  const through=()=>{ btn.classList.remove("loading"); if(!startAsked) return; startAsked=false; trace("the listener is there: the lesson asked for starts");
+    try{ btn.click(); }catch(e){} setTimeout(()=>{ try{ window.SPLASH && SPLASH.done(); }catch(e){} }, 120); };
+  listenerLoad = LISTENER.load((got,total)=>{ lastSign=performance.now(); if(total){ frac=Math.min(1, got/total); if(startAsked){ try{ SPLASH.progress(frac<1 ? frac*0.9 : null, LABEL); }catch(e){} } } })
+    .then(r=>{ settled=true; trace("in-app listener ready ("+r.ms+" ms)"); through(); })
+    .catch(e=>{ settled=true; trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); through(); });
   const watch=setInterval(()=>{ if(settled){ clearInterval(watch); return; }
-    if(performance.now()-lastSign>25000){ clearInterval(watch); btn.classList.remove("loading"); trace("FAULT in-app listener neither ready nor failed 25 s after its last sign of life: the start is let through"); } }, 1000);
+    if(performance.now()-lastSign>25000){ clearInterval(watch); trace("FAULT in-app listener neither ready nor failed 25 s after its last sign of life: the start is let through"); through(); } }, 1000);
+  // before the shell's own handler (this one is registered first): the tap is kept, the loading screen shown, the sound let out by this touch
+  document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || !b.classList.contains("loading")) return;
+    e.stopImmediatePropagation(); e.preventDefault(); if(startAsked) return; startAsked=true; try{ audioUnlock(); }catch(_){} try{ UI.haptic("tick"); }catch(_){}
+    trace("start asked while the listener is loading: the loading screen");
+    try{ SPLASH.show(); SPLASH.progress(frac!=null && frac<1 ? frac*0.9 : null, LABEL); }catch(_){} }, true);
 }
 startListenerLoad();
 /* The main listener (9 Nov): Vosk (Kaldi, French small model) running in the page, restricted to the phrases the course
