@@ -18,7 +18,7 @@ const SHELL = (()=>{
     POINTS_PERFECT_LESSON: 5,         // (owner, 15 Nov late) a lesson that becomes perfect, first time through OR by repairs, once per lesson; (superseded: "first time only") (it still counts for the badges)
     // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
     BADGES: [5,10,20,50,100,200,500,1000,2000],      // (owner) perfect lessons; never a badge for lessons merely finished
-    BEAD_SOUND: "A",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
+    BEAD_SOUND: "D",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
     REST_DAYS_MAX: 2, REST_DAY_EARNED_EVERY: 5,      // (work)
     RETURN_AFTER_DAYS: 2,             // (work) whole days with no lesson before the welcome back and its bonus
     AWAY_STEPS: [[3,0],[7,3],[14,5],[30,8],[1e9,12]],      // (owner R-151: the step back scales with the absence; these numbers are the working table) [days away up to, lessons back]
@@ -507,6 +507,10 @@ const SHELL = (()=>{
   /* ---- a soft sound on a right answer (the owner's trial): made here with Web Audio, nothing fetched; under 150 ms, well below Marie;
      never while Marie (or the phone's voice) is speaking or about to; never on an error; never delays anything (it is only scheduled) ---- */
   const BEAD = {
+    /* (owner, 16 Nov: "the sounds that play when I get an answer right are not high pitched enough. It's not clear enough that I'm getting
+       answers correct") D: sound A an octave higher (C6, D6, E6 in turn), a little longer and louder, with a short bright octave above it:
+       where a phone's small speaker is strongest, so it is heard plainly; still one soft note, under 200 ms, well below Marie */
+    D:(ac,t,k,g)=>{ const f=[1046.5,1174.66,1318.51][k%3]; tone(ac,t,f,0.19,g*1.7,0.004); tone(ac,t,f*2,0.07,g*0.5,0.003); },
     A:(ac,t,k,g)=>{ const f=[523.25,587.33,659.25][k%3]; tone(ac,t,f,0.13,g,0.006); tone(ac,t,f*3,0.035,g*0.10,0.004); },                   // a soft marimba: the fundamental, a faint third partial gone in 35 ms
     B:(ac,t,k,g)=>{ const f=[440,493.88,554.37][k%3]; tone(ac,t,f,0.14,g,0.008); tone(ac,t,f*2.76,0.05,g*0.07,0.006); },                  // a felt bell: low, one faint inharmonic partial
     C:(ac,t,k,g)=>{ const f=[392,440,493.88][k%3]; tone(ac,t,f,0.11,g,0.007, 1.12); },                                                      // a drop: a pure tone that settles a little in pitch
