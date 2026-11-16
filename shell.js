@@ -441,7 +441,8 @@ const SHELL = (()=>{
   /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
      lesson, no rule sent the learner there, and the last "LESSON AGAIN" line of the log is the learner's own choice of that lesson. The place
      goes to the first lesson not passed, at its first exercise not finished; the passed lesson is finished as it was. */
-  function untrap(){ try{ if(G.again || G.replay || G.why || !(S.lesson<G.furthest)) return; const tag="LESSON AGAIN: Lesson "+(S.lesson+1)+" (the learner's own choice)";
+  function untrap(){ try{ if(G.fix66) return; G.fix66=1;      // once on each phone: from .66 on the place is kept (G.again), so the fault cannot be met again
+      if(G.again || G.replay || G.why || S.detour || !(S.lesson<G.furthest)) return; const tag="LESSON AGAIN: Lesson "+(S.lesson+1)+" (the learner's own choice)";
       let lastAgain=null; for(let i=S.log.length-1;i>=0;i--){ const r=String((S.log[i]||{}).result||""); if(r.indexOf("LESSON AGAIN:")===0){ lastAgain=r; break; } }
       if(!lastAgain || lastAgain.indexOf(tag)!==0) return;
       const from=S.lesson, to=Math.min(G.furthest, LESSONS.length-1); LESSONS[from].exercises.forEach(x=>{ S.finished[x.id]=true; });
