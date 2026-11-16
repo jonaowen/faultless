@@ -2017,9 +2017,9 @@ function judge(text, expect, echoes=[], alsoOk=[]){
        about je or tu ("Je fais quoi ?", "Tu fais quoi ?", "Tu vas faire quoi ?": the cue begins with the person) and what was heard is
        that SAME person, the answer is judged: it is the question's person said back. Only that direction: "je" heard for "tu" after
        "Répète : tu danses." or after "Tu fais quoi ?" stays unsure as before. Measured 15 Nov 2026 (the app's listener, the word list of
-       L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's, Helen's and
-       Richard's own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
-       other person: the "je" of 240 recordings heard as je 240 times (Jon 131, Helen 36, Richard 20, 53 unnamed), the "tu" of 86 (all
+       L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's and two other testers'
+       own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
+       other person: the "je" of 240 recordings heard as je 240 times (Jon 131, two others 56, 53 unnamed), the "tu" of 86 (all
        Jon's) heard as tu 85 times (once the whole line was heard as "je m'appelle Marie"). So a right "Tu danses." taken for "Je danse."
        is rare (about one in a hundred on the one voice measured), and then corrected once, while the error itself was never corrected. */
     const echoed = (e, w) => { const q=String(curCue||"").trim(), cp = /\?\s*$/.test(q) ? (/^(je|j')\s/i.test(q) ? "JE" : /^tu\s/i.test(q) ? "TU" : null) : null;
