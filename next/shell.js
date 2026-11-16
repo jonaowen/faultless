@@ -736,7 +736,7 @@ const SHELL = (()=>{
 
   /* ---- a learner whose record is new: what the page's saved place already says (a phone carried over from the live app, or a tester's
      jump) is entered as passed, without figures, with the points the same rule gives; no run or streak is invented ---- */
-  function seed(){ if(!fresh) return; let n=0; LESSONS.forEach((L,i)=>{ if(allDone(i) || i<S.lesson){ let pts=0;
+  function seed(){ if(!fresh) return; let n=0; const at = S.detour && S.detour.back ? Math.max(S.lesson, S.detour.back.lesson) : S.lesson; /* a learner on a detour (migrate62) is at the place the detour goes back to */ LESSONS.forEach((L,i)=>{ if(allDone(i) || i<at){ let pts=0;
       for(const x of L.exercises){ const he=(S.exHadError||{})[x.id]; if(he===undefined) continue; G.ex[x.id]={g:!he, f:he?"e":"p", n:1, carried:true}; if(!he) pts+=RULES.POINTS_PERFECT_FIRST; }
       if(lessonPerfect(L)){ G.lp[L.id]="carried"; pts+=RULES.POINTS_PERFECT_LESSON; }
       G.lessons[L.id]=[{date:"", x:null, y:null, passed:true, pts, carried:true}]; G.points+=pts; G.furthest=Math.max(G.furthest, i+1); n++; } });
