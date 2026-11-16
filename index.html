@@ -542,7 +542,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.68";      // must equal version.json
+const APP_VERSION="2026-11-16.69";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -5146,6 +5146,28 @@ const TUTOR = { mouth:MOUTH, arms:ARMS, get gaze(){ return gaze; }, get nod(){ r
       if(rig.gaze) gaze=rig.gaze; if(rig.nod) nod=rig.nod; if(rig.faceZoom) faceZoom=rig.faceZoom; if(rig.tagLit) tagLit=rig.tagLit; trace("tutor: a new rig adopted"); return true; }catch(e){ trace("FAULT tutor rig: "+e.message); return false; } } };
 // a button that was pressed springs back (the press itself is CSS :active: within the frame of the touch)
 document.addEventListener("pointerup", e=>{ const b=e.target && e.target.closest && e.target.closest(".btn"); if(b){ b.classList.add("released"); setTimeout(()=>b.classList.remove("released"), 280); } }, {passive:true});
+/* (the teacher on the figures' rig: dev/design/TUTOR_RIG.md 5, TUTOR_MOUNT.md) PICS.tutor() takes the place of the drawing of the teacher in this
+   page and is adopted. The page still decides everything she does (MOUTH, ARMS.go, gaze, nod, faceZoom, tagLit); the rig only draws it. She
+   blinks by herself when nothing is being said or shown: never in a scripted run (navigator.webdriver: the harness), never with less motion
+   (the phone's setting or the app's). Without the library, or if it fails, the drawing in this page stands. What happened is written to the
+   trace once the saved state is loaded (a line written before load() would be lost with the empty state). */
+{ const note=m=>setTimeout(()=>{ try{ trace(m); }catch(e){} }, 0);
+  try{ const t = window.PICS && typeof PICS.tutor==="function" ? PICS.tutor({autoBlink: !navigator.webdriver}) : null;
+    if(t && t.node && t.rig && t.node.querySelector("#claireTag") && t.node.querySelector("#hs_point")){
+      /* a "move" to where her arms already are (rest() when she is at rest, a gesture asked for again, the last frame of every move) is not drawn
+         again: the page eases every ARMS.go over its time whether or not anything moves, and the figure works out both arms afresh at each call */
+      { const draw=t.rig.arms.draw, key=p=>["L","R"].map(s=>{ const q=(p && p[s]) || {}; return [q.x, q.y, q.shape, q.rot, q.scale, q.fs].join(); }).join("|"); let was=null;
+        t.rig.arms.draw=p=>{ const k=key(p); if(k!==was){ was=k; draw(p); } }; }
+      /* she sits 4 units lower than the figure is drawn (the whole figure moved, nothing in it changed): the top of its hair is at 289.6, the old
+         drawing's was at 292, and a board of four lines ends at 292 (BOARD_FLOOR): a board must never touch her hair. tip() says where the finger is on the stage. */
+      { const DOWN=4, tip=t.rig.arms.tip; t.node.setAttribute("transform", "translate(0 "+DOWN+")"); if(tip) t.rig.arms.tip=s=>{ const q=tip(s); return q ? {x:q.x, y:q.y+DOWN} : q; }; }
+      document.getElementById("tutor").replaceWith(t.node); TUTOR.adopt(t.rig); TUTOR.rig=t.rig; MOUTH.stop(); ARMS.set({});
+      SELF_BOUNDS.h=340;      // her own outline as a thing to tap (Lesson 1): this figure's hands at rest are a little lower than the old drawing's
+      if(t.rig.still){ const mq=window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null, calm=()=>t.rig.still(document.documentElement.dataset.motion==="less" || !!(mq && mq.matches));
+        calm(); try{ if(mq && mq.addEventListener) mq.addEventListener("change", calm); new MutationObserver(calm).observe(document.documentElement, {attributes:true, attributeFilter:["data-motion"]}); }catch(e){} }
+      note("tutor: the figure of the picture library is on the stage");
+    } else note("FAULT tutor mount: no figure from the picture library; the drawing in the page stands");
+  }catch(e){ note("FAULT tutor mount: "+e.message); } }
 READY=true; load(); renderVoiceSelect(); renderPanel(); rest(); lessonHead(false); UI.layout(); UI.fonts();
 // asked once, at the very start of the course; changeable in the tester panel. First name (typed), then gender (pictures).
 function cleanName(v){ return String(v||"").replace(/[^\p{L}\p{M}' \-]/gu," ").replace(/\s+/g," ").trim().slice(0,30); }
