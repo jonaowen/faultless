@@ -450,7 +450,7 @@ function restaurant(k){
     s += v + a + line("M23 62H137", A.r, 1.6) + line("M11.4 88.3H148.6", A.fs, 0.8, 'opacity=".5"'); }
   // on the pavement: bushes in boxes, two tables laid, three chairs
   [[14, 0], [146, 1]].forEach(([x, sh]) => { s += solid(cd(x, 134, 9.5), C.leaf, { k: 4.5, rim: 1 }) + rect(x - 8, 141, 16, 12, sh ? F.s : F.l, 2) + rect(x - 9, 140, 18, 3.4, F.l, 1.5); });
-  const chair = (x, dir) => line(`M${x} 172V142Q${x} 137 ${x + dir * 3} 137`, WD, 2.6) + line(`M${x} 157H${x + dir * 10}V172`, WD, 2.6) + line(`M${x} 149H${x + dir * 2}`, WD, 2);
+  const chair = (x, dir) => line(`M${x} 172V142Q${x} 137 ${x + dir * 3} 137`, WD, 3.4) + line(`M${x} 157H${x + dir * 10}V172`, WD, 3.4) + line(`M${x} 149H${x + dir * 2}`, WD, 2.6);      // (T3) thicker: they held at 60 px
   const table = cx => fill(`M${cx - 16} 151L${cx - 18} 166Q${cx - 12} 169 ${cx - 6} 166Q${cx} 169 ${cx + 6} 166Q${cx + 12} 169 ${cx + 18} 166L${cx + 16} 151Z`, CL.l) +
     fill(`M${cx + 5} 151L${cx + 6} 166Q${cx + 12} 169 ${cx + 18} 166L${cx + 16} 151Z`, CL.s) + `<ellipse cx="${cx}" cy="151" rx="16" ry="4.4" fill="#FFFFFF"/>` + `<ellipse cx="${cx - 5}" cy="151" rx="5" ry="1.5" fill="${CL.s}"/>` +
     line(`M${cx + 5} 150V142`, "#5E9A63", 1.4) + circ(cx + 5, 141, 2.6, A === C.red ? C.yellow.l : C.red.l) + rect(cx - 1.2, 166, 2.4, 7, "#414B5E");
@@ -541,6 +541,7 @@ function coffee(k){
       (milk ? line(`M${cx - 14} ${top + 2}q8 -4 16 0t14 -1`, "#FBF3E0", 2.2, 'opacity=".9"') : `<ellipse cx="${cx - w * 0.3}" cy="${top + 0.6}" rx="${r1(w * 0.3)}" ry="2" fill="${mix(CO.l, "#C99B6E", 0.55)}" opacity=".8"/>`) + steam(cx - 9, top - 10, 30);
     if (milk) s += ground(132, 158, 20, 5) + line("M143 128Q155 128 153 139Q151 148 141 148", C.white.s, 4) + solid("M118 120H146L142 154Q142 158 138 158H126Q122 158 122 154Z", C.white, { k: 5 }) + `<ellipse cx="132" cy="120" rx="14" ry="3.4" fill="#FFFFFF"/><ellipse cx="132" cy="120.6" rx="11" ry="2.2" fill="#F3EBD8"/>` + fill("M115 117L121 119L120 125Z", C.white.l);
     if (small) s = `<g transform="translate(80 150) scale(${k2}) translate(-80 -150)">${s}</g>`;
+    if (milk) s = `<g transform="translate(84 150) scale(0.88) translate(-80 -150)">${s}</g>`;      // (T3) the cup and the jug inside the card
   }
   return `<g transform="translate(0 4)">${s}</g>`;
 }
@@ -658,7 +659,7 @@ function tube(pts, ws){                                    // a tapered band thr
 const eye = (x, y, r, c) => circ(x, y, r, c || "#262B36") + circ(x - r * 0.32, y - r * 0.36, r * 0.36, "#FFFFFF");
 const rot = (a, x, y, inner) => `<g transform="rotate(${a} ${x} ${y})">${inner}</g>`;
 const shift = (dx, dy, s, inner, cx, cy) => `<g transform="translate(${r1(dx)} ${r1(dy)})${s && s !== 1 ? ` translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})` : ""}">${inner}</g>`;
-const COAT = { brown: P("#A8693F", "#7C4A2A"), golden: P("#E6AD5C", "#BD8236"), black: P("#454A5A", "#2A2E3A"), grey: P("#A9B0BC", "#7E8696"), white: P("#F4EEE2", "#CABEA8"),
+const COAT = { brown: P("#A8693F", "#7C4A2A"), golden: P("#E6AD5C", "#BD8236"), black: P("#454A5A", "#2A2E3A"), grey: P("#A9B0BC", "#7E8696"), white: P("#EFE8DA", "#C2B6A0"),
   ginger: P("#EE9845", "#C46F28"), cream: P("#F2DFBA", "#CFB487"), chestnut: P("#B4572C", "#86391C"), tabby: P("#B9A68C", "#8D7A62") };
 const coatOf = (k, def) => { const n = k.has("golden") ? "golden" : k.has("ginger", "orange") ? "ginger" : k.has("chestnut") ? "chestnut" : k.cn === "yellow" ? "golden" : k.cn === "silver" ? "grey" : k.cn; return COAT[n] || COAT[def]; };
 
@@ -694,7 +695,7 @@ function dog(k, spec){
     const body = blob([[x1 - 4, yT + 2], [x1 + 4, (yT + yB) / 2], [x1 - 4, yB - 2], [(x0 + x1) / 2, yB + 1], [x0 + 8, yB - 2], [x0 - 2, (yT + yB) / 2 + 2], [x0 + 6, yT + 2], [(x0 + x1) / 2, yT - 2]]);
     s = ground(80, 172, 58, 6) + tail([[x0 + 6, yT + 8], [x0 - 6, yT - 4], [x0 - 10, yT - 22]]) +
       far([[x1 - 10, lt], [x1 - 7, 150], [x1 - 6, 167]], [lw - 2, lw * 0.72, lw * 0.7]) + far([[x0 + 14, lt], [x0 + 8, 150], [x0 + 12, 167]], [lw, lw * 0.72, lw * 0.7]) +
-      near([[x1 - 20, lt], [x1 - 19, 150], [x1 - 18, 167]], [lw, lw * 0.76, lw * 0.72]) + near([[x0 + 24, lt - 4], [x0 + 28, 148], [x0 + 22, 167]], [lw + 6, lw * 0.76, lw * 0.72]) +
+      near([[x1 - 20, lt], [x1 - 19, 150], [x1 - 18, 167]], [lw, lw * 0.76, lw * 0.72]) + near([[x0 + 24, lt + 2], [x0 + 27, 150], [x0 + 22, 167]], [lw + 1, lw * 0.78, lw * 0.72]) +
       "<!--N-->" + solid(body, B, { k: 6, rim: 1.4 }) + spots(body, [[x0 + 30, yT + 14, 9], [x0 + 52, yT + 24, 6], [x0 + 12, yT + 20, 6], [x1 - 14, yT + 8, 5]]) +
       chest(blob([[x1 - 18, yT + 18], [x1, yT + 16], [x1 + 2, yB - 6], [x1 - 14, yB]]));
     if (eat) s = s.replace("<!--N-->", neck([[x1 - 8, yT + 10], [x1 + 6, yT + 24], [x1 + 10, yT + 36]], [30, 25, 22])) + head(x1 + 2, yT + 38, 52, hs * 0.9) +
@@ -762,7 +763,7 @@ function cat(k){
     s = ground(80, 170, 60, 6) + tail([[40, 160], [24, 166], [14, 160], [14, 150]]) + solid(body, B, { k: 6, rim: 1.4 }) + marks(body, [[56, 128, 52, 162], [72, 127, 70, 164], [90, 128, 90, 164]]) +
       fill(blob([[86, 160], [100, 158], [104, 166], [86, 167]]), B.l) + face(104, 128, 1.15);
   }
-  return kit ? `<g transform="translate(80 172) scale(0.7) translate(-80 -172)">${s.replace(/scale\(1\.25\)/, "scale(1.45)")}</g>` : s;
+  return kit ? `<g transform="translate(80 172) scale(0.8) translate(-80 -172)">${s.replace(/scale\(1\.25\)/, "scale(1.45)")}</g>` : `<g>${s}</g>`;      // one group, its face the last: people.js headOnly() takes it for "behind"
 }
 
 /* ================================================================ a horse (un cheval) ================================================================
@@ -837,7 +838,7 @@ function shoe(k){
   else s += clipped(up, fill("M104 108Q128 118 148 132V150H122Q122 126 104 108Z", B.s, 'opacity=".5"')) + line("M104 109Q120 120 122 148", mix(B.s, INK, 0.3), 1.3, 'opacity=".7"') +      // the toe cap
     fill("M62 98Q74 92 86 98L94 110Q80 112 68 108Z", mix(B.l, B.s, 0.35)) + line("M66 99L84 106M70 96L88 103M66 104L80 97M72 106L90 100", "#F2E6CF", 1.8) +           // the lacing
     fill("M14 146H148Q154 148 152 154Q150 158 142 158H44V164H16Z", SOLE.l) + line("M18 147.5H146", mix(SOLE.l, "#FFFFFF", 0.25), 1.2) + fill("M16 158H44V164H16Z", SOLE.s);   // the sole and the heel
-  return ch ? `<g transform="translate(80 162) scale(0.7) translate(-80 -162)">${s}</g>` : s;
+  return `<g transform="translate(0 -10)">${ch ? `<g transform="translate(80 162) scale(0.7) translate(-80 -162)">${s}</g>` : s}</g>`;
 }
 
 /* ================================================================ bread (un pain) ================================================================
@@ -961,9 +962,9 @@ function box(k){
       fill(poly([[84, 80], [72, 98], [80, 96], [84, 86], [88, 96], [96, 98]]), R.s) + solid(cd(84, 79, 6), R, { k: 2, rim: 0 });
   }
   if (k.has("metal", "tin")){
-    const B = k.cn && C[k.cn] ? C[k.cn] : C.red, T = C.gold;
-    return ground(84, 162, 62, 8, 0.22) + solid("M18 104V146Q18 160 80 160Q142 160 142 146V104Z", B, { k: 7, rim: 1.4 }) + line("M18 132Q80 146 142 132", T.l, 3) + line("M18 116Q80 130 142 116", T.l, 3) +
-      clipped("M18 104V146Q18 160 80 160Q142 160 142 146V104Z", [40, 64, 88, 112].map((x, i) => circ(x + 6, 124 + (i % 2) * 2, 4, "#FBF4E4", 'opacity=".8"')).join("")) +
+    const B = k.cn && C[k.cn] ? C[k.cn] : C.silver, T = k.cn && C[k.cn] ? C.silver : C.steel;
+    return ground(84, 162, 62, 8, 0.22) + solid("M18 104V146Q18 160 80 160Q142 160 142 146V104Z", B, { k: 7, rim: 1.4 }) + line("M18 132Q80 146 142 132", T.s, 2) + line("M18 116Q80 130 142 116", T.s, 2) +
+      line("M30 110V148", "#FFFFFF", 4, 'opacity=".6"') +
       `<ellipse cx="80" cy="102" rx="66" ry="20" fill="${T.s}"/><ellipse cx="80" cy="96" rx="66" ry="20" fill="${T.l}"/><ellipse cx="80" cy="96" rx="52" ry="14" fill="${T.s}" opacity=".35"/>` +
       fill("M14 96A66 20 0 0 0 146 96V102A66 20 0 0 1 14 102Z", T.m) + line("M18 92Q30 78 72 76", T.r, 1.6);
   }
@@ -1072,6 +1073,509 @@ function leaf(k){
   return ground(84, 172, 30, 4, 0.18) + rot(-14, 80, 100, line(stalk, B.s, 4) + solid(d, B, { k: 7, rim: 1.6 }) + ex + line(veins, V, 2, 'opacity=".85"'));
 }
 
+/* ================================================================ a mountain (une montagne) ================================================================
+   ONE great peak standing on its own ground (no frame): the lit face to the left, the shade face to the right, a cap of snow, a lower
+   peak behind, pines at its foot. Against a hill, a town (buildings) and the sea. looks: "snowy" (the usual one) | "green" (grass to the
+   top, no snow) | "rocky" (bare grey crags) | "winter" (snow all over, snowy pines) */
+function mountain(k){
+  const green = k.has("green"), rocky = k.has("rocky"), winter = k.has("winter");
+  const R = green ? P("#7DBF6E", "#4F9452") : winter ? P("#E6ECF5", "#AEBAD0") : P("#9AA3B6", "#6B7489"), BK = far(R, 0.35), SN = P("#FFFFFF", "#D4DCEA"), PI = winter ? P("#5F8F74", "#3F6B55") : P("#3F8F5A", "#2A6A42");
+  const pk = [80, 22], L = [8, 160], Rr = [152, 160];
+  let s = ground(80, 166, 76, 8, 0.16) + fill(poly([[70, 160], [118, 56], [160, 160]]), BK.s) + fill(poly([[70, 160], [118, 56], [126, 160]]), BK.l) +             // the far peak
+    (green || rocky ? "" : fill(poly([[108, 78], [118, 56], [129, 80], [122, 76], [116, 84]]), far(SN, 0.2).l));
+  s += fill(poly([L, pk, [96, 160]]), R.l) + fill(poly([pk, Rr, [96, 160]]), R.s);                                                                            // the lit face, the face in shade
+  if (rocky) s += fill(poly([[80, 22], [64, 62], [72, 58], [60, 98], [70, 92], [52, 130], [62, 126]]), R.r, 'opacity=".6"') + line("M86 50L100 72M90 88L110 104M76 110L92 132M100 120L122 140", R.fs, 2, 'opacity=".7"') + line("M60 70L52 84M44 118L36 132", R.s, 2);
+  else if (green) s += line("M80 22Q70 70 96 160", R.s, 1, 'opacity=".4"') + fill(poly([[80, 22], [62, 70], [96, 160], [8, 160]]), R.r, 'opacity=".25"');
+  else s += fill(poly([[80, 22], [55, 74], [64, 68], [70, 80], [80, 66], [90, 82], [98, 70], [108, 76]]), SN.l) + fill(poly([[80, 22], [80, 66], [90, 82], [98, 70], [108, 76]]), SN.s) +
+    line("M80 66L84 92M64 68L58 90M98 70L104 92", R.fs, 1.6, 'opacity=".5"') + (winter ? fill(poly([[55, 74], [8, 160], [96, 160], [108, 76], [80, 66]]), "#FFFFFF", 'opacity=".55"') : "");
+  const pine = (x, y, h) => fill(poly([[x, y - h], [x - h * 0.36, y], [x + h * 0.36, y]]), PI.l) + fill(poly([[x, y - h], [x, y], [x + h * 0.36, y]]), PI.s) + (winter ? fill(poly([[x, y - h], [x - h * 0.16, y - h * 0.55], [x + h * 0.16, y - h * 0.55]]), "#FFFFFF") : "") + rect(x - 1.5, y, 3, 4, "#7E5433");
+  s += fill("M0 160Q40 146 80 154Q120 144 160 158V168H0Z", winter ? "#FFFFFF" : C.grass.l) + [[22, 160, 26], [34, 164, 20], [130, 160, 24], [142, 164, 18], [116, 166, 16]].map(([x, y, h]) => pine(x, y, h)).join("");
+  return `<g transform="translate(0 4)">${s}</g>`;
+}
+
+/* ================================================================ the sea (une mer) ================================================================
+   Open water to the horizon under the sky, rows of waves with white crests coming in, a sail far off, two gulls: in a rounded window (a
+   view, like the street). Against a river (banks), a lake (shores all round) and a beach (sand in front). looks: "waves" (the usual one) |
+   "calm" | "sunset" | "stormy" */
+function sea(k){
+  const calm = k.has("calm"), sunset = k.has("sunset"), storm = k.has("stormy", "storm"), panel = rrd(11, 13, 138, 164, 18), H = 82;
+  const sky = storm ? ["#8C95A8", "#B3BAC8"] : sunset ? ["#F2A65A", "#F8D9A0"] : ["#9ED3EE", "#DDF1FA"], W = storm ? P("#4E6E86", "#2F4C63") : sunset ? P("#3E73A8", "#2A527D") : P("#3D8CC7", "#2368A3");
+  const g = uid();
+  let s = `<linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>` + rect(0, 0, 160, H + 2, `url(#${g})`);
+  if (sunset) s += circ(80, H, 22, "#FFE7A3") + circ(80, H, 16, "#FFF4D0") + rect(0, H, 160, 120, W.s) + [0, 1, 2, 3].map(i => rect(80 - 18 + i * 3, H + 6 + i * 9, 36 - i * 6, 3, "#FFD98A", 1.5)).join("");
+  else if (!storm) s += circ(122, 38, 11, "#FFE38A") + fill(blob([[24, 46], [34, 36], [48, 38], [56, 44], [50, 50], [28, 52]]), "#FFFFFF", 'opacity=".9"');
+  else s += fill(blob([[0, 20], [40, 14], [80, 26], [130, 14], [160, 24], [160, 50], [100, 44], [40, 54], [0, 48]]), "#6E7789") + line("M30 52L24 70M52 50L46 68M76 48L70 66M104 48L98 66M128 46L122 64", "#D4D9E3", 1.4, 'opacity=".7"');
+  if (!sunset) s += rect(0, H, 160, 120, W.l);
+  if (!storm && !sunset) s += fill(`M98 ${H - 1}L104 ${H - 16}L104 ${H - 1}Z`, "#FFFFFF") + fill(`M96 ${H}H108L106 ${H + 2}H98Z`, "#5C6577");
+  if (!storm) s += line("M40 58l4 3 4 -3M54 52l3 2.4 3 -2.4", "#4C5366", 1.4);
+  const rows = calm ? 0 : 5;
+  for (let r = 0; r < rows; r++){ const y = H + 14 + r * r * 3.2 + r * 10, a = (storm ? 7 : 4) + r * (storm ? 3 : 2), w = 20 + r * 6, ph = r % 2 ? w / 2 : 0;
+    let d = `M-20 ${y}`; for (let x = -20 - ph; x < 180; x += w) d += `Q${x + w * 0.25} ${y - a} ${x + w * 0.5} ${y - a * 0.2}T${x + w} ${y}`;
+    s += fill(d + `V200H-20Z`, r % 2 ? W.s : W.l) + line(d, "#FFFFFF", 1.4 + r * 0.5, `opacity="${storm ? 0.9 : 0.8}"`); }
+  if (calm) s += [0, 1, 2, 3, 4].map(i => line(`M${20 + i * 23} ${H + 18 + i * 14}H${44 + i * 23}`, "#FFFFFF", 1.6, 'opacity=".55"')).join("");
+  return clipped(panel, s);
+}
+
+/* ================================================================ a shop (un magasin) ================================================================
+   One shop front, close, standing on its pavement (no frame): a wide display window full of things for sale, a glazed door, an awning,
+   a plain fascia, a hanging sign with a shopping bag, a storey above. Against a restaurant (tables and chairs outside, the fork and knife)
+   and a house. looks: a colour + "front" (the wall: cream the usual one) | a colour + "awning", or a colour alone (awning and fascia:
+   blue the usual one) | "toy shop" (toys in the window) */
+function shop(k){
+  const front = k.has("front"), FR = front && k.cn && C[k.cn] ? C[k.cn] : null, AW = !front && k.cn && C[k.cn] ? C[k.cn] : C.blue, W = FR ? P(mix(FR.l, "#FFFFFF", 0.15), FR.s) : C.cream, toys = k.has("toy");
+  const GL = C.glass, X0 = 16, X1 = 144;
+  let s = ground(80, 172, 70, 5, 0.22) + fill(rrd(X0 - 4, 166, X1 - X0 + 8, 8, 2), C.paving.l) + solid(`M${X0} 166V22H${X1}V166Z`, W, { k: 5, rim: 1.2 }) + rect(X0 - 3, 16, X1 - X0 + 6, 8, W.r, 1.5) + rect(X0 - 3, 22, X1 - X0 + 6, 2.4, W.s);
+  [40, 120].forEach(x => { s += rect(x - 14, 30, 28, 32, "#FFFFFF", 1.5) + rect(x - 11, 33, 22, 26, GL.l, 1) + rect(x - 0.8, 33, 1.6, 26, "#FFFFFF") + rect(x - 22, 30, 8, 32, AW.s, 1) + rect(x + 14, 30, 8, 32, AW.s, 1); });
+  s += rect(66, 36, 28, 22, "#FFFFFF", 1.5) + rect(69, 39, 22, 16, GL.l, 1);
+  s += solid(rrd(X0, 70, X1 - X0, 16, 1), AW, { k: 2, rim: 1 });                                                                                              // the fascia (no word)
+  let aw = `M${X0 - 4} 88H${X1 + 4}L${X1 + 10} 106`; for (let x = X1 + 10; x > X0 - 10; x -= 12.5) aw += `Q${x - 6.25} 113 ${x - 12.5} 106`; aw += "Z";
+  s += solid(aw, AW, { k: 3, rim: 1 }) + clipped(aw, [0, 1, 2, 3, 4, 5].map(i => { const b0 = X1 + 10 - 12.5 * (2 * i + 1), b1 = b0 - 12.5, t = x => X0 - 4 + (x - X0 + 10) * (X1 - X0 + 8) / (X1 - X0 + 20);
+    return fill(`M${r1(t(b0))} 86L${r1(b0)} 116H${r1(b1)}L${r1(t(b1))} 86Z`, "#FFFFFF", 'opacity=".92"'); }).join(""));
+  // the display window and the door
+  const wx0 = X0 + 6, wx1 = 100, wy0 = 118, wy1 = 158;
+  s += rect(wx0 - 3, wy0 - 3, wx1 - wx0 + 6, wy1 - wy0 + 10, mix(AW.s, INK, 0.15), 2) + rect(wx0, wy0, wx1 - wx0, wy1 - wy0, "#E8F3F8", 1) + rect(wx0, wy1 - 6, wx1 - wx0, 6, AW.fs);
+  if (toys) s += solid(blob([[32, 150], [30, 138], [36, 130], [46, 130], [50, 138], [48, 150]]), C.brown, { k: 2, rim: 0 }) + circ(34, 128, 4, C.brown.l) + circ(48, 128, 4, C.brown.l) + circ(41, 134, 7, C.brown.l) + circ(39, 133, 1.2, INK) + circ(44, 133, 1.2, INK) +
+    solid(cd(66, 145, 7), C.red, { k: 2, rim: 0 }) + line("M60 143Q66 147 72 143", "#FFFFFF", 1.6) + solid(rrd(78, 138, 18, 9, 3), C.yellow, { k: 2, rim: 0 }) + circ(82, 148, 3, INK) + circ(92, 148, 3, INK) + solid(rrd(80, 128, 14, 10, 2), C.blue, { k: 2, rim: 0 });
+  else s += line("M40 124V150M33 152H47", C.steel.s, 1.6) + solid("M34 126Q40 122 46 126L48 150H32Z", C.red, { k: 2, rim: 0 }) +                                         // a dress on a stand
+    solid(rrd(56, 136, 14, 16, 2), C.yellow, { k: 2, rim: 0 }) + line("M59 136Q63 128 67 136", C.yellow.s, 1.6) + solid(rrd(74, 140, 22, 12, 2), C.green, { k: 2, rim: 0 }) + solid(rrd(78, 128, 15, 12, 2), C.purple, { k: 2, rim: 0 }) +
+    `<ellipse cx="62" cy="128" rx="9" ry="2.6" fill="${C.wood.s}"/>` + fill("M57 128Q57 120 62 120Q67 120 67 128Z", C.wood.l);
+  s += fill(`M${wx0} ${wy0}L${wx0 + 20} ${wy0}L${wx0 + 6} ${wy1 - 6}H${wx0}Z`, "#FFFFFF", 'opacity=".35"');
+  s += rect(106, 116, 32, 50, mix(AW.s, INK, 0.15), 2) + rect(109, 119, 26, 47, AW.l, 1) + rect(112, 122, 20, 30, "#E8F3F8", 1) + circ(130, 144, 1.6, C.gold.l);
+  // the hanging sign: a shopping bag
+  s += line("M144 92H152M150 92V98", "#414B5E", 1.6) + solid(rrd(140, 98, 18, 18, 3), C.white, { k: 2, rim: 0 }) + fill("M144 104H154L153 113H145Z", AW.l) + line("M146.5 104Q149 99 151.5 104", AW.s, 1.2);
+  return s;
+}
+
+/* ================================================================ a glass (un verre) ================================================================
+   A drinking glass: clear, no handle, no saucer, the light through it; what is in it shows its colour. Against coffee (a cup on a saucer)
+   and a bottle (a neck). looks: "of water" (the usual one) | "empty" | "of juice" (orange) | "tall" (a long drink, ice, a straw) | "small"
+   | "wine glass" (a stem, red wine) ; a colour: coloured glass */
+function glass(k){
+  const wine = k.has("wine"), tall = k.has("tall"), empty = k.has("empty"), juice = k.has("juice"), small = k.has("small") && !k.has("empty");
+  const G = k.cn && C[k.cn] && !juice ? P(mix(C[k.cn].l, "#FFFFFF", 0.45), C[k.cn].s) : P("#E4F1F6", "#A9CCDD"), ED = mix(G.s, INK, 0.1);
+  const LQ = wine ? P("#B0323F", "#7E1F2B") : juice ? P("#F7A436", "#D9801E") : P("#9FD3EC", "#6FB2D6");
+  if (wine){
+    const bowl = "M50 34Q48 96 80 104Q112 96 110 34Z";
+    return ground(82, 170, 36, 5) + fill(bowl, G.l, 'opacity=".8"') + clipped(bowl, rect(40, 66, 80, 50, LQ.l) + rect(88, 66, 30, 50, LQ.s) + `<ellipse cx="80" cy="66" rx="29" ry="4.6" fill="${mix(LQ.l, "#FFFFFF", 0.2)}"/>`) +
+      line("M58 44Q58 84 76 98", "#FFFFFF", 3, 'opacity=".75"') + `<ellipse cx="80" cy="34" rx="30" ry="5.6" fill="none" stroke="${ED}" stroke-width="2"/>` + line(bowl.replace("Z", ""), ED, 2) +
+      line("M80 104V160", ED, 4.4) + line("M79 104V160", "#FFFFFF", 1.4, 'opacity=".8"') + `<ellipse cx="80" cy="162" rx="28" ry="6" fill="${G.s}"/><ellipse cx="80" cy="160" rx="28" ry="6" fill="${G.l}" stroke="${ED}" stroke-width="1.6"/>`;
+  }
+  const top = tall ? 26 : small ? 92 : 50, rx = tall ? 26 : small ? 24 : 32, bot = 164, lv = empty ? null : tall ? 44 : small ? 104 : 78;
+  const body = `M${80 - rx} ${top}L${80 - rx * 0.82} ${bot - 6}Q${80 - rx * 0.82} ${bot} ${80 - rx * 0.7} ${bot}H${80 + rx * 0.7}Q${80 + rx * 0.82} ${bot} ${80 + rx * 0.82} ${bot - 6}L${80 + rx} ${top}Z`;
+  let s = ground(84, 168, rx * 1.3, 6) + fill(body, G.l, 'opacity=".85"');
+  if (lv != null) s += clipped(body, rect(40, lv, 80, 140, LQ.l, 0, 'opacity=".9"') + rect(80 + rx * 0.3, lv, 40, 140, LQ.s, 0, 'opacity=".6"') + `<ellipse cx="80" cy="${lv}" rx="${rx - 1}" ry="${r1(rx * 0.16)}" fill="${mix(LQ.l, "#FFFFFF", 0.35)}"/>`);
+  if (tall) s += clipped(body, [[70, 60, 0], [88, 74, 20], [74, 90, -15]].map(([x, y, a]) => rot(a, x, y, rect(x - 7, y - 7, 14, 14, "#FFFFFF", 3, 'opacity=".75"'))).join("")) + line("M90 150L112 8", C.red.l, 4.4) + line("M90 150L112 8", "#FFFFFF", 1.4, 'stroke-dasharray="4 6"') + circ(80 + rx + 4, top + 4, 10, "#F6D24A") + circ(80 + rx + 4, top + 4, 7, "#FBE68E");
+  s += fill(`M${80 - rx * 0.82} ${bot - 10}Q80 ${bot - 4} ${80 + rx * 0.82} ${bot - 10}L${80 + rx * 0.82} ${bot - 6}Q${80 + rx * 0.82} ${bot} ${80 + rx * 0.7} ${bot}H${80 - rx * 0.7}Q${80 - rx * 0.82} ${bot} ${80 - rx * 0.82} ${bot - 6}Z`, G.s, 'opacity=".8"') +
+    line(`M${80 - rx * 0.66} ${top + 10}L${80 - rx * 0.58} ${bot - 16}`, "#FFFFFF", 3.4, 'opacity=".8"') + `<ellipse cx="80" cy="${top}" rx="${rx}" ry="${r1(rx * 0.18)}" fill="none" stroke="${ED}" stroke-width="2"/>` + line(body.replace("Z", "").replace(/^M[^L]*/, m => m), ED, 2);
+  return s;
+}
+
+/* ================================================================ a plate (une assiette) ================================================================
+   A round plate seen from a little above: a rim and a well, the light on the rim. looks: (white, empty: the usual one; a colour: the rim)
+   | "empty" (a few crumbs) ; spec.was (a ghost of what was on it) is left to people.js */
+function plate(k, spec){
+  if (spec && spec.was) return null;
+  const col = k.cn && C[k.cn] && k.cn !== "white", B = col ? P("#FFFFFF", "#FFFFFF") : C.blue, W = col ? C[k.cn] : P("#FFFFFF", "#CFC6B4");
+  return ground(84, 150, 78, 14, 0.2) + `<ellipse cx="80" cy="122" rx="72" ry="38" fill="${W.s}"/><ellipse cx="80" cy="116" rx="72" ry="38" fill="${W.l}"/>` +
+    `<ellipse cx="80" cy="116" rx="65" ry="33.5" fill="none" stroke="${B.l}" stroke-width="3.6"/>` +
+    `<ellipse cx="80" cy="119" rx="46" ry="22" fill="${mix(W.s, W.l, 0.5)}"/><ellipse cx="80" cy="121" rx="44" ry="20" fill="${col ? W.m : "#FBF8F2"}"/>` + line("M14 108Q30 82 80 78", "#FFFFFF", 2.6) +
+    (k.has("empty") ? [[66, 120], [92, 126], [84, 114], [72, 128], [98, 116]].map(([x, y]) => circ(x, y, 1.8, "#D9B47C")).join("") : "");
+}
+
+/* ================================================================ a ball (une balle, un ballon) ================================================================
+   A ball: a full round with a seam band and the light on it (no stalk, no leaf: not an apple or a tomato). looks: a colour (red: the usual
+   one, a ball with a white band) | "football" (white with black patches) | "beach" (stripes of colours) | "basketball" (orange, black lines) */
+function ball(k){
+  const r = 56, cx = 80, cy = 108, d = cd(cx, cy, r);
+  const base = (B, inner) => ground(84, 168, 46, 6) + solid(d, B, { k: 12, rim: 2 }) + clipped(d, inner) + fill("M48 84Q56 66 74 62Q60 72 56 90Z", "#FFFFFF", 'opacity=".55"');
+  if (k.has("football")) return base(C.white, [[80, 108, 15], [80, 60, 13], [36, 94, 13], [124, 94, 13], [50, 146, 13], [110, 146, 13]].map(([x, y, rr]) => fill(poly([0, 1, 2, 3, 4].map(i => [x + rr * Math.sin(i * 1.2566), y - rr * Math.cos(i * 1.2566)])), "#2E3442")).join("") +
+    line("M80 93V73M94 103L111 97M89 120L99 135M71 120L61 135M66 103L49 97", "#7E8696", 1.4));
+  if (k.has("basketball")) return base(P("#EE8B3A", "#C2651F"), line("M24 108H136M80 52V164M44 66Q66 108 44 150M116 66Q94 108 116 150", "#3A2A20", 2.4));
+  if (k.has("beach")) return base(C.white, [C.red, C.yellow, C.blue].map((c, i) => fill(`M80 108L${80 + 80 * Math.cos((i * 120 - 70) * RAD)} ${108 + 80 * Math.sin((i * 120 - 70) * RAD)}A80 80 0 0 1 ${80 + 80 * Math.cos((i * 120 - 10) * RAD)} ${108 + 80 * Math.sin((i * 120 - 10) * RAD)}Z`, c.l)).join("") + circ(80, 108, 9, "#FFFFFF"));
+  const B = k.cn && C[k.cn] ? C[k.cn] : C.red;
+  return base(B, fill("M20 96Q80 124 140 96L142 112Q80 142 18 112Z", "#FFFFFF", 'opacity=".92"'));
+}
+
+/* ================================================================ a hat (un chapeau) ================================================================
+   A hat with a crown and a brim all round, a band, seen from the side and a little above. No woolly hat and no cap (other words).
+   looks: a colour (a felt hat: grey-blue the usual one) | "straw" (a straw sun hat, a ribbon) | "top hat" (black, tall) | "with a feather"
+   | "cowboy" (brown, the brim turned up) | "sun" (as straw) */
+function hat(k){
+  const straw = k.has("straw", "sun"), top = k.has("top"), cow = k.has("cowboy"), B = top ? C.black : straw ? P("#EDD08C", "#C9A85E") : cow ? P("#B07A4A", "#80542F") : k.cn && C[k.cn] ? C[k.cn] : P("#6E7A92", "#4C576E");
+  const BAND = top ? C.black.s : straw ? C.red.l : cow ? "#5A3A22" : mix(B.s, INK, 0.45);
+  let s = ground(82, 150, 72, 8, 0.2);
+  const brim = cow ? "M6 120Q10 104 30 114Q80 130 130 114Q150 104 154 120Q140 142 80 144Q20 142 6 120Z" : `M${straw ? 2 : 10} 124Q${straw ? 2 : 10} 106 80 104Q${straw ? 158 : 150} 106 ${straw ? 158 : 150} 124Q${straw ? 158 : 150} 142 80 142Q${straw ? 2 : 10} 142 ${straw ? 2 : 10} 124Z`;
+  s += solid(brim, B, { k: 5, rim: 1.4 });
+  const crown = top ? "M44 120V36Q44 30 50 30H110Q116 30 116 36V120Q80 130 44 120Z" : cow ? "M40 118Q38 64 60 56Q72 52 80 62Q88 52 100 56Q122 64 120 118Q80 128 40 118Z" : straw ? "M42 120Q40 74 80 72Q120 74 118 120Q80 130 42 120Z" : "M40 120Q40 64 62 58Q80 64 98 58Q120 64 120 120Q80 130 40 120Z";
+  s += solid(crown, B, { k: 6, rim: 1.4 }) + clipped(crown, fill(top ? "M40 100Q80 110 120 100V122H40Z" : "M36 104Q80 114 124 104V124H36Z", BAND));
+  if (straw) s += clipped(brim + crown, [0, 1, 2, 3, 4, 5, 6, 7].map(i => line(`M${10 + i * 20} 70L${-6 + i * 20} 150`, B.s, 1, 'opacity=".45"')).join("")) + fill("M116 106Q130 118 126 134L120 132Q122 120 112 110Z", C.red.s);
+  if (!top && !straw && !cow) s += line("M62 60Q80 70 98 60", B.s, 2.4, 'opacity=".7"');
+  if (k.has("feather")) s += solid(blob([[108, 106], [116, 72], [130, 46], [136, 50], [126, 82], [114, 108]]), C.red, { k: 2, rim: 0.8 }) + line("M110 106Q122 76 133 48", C.red.s, 1.2);
+  return s;
+}
+
+/* ================================================================ a flower (une fleur) ================================================================
+   One flower on its stem with two leaves: a round of petals and a yellow heart. looks: a colour (the petals: red the usual one) | "in a pot" */
+function flower(k){
+  const B = k.cn && C[k.cn] && k.cn !== "green" ? C[k.cn] : C.red, pot = k.has("pot"), cy = pot ? 52 : 50, Gs = P("#5DAE62", "#3B8547");
+  let s = (pot ? "" : ground(84, 172, 30, 4)) + line(`M80 ${cy + 20}Q76 ${pot ? 110 : 120} 80 ${pot ? 126 : 170}`, Gs.s, 5) +
+    solid(blob([[80, 128], [62, 114], [48, 96], [66, 100], [80, 116]].map(([x, y]) => [x, y - (pot ? 10 : 0)])), Gs, { k: 3, rim: 1 }) + solid(blob([[80, 118], [98, 102], [114, 88], [100, 108], [82, 126]].map(([x, y]) => [x, y + (pot ? -12 : 14)])), Gs, { k: 3, rim: 1 });
+  for (let i = 0; i < 6; i++){ const a = i * 60 - 90, x = 80 + 22 * Math.cos(a * RAD), y = cy + 22 * Math.sin(a * RAD); s += rot(a + 90, x, y, solid(`M${x} ${y + 18}Q${x - 17} ${y} ${x} ${y - 18}Q${x + 17} ${y} ${x} ${y + 18}Z`, B, { k: 3, rim: 0.8 })); }
+  s += solid(cd(80, cy, 14), C.yellow, { k: 3, rim: 0.8 }) + [[-5, -4], [4, -5], [6, 4], [-4, 5], [0, 0]].map(([dx, dy]) => circ(80 + dx, cy + dy, 1.4, C.yellow.s)).join("");
+  if (pot) s += ground(82, 172, 40, 5) + solid("M46 126H114L106 168Q105 172 100 172H60Q55 172 54 168Z", C.tile, { k: 5, rim: 1.2 }) + solid(rrd(42, 120, 76, 14, 3), C.tile, { k: 3, rim: 1 }) + `<ellipse cx="80" cy="121" rx="34" ry="3" fill="#6E4A30"/>`;
+  return s;
+}
+
+/* ================================================================ a tomato (une tomate) ================================================================
+   Squat and round, glossy red, a green star of leaves and a stub of stalk on top (an apple has a brown stalk and one leaf; a ball a seam).
+   looks: a colour (red the usual one; yellow, green) | "sliced" (a half, its seeds) | "on the vine" (three on a stalk) */
+function tomato(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : P("#E2493A", "#B32E25"), G = P("#5FA35A", "#3D7E3F");
+  const one = (cx, cy, r) => { const d = blob([[cx - r, cy + r * 0.1], [cx - r * 0.8, cy - r * 0.62], [cx, cy - r * 0.78], [cx + r * 0.8, cy - r * 0.62], [cx + r, cy + r * 0.1], [cx + r * 0.6, cy + r * 0.72], [cx, cy + r * 0.82], [cx - r * 0.6, cy + r * 0.72]]);
+    return solid(d, B, { k: r * 0.16, rim: 1.6 }) + fill(`M${cx - r * 0.6} ${cy - r * 0.3}Q${cx - r * 0.5} ${cy - r * 0.6} ${cx - r * 0.2} ${cy - r * 0.62}`, "none") + line(`M${cx - r * 0.62} ${cy - r * 0.18}Q${cx - r * 0.5} ${cy - r * 0.52} ${cx - r * 0.2} ${cy - r * 0.6}`, "#FFFFFF", r * 0.09, 'opacity=".6"') +
+      fill(poly([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => { const a = i * 36 * RAD, rr = i % 2 ? r * 0.12 : r * 0.42; return [cx + rr * Math.cos(a), cy - r * 0.72 + rr * Math.sin(a) * 0.45]; })), G.l) + line(`M${cx} ${cy - r * 0.74}V${cy - r * 0.95}`, G.s, r * 0.1); };
+  if (k.has("sliced")){
+    return ground(82, 156, 66, 7) + one(46, 120, 36) + `<ellipse cx="108" cy="130" rx="40" ry="26" fill="${B.s}"/><ellipse cx="108" cy="126" rx="40" ry="26" fill="${B.l}"/><ellipse cx="108" cy="126" rx="33" ry="20" fill="#F47C66"/>` +
+      [[94, 118], [96, 134], [120, 118], [122, 134], [108, 112], [108, 140]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="6" ry="4.4" fill="#F7B28F"/>` + circ(x, y, 1.6, "#F3E2A6")).join("") + `<ellipse cx="108" cy="126" rx="6" ry="16" fill="#F7A68A"/>`;
+  }
+  if (k.has("vine")) return ground(82, 160, 64, 7) + line("M24 40Q80 26 136 44M50 34L44 70M80 32L80 92M112 38L118 66", G.s, 3) + one(44, 92, 28) + one(116, 90, 28) + one(80, 124, 34);
+  return ground(82, 160, 56, 8) + one(80, 108, 58);
+}
+
+/* ================================================================ cheese (un fromage) ================================================================
+   A wedge of yellow cheese with round holes, its rind on the curved back. looks: (yellow wedge: the usual one) | "round" (a whole white-
+   rinded cheese, a piece cut out) | "with holes" (a block) | "slice" (slices) | "blue-veined" | "in a box" (a round wooden box) */
+function cheese(k){
+  const Y = k.cn && C[k.cn] ? C[k.cn] : P("#F7D36A", "#D9AE3E"), RIND = P("#E8B54A", "#C48E2A");
+  if (k.has("round", "box")){
+    const W = P("#FBF6EA", "#D9CFBA"), box = k.has("box");
+    let s = ground(82, 156, 70, 9) + `<ellipse cx="80" cy="132" rx="64" ry="22" fill="${W.s}"/>` + rect(16, 104, 128, 28, W.m) + `<ellipse cx="80" cy="104" rx="64" ry="22" fill="${W.l}"/>`;
+    s += fill("M80 104L112 124V152L80 132Z", "#FBEBB8") + fill("M80 104L132 112V140L80 132Z".replace(/.*/, ""), "none") + fill("M80 104L112 124L132 116Z".replace(/.*/, ""), "none") + fill("M80 104L112 124L138 116L80 104Z", mix(W.l, "#F7E7B0", 0.6));
+    if (box) s = ground(82, 160, 72, 9) + `<ellipse cx="80" cy="136" rx="68" ry="24" fill="${C.wood.s}"/>` + rect(12, 104, 136, 32, C.wood.m) + `<ellipse cx="80" cy="104" rx="68" ry="24" fill="${C.wood.l}"/><ellipse cx="80" cy="104" rx="62" ry="20" fill="${W.l}"/>` + line("M12 120Q80 146 148 120", C.wood.s, 1.4, 'opacity=".6"');
+    return s;
+  }
+  if (k.has("slice")){
+    return ground(82, 150, 68, 8) + [[0, 0], [14, -14], [28, -28]].map(([dx, dy]) => `<g transform="translate(${dx - 14} ${dy + 14})">${solid("M24 120L56 90H136L104 120Z", Y, { k: 3, rim: 1 })}${fill("M24 120H104V126H24Z", Y.s)}${fill("M104 120L136 90V96L104 126Z", Y.fs)}${circ(64, 106, 5, Y.s)}${circ(92, 100, 3.6, Y.s)}</g>`).join("");
+  }
+  const holes = (list) => list.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 0.85}" fill="${Y.s}"/><ellipse cx="${x + r * 0.15}" cy="${y + r * 0.2}" rx="${r * 0.7}" ry="${r * 0.6}" fill="${mix(Y.s, Y.l, 0.5)}"/>`).join("");
+  if (k.has("block", "with holes")){
+    return ground(84, 156, 66, 8) + fill(poly([[112, 92], [140, 74], [140, 132], [112, 150]]), Y.s) + fill(poly([[20, 92], [112, 92], [112, 150], [20, 150]]), Y.l) + fill(rpoly([[20, 92], [48, 74], [140, 74], [112, 92]], 1), mix(Y.l, "#FFFFFF", 0.2)) +
+      holes([[40, 110, 7], [70, 124, 9], [96, 106, 6], [52, 138, 5], [92, 140, 5]]) + `<ellipse cx="80" cy="83" rx="7" ry="2.6" fill="${Y.s}"/><ellipse cx="124" cy="104" rx="3" ry="6" fill="${Y.fs}"/>`;
+  }
+  const blue = k.has("blue-veined", "blue"); if (blue) Y.l = "#F4EEDC", Y.s = "#D6CCB2";
+  const top = "M14 120L104 64Q134 70 146 96Z", front = "M14 120L146 96V140L14 156Z";
+  return ground(82, 160, 72, 8) + fill(front, Y.l) + fill("M14 156L146 140V146L14 162Z".replace(/.*/, ""), "none") + solid("M146 96Q146 72 104 64L104 66Q140 76 146 104V140Q152 120 146 96Z", RIND, { k: 2, rim: 0 }) +
+    fill(top, mix(Y.l, "#FFFFFF", 0.22)) + clipped(front, holes([[40, 136, 7], [72, 126, 9], [108, 132, 6], [126, 116, 5], [54, 148, 4]])) + `<ellipse cx="84" cy="88" rx="7" ry="3" fill="${Y.s}"/><ellipse cx="116" cy="84" rx="4" ry="2" fill="${Y.s}"/>` +
+    (blue ? clipped(front + top, line("M30 140Q50 120 60 136T90 120M100 140Q110 110 130 120M60 100Q80 90 100 96", "#5F7FA8", 2.4, 'opacity=".8"')) : "");
+}
+
+/* ================================================================ a lamp (une lampe) ================================================================
+   A table lamp, lit: a shade, a base, the warm glow under the shade. looks: a colour (the shade: cream the usual one) | "desk" (an angled
+   arm) | "tall", "floor" (a standard lamp) | "round" (a globe) | "old" (a brass desk lamp with a green shade) */
+function lamp(k){
+  const SH = k.cn && C[k.cn] ? C[k.cn] : P("#F6DC94", "#D6B566"), BR = C.gold, cone = (x0, x1, y, w) => fill(`M${x0} ${y}L${x0 - w} 168H${x1 + w}L${x1} ${y}Z`, "#FFE9A6", 'opacity=".42"'), glow = (cx, cy, r) => { const g = uid(); return `<radialGradient id="${g}"><stop offset="0" stop-color="#FFE9A6" stop-opacity=".75"/><stop offset="1" stop-color="#FFE9A6" stop-opacity="0"/></radialGradient><circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${g})"/>`; };
+  if (k.has("desk")){
+    const B = k.cn && C[k.cn] ? C[k.cn] : C.blue;
+    return ground(70, 170, 46, 6) + glow(112, 128, 44) + solid(rrd(34, 158, 60, 12, 5), B, { k: 3, rim: 1 }) + line("M64 158L48 92L104 56", B.s, 7) + line("M64 158L48 92L104 56", B.l, 4) + circ(48, 92, 6, B.s) +
+      solid("M96 48L136 76L122 96L86 70Z", B, { k: 4, rim: 1 }) + fill("M122 96L136 76L140 82L128 100Z".replace(/.*/, ""), "none") + `<ellipse cx="129" cy="86" rx="12" ry="5" fill="#FFF1B8" transform="rotate(36 129 86)"/>`;
+  }
+  if (k.has("old")){
+    const G = P("#2F8F5A", "#1E6B40");
+    return ground(82, 170, 54, 6) + glow(80, 112, 50) + solid(rrd(40, 156, 80, 14, 5), BR, { k: 3, rim: 1 }) + line("M80 156V96", BR.s, 6) + line("M79 156V96", BR.l, 3) + line("M70 96H90", BR.s, 4) +
+      solid("M24 96Q24 70 80 66Q136 70 136 96Z", G, { k: 5, rim: 1.4 }) + fill("M24 96H136Q136 100 132 100H28Q24 100 24 96Z", "#FFF1B8");
+  }
+  if (k.has("tall", "floor")){
+    return ground(80, 172, 40, 6) + glow(80, 40, 50) + cone(56, 104, 52, 22) + `<ellipse cx="80" cy="168" rx="26" ry="6" fill="${C.black.s}"/><ellipse cx="80" cy="166" rx="26" ry="6" fill="${C.black.l}"/>` + line("M80 166V52", C.black.s, 5) + line("M79 166V52", C.black.l, 2) +
+      solid("M54 52L62 14H98L106 52Z", SH, { k: 4, rim: 1.2 }) + `<ellipse cx="80" cy="52" rx="26" ry="5" fill="#FFF1B8"/>`;
+  }
+  if (k.has("round", "globe")) return ground(82, 170, 40, 6) + glow(80, 86, 60) + solid(rrd(58, 140, 44, 30, 8), C.wood, { k: 4, rim: 1 }) + solid(cd(80, 88, 50), P("#FFF6DA", "#F2D894"), { k: 8, rim: 2 }) + fill("M50 74Q56 56 74 50Q62 62 58 80Z", "#FFFFFF", 'opacity=".8"');
+  return ground(82, 170, 46, 6) + glow(80, 108, 50) + cone(44, 116, 98, 18) + solid("M62 168Q46 146 60 128Q68 118 72 110H88Q92 118 100 128Q114 146 98 168Z", P("#5E9BC9", "#3C77A8"), { k: 5, rim: 1.4 }) + line("M66 122H94", "#FFFFFF", 2, 'opacity=".5"') + line("M80 112V96", BR.s, 4) +
+    `<ellipse cx="80" cy="96" rx="40" ry="7" fill="#FFF1B8"/>` + solid("M40 96L56 30H104L120 96Q80 104 40 96Z", SH, { k: 6, rim: 1.4 }) + line("M44 92Q80 99 116 92", SH.s, 1.6, 'opacity=".6"');
+}
+
+/* ================================================================ a key (une clé) ================================================================
+   A door key lying flat, a little turned: a round bow with its hole, a shaft, a bit with teeth. Against a fork, a pen. looks: a colour
+   (gold: the usual one; silver) | "red", "black" (a plastic head) | "old" (a long iron key, an ornate bow) | "plastic" | "on a ring" (two
+   keys on a ring) */
+function key(k){
+  const old = k.has("old"), plastic = k.has("plastic") || k.cn === "red" || k.cn === "black" || k.cn === "blue" || k.cn === "green";
+  const M = old ? P("#8E8473", "#5F5748") : k.cn === "silver" || plastic ? C.silver : C.gold, H = plastic ? (k.cn && C[k.cn] ? C[k.cn] : C.red) : M;
+  const one = (o) => {
+    if (old) return solid("M30 98m-20 0a20 20 0 1 0 40 0a20 20 0 1 0 -40 0ZM30 98m-9 0a9 9 0 1 1 18 0a9 9 0 1 1 -18 0Z", M, { k: 4, rim: 1.2 }) + solid(rrd(48, 94, 92, 8, 4), M, { k: 2, rim: 0.8 }) + solid(rrd(54, 90, 6, 16, 2), M, { k: 2, rim: 0 }) +
+      solid("M118 100H140V128H132V118H126V128H118Z", M, { k: 3, rim: 0.8 });
+    const bow = plastic ? rrd(10, 70, 52, 56, 18) : cd(36, 98, 28);
+    return solid(bow + (plastic ? "" : ""), H, { k: 5, rim: 1.4 }) + circ(plastic ? 24 : 26, 98, 7, FACE) +
+      solid("M60 90H136L144 98L136 106H134L130 112L126 106L120 114L114 106L106 112L102 106H60Z", M, { k: 3, rim: 1 }) + line("M66 96H132", M.s, 1.4, 'opacity=".6"');
+  };
+  if (k.has("ring")) return `<g transform="translate(80 92) scale(.84) translate(-74 -112)">` + ground(84, 150, 62, 7) + `<ellipse cx="44" cy="70" rx="26" ry="22" fill="none" stroke="${C.silver.s}" stroke-width="5"/><ellipse cx="44" cy="70" rx="26" ry="22" fill="none" stroke="${C.silver.l}" stroke-width="2.4"/>` +
+    `<g transform="translate(26 30) rotate(30 40 98) scale(.82)">${one()}</g>` + `<g transform="translate(18 50) rotate(70 40 98) scale(.72)">${one().replace(/#F3BC3F|#C8911F/g, m => m === "#F3BC3F" ? "#C9CFD8" : "#9AA2B0")}</g></g>`;
+  return ground(84, 120, 66, 7) + rot(-14, 80, 98, one());
+}
+
+/* ================================================================ a shirt (une chemise) ================================================================
+   A shirt laid flat: a collar, a button front, a pocket, long sleeves with cuffs. Against a jumper (later: no collar, ribbed), a dress,
+   a T-shirt. looks: a colour (white-blue the usual one) | "checked" | "short-sleeved" */
+function shirt(k){
+  const B = k.cn === "white" ? P("#F4F0E6", "#C9C0AE") : k.cn && C[k.cn] ? C[k.cn] : P("#BFD9EE", "#8EB4D6"), short = k.has("short", "short-sleeved");
+  const body = "M48 30L36 36L40 172H120L124 36L112 30Q96 40 80 40Q64 40 48 30Z";
+  const sl = short ? ["M48 30L36 36L14 76L34 88L42 64Z", "M112 30L124 36L146 76L126 88L118 64Z"] : ["M48 30L36 36L8 150L28 156L44 76Z", "M112 30L124 36L152 150L132 156L116 76Z"];
+  let s = ground(80, 176, 56, 4, 0.14) + sl.map(d => solid(d, B, { k: 4, rim: 1 })).join("") + solid(body, B, { k: 6, rim: 1.4 });
+  if (k.has("checked")) s += clipped(body + sl.join(""), [...Array(14)].map((_, i) => rect(0, i * 13, 160, 4.6, B.s, 0, 'opacity=".55"') + rect(i * 13, 0, 4.6, 190, B.s, 0, 'opacity=".55"')).join(""));
+  if (!short) s += [[8, 150, 28, 156], [132, 156, 152, 150]].map(([a, b, c, d]) => line(`M${a + 1} ${b - 8}L${c} ${d - 8}`, B.s, 3)).join("");
+  s += line("M80 46V170", B.s, 1.8) + [60, 84, 108, 132, 156].map(y => circ(84, y, 2.2, "#FFFFFF") + circ(84, y, 1, B.s)).join("") + fill(rrd(96, 64, 16, 18, 2), B.s, 'opacity=".45"') +
+    solid("M48 30L80 46L66 58L46 40Z", P(mix(B.l, "#FFFFFF", 0.3), B.s), { k: 2, rim: 0 }) + solid("M112 30L80 46L94 58L114 40Z", P(mix(B.l, "#FFFFFF", 0.3), B.s), { k: 2, rim: 0 });
+  return s;
+}
+
+/* ================================================================ trousers (un pantalon) ================================================================
+   A pair of long trousers laid flat: a waistband with belt loops, a fly, two legs to the hem. Always long (shorts are another word).
+   looks: a colour (blue denim the usual one) | "striped" */
+function trousers(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : P("#4F78A8", "#35587F"), d = "M44 16H116L132 174H92L80 64L68 174H28Z";
+  let s = ground(80, 178, 58, 4, 0.14) + solid(d, B, { k: 6, rim: 1.4 }) + fill(rrd(42, 14, 76, 12, 2), B.s) + [52, 80, 108].map(x => rect(x - 2, 12, 4, 15, B.l, 1)).join("") + circ(80, 20, 2.6, C.gold.l) +
+    line("M80 26V58", B.s, 1.6) + line("M80 58Q72 56 70 44", B.s, 1.6) + line("M56 30Q60 44 50 50M104 30Q100 44 110 50", B.s, 1.6) + line("M30 166H66M94 166H130", B.s, 1.6, 'opacity=".7"') + line("M74 80L68 164M86 80L92 164", B.r, 1.2, 'opacity=".6"');
+  if (k.has("striped")) s += clipped(d, [...Array(12)].map((_, i) => rect(26 + i * 10, 0, 3, 190, "#FFFFFF", 0, 'opacity=".55"')).join(""));
+  return s;
+}
+
+/* ================================================================ a dress (une robe) ================================================================
+   A dress on a hanger: a fitted top with straps or little sleeves, a waist, a full skirt to the hem. Against a skirt (later: no top) and
+   a shirt. looks: a colour (red the usual one) | "long" | "short" | "with dots" */
+function dress(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : C.red, long = k.has("long"), short = k.has("short"), hem = long ? 176 : short ? 132 : 158, wd = long ? 50 : short ? 44 : 56;
+  const d = `M60 30Q80 40 100 30L110 46L100 54Q96 72 98 86Q${80 + wd + 4} ${hem - 30} ${80 + wd} ${hem}Q80 ${hem + 8} ${80 - wd} ${hem}Q${80 - wd - 4} ${hem - 30} 62 86Q64 72 60 54L50 46Z`;
+  let s = line("M80 30V14Q80 8 86 8Q92 8 92 14", C.steel.s, 2.4) + line("M48 34Q64 22 80 22Q96 22 112 34", C.steel.s, 3) + solid(d, B, { k: 6, rim: 1.4 }) +
+    fill(`M62 86Q80 92 98 86L99 94Q80 100 61 94Z`, B.s) + clipped(d, [0, 1, 2].map(i => line(`M${74 - i * 6} 96Q${70 - i * 10} ${hem - 30} ${68 - i * 14} ${hem + 4}`, B.s, 1.4, 'opacity=".5"')).join("") + line(`M92 96Q100 ${hem - 30} 108 ${hem + 4}`, B.s, 1.4, 'opacity=".5"') + line("M70 96Q76 130 90 " + (hem - 2), B.r, 1.4, 'opacity=".5"'));
+  if (k.has("dots")) s += clipped(d, [...Array(40)].map((_, i) => circ(30 + (i * 29) % 100 + ((Math.floor(i / 4)) % 2) * 6, 40 + (i * 17) % (hem - 30), 3, "#FFFFFF", 'opacity=".9"')).join(""));
+  return ground(80, hem + 8, 40, 3, 0.1) + s;
+}
+
+/* ================================================================ a chair (une chaise) ================================================================
+   The chair alone, seen from its corner (the same chair as the ground of sur / sous). Against a table, an armchair (later). looks:
+   "wooden" (the usual one; a colour paints it) | "kitchen" (white) | "garden" (green metal) | "office" (on wheels) | "plastic" (white,
+   moulded) | "folding" (steel) */
+function chair(k){
+  if (k.has("office")){
+    const B = k.cn && C[k.cn] ? C[k.cn] : C.black;
+    return ground(80, 174, 56, 6) + line("M80 150V128", C.steel.s, 6) + [[-50, 8], [-18, 14], [24, 14], [52, 6], [10, 2]].map(([dx, dy]) => line(`M80 150L${80 + dx} ${160 + dy}`, C.steel.s, 5) + circ(80 + dx, 166 + dy, 5, C.black.s)).join("") +
+      solid(rrd(46, 22, 68, 70, 16), B, { k: 5, rim: 1.4 }) + line("M60 92V108M100 92V108", C.steel.s, 5) + solid("M36 114Q34 102 50 102H112Q126 102 124 114L118 126Q80 134 42 126Z", B, { k: 4, rim: 1.2 }) +
+      solid(rrd(28, 92, 14, 8, 3), B, { k: 2, rim: 0 }) + solid(rrd(118, 92, 14, 8, 3), B, { k: 2, rim: 0 });
+  }
+  if (k.has("plastic")){
+    const B = k.cn && C[k.cn] ? C[k.cn] : P("#F6F3EC", "#C9C1B1");
+    return ground(80, 176, 54, 6) + leg(64, 120, 58, 170, 7, B, 1) + leg(118, 116, 124, 164, 7, B, 1) + leg(44, 128, 36, 176, 8, B) + leg(100, 134, 106, 182, 8, B) +
+      solid("M50 32Q86 20 120 36L118 110L98 130L44 124L52 104Z", B, { k: 5, rim: 1.4 }) + fill("M58 44Q86 34 110 46L108 70Q86 60 60 66Z", B.s, 'opacity=".35"') + solid(rpoly([[40, 124], [64, 104], [122, 110], [98, 132]], 6), B, { k: 3, rim: 1 });
+  }
+  if (k.has("folding")){
+    const B = k.cn && C[k.cn] ? C[k.cn] : C.slate, ST = C.steel;
+    return ground(80, 176, 50, 6) + line("M54 30L110 172M106 30L50 172", ST.s, 5) + line("M54 30L110 172M106 30L50 172", ST.l, 2) + solid(rrd(48, 24, 64, 34, 5), B, { k: 3, rim: 1 }) +
+      solid(rpoly([[38, 118], [56, 102], [124, 104], [108, 122]], 3), B, { k: 3, rim: 1 }) + fill("M38 118H108V124H38Z", B.s);
+  }
+  const kit = k.has("kitchen"), gard = k.has("garden"), k2 = lookOf({ looks: [kit ? (k.cn || "white") : gard ? (k.cn || "green") : (k.cn || "wooden")] });
+  return groundChair(k2);
+}
+
+/* ================================================================ a bag (un sac) ================================================================
+   A bag standing: soft, its handles up (a box is hard and square). looks: (a handbag: brown leather the usual one; a colour) | "leather"
+   | "backpack" (straps, a pocket, a zip) | "shopping" (a tote, bread and a leek showing) | "paper" (a paper carrier bag, string handles) |
+   "sports" (a holdall, a stripe) */
+function bag(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : null;
+  if (k.has("backpack")){
+    const P0 = B || C.green;
+    return ground(80, 172, 46, 6) + line("M58 40Q56 20 80 20Q104 20 102 40", P0.s, 6) + solid("M34 58Q34 34 80 34Q126 34 126 58V158Q126 168 116 168H44Q34 168 34 158Z", P0, { k: 6, rim: 1.4 }) +
+      line("M40 70Q80 56 120 70", P0.s, 2) + solid("M48 108Q48 100 56 100H104Q112 100 112 108V150Q112 156 106 156H54Q48 156 48 150Z", P0, { k: 3, rim: 1 }) + line("M50 116H110", P0.s, 2) + rect(76, 112, 8, 4, C.steel.l, 1) +
+      line("M38 76Q24 110 36 150M122 76Q136 110 124 150", P0.fs, 5);
+  }
+  if (k.has("paper")){
+    const K = P("#D9AE74", "#B58A52");
+    return ground(84, 170, 52, 6) + line("M58 62Q58 30 72 30Q86 30 86 62M74 62Q74 30 88 30Q102 30 102 62", "#8C6A44", 2.4) + fill(poly([[112, 62], [130, 54], [130, 156], [112, 166]]), K.s) + fill(poly([[34, 62], [112, 62], [112, 166], [34, 166]]), K.l) +
+      fill(poly([[34, 62], [52, 54], [130, 54], [112, 62]]), mix(K.s, INK, 0.3)) + line("M34 74H112", K.s, 1.2, 'opacity=".6"');
+  }
+  if (k.has("shopping")){
+    const T = B || P("#E9E2CF", "#C5BB9F");
+    return ground(82, 170, 52, 6) + line("M34 30L66 94", "#5FA35A", 9) + line("M40 28L46 40", "#FFFFFF", 9) + solid(blob([[86, 94], [96, 54], [114, 44], [124, 52], [112, 92]]), P("#D99A4E", "#A9692C"), { k: 3, rim: 1 }) +
+      line("M46 96Q48 52 80 52Q112 52 114 96", T.s, 5) + solid("M30 92H130L122 166Q122 170 116 170H44Q38 170 38 166Z", T, { k: 6, rim: 1.4 }) + line("M50 108Q80 114 110 108", T.s, 1.2, 'opacity=".5"');
+  }
+  if (k.has("sports")){
+    const S2 = B || C.blue;
+    return ground(80, 162, 66, 7) + line("M54 98Q54 66 80 66Q106 66 106 98", S2.s, 6) + solid("M14 118Q14 94 40 94H120Q146 94 146 118Q146 150 122 156H38Q14 150 14 118Z", S2, { k: 6, rim: 1.4 }) +
+      line("M20 132H140", "#FFFFFF", 4) + line("M40 98Q80 92 120 98", S2.s, 2) + [44, 116].map(x => `<ellipse cx="${x}" cy="126" rx="10" ry="22" fill="${S2.s}" opacity=".35"/>`).join("");
+  }
+  const L = B || P("#A9693F", "#7C4A2A");
+  return ground(80, 170, 56, 6) + line("M48 82Q48 32 80 32Q112 32 112 82", L.s, 7) + line("M48 82Q48 34 80 34Q112 34 112 82", L.l, 3.4) +
+    solid("M28 84Q28 74 38 74H122Q132 74 132 84L140 158Q140 168 130 168H30Q20 168 20 158Z", L, { k: 6, rim: 1.4 }) + solid("M28 84Q28 74 38 74H122Q132 74 132 84L134 104Q80 118 26 104Z", L, { k: 3, rim: 1 }) +
+    solid(rrd(72, 100, 16, 12, 3), C.gold, { k: 2, rim: 0 }) + line("M32 124H128", L.s, 1.4, 'opacity=".5"');
+}
+
+/* ================================================================ a tree (un arbre) ================================================================
+   One tree standing on its own grass: a trunk that forks, a full crown of leaves in clumps (lit on the left). Against a bush, a flower, a
+   forest (many trees, later). looks: (green, big: the usual one) | "with apples" | "pine" | "small, young" | "autumn" | "bare", "winter" */
+function tree(k){
+  const autumn = k.has("autumn"), bare = k.has("bare", "winter"), pine = k.has("pine"), young = k.has("young") || (k.has("small") && !k.has("green"));
+  const T = P("#9B6A43", "#6E4A2E"), L = autumn ? P("#EE9A3A", "#C8682A") : P("#6DB46A", "#468C4E"), GR = C.grass;
+  let s = ground(84, 170, 56, 7, 0.2) + `<ellipse cx="80" cy="168" rx="58" ry="8" fill="${GR.l}"/>`;
+  if (pine){
+    const PI = P("#3F8F5A", "#2A6A42");
+    s += solid(rrd(74, 140, 12, 30, 2), T, { k: 2, rim: 0 }) + [[60, 146, 52], [40, 120, 44], [20, 96, 34]].reverse().map(([h, y, w]) => "").join("");
+    [[150, 56], [118, 46], [88, 36], [60, 26]].forEach(([y, w], i) => { s += solid(`M80 ${y - 46}L${80 + w} ${y}Q80 ${y + 8} ${80 - w} ${y}Z`, PI, { k: 5, rim: 1.2 }); });
+    return s;
+  }
+  if (young) return s + solid(tube([[80, 168], [80, 120], [80, 96]], [7, 5, 4]), T, { k: 2, rim: 0 }) + line("M80 132L96 116", T.l, 3) + solid(blob([[56, 100], [58, 76], [80, 62], [102, 76], [104, 100], [80, 112]]), L, { k: 6, rim: 1.4 }) +
+    line("M80 168L66 172M80 168L94 172", T.s, 1.6);
+  s += solid(tube([[80, 170], [80, 130], [76, 100]], [20, 15, 11]), T, { k: 3, rim: 0.8 }) + solid(tube([[79, 128], [100, 104], [110, 86]], [10, 7, 5]), T, { k: 2, rim: 0 }) + solid(tube([[78, 120], [58, 100], [50, 84]], [9, 6, 4]), T, { k: 2, rim: 0 });
+  if (bare) return s + solid(tube([[76, 100], [72, 60], [64, 36]], [10, 6, 3]), T, { k: 2, rim: 0 }) + solid(tube([[74, 76], [96, 54], [104, 34]], [6, 4, 2.4]), T, { k: 2, rim: 0 }) + solid(tube([[110, 86], [126, 70], [136, 60]], [5, 3.4, 2]), T, { k: 2, rim: 0 }) +
+    solid(tube([[50, 84], [36, 68], [26, 62]], [4, 3, 2]), T, { k: 2, rim: 0 }) + line("M64 36L56 24M64 36L72 22M104 34L98 22M104 34L114 26M96 54L110 50M72 60L58 50", T.s, 2) + (k.has("winter") ? fill("M22 168Q80 156 140 168Z", "#FFFFFF") : "");
+  const crown = [[80, 70, 44], [46, 84, 30], [114, 84, 30], [60, 54, 28], [102, 54, 28], [80, 36, 26]];
+  s += crown.map(([x, y, r]) => solid(cd(x, y, r), L, { k: r * 0.3, rim: 1.4 })).join("") + fill(blob([[30, 92], [56, 104], [80, 100], [104, 104], [130, 92], [120, 108], [80, 116], [40, 108]]), L.s, 'opacity=".45"');
+  if (k.has("apples")) s += [[58, 74], [92, 60], [110, 88], [74, 96], [44, 96], [120, 70], [86, 34]].map(([x, y]) => solid(cd(x, y, 6), C.red, { k: 2, rim: 0 })).join("");
+  if (autumn) s += [[32, 160], [118, 164], [100, 158], [52, 166]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="5" ry="2.4" fill="${L.l}"/>`).join("");
+  return s;
+}
+
+/* ================================================================ a bicycle (un vélo) ================================================================
+   From the side, facing right: two big thin wheels with spokes, a diamond frame, pedals and a chain, a saddle, handlebars. Against a
+   motorbike (fat tyres, an engine, no pedals). looks: a colour (red the usual one) | "child's" (small, stabilisers) | "racing" (drop bars,
+   thin) | "old" (black, upright) | "with a basket" */
+function bicycle(k){
+  const B = k.has("old") ? C.black : k.cn && C[k.cn] ? C[k.cn] : C.red, TY = "#2E3442", R = 30, w1 = [38, 136], w2 = [122, 136], bb = [76, 138], seat = [66, 82], head = [112, 86];
+  const wheel = ([x, y]) => `<circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="${TY}" stroke-width="6"/><circle cx="${x}" cy="${y}" r="${R - 4}" fill="none" stroke="${C.silver.l}" stroke-width="1.8"/>` +
+    [...Array(12)].map((_, i) => line(`M${x} ${y}L${r1(x + (R - 4) * Math.cos(i * 30 * RAD))} ${r1(y + (R - 4) * Math.sin(i * 30 * RAD))}`, C.silver.s, 0.8)).join("") + circ(x, y, 3.4, C.silver.s);
+  let s = ground(80, 170, 70, 5, 0.2) + wheel(w1) + wheel(w2) +
+    line(`M${w1[0]} ${w1[1]}L${bb[0]} ${bb[1]}L${seat[0]} ${seat[1] + 8}Z`, B.s, 5) + line(`M${bb[0]} ${bb[1]}L${head[0] - 2} ${head[1] + 10}L${seat[0] + 2} ${seat[1] + 12}`, B.l, 6) + line(`M${w1[0]} ${w1[1]}L${seat[0]} ${seat[1] + 8}`, B.l, 4.4) +
+    line(`M${head[0]} ${head[1]}L${w2[0]} ${w2[1]}`, B.l, 5) + line(`M${seat[0]} ${seat[1] + 8}L${seat[0] - 2} ${seat[1]}`, C.silver.s, 3) +
+    fill("M52 80Q66 74 80 80Q76 85 66 85Q54 85 52 80Z", "#2E3442") + circ(bb[0], bb[1], 7, "none").replace('fill="none"', 'fill="none" stroke="#5A6274" stroke-width="2"') + line(`M${bb[0]} ${bb[1] - 7}L${w1[0]} ${w1[1] - 3}M${bb[0]} ${bb[1] + 7}L${w1[0]} ${w1[1] + 3}`, "#5A6274", 1.4) +
+    line(`M${bb[0]} ${bb[1]}L${bb[0] + 10} ${bb[1] + 14}`, C.silver.s, 3) + rect(bb[0] + 4, bb[1] + 13, 13, 4, "#2E3442", 1.5);
+  s += k.has("racing") ? line(`M${head[0]} ${head[1]}L${head[0] - 2} ${head[1] - 6}H${head[0] + 10}Q${head[0] + 16} ${head[1] - 4} ${head[0] + 12} ${head[1] + 6}`, "#2E3442", 3.4)
+    : line(`M${head[0]} ${head[1]}L${head[0] - 4} ${head[1] - 14}M${head[0] - 12} ${head[1] - 14}H${head[0] + 2}`, "#2E3442", 3.6);
+  if (k.has("basket")) s += solid(rrd(head[0] + 2, head[1] - 10, 30, 22, 3), P("#C9965C", "#9C6B37"), { k: 2, rim: 0 }) + [6, 12, 18, 24].map(x => line(`M${head[0] + 2 + x} ${head[1] - 10}V${head[1] + 12}`, "#9C6B37", 1)).join("");
+  if (k.has("child's", "child")) s = `<g transform="translate(80 170) scale(0.7) translate(-80 -170)">${s}${line("M38 136L30 160M30 160H24", C.silver.s, 2.4)}${circ(24, 160, 6, TY)}</g>`;
+  return s;
+}
+
+/* ================================================================ a motorbike (une moto) ================================================================
+   From the side, facing right: two fat tyres, an engine and an exhaust between them, a fuel tank, a seat, handlebars, a round lamp. No
+   pedals and no thin frame (a bicycle). looks: a colour (red the usual one: the tank and mudguards) | "old" (black, cream tank) | "police"
+   (white, blue lamp) */
+function motorbike(k){
+  const pol = k.has("police"), old = k.has("old"), B = pol ? C.white : old ? P("#F2E2BE", "#CDB58A") : k.cn && C[k.cn] ? C[k.cn] : C.red, TY = "#2E3442", ST = C.steel;
+  const wheel = (x, y) => circ(x, y, 26, TY) + circ(x, y, 15, ST.s) + circ(x, y, 12, ST.l) + circ(x, y, 4, ST.s) + line(`M${x - 18} ${y - 18}A26 26 0 0 1 ${x + 8} ${y - 25}`, "#5A6274", 2);
+  return ground(80, 170, 72, 6, 0.22) + wheel(34, 140) + wheel(126, 140) +
+    solid("M14 128Q20 108 40 106L58 112L54 120Q36 116 26 130Z", B, { k: 3, rim: 1 }) + solid("M108 112Q130 104 146 122L140 128Q128 116 112 120Z", B, { k: 3, rim: 1 }) +
+    solid(rrd(56, 112, 40, 30, 6), P("#5A6274", "#3A4254"), { k: 3, rim: 0 }) + [118, 126, 134].map(y => line(`M60 ${y}H92`, "#8D97AB", 2)).join("") +
+    line("M60 144Q40 150 16 146", ST.s, 6) + line("M60 143Q40 149 16 145", ST.l, 3) + line("M34 140L66 110M126 140L112 84", "#5A6274", 5) +
+    solid("M66 100Q70 84 92 84Q110 84 112 98L102 110H70Z", B, { k: 4, rim: 1.4 }) + (old ? fill("M80 92H100", "none") : line("M74 100Q86 92 104 96", "#FFFFFF", 3, 'opacity=".6"')) +
+    solid("M26 104Q30 96 44 96H70V106H30Z", P("#3A4254", "#272D3C"), { k: 2, rim: 0 }) + line("M112 84L104 70M98 70H110", TY, 4) + solid(cd(122, 92, 7), ST, { k: 2, rim: 0 }) + circ(123, 92, 4.4, "#FFF1B8") +
+    (pol ? solid(rrd(100, 58, 10, 8, 2), C.blue, { k: 1, rim: 0 }) + rect(30, 114, 22, 5, C.blue.l, 1) : "");
+}
+
+/* ================================================================ a plane (un avion) ================================================================
+   An airliner in the sky, climbing to the right: a long white body, a row of windows, swept wings, a tail fin, engines. Against a bird
+   (wings that beat, no windows) and a rocket. looks: a colour (the tail and the stripe: blue the usual one) | "old" (a biplane with a
+   propeller) | "toy" */
+function plane(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : C.blue, W = P("#FBF8F0", "#D3CCBD");
+  if (k.has("old")){
+    const Y = k.cn && C[k.cn] ? C[k.cn] : C.red;
+    return rot(-8, 80, 100, solid(rrd(20, 104, 26, 12, 4), Y, { k: 2, rim: 0 }) + fill("M22 104L14 88L28 88L36 104Z", Y.s) + solid("M24 98Q22 92 32 92H124Q140 94 140 104Q140 114 124 116H32Q22 116 24 108Z", Y, { k: 4, rim: 1.4 }) +
+      solid(rrd(54, 80, 54, 8, 3), Y, { k: 2, rim: 0 }) + solid(rrd(50, 120, 60, 8, 3), Y, { k: 2, rim: 0 }) + line("M62 88V120M98 88V120M62 88L98 120", "#5A6274", 1.6) +
+      fill("M78 92Q82 84 92 86L94 96H78Z", "#2E3442") + rect(140, 98, 5, 12, "#5A6274", 2) + `<ellipse cx="146" cy="104" rx="3" ry="22" fill="#5A6274" opacity=".7"/>` + line("M60 128L56 142M100 128L104 142", "#5A6274", 2) + circ(56, 144, 5, "#2E3442") + circ(104, 144, 5, "#2E3442"));
+  }
+  const body = "M10 104Q12 90 30 88H128Q150 90 154 100Q150 108 128 110H30Q14 110 10 104Z";
+  let s = fill(blob([[18, 60], [30, 50], [46, 54], [52, 62], [40, 66], [20, 66]]), "#FFFFFF", 'opacity=".9"') + fill(blob([[112, 148], [126, 140], [144, 144], [146, 152], [116, 154]]), "#FFFFFF", 'opacity=".9"');
+  s += rot(-8, 80, 100, `<g transform="translate(74 100) scale(1.04) translate(-80 -100)">` + solid("M64 102L92 102L60 150L44 150Z", P(mix(W.l, W.s, 0.3), W.s), { k: 3, rim: 0 }) + solid("M26 88L14 60H28L48 88Z", B, { k: 3, rim: 1 }) + solid(body, W, { k: 5, rim: 1.4 }) +
+    clipped(body, rect(0, 102, 160, 4, B.l)) + [...Array(13)].map((_, i) => rect(40 + i * 7, 94, 3.6, 4.6, "#3A4D6E", 1.4)).join("") + fill("M138 94Q146 95 149 99H138Z", "#3A4D6E") +
+    solid("M70 104L100 104L56 128L44 128Z", W, { k: 3, rim: 1 }) + solid(rrd(62, 116, 22, 9, 4.5), P("#C9CFD8", "#9AA2B0"), { k: 2, rim: 0 }) + solid("M18 96L8 96L4 102H22Z", W, { k: 2, rim: 0 }) + `</g>`);
+  return k.has("toy") ? `<g transform="translate(80 100) scale(.75) translate(-80 -100)">${s}</g>` + ground(80, 168, 40, 5) : s;
+}
+
+/* ================================================================ a window (une fenêtre) ================================================================
+   A window ALONE in a piece of wall, as large as the card: its frame and panes, its sill (a door goes down to the ground; a house is the
+   whole building). looks: "closed" (the usual one: two casements, French style) | "open" (the casements turned in, the curtain moving) |
+   "with curtains" | "round" (a porthole window) | "shutters" (blue shutters open beside it) | "big", "shop", "wide" (a wide picture window) */
+function windowPic(k){
+  const WL = C.cream, FR = P("#FFFFFF", "#D9D3C4"), GL = C.glass, SKY = "#A8D4EC", wide = k.has("wide", "shop") || (k.has("big") && !k.has("round"));
+  const x0 = wide ? 12 : 38, x1 = wide ? 148 : 122, y0 = wide ? 52 : 26, y1 = wide ? 132 : 148, mid = (x0 + x1) / 2;
+  let s = solid(rrd(4, 10, 152, 166, 8), WL, { k: 4, rim: 0 }).replace(/<path d="[^"]*" fill="[^"]*"\/>/, m => m);
+  if (k.has("round")) return s + solid(cd(80, 92, 52), FR, { k: 5, rim: 1.4 }) + circ(80, 92, 42, SKY) + fill("M44 82Q50 60 70 54Q56 70 54 92Z", "#FFFFFF", 'opacity=".6"') + line("M38 92H122M80 50V134", FR.l, 4) + solid(rrd(46, 148, 68, 8, 2), C.stone, { k: 2, rim: 0 });
+  if (k.has("shutters")) s += [[x0 - 34, x0 - 2], [x1 + 2, x1 + 34]].map(([a, b]) => solid(rrd(a, y0 - 2, b - a, y1 - y0 + 4, 2), C.blue, { k: 2, rim: 0 }) + [...Array(9)].map((_, i) => line(`M${a + 4} ${y0 + 8 + i * 13}H${b - 4}`, C.blue.s, 2)).join("")).join("");
+  s += solid(rrd(x0 - 6, y0 - 6, x1 - x0 + 12, y1 - y0 + 12, 2), FR, { k: 3, rim: 1 }) + rect(x0, y0, x1 - x0, y1 - y0, SKY, 1) +
+    fill(`M${x0} ${y1}L${x0} ${y0 + (y1 - y0) * 0.6}Q${x0 + 30} ${y0 + (y1 - y0) * 0.4} ${x1} ${y0 + (y1 - y0) * 0.72}V${y1}Z`, "#BFE3C4") + fill(`M${x0 + 8} ${y0 + 14}L${x0 + 26} ${y0}H${x0 + 40}L${x0 + 8} ${y0 + 40}Z`, "#FFFFFF", 'opacity=".45"');
+  if (k.has("open")) s += fill(`M${x0} ${y0}L${x0 + 18} ${y0 + 8}V${y1 - 6}L${x0} ${y1}Z`, FR.s) + fill(`M${x1} ${y0}L${x1 - 18} ${y0 + 8}V${y1 - 6}L${x1} ${y1}Z`, FR.s) + rect(x0 + 2, y0 + 10, 12, y1 - y0 - 20, GL.l, 0, 'opacity=".7"') + rect(x1 - 14, y0 + 10, 12, y1 - y0 - 20, GL.l, 0, 'opacity=".7"');
+  else s += line(`M${mid} ${y0}V${y1}`, FR.l, 5) + (wide ? "" : line(`M${x0} ${(y0 + y1) / 2 - 10}H${x1}M${x0} ${y0 + (y1 - y0) * 0.75}H${x1}`, FR.l, 3.4)) + circ(mid + 4, (y0 + y1) / 2, 2, C.gold.l);
+  if (k.has("curtains")) s += [[x0 - 4, 1], [x1 + 4, -1]].map(([x, sg]) => solid(`M${x} ${y0 - 8}H${x + sg * 26}Q${x + sg * 14} ${(y0 + y1) / 2} ${x + sg * 22} ${y1 + 8}H${x}Z`, C.red, { k: 3, rim: 1 })).join("") + rect(x0 - 12, y0 - 12, x1 - x0 + 24, 4, C.brown.l, 2);
+  return s + solid(rrd(x0 - 12, y1 + 6, x1 - x0 + 24, 9, 2), C.stone, { k: 2, rim: 1 });
+}
+
+/* ================================================================ the places (le parc, la plage, le jardin, la gare, la cuisine) ================================================================
+   Each place on its own island of ground, no frame (as the house stands on its grass): what makes it that place, close and whole.
+   The same looks as the present scenes; with no looks, the usual one. */
+const island = (fillC, edge, y, rx, ry) => `<ellipse cx="80" cy="${y + 4}" rx="${rx}" ry="${ry}" fill="${edge}"/><ellipse cx="80" cy="${y}" rx="${rx}" ry="${ry}" fill="${fillC}"/>`;
+const roundTree = (x, y, r, L, T) => solid(tube([[x, y], [x, y - r * 0.9]], [r * 0.32, r * 0.24]), T || P("#9B6A43", "#6E4A2E"), { k: 2, rim: 0 }) +
+  [[0, -r * 1.3, r * 0.82], [-r * 0.5, -r, r * 0.6], [r * 0.5, -r, r * 0.6], [0, -r * 1.8, r * 0.55]].map(([dx, dy, rr]) => solid(cd(x + dx, y + dy, rr), L || P("#6DB46A", "#468C4E"), { k: rr * 0.3, rim: 1.2 })).join("");
+const bench = (x, y, w, B) => { B = B || C.green; return line(`M${x} ${y}V${y + 12}M${x + w} ${y}V${y + 12}`, "#3A4254", 2.4) + fill(rrd(x - 2, y - 2, w + 4, 4.4, 1.5), B.l) + fill(rrd(x - 2, y - 12, w + 4, 4, 1.5), B.l) + fill(rrd(x - 2, y - 6.6, w + 4, 3.4, 1.5), B.s) + line(`M${x + 1} ${y - 12}V${y}M${x + w - 1} ${y - 12}V${y}`, B.s, 2); };
+function park(k){
+  const autumn = k.has("autumn"), L = autumn ? P("#EE9A3A", "#C8682A") : null;
+  let s = ground(80, 168, 76, 8, 0.14) + island(C.grass.l, C.grass.s, 150, 76, 22) + fill("M30 166Q70 150 84 140Q100 130 132 130Q104 134 96 146Q84 160 64 170Z", C.paving.l);
+  if (k.has("pond")) s += `<ellipse cx="104" cy="152" rx="30" ry="9" fill="#7FBEDF"/><ellipse cx="104" cy="150" rx="26" ry="7" fill="#A8D4EC"/>` + solid(blob([[100, 146], [108, 144], [112, 148], [104, 151]]), C.white, { k: 1, rim: 0 }) + fill("M112 146l4 -1l-3 2Z", C.orange.l);
+  s += roundTree(36, 140, 26, L) + roundTree(120, 128, 22, L) + roundTree(78, 118, 16, L ? far(L, 0.3) : far(P("#6DB46A", "#468C4E"), 0.3));
+  if (k.has("playground")) s += line("M104 156L116 120H124L136 156", C.red.l, 3) + line("M118 122L146 156", C.yellow.l, 4) + line("M98 120H128", C.blue.l, 3);
+  else s += bench(60, 150, 30, C.green) + (k.has("benches") ? bench(104, 154, 26, C.green) : "");
+  s += line("M112 160V112", "#3A4254", 2.4) + circ(112, 110, 4.4, "#FBF8F0");
+  if (k.has("flowers") || !k.has("trees")) s += [[24, 160, C.red], [32, 164, C.yellow], [130, 160, C.pink], [138, 156, C.red], [20, 154, C.purple]].map(([x, y, c]) => circ(x, y, 3, c.l) + circ(x, y, 1.2, C.yellow.l)).join("");
+  if (autumn) s += [[48, 162], [96, 166], [128, 150], [64, 140]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="4" ry="2" fill="${L.l}"/>`).join("");
+  return s;
+}
+function beach(k){
+  const sunset = k.has("sunset"), SEA = sunset ? P("#4A7FB5", "#2F5F92") : P("#5AAFDB", "#3A8EC0"), SAND = P("#F3DCA6", "#D9BC7C");
+  let s = ground(80, 168, 76, 8, 0.12);
+  s += (sunset ? circ(80, 96, 26, "#FBC56A") + circ(80, 96, 19, "#FFE7A3") : circ(132, 46, 12, "#FFE38A")) + `<ellipse cx="80" cy="112" rx="76" ry="22" fill="${SEA.l}"/>` + line("M14 108Q30 104 46 108T78 108T110 108T146 108", "#FFFFFF", 2, 'opacity=".8"') + line("M24 118Q40 114 56 118T88 118T120 118", "#FFFFFF", 1.6, 'opacity=".7"') +
+    island(SAND.l, SAND.s, 146, 78, 28) + fill("M4 136Q40 124 80 128Q120 124 156 134", "none") + line("M6 134Q40 124 80 128Q120 122 154 132", "#FFFFFF", 3, 'opacity=".85"');
+  if (k.has("boats")) s += fill("M110 102L118 84V102Z", "#FFFFFF") + fill("M106 103H124L120 107H110Z", C.red.l);
+  if (k.has("palm")) s += solid(tube([[30, 160], [26, 120], [34, 82]], [7, 6, 4]), P("#B88A5A", "#8A6340"), { k: 2, rim: 0 }) + [[-30, 10], [-10, -16], [16, -14], [30, 10], [0, 18]].map(([dx, dy]) => solid(blob([[34, 82], [34 + dx * 0.5, 82 + dy * 0.5 - 6], [34 + dx, 82 + dy], [34 + dx * 0.5, 82 + dy * 0.5 + 2]]), P("#4FA35A", "#357A42"), { k: 2, rim: 0 })).join("");
+  if (k.has("rocks")) s += solid(blob([[110, 150], [118, 132], [134, 128], [146, 140], [140, 152]]), C.stone, { k: 4, rim: 1 }) + solid(blob([[132, 156], [138, 146], [152, 146], [154, 156]]), C.stone, { k: 3, rim: 1 });
+  if (!k.has("palm") && !k.has("rocks") || k.has("parasol")) s += line("M70 158L92 70", "#5A6274", 2.4) + solid("M50 82Q66 50 104 58Q128 66 130 92Q114 82 98 84Q84 74 68 80Q60 76 50 82Z", C.red, { k: 3, rim: 1 }) +
+    clipped("M50 82Q66 50 104 58Q128 66 130 92Q114 82 98 84Q84 74 68 80Q60 76 50 82Z", fill("M84 50L68 82H80L96 54ZM110 56L104 86H116L124 64Z", "#FFFFFF")) + rot(-8, 60, 156, solid(rrd(36, 150, 44, 14, 2), C.blue, { k: 2, rim: 0 }) + line("M40 157H76", "#FFFFFF", 2.4));
+  return s + solid("M118 162L120 150H130L132 162Z", C.yellow, { k: 1.5, rim: 0 }) + line("M120 150Q125 142 130 150", C.yellow.s, 1.2);
+}
+function garden(k){
+  let s = ground(80, 168, 76, 8, 0.14) + island(C.grass.l, C.grass.s, 148, 76, 24);
+  for (let x = 12; x <= 148; x += 12) s += fill(`M${x - 4.5} 136V96L${x} 89L${x + 4.5} 96V136Z`, "#FFFFFF") + fill(`M${x + 1.5} 136V94L${x + 4.5} 96V136Z`, "#E3DCCB");
+  s += rect(6, 102, 148, 5, "#F3EEE3") + rect(6, 122, 148, 5, "#F3EEE3");
+  if (k.has("tree") || !k.has("flowers")) s += roundTree(124, 142, 27);
+  const fl = k.has("roses") ? [C.red, C.pink, C.red] : [C.red, C.yellow, C.purple, C.pink, C.orange];
+  s += `<ellipse cx="54" cy="150" rx="40" ry="10" fill="#8C6A44"/><ellipse cx="54" cy="148" rx="38" ry="8" fill="#A77E52"/>` +
+    [...Array(9)].map((_, i) => { const x = 22 + i * 8.4, y = 146 + (i % 3) * 3 - 16 - (i % 2) * 9, c = fl[i % fl.length]; return line(`M${x} ${y + 5}V${150}`, "#468C4E", 2) + solid(cd(x, y, 6.4), c, { k: 2, rim: 0 }) + circ(x, y, 2.4, C.yellow.l); }).join("");
+  if (k.has("bench")) s += bench(100, 160, 30, C.blue);
+  else s += solid("M98 158H114L112 168H100Z", C.green, { k: 1.5, rim: 0 }) + line("M114 160L124 154", C.green.s, 2) + line("M100 158Q106 148 112 158", C.green.s, 1.6);          // a watering can
+  return s;
+}
+function station(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : k.has("brick") ? C.brick : C.cream, R = C.slate;
+  let s = ground(80, 170, 76, 6, 0.14) + solid("M14 108V54H146V108Z", B, { k: 4, rim: 1.2 }) + fill("M8 58L80 30L152 58Z", R.l) + fill("M80 30L152 58H120Z", R.s) +
+    [30, 58, 102, 130].map(x => fill(`M${x - 9} 104V74Q${x - 9} 66 ${x} 66Q${x + 9} 66 ${x + 9} 74V104Z`, "#5D6E8C")).join("") + fill("M70 108V70Q70 60 80 60Q90 60 90 70V108Z", mix(B.s, INK, 0.3)) +
+    solid(cd(80, 44, 11), C.white, { k: 2, rim: 0 }) + `<circle cx="80" cy="44" r="11" fill="none" stroke="#3A4254" stroke-width="2"/>` + line("M80 44V37M80 44L85 47", "#2A2E3A", 1.8) +
+    rect(4, 108, 152, 10, C.paving.l) + rect(4, 116, 152, 3, "#F3C64B") + rect(4, 119, 152, 4, C.paving.s);
+  s += rect(0, 150, 160, 6, "#A98C69", 0, 'opacity=".7"') + line("M0 152H160M0 158H160", "#7F8796", 2);
+  if (!k.has("old") || k.has("train")){
+    const T = C.silver, body = "M6 150V122Q6 112 18 112H128Q148 112 154 128L156 150Z";
+    s += solid(body, T, { k: 5, rim: 1.4 }) + clipped(body, rect(0, 136, 160, 4, C.blue.l)) + [14, 32, 50, 68, 86, 104].map(x => rect(x, 118, 13, 12, "#3A4D6E", 2)).join("") + fill("M124 118H138Q146 120 148 130H124Z", "#3A4D6E") +
+      [24, 46, 104, 126].map(x => circ(x, 152, 5, "#2E3442")).join("");
+  }
+  return s;
+}
+function kitchen(k){
+  const B = k.has("wooden") ? C.wood : k.cn && C[k.cn] ? C[k.cn] : P("#9CC7B4", "#6FA08B"), TOP = P("#F3EEE3", "#CFC6B4"), ST = C.steel;
+  let s = ground(80, 172, 76, 6, 0.16) + fill(rrd(6, 20, 148, 92, 4), "#F7F1E4") + [...Array(7)].map((_, i) => line(`M6 ${84 + i * 4}H154`, "#E6DCC6", 0.8)).join("") +
+    [8, 44, 116].map(x => solid(rrd(x, 22, 34, 40, 3), B, { k: 3, rim: 1 }) + rect(x + (x < 80 ? 26 : 4), 48, 3, 8, ST.s, 1.5)).join("") +
+    solid(rrd(80, 22, 34, 40, 3), B, { k: 3, rim: 1 }) + rect(84, 48, 3, 8, ST.s, 1.5);
+  s += solid(rrd(4, 110, 96, 58, 3), B, { k: 4, rim: 1 }) + [28, 76].map(x => rect(x - 12, 126, 24, 3, ST.s, 1.5)).join("") + line("M52 114V166", B.s, 1.6) + fill(rrd(2, 104, 100, 8, 2), TOP.l) +
+    fill(rrd(18, 104, 36, 5, 2), "#AFC4D6") + line("M36 104V88Q36 82 44 82H48", ST.s, 3.6) + line("M36 104V88Q36 82 44 82H48", ST.l, 1.4);
+  s += solid(rrd(102, 104, 54, 64, 3), C.white, { k: 4, rim: 1 }) + fill(rrd(108, 128, 42, 32, 3), "#2E3442") + rect(108, 116, 42, 5, ST.s, 2) + [114, 126, 138].map(x => circ(x, 110, 2.4, "#2E3442")).join("") +
+    solid("M108 104V92Q108 88 114 88H134Q140 88 140 92V104Z", C.red, { k: 3, rim: 1 }) + line("M140 94H152", "#2E3442", 3) + [116, 124, 132].map((x, i) => line(`M${x} 84q-5 -7 0 -14t0 -14`, "#A9B0C0", 2.2, `opacity="${i === 1 ? 0.75 : 0.5}"`)).join("");
+  return s;
+}
+
 /* ================================================================ the grounds of sur / sous / dans ================================================================
    THINGS.ground(kind, k): the table, chair, box or bag that a thing is put on, under or in (people.js placePic). The SAME places as the
    present drawings, so that placePic's own numbers still put the thing on the top, under it, in it: only the finish changes.
@@ -1132,9 +1636,9 @@ function lookOf(spec){
   const cn = S.trim().split(" ").find(x => C[x] && !/^(cream|stone|brick|wood|tile|slate|glass|leaf|grass|paper|steel|dark|gold|paving)$/.test(x));
   return { S, cn, has: (...w) => w.some(x => S.indexOf(" " + x + " ") >= 0) };
 }
-const DRAW = { house, train, book, car, town, restaurant, bus, phone, heart, coffee, door, photo, street, dog, cat, horse, fish, shoe, bread, soup, bottle, table, box, newspaper, radio, computer, leaf };
+const DRAW = { house, train, book, car, town, restaurant, bus, phone, heart, coffee, door, photo, street, dog, cat, horse, fish, shoe, bread, soup, bottle, table, box, newspaper, radio, computer, leaf, mountain, sea, shop, glass, plate, ball, hat, flower, tomato, cheese, lamp, key, shirt, trousers, dress, chair, bag, tree, bicycle, motorbike, plane, window: windowPic, park, beach, garden, station, kitchen };
 const PLACED = /^(in an open box|on a table|under a table)$/;
-const FOOT = { car: 140, book: 152, train: 160, bus: 146, heart: 170, coffee: 160, photo: 168 };      // where each stands in its card (the line a small one shares with a big one)
+const FOOT = { car: 140, book: 152, train: 160, bus: 146, heart: 170, coffee: 160, photo: 168, fish: 100, shoe: 160, bread: 154, soup: 160, box: 160, plate: 150, ball: 166, hat: 150, key: 120, plane: 110, tomato: 160, cheese: 156 };      // where each stands in its card (the line a small one shares with a big one)
 function one(spec){
   spec = spec || {};
   const is = String(spec.is || "").toLowerCase().trim(), f = DRAW[is];
@@ -1151,7 +1655,7 @@ function one(spec){
     }
     /* "big" / "small" on any kind: the SAME picture at two sizes, standing on the same line (small = 0.55 of big; places 0.72).
        Not for the looks in which small names a picture of its own (the small car, coffee in a small cup) or that are not drawn here. */
-    const OWN = { table: /\blow\b/, box: /\b(metal|open|tin)\b/, tree: /\b(young|green)\b/, cat: /\bkitten\b/, dog: /\bpuppy\b/ }, own = OWN[is] && OWN[is].test(looks.join(" "));      // looks in which big / small name a picture of their own (as people.js keeps them)
+    const OWN = { glass: /^small$/, table: /\blow\b/, box: /\b(metal|open|tin)\b/, tree: /\b(young|green)\b/, cat: /\bkitten\b/, dog: /\bpuppy\b/ }, own = OWN[is] && OWN[is].test(looks.join(" "));      // looks in which big / small name a picture of their own (as people.js keeps them)
     const big = looks.indexOf("big") >= 0 && !own, sm = looks.indexOf("small") >= 0 && is !== "car" && is !== "coffee" && !own;
     if (big && is === "door") return null;
     if (big || sm){
@@ -1176,6 +1680,8 @@ function install(){
   const own = (name, orig) => { if (orig) Pc[name] = function(spec){ if (!Pc._thingsDogKey && spec){ const s2 = Object.assign({}, spec, { is: name }), n = spec.count || 1, g = one(s2);
     if (g) return n > 1 && Pc.group ? Pc.group(n, () => one(s2)) : g; } return orig.apply(this, [spec]); }; };
   own("dog", Pc.dog); own("key", Pc.key);
+  /* the new nouns drawn only here (radio, computer, soup, bottle ...): index.html sends a kind to PICS.thing only when PICS.things lists it */
+  if (Array.isArray(Pc.things)) Object.keys(DRAW).forEach(n => { if (Pc.things.indexOf(n) < 0 && !/^(book|apple|pen|shoe|key|dog|car)$/.test(n)) try { Pc.things.push(n); } catch (e) {} });
 }
 window.THINGS = { one, can, ground: groundOf, kinds: Object.keys(DRAW), install };
 install();
