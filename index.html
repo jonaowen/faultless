@@ -4886,9 +4886,15 @@ function startListenerLoad(){
   if(!window.LISTENER || !window.ort){ trace("in-app listener not available"); return; }
   const btn=document.getElementById("playBtn");
   btn.classList.add("loading");
-  listenerLoad = LISTENER.load((got,total)=>{ if(total) btn.style.setProperty("--p", Math.min(1, got/total).toFixed(3)); })
-    .then(r=>{ btn.classList.remove("loading"); trace("in-app listener ready ("+r.ms+" ms)"); })
-    .catch(e=>{ btn.classList.remove("loading"); trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); });
+  /* (owner's report, 16 Nov: "this greyed out getting ready button now for ages and can't start") the start button must never stay dead: when the
+     model has neither arrived nor failed 25 s after its last sign of life, the start is let through (the phrase listener answers by itself) and a
+     FAULT line says so. If the model does arrive later it is used from then on. */
+  let lastSign=performance.now(), settled=false;
+  listenerLoad = LISTENER.load((got,total)=>{ lastSign=performance.now(); if(total) btn.style.setProperty("--p", Math.min(1, got/total).toFixed(3)); })
+    .then(r=>{ settled=true; btn.classList.remove("loading"); trace("in-app listener ready ("+r.ms+" ms)"); })
+    .catch(e=>{ settled=true; btn.classList.remove("loading"); trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); });
+  const watch=setInterval(()=>{ if(settled){ clearInterval(watch); return; }
+    if(performance.now()-lastSign>25000){ clearInterval(watch); btn.classList.remove("loading"); trace("FAULT in-app listener neither ready nor failed 25 s after its last sign of life: the start is let through"); } }, 1000);
 }
 startListenerLoad();
 /* The main listener (9 Nov): Vosk (Kaldi, French small model) running in the page, restricted to the phrases the course

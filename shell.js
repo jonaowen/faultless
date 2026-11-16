@@ -128,7 +128,11 @@ const SHELL = (()=>{
     if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
     if(mark()!==seen){ G.next=natural(); G.why=""; pendingAgain=null; look(); }
     const T = pendingAgain!=null ? pendingAgain : G.next; const kind = pendingAgain!=null ? "again" : (G.why||"");
-    if(T!=null && T!==natural()){ S.lesson=T; S.ex=0; LESSONS[T].exercises.forEach(x=>{ delete S.finished[x.id]; });
+    if(T!=null && T!==natural()){
+      // (owner's report, 16 Nov) a PASSED lesson done again by the learner's own choice must not move the learner's place: the place is kept
+      // (G.again, as G.replay keeps it for one exercise) and put back when the lesson ends or is left half-way
+      if(kind==="again" && T<G.furthest && !G.again){ const snap={}; for(const k of PLACE_KEYS) if(k in S) snap[k]=JSON.parse(JSON.stringify(S[k])); G.again={li:T, snap, t0:new Date().toISOString()}; S.delayed=[]; store(); }
+      S.lesson=T; S.ex=0; LESSONS[T].exercises.forEach(x=>{ delete S.finished[x.id]; });
       logEntry({result:"LESSON AGAIN: Lesson "+(T+1)+(kind==="again" ? " (the learner's own choice)" : kind==="back" ? " (a step back before Lesson "+(T+2)+")" : kind==="warm" ? " (a warm-up after days away)" : " (once more: below "+RULES.PASS_MARK+" %)"), heard:[]}); save(); }
     const Li=T!=null?T:natural(); G.cur={lesson:LESSONS[Li].id, t0:new Date().toISOString(), kind, p0:G.points, fromStart: S.ex===0 && !LESSONS[Li].exercises.some(x=>S.finished[x.id])}; pendingAgain=null; store(); }, true);
 
@@ -355,7 +359,8 @@ const SHELL = (()=>{
     const R0=ringsNow(), p0 = cur.p0!=null ? cur.p0 : null;
     const sc=score(L.id, cur.t0), passed = !RULES.GATE_ON || sc.y>=RULES.PASS_MARK, now=new Date(), today=dayOf(now), firstPass = passed && li>=G.furthest;
     let why="";
-    if(cur.kind==="again" && li<G.furthest){ /* a lesson already passed, done again by choice: it locks nothing and moves nothing */ }
+    if((cur.kind==="again" || (G.again && G.again.li===li)) && li<G.furthest){ /* a lesson already passed, done again by choice: it locks nothing and moves nothing */ }
+    if(G.again && G.again.li===li){ try{ trace("a passed lesson done again by choice has ended: the place is put back"); }catch(e){} restoreAgain(); }
     else if(passed){ G.below[L.id]=0; G.next=Math.min(li+1, last); G.furthest=Math.max(G.furthest, li+1); if(G.why==="warm" && G.warmTo!=null && G.next<G.warmTo) G.why="warm"; else { G.why=""; G.warmTo=null; } }
     else if((G.below[L.id]||0)>=RULES.REPEATS_BEFORE_STEP_BACK && li>0){ G.below[L.id]=0; G.next=Math.max(0, li-RULES.STEP_BACK_LESSONS); G.why=why="back"; }
     else { G.below[L.id]=(G.below[L.id]||0)+1; G.next=li; G.why=why="once"; }
@@ -431,6 +436,18 @@ const SHELL = (()=>{
       + rankUpCard(ranks)
       + `<div class="spacer"></div><div class="donefoot">${rankBar(p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
     o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, res.perfect || !!(ranks && ranks.length)); }
+  const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
+  function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
+  /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
+     lesson, no rule sent the learner there, and the last "LESSON AGAIN" line of the log is the learner's own choice of that lesson. The place
+     goes to the first lesson not passed, at its first exercise not finished; the passed lesson is finished as it was. */
+  function untrap(){ try{ if(G.again || G.replay || G.why || !(S.lesson<G.furthest)) return; const tag="LESSON AGAIN: Lesson "+(S.lesson+1)+" (the learner's own choice)";
+      let lastAgain=null; for(let i=S.log.length-1;i>=0;i--){ const r=String((S.log[i]||{}).result||""); if(r.indexOf("LESSON AGAIN:")===0){ lastAgain=r; break; } }
+      if(!lastAgain || lastAgain.indexOf(tag)!==0) return;
+      const from=S.lesson, to=Math.min(G.furthest, LESSONS.length-1); LESSONS[from].exercises.forEach(x=>{ S.finished[x.id]=true; });
+      S.lesson=to; const k=LESSONS[to].exercises.findIndex(x=>!S.finished[x.id]); S.ex = k<0 ? LESSONS[to].exercises.length-1 : k; G.next=natural(); G.cur=null;
+      logEntry({result:"PLACE PUT BACK: Lesson "+(from+1)+" was being done again by the learner's own choice and was left; the place is Lesson "+(to+1)+", exercise "+(S.ex+1)+" again", heard:[]}); save(); store();
+      trace("a passed lesson done again by choice had been left (release .65's fault): the place is put back to Lesson "+(to+1)+", exercise "+(S.ex+1)); }catch(e){ try{ trace("FAULT untrap: "+e.message); }catch(_){} } }
   function restorePlace(){ const R0=G.replay; if(!R0) return; const sn=R0.snap; for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in sn) S[k]=sn[k]; else delete S[k];
     G.replay=null; save(); store(); }
   function startReplay(li, ei){ const snap={}; for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in S) snap[k]=JSON.parse(JSON.stringify(S[k]));
@@ -807,7 +824,8 @@ const SHELL = (()=>{
   for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl","ward"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); rankSync(); syncNext(); store(); home(); MIC.init();
+  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
+    if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); seed(); rankSync(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
     firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));
