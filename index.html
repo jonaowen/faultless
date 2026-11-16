@@ -414,7 +414,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.71";      // must equal version.json
+const APP_VERSION="2026-11-16.72";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -612,6 +612,31 @@ const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener
 const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu",
   PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais", LES:"les", A1:"à" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
+/* (.72) The short course words a hesitation ("um", "uh", "er") is written as when the listener has no filler nearer (judge). */
+const HESIT_WORDS = ["un","une","et","eh","oh"];
+/* (.72) The fillers in the listener's word list (courseGrammar), so that a hesitation has a word to land on other than a course word. Only those
+   that take no right answer away: every real recorded answer of 9-16 Nov 2026 (2,653 whose answer the course still has) decoded against its own
+   word list with and without each filler (dev/appwork/v72/app/JUDGE_LEAD.md). "hmm" and "mmm" took no right answer. The others did:
+   "hum" 202 (a right "Un." written "hum"), "em" 19, "eum" 7, "euhm" 6, "um" 4 (a right "Un." twice), "euh" 14 and "heu" 4 (a right "Une."),
+   "bah" 3 ("Un.", "Trois.", "Marie."), "ben" 1 ("Trois."). The judge still leaves all of FILLERS out wherever the listener writes them. */
+const FILLERS_HEARD = ["hmm","mmm"];
+/* Where one of them before the answer is NOT a hesitation, the answer is judged as heard (as before .72):
+   - the word is, or can be heard as, a word of the answer or of an alsoOk answer (a slot that takes it: UN "un", A "un", ET "et" /
+     "eh"; a word whose spellings include it: the number "un");
+   - the answer has a front word or c'est (UN, UNE, DES, LE, LA, LES, CEST, CETAIT, A, A1, ET): there "un" / "une" is a front word said
+     and then changed ("un… une maison", "un… c'est un livre"), the very thing the course judges;
+   - the answer has a number or is a count: "un" is a number;
+   - "un" / "une" when the answer begins with a thing's name ("un livre" for "Livre." is the noun with its article) or a verb ("un
+     danse" is what the listener writes for "on danse" / "elle danse", tokensOf);
+   - "un" / "une" when the answer begins with il, elle or on ("un" is the listener's "elle" and "on": "elle… il mange" would come out
+     "un il mange") or with oui or non (a nasal "non" cut short). */
+const HESIT_FRONT = ["UN","UNE","DES","LE","LA","LES","CEST","CETAIT","A","A1","ET"], HESIT_UN_BEFORE = ["IL","ELLE","ON","OUI","NON"];
+function hesitBlocked(w, wants){
+  return wants.some(want=>{ const ws=want.filter(e=>e!=="REST");
+    return ws.some(e=> (SLOT[e] && SLOT[e].includes(w)) || (VOCAB[e] && (VOCAB[e].accept||[]).includes(w)) || HESIT_FRONT.includes(e)
+                      || (VOCAB[e] && (VOCAB[e].kind==="number" || VOCAB[e].seq)))
+      || ((w==="un" || w==="une") && !!ws[0] && (HESIT_UN_BEFORE.includes(ws[0]) || (!!VOCAB[ws[0]] && (VOCAB[ws[0]].kind==="object" || !!VOCAB[ws[0]].verb)))); });
+}
 
 /* Script structure (NIFDI part-firming handout):
    - Task: teacher wording that requires one learner response (or a system of closely related responses).
@@ -1505,17 +1530,31 @@ const TEACHER = { index:null, raw:{}, buf:{} };
    The teacher's other clips (other lessons) follow in the background, a few at a time, when the listener is there and the set is in.
    "Is there a recording" is asked of the index (it was asked of TEACHER.raw, which held a request for every line of the index). */
 const CLIPS_AT_ONCE=12, LESSON_AT_ONCE=24;
-const CLIPS = { raw:{}, here:{}, none:{}, on:false };      // raw: file -> its bytes (a promise; null: not there); here: answered; none: answered "not there"; on: a lesson is being taught
+const CLIPS = { raw:{}, here:{}, none:{}, lost:{}, kept:{}, late:{}, on:false };      // raw: file -> its bytes (a promise; null: not there); here: answered; none: answered "not there"; lost: no answer (no connection); kept: read from the phone's copy; late: let through by the watchdog; on: a lesson is being taught
 const clipName = url => url.replace(/^audio\//,"").replace(/\.mp3$/,"");
+/* (speed, stage 2) A kept clip is the right clip: each clip is asked for under the signature of its entry in the voices' index (its words,
+   its length, the time of each sound: "?s=…"), and the service worker gives the copy it keeps only when it was kept under that very
+   signature (a clip recorded again has another entry, so another signature; .70 kept a clip a day before looking at it again). The
+   service worker makes the same signature (sw.js, clipSig). The site ignores the "?s=". */
+const clipSig = e => { const s=JSON.stringify(e); let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h.toString(36); };
+function clipFile(url){ const m=/^audio\/(teacher|learner)\/(.+)\.mp3$/.exec(url), who=m && {teacher:TEACHER, learner:LEARNER}[m[1]], e=who && who.index && who.index[m[2]];
+  return e ? url+"?s="+clipSig(e) : url; }
+/* a clip that had no answer (no connection) is asked for again when the lesson's set is (lessonLoad) */
+/* (speed, stage 2) a clip the service worker keeps under the very signature asked for is read straight from its copy (no request: the worker
+   is not even woken); any other is asked of the site through the worker */
+async function clipGet(url){ const f=clipFile(url), s=f.split("?s=")[1]||"";
+  if(window.caches) try{ const r=await caches.match(new URL(url, location.href).href, {cacheName:CACHE_V}); if(r && (!s || r.headers.get("x-ff-sig")===s)){      /* (a clip the index does not name: as the worker gives it, the copy kept) */ const b=await r.arrayBuffer(); CLIPS.kept[url]=true; return b; } }catch(e){}
+  const r=await fetch(f); return r.ok ? r.arrayBuffer() : null; }
+function clipForget(url){ delete CLIPS.raw[url]; delete CLIPS.here[url]; delete CLIPS.none[url]; delete CLIPS.lost[url]; delete CLIPS.kept[url]; const m=/^audio\/teacher\/(.*)\.mp3$/.exec(url); if(m) delete TEACHER.raw[m[1]]; }
 function clipRaw(url, ahead){
   if(!(url in CLIPS.raw)){ if(!ahead && CLIPS.on) trace("FAULT clip fetched during the lesson: "+clipName(url));
-    CLIPS.raw[url]=fetch(url).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null).then(b=>{ CLIPS.here[url]=true; if(!b) CLIPS.none[url]=true; return b; });
+    CLIPS.raw[url]=clipGet(url).catch(()=>{ CLIPS.lost[url]=true; return null; }).then(b=>{ CLIPS.here[url]=true; if(!b) CLIPS.none[url]=true; return b; });
     const m=/^audio\/teacher\/(.*)\.mp3$/.exec(url); if(m) TEACHER.raw[m[1]]=CLIPS.raw[url]; }
   else if(!ahead && CLIPS.on && !CLIPS.here[url]) trace("FAULT clip fetched during the lesson: "+clipName(url)+" (asked for ahead, still on its way)");
   return CLIPS.raw[url]; }
 /* several clips ahead, never more than atOnce on their way; resolves when every one has arrived or failed */
 function clipsAhead(urls, atOnce, onOne){ return new Promise(res=>{ const list=[...new Set(urls)]; let i=0, live=0, done=0; if(!list.length) return res(0);
-  const next=()=>{ while(live<atOnce() && i<list.length){ const u=list[i++]; live++; clipRaw(u, true).then(()=>{ live--; done++; if(onOne) onOne(done, list.length); if(done===list.length) res(done); else next(); }); } }; next(); }); }
+  const next=()=>{ while(live<atOnce() && i<list.length){ const u=list[i++]; live++; clipRaw(u, true).then(()=>{ live--; done++; if(onOne) onOne(done, list.length, u); if(done===list.length) res(done); else next(); }); } }; next(); }); }
 const teacherUrl = k => "audio/teacher/"+k+".mp3";
 const teacherRaw = (k, ahead) => clipRaw(teacherUrl(k), ahead);
 /* which clip a line is said with: the question's own recording (<key>_q) when the line is a question and there is one, the slow one
@@ -1525,64 +1564,134 @@ function teacherKey(text, slow){ let k=clipKey(text);
   if(slow && TEACHER.index && TEACHER.index[k+"_slow"]) k+="_slow";
   return k; }
 TEACHER.ready = fetch("audio/teacher/index.json").then(r=>r.ok?r.json():null).then(ix=>{ TEACHER.index=ix; }).catch(()=>{});
-const NARRATOR = {index:null, noFile:{lis:true}};      // "lis" is named in the index and has no file: it is said as lis_a, "Lis.", lis_b (convention)
-NARRATOR.ready = fetch("audio/narrator/index.json").then(r=>r.ok?r.json():null).then(ix=>{ NARRATOR.index=ix; }).catch(()=>{});
-/* the lessons a run started now can present (as indexes): see the comment above */
-function runLessons(){ const out=new Set(), add=i=>{ if(Number.isInteger(i) && i>=0 && i<LESSONS.length) out.add(i); }, byId=id=>LESSONS.findIndex(l=>l.id===id);
-  add(S.lesson); { const L=LESSONS[S.lesson]; if(L && L.exercises.every(e=>S.finished[e.id])) add(S.lesson+1); }
-  try{ const G=window.SHELL && SHELL.G; if(G){ add(G.next); if(G.replay) add(G.replay.li); } }catch(e){}
-  if(S.detour){ const d=S.detour; add(d.lesson); (d.more||[]).forEach(m=>add(m.lesson)); if(d.back){ add(d.back.lesson); add(d.back.lesson+1); } }
-  for(const d of (S.delayed||[])) add(byId(d.lesson));
-  for(const i of [...out]) if(isFirmCheck(LESSONS[i])) add(i-1);
-  return [...out].sort((a,b)=>a-b); }
-/* the teacher's clips of those lessons */
-function teacherClips(lessons){ const ix=TEACHER.index; if(!ix) return []; const keys=new Set(), read=new Set();
-  const line=t=>{ for(const k of [clipKey(t), teacherKey(t, false), teacherKey(t, true)]) if(ix[k]) keys.add(k); };
+const NARRATOR = {index:{}, noFile:{}};      // (16 Nov) no narrator any more: its explanations are cards (explain); nothing of audio/narrator is asked for
+NARRATOR.ready = Promise.resolve();
+/* (speed, stage 2; the owner, 16 Nov 14:00: "When the user just wants to repeat a specific exercise, the app should load only that
+   exercise ... the app should always load only what it needs ... the loading time for lessons is quite long. It's about 20 to 30
+   seconds.") Stage 1 loaded, before any lesson began, every clip of every lesson the run COULD present (the place's lesson, the next one,
+   the lesson the shell proposed, a detour's, the delayed tests' lessons; and every clip of Pierre and Sylvie): 439 clips for Lesson 5,
+   490 (Lessons 5 and 6) for one exercise done again. Now:
+   - THE RUN'S PLAN (runPlan): the exercises this start will present, in the order it presents them: a detour's; at a lesson's start, the
+     exercises carried by R4c and the delayed tests due there; the lesson's exercises not yet done (the first; then any other delayed
+     test's exercise, which can come after any exercise; then the rest). One exercise done again: that exercise. "Go for perfect": those
+     exercises. A new lesson: the lesson. Never two lessons for one exercise.
+   - THE CLIPS OF AN EXERCISE (unitClips): the teacher's (every line of it, whole and sentence by sentence, as a statement, a question and
+     said slowly: the one teacherKey will choose, and the slow one only in an exercise that says lines slowly; the words its lines are answered with; the counts' numbers) and the model learners' (each line of it in each
+     of their voices that has a recording; learnerLines' own lines). With them, once (commonClips): what the page itself has the teacher
+     and the learners say. (No narrator, .72: its explanations are cards.)
+   - THE LOADING SCREEN STANDS ONLY FOR THE FIRST PART (firstPart): the common clips and the plan's first exercise (with the second when
+     the first has few clips). The rest of
+     the plan follows behind, in order (runAhead), ahead of need: while a line is about to be said or is said it waits, unless the
+     exercise after the one being taught is not all there yet (the lead never runs out). Should it run out all the same, the next exercise
+     waits at its start, with a short "Loading…" (unitReady), never in the middle of a line; "FAULT clip fetched during the lesson" stays 0.
+   - WHAT IS KEPT IS READ FROM THE PHONE (clipGet): the service worker keeps every voice under the signature of its index entry; the page
+     reads a clip straight from that copy when its signature is the one asked for (no request at all), and asks the site only for the
+     others. A second start of the same lesson is the time it takes to read its first part from the phone.
+   - Decoding stays where it was: a clip is decoded when its line comes, from bytes already in memory (2 to 51 ms).
+   - The plan of the place (what a tap on Start would present) is read in on Home, quietly, after the first screen and after a lesson
+     ends (the next lesson's bytes): a tap on Start then has nothing left to wait for. */
+const exById = id => { for(const L of LESSONS){ const e=L.exercises.find(x=>x.id===id); if(e) return e; } return null; };
+function runPlan(){ const out=[], seen=new Set(), push=e=>{ if(e && !seen.has(e.id)){ seen.add(e.id); out.push(e); } }, fin=S.finished||{}, del=S.delayed||[];
+  const lesson=li=>{ let L=LESSONS[li]; if(!L) return; let all=false;
+    if(L.exercises.every(e=>fin[e.id])){ all=true; if(li+1<LESSONS.length) L=LESSONS[++li]; }      // a finished lesson: the start goes on to the next (or the last again)
+    const left=L.exercises.filter(e=>all || !fin[e.id]);
+    if(all || !fin[L.exercises[0].id]){      // a lesson's start: R4c (as r4cFor decides it, without its record), then the delayed tests due there
+      const P=li>0 ? LESSONS[li-1] : null;
+      if(isFirmCheck(P)){ const R=S.r4c && S.r4c[P.id];
+        if(R){ if(R.to===L.id) (R.left||[]).forEach(id=>push(exById(id))); }
+        else if(!L.exercises.some(e=>e.id in (S.exHadError||{}))){ const pend=new Set(del.map(d=>d.ex)); P.exercises.filter(e=>(S.exHadError||{})[e.id]===true || pend.has(e.id)).forEach(push); } }
+      del.filter(d=>d.dueLessonStart===L.id).forEach(d=>push(exById(d.ex))); }
+    push(left[0]); del.forEach(d=>push(exById(d.ex))); left.forEach(push); };
+  if(S.detour){ const d=S.detour; for(const leg of [{lesson:d.lesson, ids:d.ids}].concat(d.more||[])) (leg.ids||[]).forEach(id=>{ if(!fin[id]) push(exById(id)); });
+    if(d.back) lesson(Math.min(d.back.lesson, LESSONS.length-1)); }
+  else lesson(S.lesson);
+  return out; }
+/* the clips of one exercise (or of any value: the strings in it) */
+function clipsOf(v, slow){ const tix=TEACHER.index, lix=LEARNER.index, urls=new Set(), read=new Set(); if(!tix) return urls;
+  const learner=t=>{ if(!lix) return; for(const pre of ["", "julie ", "man ", "woman "]){ const u=LEARNER_CLIP(pre+t), k=u.replace(/^audio\/learner\//,"").replace(/\.mp3$/,""); if(lix[k]) urls.add(u); } };
+  const line=t=>{ for(const k of slow ? [teacherKey(t, false), teacherKey(t, true)] : [teacherKey(t, false)]) if(tix[k]) urls.add(teacherUrl(k)); learner(t); };      // the clip playTeacher will choose (and the slow one, in an exercise that says lines slowly)
   const text=v=>{ if(v.length>200 || read.has(v)) return; read.add(v); line(v); const u=unitsOf(v); if(u.length>1) u.forEach(line);
     const c=countParts(v); if(c){ c.nums.forEach(line); line("Répète :"); }
     if(VOCAB[v]){ const W=VOCAB[v]; for(const f of [W.say, W.rep, W.name && [W.name], W.name && [W.name+"."]]) if(Array.isArray(f)) f.forEach(x=>{ if(typeof x==="string") text(x); }); } };
-  const walk=v=>{ if(typeof v==="string") text(v); else if(Array.isArray(v)) v.forEach(walk); else if(v && typeof v==="object") for(const x in v) walk(v[x]); };
-  ["Vas-y.", "Non.", "Oui.", "Touche.", "À toi.", "Lis.", "Compte.", "Écoute.", "Avec moi.", "Répète :", "Je m'appelle "+VOCAB.claire.name+"."].forEach(text);
-  for(const i of lessons) try{ walk(LESSONS[i].exercises.map(E=>E.parts)); }catch(e){}
-  return [...keys]; }
-/* every clip a run started now can need (files) */
-function lessonClips(){ const urls=[];
-  if(LEARNER.index) for(const k of Object.keys(LEARNER.index)) urls.push("audio/learner/"+k+".mp3");
-  try{ learnerLines(runLessons()).forEach(t=>urls.push(LEARNER_CLIP(t))); }catch(e){}
-  if(NARRATOR.index) for(const k of Object.keys(NARRATOR.index)) if(!NARRATOR.noFile[k]) urls.push("audio/narrator/"+k+".mp3");
-  teacherClips(runLessons()).forEach(k=>urls.push(teacherUrl(k)));
-  return [...new Set(urls)]; }
+  const walk=v=>{ if(typeof v==="string") text(v); else if(Array.isArray(v)){ v.forEach(walk); if(v.length>1 && v.every(x=>typeof x==="string")) text(v.join(" ")); } else if(v && typeof v==="object") for(const x in v) walk(v[x]); };
+  try{ walk(v); }catch(e){}
+  return urls; }
+function unitClips(ex){ let slow=true; try{ slow=/"slow":true/.test(JSON.stringify(ex.parts)); }catch(e){} const urls=clipsOf(ex.parts, slow);
+  try{ const say=voiceLine; ex.parts.forEach(p=>p.items.forEach(it=>{      // learnerLines, for this exercise
+    if(it.type==="model" && it.voice && it.voice!=="teacher") urls.add(LEARNER_CLIP(say(it.voice, it.answerUnits)));
+    if(it.cueVoice && it.questionUnits.length) urls.add(LEARNER_CLIP(say(it.cueVoice, it.questionUnits)));
+    if(it.introOnly) urls.add(LEARNER_CLIP(answerUnits(it).join(" "))); })); }catch(e){}
+  return [...urls]; }
+function commonClips(){ const urls=clipsOf(["Vas-y.", "Non.", "Oui.", "Touche.", "À toi.", "Lis.", "Compte.", "Écoute.", "Avec moi.", "Répète :", "Je m'appelle "+VOCAB.claire.name+"."]);
+  try{ ["paul","julie"].forEach(w=>urls.add(LEARNER_CLIP(voiceLine(w, ["Je m'appelle "+VOCAB[w].name+"."])))); }catch(e){}
+  return [...urls]; }
+/* the plan now, with its clips (made again only when the place has changed) */
+const PLAN = {now:null, key:"", pos:-1, gen:0};
+function planNow(){ const units=runPlan(), key=units.map(e=>e.id).join(" ");
+  if(PLAN.now && PLAN.key===key) return PLAN.now;
+  const common=commonClips(), seen=new Set(common), parts=units.map(e=>{ const full=unitClips(e); return {id:e.id, full, urls:full.filter(u=>!seen.has(u) && seen.add(u))}; });
+  PLAN.key=key; PLAN.pos=-1; PLAN.now={units:parts, common, all:common.concat(...parts.map(p=>p.urls)), lessons:[...new Set(units.map(e=>e.id.replace(/E\d+$/,"").replace(/^L/,"")))]};
+  return PLAN.now; }
+const firstPart = P => { const out=P.common.slice(); for(let i=0;i<P.units.length && (i<1 || out.length<P.common.length+40) && i<2;i++) out.push(...P.units[i].full); return out; };      // the first exercise (and the second when the first has few clips)
+const clipHere = u => !!CLIPS.here[u] && !CLIPS.lost[u];
+function lessonClips(){ return planNow().all; }
 const LESSON_SET = { ready:null, wide:()=>LESSON_AT_ONCE };
-LESSON_SET.indexes = () => Promise.all([TEACHER.ready, NARRATOR.ready, LEARNER.ready]);
-/* ask for the set now (after the first screen; again at the tap, when the place may have changed): resolves when all of it is here */
-function lessonAhead(onOne){ return LESSON_SET.indexes().then(()=>{ const set=lessonClips(); trace("lesson content: "+set.length+" clips for Lesson"+(runLessons().length>1?"s ":" ")+runLessons().map(i=>i+1).join(", ")+" ("+set.filter(u=>CLIPS.here[u]).length+" already here)");
-  return clipsAhead(set, LESSON_SET.wide, onOne).then(()=>set); }); }
-const lessonHere = () => !!(TEACHER.index && LEARNER.index && NARRATOR.index) && lessonClips().every(u=>CLIPS.here[u]);
-/* the teacher's other clips (other lessons), in the background: 12 at a time, 2 while a lesson is being taught */
-let restAsked=false;
-function teacherRest(){ if(restAsked || !TEACHER.index) return; restAsked=true; clipsAhead(Object.keys(TEACHER.index).map(teacherUrl), ()=>CLIPS.on ? 2 : CLIPS_AT_ONCE).then(()=>trace("every clip of the teacher is on the phone")); }
-/* THE TAP ON START WAITS HERE, under the loading screen, until the run's set is on the phone (the start button's handler calls it after the
-   faces and the microphone). Nothing is shown when it is all there already (it is asked for from the first screen on). The bar counts
-   the set's clips. As for the listener (.67): when nothing has arrived for 25 s the lesson is let through, with a FAULT line (a clip
-   that is then missing is fetched at its line, as before, and that too is written as a fault). LOADING.soon is set at the tap itself so
-   that the listener's loading screen, if it is up, is not taken down between the two waits. */
+LESSON_SET.indexes = () => Promise.all([TEACHER.ready, LEARNER.ready]);
+/* the plan's clips in order, behind whatever is being done; started again when the plan changes. While a lesson is taught: 4 at a time,
+   and not while a line is about to be said or is being said unless the exercise after the one being taught is not all there yet */
+function runAhead(P){ const gen=++PLAN.gen, list=P.all.filter(u=>!(u in CLIPS.raw)); let i=0;
+  const leadOk=()=>{ const n=P.units[PLAN.pos+1]; return !CLIPS.on || !n || n.full.every(clipHere); };
+  const lane=async n=>{ while(i<list.length && gen===PLAN.gen){ if(BG.hold && leadOk()){ await bgFree(); continue; } if(CLIPS.on && n>=4){ await sleep(500); continue; } await clipRaw(list[i++], true); } };
+  return Promise.all(Array.from({length:CLIPS_AT_ONCE}, (_, n)=>lane(n))).then(()=>P.all); }
+/* ask for the plan's clips now (on Home: quietly, after the first screen; again at the tap): resolves when the plan is all here */
+function lessonAhead(){ return LESSON_SET.indexes().then(()=>runAhead(planNow())); }
+const lessonHere = () => !!(TEACHER.index && LEARNER.index) && firstPart(planNow()).every(clipHere);
+/* waiting for clips under the loading screen (the start's first part; an exercise whose clips are not all there at its start): the bar
+   counts them; no connection and some not kept: "This lesson needs a connection the first time. Trying again…" and asked for again (at once
+   when the phone says it is online, else every 3 s); nothing arriving for 25 s (.67): let through, with a FAULT line */
+async function waitClips(get, LABEL){
+  const NEEDS="This lesson needs a connection the first time. Trying again…", t0=performance.now(); let last=t0, told=0, off=false, stuck=false;
+  const show=(done,total,firm)=>{ try{ SPLASH.show(); SPLASH.progress(total && !firm ? Math.min(0.98, done/total) : null, firm || LABEL+(total ? " · "+done+" of "+total : ""), !!firm); }catch(e){} };
+  show(0, 0);
+  for(let round=0; !get().every(clipHere); ){
+    const lost=get().filter(u=>CLIPS.lost[u]);
+    if(lost.length){ off=true; if(!told++) trace("no connection, and "+lost.length+" clip(s) of the lesson are not on the phone: the loading screen says that the lesson needs a connection the first time, and tries again");
+      show(0, 0, NEEDS); await new Promise(r=>{ const on=()=>{ clearTimeout(t); r(); }, t=setTimeout(()=>{ removeEventListener("online", on); r(); }, 3000); addEventListener("online", on, {once:true}); });
+      lost.forEach(clipForget); last=performance.now(); }
+    else if(round++>=4) break;      // again if the place has changed meanwhile (the shell's choice of lesson)
+    const all=clipsAhead(get(), LESSON_SET.wide, (d,t,u)=>{ last=performance.now(); off=off && !!CLIPS.lost[u]; show(d, t, off ? NEEDS : null); });
+    const dog=new Promise(r=>{ const w=setInterval(()=>{ if(performance.now()-last>25000){ clearInterval(w); r("stuck"); } }, 1000); all.then(()=>clearInterval(w)); });
+    if((await Promise.race([all, dog]))==="stuck"){ stuck=true; get().filter(u=>!clipHere(u)).forEach(u=>{ CLIPS.late[u]=true; }); break; } }
+  return {ms:Math.round(performance.now()-t0), told, stuck}; }
+const CACHE_V="faultless-app-v1";      // the service worker's copy of the voices (sw.js: CACHE), read by the page itself (clipGet)
+const keptOf = urls => urls.filter(u=>CLIPS.kept[u]).length+" read from the phone's copy, "+urls.filter(u=>CLIPS.here[u] && !CLIPS.kept[u] && !CLIPS.none[u]).length+" from the site";
+/* THE TAP ON START WAITS HERE, under the loading screen, until the first part of the run's plan is on the phone (the start button's
+   handler calls it after the faces and the microphone); the rest follows behind. Nothing is shown when it is there already. LOADING.soon is
+   set at the tap itself so that the listener's loading screen, if it is up, is not taken down between the two waits. */
 const LOADING = {on:false, soon:false};
 async function lessonLoad(){
-  if(lessonHere()){ LOADING.soon=false; return; }
+  try{ await LESSON_SET.indexes(); }catch(e){}
+  const P=planNow(), first=()=>firstPart(planNow());
+  trace("lesson content: "+P.all.length+" clips for this run: "+P.units.length+" exercise(s) of Lesson"+(P.lessons.length>1?"s ":" ")+P.lessons.join(", ")+" ("+P.units.slice(0,4).map(u=>u.id).join(", ")+(P.units.length>4?" …":"")+"); its first part: "+first().length+" clips ("+first().filter(clipHere).length+" already here)");
+  PLAN.gen++;      // what was being read in on Home stops: the first part has the link to itself
+  if(lessonHere()){ LOADING.soon=false; LESSON_SET.ready=lessonAhead(); return; }
   LOADING.on=true; trace("the lesson's content is not all on the phone yet: the loading screen");
-  const LABEL="Loading the lesson", t0=performance.now(); let last=t0;
-  const show=(done,total)=>{ try{ SPLASH.show(); SPLASH.progress(total ? Math.min(0.98, done/total) : null, LABEL+(total ? " · "+done+" of "+total : "")); }catch(e){} };
-  try{ show(0, 0);
-    for(let round=0; round<4 && !lessonHere(); round++){      // again if the place has changed meanwhile (the shell's choice of lesson)
-      const all=lessonAhead((d,t)=>{ last=performance.now(); show(d, t); });
-      const dog=new Promise(r=>{ const w=setInterval(()=>{ if(performance.now()-last>25000){ clearInterval(w); r("stuck"); } }, 1000); all.then(()=>clearInterval(w)); });
-      if((await Promise.race([all, dog]))==="stuck"){ trace("FAULT the lesson's content neither loaded nor failed 25 s after its last sign of life: the lesson is let through"); break; } }
-    const none=lessonClips().filter(u=>CLIPS.none[u]);
+  try{ const w=await waitClips(first, "Loading the lesson");
+    if(w.stuck) trace("FAULT the lesson's content neither loaded nor failed 25 s after its last sign of life: the lesson is let through");
+    const none=first().filter(u=>CLIPS.none[u]);
     if(none.length) trace("FAULT lesson content: "+none.length+" clip(s) could not be fetched ("+none.slice(0,3).map(clipName).join(", ")+(none.length>3?" …":"")+")");
-    if(lessonHere()) trace("the lesson's content is on the phone ("+Math.round(performance.now()-t0)+" ms under the loading screen)");
-    else trace("the lesson begins with "+lessonClips().filter(u=>!CLIPS.here[u]).length+" clip(s) of its content still on their way ("+Math.round(performance.now()-t0)+" ms under the loading screen)"); }
-  finally{ LOADING.on=false; LOADING.soon=false; try{ window.SPLASH && SPLASH.done(); }catch(e){} }
+    if(lessonHere()) trace("the lesson's content is on the phone (its first part: "+w.ms+" ms under the loading screen; "+keptOf(first())+(w.told ? "; asked for again "+w.told+" time(s) while there was no connection" : "")+")");
+    else trace("the lesson begins with "+first().filter(u=>!CLIPS.here[u]).length+" clip(s) of its content still on their way ("+w.ms+" ms under the loading screen)"); }
+  finally{ LOADING.on=false; LOADING.soon=false; try{ window.SPLASH && SPLASH.done(); }catch(e){} LESSON_SET.ready=lessonAhead(); }      // the rest of the plan, behind
 }
+/* at the start of an exercise (its own, a delayed test, R4c): its clips are there (the run's plan has fetched them ahead); if they are not
+   all there, a short "Loading…" here, at the boundary, never in the middle of a line */
+async function unitReady(ex){ if(!ex) return; let P=PLAN.now; if(!P) return; let i=P.units.findIndex(u=>u.id===ex.id);
+  if(i<0){ const full=unitClips(ex); P.units.push({id:ex.id, full, urls:full}); i=P.units.length-1; P.all=P.all.concat(full); }      // not in the plan (the place has moved): added
+  PLAN.pos=i; const urls=P.units[i].full.filter(u=>!CLIPS.late[u]); if(urls.every(clipHere)) return;      // (a clip the 25 s watchdog has already let the start through without is not waited for again)
+  trace("loading: "+urls.filter(u=>!clipHere(u)).length+" clip(s) of "+ex.id+" not on the phone yet at its start: a short loading screen");
+  const w=await waitClips(()=>urls, "Loading…"); try{ SPLASH.done(); }catch(e){}
+  trace("loading: "+ex.id+"'s clips "+(urls.every(clipHere) ? "are on the phone" : "are not all there (let through)")+" ("+w.ms+" ms)"); }
 async function teacherBuf(k){
   if(!(k in TEACHER.buf)) TEACHER.buf[k]=(async()=>{ audioUnlock(); const raw=await teacherRaw(k); if(!raw||!actx) return null; return await actx.decodeAudioData(raw.slice(0)); })().catch(()=>null);
   return TEACHER.buf[k];
@@ -1782,6 +1891,17 @@ async function say(units, who="tutor", pause=S.settings.pause, tail=0){
   lastSpeechEnd = Date.now();                  // the moment the teacher stopped speaking (the signal comes at once)
   if(tail) await sleep(tail);                  // no pause when the learner's turn follows (a cue)
 }
+/* (speed, stage 2) Background fetching is paused while a line is about to be said and while it is said: from the moment a line is asked
+   for (say, narrate, a model learner's or the teacher's line said directly) until it has been said, the run's plan asks for no clip ahead
+   (runAhead; unless the exercise after the one being taught is not all there yet: the lead must not run out), and the service worker's
+   own filling of the voices waits (it is told {hush}). Nothing is decoded ahead: a clip is decoded when its own line comes. */
+const BG = {hold:0, wait:[]};
+function bgHold(on){ const was=BG.hold>0; BG.hold=Math.max(0, BG.hold+(on?1:-1)); const now=BG.hold>0; if(was===now) return;
+  try{ const c=navigator.serviceWorker && navigator.serviceWorker.controller; if(c) c.postMessage({hush:now}); }catch(e){}
+  if(!now){ const w=BG.wait; BG.wait=[]; w.forEach(f=>f()); } }
+const bgFree = () => BG.hold ? new Promise(r=>BG.wait.push(r)) : Promise.resolve();
+const quietly = f => async function(...a){ bgHold(true); try{ return await f.apply(this, a); } finally{ bgHold(false); } };
+say=quietly(say); narrate=quietly(narrate); speakTeacher=quietly(speakTeacher); playLearner=quietly(playLearner);
 let lastSpeechEnd = 0;
 // The signal comes exactly 0.5 s after the cue (the last thing the teacher says). This never changes.
 // Jon 9 Nov 10:15: the green border, and the listening, start the instant the teacher stops speaking (was 0.5 s): pace
@@ -1966,7 +2086,7 @@ function ownMaybe(key){
     return f===c || VOCAB[key].accept.includes(w) || firstSound(f)===firstSound(c) || lev(f,c)<=2 || NAME_ENDS.some(([rc,rf])=>rc.test(c) && rf.test(f)); });
 }
 // judge: expected = [CEST, name] or [name]; returns {ok, reason, near}
-function judge(text, expect, echoes=[], alsoOk=[]){
+function judge(text, expect, echoes=[], alsoOk=[], heard={}){      // heard.raw (.72): everything the listener wrote, before voskClean
   const raw=tokensOf(text);
   if(!raw.length) return {ok:false, reason:"nothing heard"};
   const t=stripEcho(raw.filter((w,i)=> i===0 || w!==raw[i-1]), echoes);
@@ -1975,7 +2095,7 @@ function judge(text, expect, echoes=[], alsoOk=[]){
      recordings of 9 Nov gave this for a right "deux" 3 times in 348 (replay_end.js, UPTO=10). No answer of the course is "Des."
      alone, so a lone "des" for "Deux." is taken as "deux". (Not in a phrase: "Des clés." for "Deux clés." stays wrong.) */
   if(expect.length===1 && expect[0]==="n2" && t.length===1 && t[0]==="des") return {ok:true, reason:"a lone \"deux\" heard as \"des\""};
-  const fits = want => { let tt=t;
+  const fits = (want, t0=t) => { let tt=t0;
     if(want[want.length-1]==="REST"){ want=want.slice(0,-1); if(tt.length<want.length) return null; tt=tt.slice(0,want.length); }   // whatever follows is not judged
     if(!tt.length || tt.length%want.length) return null; let near=[];
     for(let i=0;i<tt.length;i++){ const e=want[i%want.length], w=tt[i];
@@ -1983,12 +2103,33 @@ function judge(text, expect, echoes=[], alsoOk=[]){
       else if(VOCAB[e] && VOCAB[e].accept.includes(w)){ }          // a spelling of the expected word itself ("lève" is the verb of "lève la main" and the sound piece of "Lève-toi")
       else { const r=nameOf(w); if(!r || r.n!==e) return null; if(r.near) near.push(w); } }
     return near; };
-  for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(!nr) continue;
+  /* (.72) A filler the listener wrote and tokensOf left out ("euh", "hum"… at the start or end, or inside): the answer is judged
+     without it, as before; the reason now says so (the run file shows why "euh tu t'appelles Pierre" was right). */
+  const fil = normalise(text).split(" ").filter(w=>FILLERS.includes(w)), hesNote = w => "a hesitation before the answer: accepted (the listener wrote \""+w+"\")";
+  const accept = (want, tt, nr, note) => {
     if(want[want.length-1]==="REST"){      // the learner's own name comes next: a course person's name there is someone else's
-      const r=nameOf(t[want.length-1]||"");
+      const r=nameOf(tt[want.length-1]||"");
       if(r && !r.near && VOCAB[r.n].kind==="person" && !ownMaybe(r.n)) return {ok:false, reason:"said "+VOCAB[r.n].name+"'s name, not their own", otherName:r.n};
     }
-    return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : "", near:nr.length>0}; }
+    return {ok:true, reason: nr.length? "accepted as near match: "+nr.join(", ") : (note||""), near:nr.length>0, ...(note?{hesitation:true}:{})}; };
+  const lead0 = normalise(text).split(" ")[0];
+  for(const want of [expect, ...alsoOk]){ const nr=fits(want); if(!nr) continue;
+    return accept(want, t, nr, fil.length ? (FILLERS.includes(lead0) ? hesNote(lead0) : "a filler left out (the listener wrote \""+fil.join(" ")+"\")") : ""); }
+  /* (.72) A hesitation the listener wrote as a short course word (Jon, 16 Nov 2026 12:36:09, L4E19-a1: his "um" before "Tu t'appelles
+     Pierre." came out as "un tu t'appelles pierre", and the answer was corrected as "wrong name"). The listener's list has only the
+     course's words and a few fillers; an English "um" is nearest the French "un". So ONE word of HESIT_WORDS before EXACTLY the
+     answer (no near match, nothing else) is a hesitation and the answer is right, except where that word could be the answer or a
+     word of it, or a front word said and then changed (hesitBlocked, below). */
+  /* Not when the listener wrote something it had no word for before it ("[unk] un marie": voskClean takes the "[unk]" away): that is two
+     things before the answer, not one hesitation (a tester's "Je me… euh… Marie." for "C'est qui ?", 13 Nov 2026 15:15:20). */
+  /* The rest is read again without the word (tokensOf reads some words by the word before them: "et souris" is "et Sylvie"), and the word
+     must have come through tokensOf as itself ("un danse" is read as "elle danse": no hesitation there). A stutter of it counts once. */
+  const said0 = normalise(text).split(" ").filter(w=>w && !FILLERS.includes(w));
+  if(t.length>=2 && HESIT_WORDS.includes(t[0]) && said0[0]===t[0] && !hesitBlocked(t[0], [expect, ...alsoOk]) && !/^\s*\[unk\]/.test(heard.raw||"")){
+    let k=0; while(said0[k]===t[0]) k++;
+    const r2=tokensOf(said0.slice(k).join(" ")), t2=stripEcho(r2.filter((w,i)=> i===0 || w!==r2[i-1]), echoes);
+    if(t2.length) for(const want of [expect, ...alsoOk]){ const nr=fits(want, t2); if(!nr || nr.length) continue;
+      return accept(want, t2, nr, hesNote(t[0])); } }
   const whole = expect.filter(x=>x!=="REST");
   // the start of the answer and then nothing more ("Salut." for "Salut, Marie !", "un" for "un livre"): not a wrong name
   if(t.length<whole.length && t.every((w,i)=> SLOT[whole[i]] ? SLOT[whole[i]].includes(w) : (VOCAB[whole[i]] && VOCAB[whole[i]].accept.includes(w)) || (nameOf(w)||{}).n===whole[i])) return {ok:false, reason:"only the start of the answer"};
@@ -2105,7 +2246,7 @@ function listen(expect, alsoOk=[]){
       const {c, v} = best();
       let verdict = v || {ok:false, reason: status==="silence"?"no answer":"nothing heard"};
       const st = !c.length ? "silence" : (verdict.echoOnly ? "echo" : "heard");
-      trace("mic closed: "+st);
+      trace("mic closed: "+st); if(verdict.ok && verdict.hesitation) trace("judge: "+verdict.reason);
       resolveR({status: st, heard:c, ...verdict});
     };
     R.onstart=()=>{ if(gen===recGen) trace("mic open"); };
@@ -2321,18 +2462,22 @@ async function listenVosk(expect, alsoOk=[]){
      after the first ("un … une"), and was corrected for the pair; three more of the owner's turns sat out the wait. Where the
      answer asked for is the front word alone, nothing is part-way: "un" for "Une." ends the turn like any other wrong word. */
   const partWay = t => want.startsWith(t) && !(loneFront && t!==want);
+  /* (.72) A hesitation so far and nothing else ("euh", or "un" where it cannot be the answer: judge, HESIT_WORDS), or a hesitation and then the
+     start of the answer: the learner is still answering, and gets the same extra wait as an answer that stopped part-way. */
+  const hesitating = t => { const w=normalise(t||"").split(" ").filter(x=>x && !FILLERS.includes(x)); if(!w.length) return !!normalise(t||"");
+    return HESIT_WORDS.includes(w[0]) && !hesitBlocked(w[0], [expect, ...alsoOk]) && (w.length===1 || partWay(w.slice(1).join(" "))); };
   let stopNow=null, early=false, earlyWhy="";
   const watch=setInterval(()=>{ if(!stopNow || expect.includes("REST")) return; const t=textNow(); if(!t) return;
     const still=Date.now()-rawSince, open=Date.now()-micAt, st=sound && sound.state();
     if(st && st.speechStart<0 && !nFinal && !(askedTimes && Date.now()-askedTimes>300)){ if(still>=450 && open>=700 && !askedTimes){ askedTimes=Date.now(); rec.retrieveFinalResult(); } return; }
-    if(still>=450 && open>=700 && judge(t, expect, [], alsoOk).ok){ early=true; earlyWhy="the whole answer heard, unchanged for 0.45 s"; return stopNow(); }
-    if(st && st.speechStart<0 && open>=1100 && still>=(partWay(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
+    if(still>=450 && open>=700 && judge(t, expect, [], alsoOk, {raw:rawAll()}).ok){ early=true; earlyWhy="the whole answer heard, unchanged for 0.45 s"; return stopNow(); }
+    if(st && st.speechStart<0 && open>=1100 && still>=(partWay(t) || hesitating(t)?2450:600)){ if(longTail()) return; early=true; earlyWhy="words said in the first 0.45 s, nothing since"; stopNow(); } }, 50);
   const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:450, extraSilenceMs:2000, longMs:LISTEN.longMs||0, ignoreMs:ECHO_MS, onAudio:feed, onStart:(s,snd)=>{ stopNow=s; sound=snd; },
-    onSpeechEnd: async (audio, voice)=>{ await sleep(150); let t=textNow(); if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false;
+    onSpeechEnd: async (audio, voice)=>{ await sleep(150); let t=textNow(); if(judge(t, expect, [], alsoOk, {raw:rawAll()}).ok && !expect.includes("REST")) return false;
       let rawNow=rawAll();
       // an unexpected first word and no word times yet: was it the end of the teacher's own cue? (see above)
       if(rawNow && !nFinal && rawNow.split(" ")[0]!==want.split(" ")[0]){ await askTimes(); t=textNow(); rawNow=rawAll();
-        if(judge(t, expect, [], alsoOk).ok && !expect.includes("REST")) return false; }
+        if(judge(t, expect, [], alsoOk, {raw:rawAll()}).ok && !expect.includes("REST")) return false; }
       // nothing recognised in that sound: not an answer (tester H 9 Nov 16:42: the end of Claire's own question, heard from the
       // speaker, closed the turn after 0.7 s and the question was asked again before she could begin, 11 times)
       if(rawNow && longTail()){ t=textNow(); rawNow=rawAll(); }
@@ -2349,7 +2494,7 @@ async function listenVosk(expect, alsoOk=[]){
         if(after>=160){ trace("own name: "+after+" ms of sound after \"m'appelle\" (which ended at "+lastWordEnd+" ms) with no word for it: the name was said"); return false; }
         trace("own name: \"je m'appelle\" and then "+after+" ms of sound: waiting for the name"); return true;
       }
-      return !!t && (expect.includes("REST") ? rawNow===want : partWay(t)); } });
+      return !!t && (expect.includes("REST") ? rawNow===want : partWay(t) || hesitating(t)); } });
   clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" ("+earlyWhy+")":""));
   /* The microphone swamped by a loud low noise (the phone lying on something that moves: LISTENER.swamp): nothing the
      listener writes for such a turn means anything. Not scored (a listening fault); the narrator says what to do, once
@@ -2372,11 +2517,11 @@ async function listenVosk(expect, alsoOk=[]){
     if(raw) return Object.assign(base,{status:"heard", heard:[raw], ok:false, reason:"not the expected words"});
     return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
   }
-  let v=judge(text, expect, [], alsoOk);
+  let v=judge(text, expect, [], alsoOk, {raw});
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
-  trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`);
+  trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`+(v.ok && v.hesitation ? " ("+v.reason+")" : ""));
   return Object.assign(base,{status:"heard", heard:[text], ...v});
 }
 function listenManual(expect){
@@ -2659,6 +2804,7 @@ function cardLines(t, marks, lines, fs, y0){
   return out;
 }
 function thingPicture(e){
+  if(e.is==="picture card" && (e.figure==="paul" || e.figure==="julie")){ const c=modelCard(e); if(c) return c; }
   const lib = window.PICS && PICS.thing && (!PICS.things || PICS.things.includes(String(e.is).toLowerCase()));
   if(lib){ try{ const g=PICS.thing(e.is==="picture card" ? Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e) : e); if(g) return g; }catch(err){ trace("FAULT picture "+e.is+": "+err.message); } }
   const L=e.looks||[];
@@ -3656,6 +3802,25 @@ const slotName = (sc, slot) => { if(slot==="self") return VOCAB.claire.name; con
     n += " ["+(k==="doing" ? "" : k+": ")+(typeof v==="object" ? JSON.stringify(v) : v)+"]"; }
   return n; };
 const slotsShown = t => { const row=(t.scene && t.scene.row)||[], out=row.map((x,i)=>"s"+i+": "+slotName(t.scene, "s"+i)); if((t.targets||[]).includes("self")) out.push("self: "+VOCAB.claire.name); return out; };
+/* (.72; Jon, run of 16 Nov 2026 12:41: "when Pierre needs to tap a card, all the cards show Pierre. When Sylvie needs to tap a card, all the
+   cards show Sylvie … It should all match up.") A picture card is the learner's own figure doing the action (people.js card). Where Pierre or
+   Sylvie taps (presentTapShow), each picture card of the row shows THAT model learner doing its action, as the action box shows them doing it
+   after the tap: the person never changes. The library's card is drawn as for the learner and its figure is replaced by the model learner's
+   (PICS.action, the figure the action box uses), so the card, its frame and its framing stay the library's. Other pictures (people by name,
+   the learner's own card, unnamed people, things) are not touched. */
+function modelCard(e){
+  const act=ACT_NAME[e.doing]||e.doing, who=e.figure;
+  if(!(window.PICS && PICS.action && picKnows(act))) return null;
+  try{ const fig=PICS.action(act, who, {still:!e.moving}); if(!fig) return null;
+    const base=Object.assign({}, e); delete base.figure;
+    const lib = PICS.thing && (!PICS.things || PICS.things.includes("picture card")) ? PICS.thing(Object.assign({sex:S.learnerGender==="f"?"f":"m"}, base)) : null;
+    const slot = lib && lib.querySelector && lib.querySelector("g[clip-path] > g");
+    if(slot){ slot.replaceChildren(fig); lib.dataset.figure=who; return lib; }
+    const c=cardOf(fig); c.dataset && (c.dataset.figure=who); return c;
+  }catch(err){ trace("FAULT picture card of "+who+": "+err.message); return null; }
+}
+const tapperScene = (sc, by) => (by==="paul" || by==="julie") && sc && sc.row && sc.row.some(x=>x && x.is==="picture card")
+  ? Object.assign({}, sc, {row: sc.row.map(x=> x && x.is==="picture card" ? Object.assign({}, x, {figure:by}) : x)}) : sc;
 // the model of a tap: she says the cue again and a hand (hers, or a model learner's) taps the right picture
 /* (.62; R-154, L4E10: either man is right for "Il.", either woman for "Elle.") slot may be a list: her hand taps each right picture in turn,
    so that a correction does not show one of two right answers as if it were the only one */
@@ -3669,13 +3834,21 @@ async function tapModel(t, by, slot){
   return done;
 }
 async function presentTapShow(a){
-  curTask=a.id; ph("model (tap): "+(handName(a.tap.by)||"the hand")); await setPortraits(a.scene); itemStart(a); await convIntro(a);
-  const lit = a.tap.by==="paul" || a.tap.by==="julie";
+  const lit = a.tap.by==="paul" || a.tap.by==="julie", drawn = tapperScene(a.scene, a.tap.by);
+  curTask=a.id; ph("model (tap): "+(handName(a.tap.by)||"the hand")); await setPortraits(drawn); itemStart(a); await convIntro(a);
+  if(drawn!==a.scene) trace("the picture cards show "+VOCAB[a.tap.by].name+" doing each action: "+VOCAB[a.tap.by].name+" taps");
   if(a.teacherUnits.length){ gestureEar(); await say(a.teacherUnits); await sleep(250); }
   if(a.touch && a.touch.silent) await silentTouches(a.touch.count);
   if(lit) speakLit(a.tap.by, true);
   await handTap(a.tap.by, a.tap.at); if(lit) speakLit(a.tap.by, false);
   if(!holdHand) handHide();
+  /* (figures 12; Jon, 16 Nov: "the first time jumping is tapped ... the jumping animation doesn't play") Marie's own tap on an action card
+     is the first of each touch exercise, and no figure followed it (Pierre's and Sylvie's taps are followed by their figures doing it):
+     her own figure now does it in the action box, one whole loop, as theirs do (presentAct, kind "figure") */
+  if(a.tap.by==="teacher"){ const m=/^s(\d+)$/.exec(a.tap.at||""), x=m && a.scene && a.scene.row && a.scene.row[+m[1]], act=x && typeof x==="object" && x.is==="picture card" && ACT_NAME[x.doing];
+    if(act && act!=="not smiling" && picKnows(act)){ const bare=Object.assign({}, sceneOf(a.scene)||{}); BOX_KEYS.forEach(k=>delete bare[k]);
+      await setPortraits(Object.assign({}, bare, {row:[], side:{}})); rest(); actBox("marie", act, {}); trace("Marie's figure does what she tapped: "+act+" (in the action box)");
+      await sleep(wholeLoop(FIGURE_TIME(act))); actBox(null); } }
   rest();
 }
 let holdHand=false;
@@ -3727,22 +3900,334 @@ function listenT(task, expect, alsoOk){
   if(task.touch && !task.touch.silent && (task.touch.by==="you" || task.touch.by==="both")) return touchListen(task, expect, alsoOk);
   return listen(expect, alsoOk);
 }
-/* The conventions, each introduced once by the narrator just before the first task that uses it (.25; the wording was agreed
-   with the coordinator on 12 Nov 2026; audio/narrator, dev/voice/make_narrator.py). S.conv remembers, per user, which have
-   been said. */
-const CONV_LINES = {words:"words", blue:"blue", underline:"underline", wavy:"wavy", lis:"lis", tapmodel:"tapmodel", tap:"tap", count:"count", count_you:"count_you", asker:"asker"};
-async function convOnce(key){ S.conv=S.conv||{}; if(S.conv[key]) return false; S.conv[key]=true; save(); ph("introduction: "+key); trace("narrator: the convention \""+key+"\"");
-  if(key==="count_you"){ await narrate("count_you_a"); await say(["À toi.", "Compte."]); await sleep(150); await narrate("count_you_b"); return true; }      // (.37) the cue is "À toi. Compte." (DISE: "Your turn: Count.")      // (.28) Marie's "À toi." between the narrator's two clips
-  if(key==="lis"){ rest(); await narrate("lis_a"); await say(["Lis."]); await sleep(150); await narrate("lis_b"); return true; }
-  /* (.53; Jon, 14 Nov: "the English narrator, when she explains about touching objects, should explain that Marie will ask for the French word
-     for 'touch', which is 'touche' whenever touching is expected.") The word is Marie's own "Touche." between the narrator's two clips. New keys
-     (touche_model, touche_tap), so that a learner who heard the old lines hears these once too. */
-  if(key==="touche_model"){ rest(); await narrate("tapmodel_a"); await say(["Touche."]); await sleep(150); await narrate("tapmodel_b"); return true; }
-  if(key==="touche_tap"){ rest(); await narrate("tap_a"); await say(["Touche."]); await sleep(150); await narrate("tap_b"); return true; }      // the French word in Marie's voice, as "Répète" in the introduction
-  await narrate(CONV_LINES[key]||key); return true; }
+/* ============================================================
+   THE EXPLANATION CARDS (16 Nov 2026; the owner: "replace the English explanation of app conventions with text. So the lesson is
+   paused and there's a card that comes up with a written explanation … The written explanation should show screenshots where
+   necessary inside the explanation card … The user can scroll down in the card to keep reading if necessary.")
+   Every English explanation the narrator used to speak (audio/narrator) is a card now: the lesson waits (nothing is said, nothing is
+   listened to, no timer runs; Marie at rest; the frame quiet), the card comes up over the stage, the learner reads it and presses its
+   green button. Its pictures are not images: they are small mock-ups of the lesson's own screen drawn here and now with the page's own
+   drawing (PICS.tutor, picture(), CARD(), actPicture(), charsOf / charsSvg, the frame's own colours), so they always look like the
+   real screen and nothing is downloaded. The words: dev/design/CONVENTION_CARDS.md (for the owner to correct).
+   The bookkeeping is the narrator's: S.conv[key] (each convention once), S.introSeen, S.qIntroSeen, S.youDoSeen; a learner who heard
+   a line before does not see its card. In a scripted run (navigator.webdriver) the card goes by itself once it has been shown and
+   traced ("explanation card: <key> shown / dismissed"), unless the script set window.__xcardHold.
+   ============================================================ */
+const XPIC = (() => {
+  const NS = svgNS, PW = 420, PH = 908, SX = 9.7, SY = 90.3;      // a phone of 390 x 844, the stage's 400 units drawn 372 px wide under the 84 px of chrome
+  const f1 = n => (+n).toFixed(1);
+  const mk = (tag, attrs, html) => { const e = document.createElementNS(NS, tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (html) e.innerHTML = html; return e; };
+  const still = () => document.documentElement.dataset.motion === "less" || !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  let seq = 0;
+  /* Marie: a figure of her own from the picture library (the stage's is not touched), posed with the page's own poses, held still */
+  function tutor(pose){
+    try{ if (!(window.PICS && typeof PICS.tutor === "function")) return null;
+      const t = PICS.tutor({ autoBlink: false }); if (!t || !t.node || !t.rig) return null;
+      try{ t.rig.still && t.rig.still(true); }catch(e){}
+      const p = pose || {}; t.rig.arms.draw({ L: Object.assign({}, ARMS.REST.L, p.L || {}), R: Object.assign({}, ARMS.REST.R, p.R || {}) });
+      t.node.setAttribute("transform", "translate(0 4)");      // where the stage has her (TUTOR mount: 4 units lower)
+      t.node.removeAttribute("id"); t.node.querySelectorAll("[id]").forEach(e => { if (/^(tutorBody|arms|claireTag|hs_)/.test(e.id)) e.removeAttribute("id"); });
+      return t.node; }catch(e){ return null; } }
+  /* a row of cards, laid out as buildRow lays out the stage's (one row of up to five); returns the cards and where each is */
+  function row(items, lit){
+    const g = mk("g"), N = items.length, n = N || 1, gap = n > 2 ? 10 : 24, area = { y: 24, h: 190 };
+    const w = Math.min(160, (344 - gap * (n - 1)) / n, area.h * 160 / 190), h = w * 190 / 160, y0 = area.y + (area.h - h) / 2, k = w / 160, B = [];
+    items.forEach((spec, i) => { const x = 200 - (n * w + (n - 1) * gap) / 2 + i * (w + gap);
+      const c = mk("g", { transform: `translate(${f1(x)},${f1(y0)})` }); if (lit === i) c.classList.add("lit");
+      c.innerHTML = `<g class="cardIn">${CARD(w, h, Math.max(8, 16 * k))}</g>`;
+      const inner = mk("g", { transform: `scale(${k.toFixed(4)})` }); try{ inner.appendChild(picture(spec)); }catch(e){} c.firstChild.appendChild(inner);
+      g.appendChild(c); B.push({ x, y: y0, w, h, r: Math.max(8, 16 * k) }); });
+    return { g, B };
+  }
+  /* the marks the stage draws over its cards: the gold border (what Marie means), the green ring of a speaking model learner and its
+     point, the tapping hand of a tap shown (with its name tag and sleeve), the small hands of a tap turn */
+  const gold = b => { const m = 4; return `<rect x="${f1(b.x - m - 3.6)}" y="${f1(b.y - m - 3.6 - 5)}" width="${f1(b.w + 2 * m + 7.2)}" height="${f1(b.h + 2 * m + 7.2)}" rx="${f1(b.r + m + 3.6)}" fill="none" stroke="var(--lit-deep)" stroke-width="1.4"/>`
+    + `<rect x="${f1(b.x - m)}" y="${f1(b.y - m - 5)}" width="${f1(b.w + 2 * m)}" height="${f1(b.h + 2 * m)}" rx="${f1(b.r + m)}" fill="none" stroke="var(--lit)" stroke-width="6"/>`; };
+  const ring = (b, to) => { const m = 10; let s = `<rect x="${f1(b.x - m)}" y="${f1(b.y - m)}" width="${f1(b.w + 2 * m)}" height="${f1(b.h + 2 * m)}" rx="${f1(b.r + m)}" fill="none" stroke="var(--speak)" stroke-width="5"/>`;
+    const t = 14, cy = b.y + b.h / 2;
+    if (to === "you") s += `<path d="M${f1(b.x + b.w / 2 - 11)} ${f1(b.y + b.h + t - 3)} L${f1(b.x + b.w / 2)} ${f1(b.y + b.h + t + 13)} L${f1(b.x + b.w / 2 + 11)} ${f1(b.y + b.h + t - 3)} Z" fill="#3fae5a"/>`;
+    else if (to) { const right = to.x > b.x, x0 = right ? b.x + b.w + t - 3 : b.x - t + 3, x1 = right ? x0 + 13 : x0 - 13; s += `<path d="M${f1(x0)} ${f1(cy - 11)} L${f1(x1)} ${f1(cy)} L${f1(x0)} ${f1(cy + 11)} Z" fill="#3fae5a"/>`; }
+    return s; };
+  const hand = (b, by) => { const x = b.x + b.w / 2, y = b.y + b.h * 0.46, name = handName(by), m = 6;
+    return `<rect x="${f1(b.x - m)}" y="${f1(b.y - m)}" width="${f1(b.w + 2 * m)}" height="${f1(b.h + 2 * m)}" rx="${f1((b.r || 10) + m)}" fill="none" stroke="var(--tap)" stroke-width="5"/>`
+      + `<g transform="translate(${f1(x)},${f1(y + HAND_LEN)})"><g transform="rotate(180) scale(${HAND_K})"><use href="#hs_point"/></g><rect x="${-11.4 * HAND_K}" y="-3" width="${22.8 * HAND_K}" height="${22.8 * HAND_K}" rx="${4.5 * HAND_K}" fill="${SLEEVE[by] || SLEEVE.teacher}"/>`
+      + (name ? `<g transform="translate(0,${(22.8 * HAND_K - 20).toFixed(1)})"><rect x="${-name.length * 3.4 - 5}" y="15" width="${name.length * 6.8 + 10}" height="15" rx="4" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.2"/><text x="0" y="26.5" text-anchor="middle" font-size="11.5" font-weight="700" font-family="system-ui,sans-serif" fill="#2b2f36">${escX(name)}</text></g>` : "") + `</g>`; };
+  const tapHands = bs => { let h = ""; const r = Math.max(12, Math.min(19, Math.min(...bs.map(b => b.w)) * 0.16));
+    for (const b of bs) { const cx = b.x + b.w - r * 0.55, cy = b.y + r * 0.55, id = "xts" + (seq++);
+      h += `<rect class="tapOn" x="${f1(b.x - 3.4)}" y="${f1(b.y - 3.4)}" width="${f1(b.w + 6.8)}" height="${f1(b.h + 6.8)}" rx="${f1((b.r || 10) + 3.4)}"/>`
+        + `<g transform="translate(${f1(cx)},${f1(cy)})"><circle class="tapDot" r="${f1(r)}"/><clipPath id="${id}"><circle r="${f1(r - 1.5)}"/></clipPath><g clip-path="url(#${id})"><g class="tapHand"><g transform="translate(${(-1.5 * r * 1.7 / 57).toFixed(1)},${(-28 * r * 1.7 / 57).toFixed(1)}) scale(${(r * 1.7 / 57).toFixed(3)})"><use href="#hs_point"/></g></g></g></g>`; }
+    return h; };
+  /* the counting line (buildStrip): one card of things, the hand touching thing `at` */
+  function strip(spec, at){
+    const g = mk("g"), n = spec.count || 3, x0 = 28, W = 344, y0 = 30, H = 180, cw = Math.min((W - 16) / n, 104), ch = H * 0.5, k = Math.min(cw / 160, ch / 190) * 0.98, pts = [];
+    g.innerHTML = `<g transform="translate(${x0},${y0})">${CARD(W, H, 14)}</g>`;
+    for (let i = 0; i < n; i++) { const cx = 200 - (n * cw) / 2 + (i + 0.5) * cw, cy = y0 + H * 0.3;
+      const p = mk("g", { transform: `translate(${f1(cx - 80 * k)},${f1(cy - 97 * k)}) scale(${k.toFixed(4)})` }); try{ p.appendChild(picture({ is: spec.is, looks: spec.looks || [], count: 1 })); }catch(e){} g.appendChild(p); pts.push({ x: cx, y: cy + 30 * k }); }
+    const p = pts[Math.min(at || 0, n - 1)];
+    g.insertAdjacentHTML("beforeend", `<g transform="translate(${f1(p.x)},${f1(p.y + HAND_LEN)})"><g transform="rotate(180) scale(${HAND_K})"><use href="#hs_point"/></g><rect x="${-11.4 * HAND_K}" y="-3" width="${22.8 * HAND_K}" height="${22.8 * HAND_K}" rx="${4.5 * HAND_K}" fill="${SLEEVE.teacher}"/></g><circle cx="${f1(p.x)}" cy="${f1(p.y)}" r="12" fill="none" stroke="var(--tap)" stroke-width="4" opacity=".8"/>`);
+    return g;
+  }
+  /* an action box as actBox draws it: a label, a card, the figure (the learner's own name tag under their own figure) */
+  function box(who, act, opt){
+    const g = mk("g"), o = Object.assign({}, opt || {}), BX = 120, mine = who === "you";
+    if (still()) o.still = true;
+    const label = mine ? "You:" : who === "marie" ? VOCAB.claire.name + ":" : (VOCAB[who] ? VOCAB[who].name + ":" : "");
+    g.innerHTML = `<text x="${BX + 80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${escX(label)}</text><g transform="translate(${BX},24)">${CARD(160, 190, 16)}</g>`;
+    try{ g.lastChild.appendChild(actPicture(who, act, o)); }catch(e){}
+    if (mine) { try{ const t = learnerCard().querySelector(".nametag"); if (t) { const k = 1.1; t.setAttribute("transform", `translate(${f1(200 - 80 * k)} ${f1(186 - 146 * k)}) scale(${k})`); g.appendChild(t); } }catch(e){} }
+    return g;
+  }
+  /* the phone: its screen as the learner sees it in a lesson. o.turn: "listen" (the thin red frame), "speak" (the thick green one and the
+     microphone's tab), "tap" (the blue one and the hand's tab); o.pose: Marie's arms (POSE.ear, the open palm …); o.row, o.lit, o.ring,
+     o.tail, o.hand, o.tapAll: the cards and their marks; o.box: an action box; o.board: a board under the cards */
+  function screen(o){
+    const g = mk("g"), clip = "xsc" + (seq++);
+    g.innerHTML = `<defs><clipPath id="${clip}"><rect width="${PW}" height="${PH}" rx="40"/></clipPath></defs><rect x="-16" y="-16" width="${PW + 32}" height="${PH + 32}" rx="56" fill="#1d1f24"/>`;
+    const s = mk("g", { "clip-path": `url(#${clip})` }); g.appendChild(s);
+    s.appendChild(mk("rect", { width: PW, height: PH, fill: "var(--paper)" }));
+    // the chrome: the Leave cross and how far
+    s.insertAdjacentHTML("beforeend", `<svg x="32" y="30" width="52" height="52" viewBox="0 0 28 28" fill="none" stroke="var(--ink-2)" stroke-width="2.8" stroke-linecap="round"><use href="#i-close"/></svg>`
+      + `<rect x="96" y="50" width="285" height="13" rx="6.5" fill="var(--paper-3)"/><rect x="96" y="50" width="${f1(285 * (o.prog || 0.18))}" height="13" rx="6.5" fill="var(--ink)"/>`);
+    const sc = mk("g", { transform: `translate(${SX},${SY})` }), room = mk("g", { transform: "translate(0 40)" }); sc.appendChild(room); s.appendChild(sc);
+    let B = [];
+    if (o.row) { const r = row(o.row, o.lit); room.appendChild(r.g); B = r.B; }
+    if (o.box) room.appendChild(box(o.box.who, o.box.act, o.box.opt));
+    if (o.strip) room.appendChild(strip(o.strip, o.strip.at));
+    let marks = "";
+    if (o.lit != null && B[o.lit]) marks += gold(B[o.lit]);
+    if (o.ring != null && B[o.ring]) marks += ring(B[o.ring], o.tail === "you" ? "you" : (o.tail != null ? B[o.tail] : null));
+    room.insertAdjacentHTML("beforeend", marks);
+    if (o.board) room.appendChild(board(o.board, o.boardHi).g);
+    const t = tutor(o.pose); if (t) room.appendChild(t);
+    if (o.hand && B[o.hand.at]) room.insertAdjacentHTML("beforeend", hand(B[o.hand.at], o.hand.by));
+    if (o.tapAll) room.insertAdjacentHTML("beforeend", tapHands(o.tapAll.map(i => B[i]).filter(Boolean)));
+    // the turn frame: the colour round the screen (the stage's #signal: listen 8 px, speak 14 px, tap 11 px), and the tab at the bottom edge
+    const T = { listen: [8.6, 28, "var(--listen)"], speak: [15, 30, "var(--speak)"], tap: [11.8, 29, "var(--tap)"] }[o.turn || "listen"], d = T[0], r = T[1];
+    s.insertAdjacentHTML("beforeend", `<path fill-rule="evenodd" fill="${T[2]}" d="M-20 -20H${PW + 20}V${PH + 20}H-20Z M${d + r} ${d}H${PW - d - r}A${r} ${r} 0 0 1 ${PW - d} ${d + r}V${PH - d - r}A${r} ${r} 0 0 1 ${PW - d - r} ${PH - d}H${d + r}A${r} ${r} 0 0 1 ${d} ${PH - d - r}V${d + r}A${r} ${r} 0 0 1 ${d + r} ${d}Z"/>`
+      + `<rect x="${d}" y="${d}" width="${PW - 2 * d}" height="${PH - 2 * d}" rx="${r}" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.2"/>`);
+    if (o.turn === "speak") { const x = PW / 2 - 70, bars = [0.55, 0.9, 0.7, 1, 0.6, 0.8].map((h, i) => `<rect x="${f1(x + 64 + i * 9.6)}" y="${f1(PH - 33 - 16 * h)}" width="5.4" height="${f1(32 * h)}" rx="2.7" fill="#fff"/>`).join("");
+      s.insertAdjacentHTML("beforeend", `<path d="M${x} ${PH}V${PH - 34}a28 28 0 0 1 28 -28H${x + 112}a28 28 0 0 1 28 28V${PH}Z" fill="var(--speak)"/><svg x="${x + 19}" y="${PH - 50}" width="34" height="34" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><use href="#i-mic"/></svg>${bars}`); }
+    if (o.turn === "tap") { const x = PW / 2 - 42;
+      s.insertAdjacentHTML("beforeend", `<path d="M${x} ${PH}V${PH - 34}a28 28 0 0 1 28 -28H${x + 56}a28 28 0 0 1 28 28V${PH}Z" fill="var(--tap)"/><svg x="${x + 25}" y="${PH - 50}" width="34" height="34" viewBox="0 0 28 28"><use href="#i-tap"/></svg>`); }
+    return g;
+  }
+  /* a board, as boardShow draws one line of it: its card, the letters with their blue and their lines (charsOf, charsSvg), and the outline
+     round the part being said */
+  function board(b, hi){
+    const text = String(b.text || "").split("\n")[0], parts = (b.parts || []).filter(p => p[0] < text.length), fs = TXT_SIZE, y = TXT_Y;
+    const chars = charsOf(text, parts), r = charsSvg(chars, 200, y, fs, 340, TXT_INK), W = r.xs[r.xs.length - 1] - r.xs[0], x0 = 200 - W / 2 - 24, x1 = 200 + W / 2 + 24, top = y - fs * 1.15, bot = y + fs * 0.6;
+    let box = ""; if (hi != null) { const a = chars.findIndex(c => c.part === hi); let e = -1; chars.forEach((c, i) => { if (c.part === hi) e = i; }); while (e > a && /[\s.,?!:;…]/.test(chars[e].c)) e--;
+      if (a >= 0) box = `<rect x="${f1(r.xs[a] - 5)}" y="${f1(y - r.fs * 0.98)}" width="${f1(r.xs[e + 1] - r.xs[a] + 10)}" height="${f1(r.fs * 1.42)}" rx="7" fill="${TXT_HI}" stroke="${TXT_INK}" stroke-width="2.2"/>`; }
+    return { g: mk("g", {}, `<rect class="boardLip" x="${f1(x0)}" y="${f1(top + 2.5)}" width="${f1(x1 - x0)}" height="${f1(bot - top)}" rx="12"/><rect class="boardFace" x="${f1(x0)}" y="${f1(top)}" width="${f1(x1 - x0)}" height="${f1(bot - top)}" rx="12"/>${box}${r.svg}`), x0, x1, top, bot };
+  }
+  /* the views. Each returns an <svg> for the card: a part of the phone (crop: [y0, y1] of the phone), two phones side by side with a
+     word under each, the learner seen from behind in front of the phone and saying their answer (the stage's own drawing of the
+     introduction: #classroom), a board alone, an action box alone */
+  const view = (w, h, inner, label) => { const s = mk("svg", { viewBox: `0 0 ${f1(w)} ${f1(h)}`, role: "img" }); if (label) s.setAttribute("aria-label", label); s.appendChild(inner); return s; };
+  /* a part of the phone, from y c0 to y c1 of its screen (the bezel round it; cut straight where the crop cuts), at scale k, its top left at x, y */
+  function part(o, c, k, x, y){ const bot = c[1] >= PH ? PH + 16 : c[1], top = c[0] <= 0 ? -16 : c[0], cl = "xcr" + (seq++);
+    const p = mk("g", { transform: `translate(${f1(x + 16 * k)} ${f1(y - top * k)}) scale(${k})` });
+    p.innerHTML = `<defs><clipPath id="${cl}"><rect x="-17" y="${top}" width="${PW + 34}" height="${bot - top}"/></clipPath></defs>`;
+    const gg = mk("g", { "clip-path": `url(#${cl})` }); gg.appendChild(screen(o)); p.appendChild(gg); return { g: p, w: (PW + 32) * k, h: (bot - top) * k }; }
+  function phone(o){ const c = o.crop || [0, PH], p = part(o, c, 1, 0, 0); return view(p.w, p.h, p.g, o.label); }
+  const tint = t => t === "speak" ? "var(--speak-deep)" : t === "tap" ? "var(--tap-deep)" : "var(--listen)";
+  function pair(a, b){
+    const c = [370, PH], k = 0.4, g = mk("g"); let h = 0;
+    [[a, 0], [b, 200]].forEach(([o, x]) => { const p = part(o, c, k, x + (200 - (PW + 32) * k) / 2, 4); g.appendChild(p.g); h = p.h;
+      g.insertAdjacentHTML("beforeend", `<text x="${x + 100}" y="${f1(p.h + 36)}" text-anchor="middle" font-family="var(--font-ui)" font-size="24" font-weight="700" fill="${tint(o.turn)}">${escX(o.label || "")}</text>`); });
+    return view(400, h + 48, g, (a.label || "") + " / " + (b.label || "")); }
+  /* the learner seen from behind (the stage's own drawing of the introduction, #classroom), in front of the phone, saying `says` */
+  function learner(o, says){
+    const g = mk("g"), c = o.crop || [330, PH], k = o.k || 0.5, px = 236;
+    const p = part(o, c, k, px - (PW + 32) * k / 2, 6); g.appendChild(p.g); const pb = 6 + p.h;
+    const who = document.getElementById("classroom"), lb = who && who.querySelector(".lb"); let hb = pb;
+    if (lb) { const q = lb.cloneNode(true), sfx = "_x" + (seq++); q.querySelectorAll("[id]").forEach(e => { e.id = e.id + sfx; }); q.querySelectorAll("[fill^='url(#']").forEach(e => { e.setAttribute("fill", e.getAttribute("fill").replace(/\)$/, sfx + ")")); });
+      q.classList.remove("lb"); const s = 0.74, top = pb - 46; const s2 = mk("g", { transform: `translate(98 ${f1(top)}) scale(${s}) translate(-200 -474)` }); s2.appendChild(q); g.appendChild(s2); hb = top + 120 * s; }
+    if (says) { const w = Math.max(100, says.length * 15.5 + 36), x = 10, y = pb - 128;
+      g.insertAdjacentHTML("beforeend", `<g><path d="M${x + 52} ${y + 46} L${x + 80} ${y + 82} L${x + 82} ${y + 46}Z" fill="#fff" stroke="var(--speak)" stroke-width="3" stroke-linejoin="round"/><rect x="${x}" y="${y}" width="${f1(w)}" height="50" rx="25" fill="#fff" stroke="var(--speak)" stroke-width="3"/><path d="M${x + 54} ${y + 47.5} L${x + 80} ${y + 47.5}" stroke="#fff" stroke-width="5"/>`
+        + `<text x="${f1(x + w / 2)}" y="${y + 34}" text-anchor="middle" font-family="var(--font-ui)" font-size="27" font-weight="700" fill="var(--ink)">${escX(says)}</text></g>`); }
+    return view(400, Math.max(pb, hb) + 4, g, o.label); }
+  const alone = (node, x, y, w, h, label) => { const g = mk("g", { transform: `translate(${f1(-x)} ${f1(-y)})` }); g.appendChild(node); return view(w, h, g, label); };
+  return {
+    phone, pair, learner,
+    board: (b, hi) => { const r = board(b, hi); return alone(r.g, r.x0 - 14, r.top - 14, r.x1 - r.x0 + 28, r.bot - r.top + 30, "The words on the screen"); },
+    box: (who, act, opt) => alone(box(who, act, opt), 40, -6, 320, 228, who === "you" ? "Your figure" : ""),
+    strip: (spec, at) => alone(strip(spec, at), 18, 18, 364, 236, "Counting"),
+    row: (items, o) => { const sc = Object.assign({ row: items }, o || {}); const r = row(items, sc.lit), g = mk("g", { transform: "translate(0 14)" }); g.appendChild(r.g); let m = "";
+      if (sc.lit != null && r.B[sc.lit]) m += gold(r.B[sc.lit]); if (sc.ring != null && r.B[sc.ring]) m += ring(r.B[sc.ring], sc.tail === "you" ? "you" : (sc.tail != null ? r.B[sc.tail] : null));
+      if (sc.hand && r.B[sc.hand.at]) m += hand(r.B[sc.hand.at], sc.hand.by); g.insertAdjacentHTML("beforeend", m); return view(400, 284, g, sc.label); }
+  };
+})();
+/* The cards: a title, and parts, each with a picture (where one helps) and a few short sentences. say(t, w): a word Marie says, written,
+   with a button that lets Marie say it (her own recording; nothing is said unless it is pressed). */
+const XSAY = (t, w) => `<button type="button" class="xc-say" data-say="${escX(t).replace(/"/g, "&quot;")}" aria-label="Hear Marie say ${escX(w || t).replace(/"/g, "&quot;")}"><svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg><span lang="fr">${escX(w || t)}</span></button>`;
+const XBOARD = {text: "Pierre ou Sylvie ?", parts: [[0, 6, [[5, 6]], [], [], 0, 0], [7, 9, [], [[7, 9]], [], 0, 0], [10, 16, [[15, 16]], [], [], 0, 0]]};      // Lesson 1's first board (L1E6), for a card shown with no board of its own
+const xBoardOf = it => { const b = it && it.board; return b && b.text ? b : XBOARD; };
+const XWAVY = {text: "il y en a six", parts: [[0, 2, [], [], [], 0, 0], [3, 4, [], [], [], 0, 0], [5, 7, [], [], [], 0, 0], [8, 9, [], [], [], 0, 0], [10, 13, [], [], [[12, 13]], 0, 0]]};      // Lesson 10's first board with a wavy line
+// the item's own board when its first line has the mark the card is about (k: 2 blue, 3 underline, 4 wavy), else a board of the course that has it
+const xBoardWith = (it, k) => { const b = it && it.board, first = b && String(b.text || "").split("\n")[0].length; return b && b.text && (b.parts || []).some(p => p[0] < first && (p[k] || []).length) ? b : k === 4 ? XWAVY : XBOARD; };
+const XROW3 = () => [{person: "paul"}, {person: "julie"}, {person: "you"}];
+const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that is clutter) the words kept to the minimum; the pictures do the work
+  intro: {t: "How a lesson works", ok: "Start", parts: [
+    {pic: () => XPIC.pair({turn: "listen", pose: POSE.ear, label: "Red: listen"}, {turn: "speak", pose: {R: palmUp("R")}, label: "Green: you speak"}),
+     h: `<p>Watch the frame round the screen.</p>`},
+    {pic: () => XPIC.learner({turn: "speak", pose: {R: palmUp("R")}, label: "The frame is green: the learner says it"}, VOCAB.claire.name + "."),
+     h: `<p>${XSAY("Répète : " + VOCAB.claire.name + ".", "Répète")}: say it after her, once.</p>`},
+    {h: `<p class="xc-rule">Only speak when the frame is green.</p>`},
+    {h: `<div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg><p>Speak clearly and loudly.</p></div><div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-flat"/></svg><p>Phone flat on a table. Don't touch it.</p></div><div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><p>To stop: the cross, then <b>Leave</b>.</p></div>`}]},
+  q: {t: "Questions", parts: [
+    {pic: () => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Marie asks; the learner says only the answer"}, VOCAB.paul.name + "."),
+     h: `<p>Say only the answer.</p>`}]},
+  onlyanswer: {t: "Just the answer", parts: [
+    {pic: () => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Only the answer"}, VOCAB.paul.name + "."),
+     h: `<p>Say only the answer, not the question.</p>`}]},
+  touche_model: {t: "Touching a picture", parts: [
+    {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {hand: {at: 0, by: "teacher"}, label: "Marie's hand touches Pierre's picture"}),
+     h: `<p>${XSAY("Touche.", "Touche")} = touch. Watch the hand.</p>`}]},
+  touche_tap: {t: "Your turn to touch", parts: [
+    {pic: () => XPIC.phone({turn: "tap", row: [{person: "paul"}, {person: "julie"}], tapAll: [0, 1], crop: [0, 470], label: "The frame is blue: touch a picture"}),
+     h: `<p>Blue frame: don't speak. Touch the picture Marie names.</p>`}]},
+  you_do: {t: "This is you", parts: [
+    {pic: () => XPIC.box("you", "dance", {}),
+     h: `<p>Tap a picture, and you do it. Answer as if it were really you.</p>`}]},
+  words: {t: "Words on the screen", parts: [
+    {pic: it => XPIC.board(xBoardOf(it), 0), h: `<p>The box shows the word being said.</p>`}]},
+  blue: {t: "Blue letters", parts: [
+    {pic: it => XPIC.board(xBoardWith(it, 2)), h: `<p><b class="xc-blue">Blue letters</b> are not said.</p>`}]},
+  underline: {t: "Lines under letters", parts: [
+    {pic: it => XPIC.board(xBoardWith(it, 3)), h: `<p>Underlined letters make one sound.</p>`}]},
+  wavy: {t: "A wavy line", parts: [
+    {pic: it => XPIC.board(xBoardWith(it, 4)), h: `<p>Wavy line: listen to how Marie says it.</p>`}]},
+  lis: {t: "Reading out loud", parts: [
+    {pic: it => XPIC.learner({turn: "speak", board: xBoardOf(it), crop: [250, PHONE_H], k: 0.46, label: "The frame is green: the learner reads the words"}, xBoardOf(it).text.split("\n")[0]),
+     h: `<p>${XSAY("Lis.", "Lis")}: read the box out loud.</p>`}]},
+  count: {t: "Counting", parts: [
+    {pic: () => XPIC.strip({is: "apple", count: 3}, 1), h: `<p>One number at each touch.</p>`}]},
+  count_you: {t: "Your turn to count", parts: [
+    {pic: () => XPIC.strip({is: "apple", count: 3}, 0), h: `<p>${XSAY("À toi.", "À toi")} ${XSAY("Compte.", "Compte")}: one number at each touch.</p>`}]},
+  asker: {t: "When Pierre or Sylvie asks", parts: [
+    {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {ring: 0, tail: "you", label: "Pierre asks; the point shows who answers"}),
+     h: `<p><b class="xc-green">Green ring</b>: who asks. Its point: who answers. Down: you.</p><p>A hand on their name tag: the question is about them.</p>`}]},
+  you_now: {t: "Remember", parts: [
+    {pic: () => XPIC.box("you", "dance", {}), h: `<p>Answer as if you were doing it.</p>`}]},
+  you_before: {t: "Remember", parts: [
+    {pic: () => XPIC.box("you", "dance", {still: true}), h: `<p>Answer as if you had done it.</p>`}]},
+  dis_intro: {t: "Say it, or do it", parts: [
+    {pic: () => XPIC.pair({turn: "speak", label: "Say it"}, {turn: "tap", label: "Do it"}),
+     h: `<p>Watch Pierre and Sylvie first.</p>`}]},
+  doing_intro: {t: "What are they doing?", parts: [
+    {pic: () => XPIC.row([{person: "paul"}, {person: "julie", doing: "dancing"}], {ring: 1, label: "Sylvie answers while she is dancing"}),
+     h: `<p>Marie asks while they do it. Then you: answer as if you were doing it.</p>`}]},
+  mirror_intro: {t: "Marie does something", parts: [
+    {h: `<p>Marie asks about what she is doing. Watch Pierre and Sylvie, then answer.</p>`}]},
+  mirror_intro3: {t: "Asking while doing", parts: [
+    {pic: () => XPIC.box("marie", "jump", {}),
+     h: `<p>The one doing it asks. Watch first; then they ask you.</p>`}]},
+  ask_intro: {t: "Your turn to ask", parts: [
+    {pic: () => XPIC.learner({turn: "speak", row: [{person: "paul"}], lit: 0, crop: [130, PHONE_H], k: 0.42, label: "You ask Pierre"}, ""),
+     h: `<p>Marie tells you to ask: ask Pierre or Sylvie yourself. When she asks you, answer her.</p>`}]},
+  futur_intro: {t: "Before it happens", parts: [
+    {pic: () => XPIC.row([{person: "paul", card: "jumping"}, {person: "julie"}], {label: "Pierre holds up a picture of what he is about to do"}),
+     h: `<p>The picture held up: what comes next. Listen before it happens.</p>`}]},
+  futur_q_intro: {t: "Before she does it", parts: [
+    {h: `<p>Marie asks before she does it. Watch Pierre and Sylvie, then answer.</p>`}]},
+  dis_moi_de_intro: {t: "Tell Marie what to do", parts: [
+    {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {ring: 1, label: "Sylvie tells Marie what to do"}),
+     h: `<p>Tell Marie what to do; she does it. Watch Pierre and Sylvie first.</p>`}]},
+  swamped: {t: "A loud noise", ok: "OK", parts: [
+    {h: `<div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-flat"/></svg><p>Phone flat on a table. Don't touch it.</p></div>`}]}
+};
+const PHONE_H = 908;
+/* the cards that say how lessons work, for the You tab ("How lessons work"): every card a lesson can show, in the order they come */
+const XCARDS_ALL = ["intro", "q", "touche_model", "touche_tap", "you_do", "count", "words", "blue", "underline", "wavy", "lis", "asker", "dis_intro", "doing_intro", "mirror_intro3", "ask_intro", "futur_intro", "futur_q_intro", "dis_moi_de_intro"];
+const XCARD = {open: false, done: null, el: null, saying: false};
+function xcardEl(){
+  if (XCARD.el) return XCARD.el;
+  const o = document.createElement("div"); o.id = "xcard"; o.hidden = true; o.setAttribute("lang", "en"); o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-labelledby", "xcTitle");
+  o.innerHTML = `<div class="xc"><div class="xc-scroll" tabindex="-1"><div class="xc-body"></div><button type="button" class="xc-more" tabindex="-1" aria-hidden="true"><span>More below</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div><div class="xc-foot"><button type="button" id="xcardOk" class="btn"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span class="lbl">Got it</span></button></div></div>`;
+  document.body.appendChild(o); XCARD.el = o;
+  const sc = o.querySelector(".xc-scroll"), more = o.querySelector(".xc-more");
+  const hint = () => { const left = sc.scrollHeight - sc.clientHeight - sc.scrollTop; o.classList.toggle("more", left > 8); };
+  sc.addEventListener("scroll", hint, {passive: true}); window.addEventListener("resize", () => { if (XCARD.open) hint(); }); XCARD.hint = hint;
+  more.onclick = () => sc.scrollBy({top: Math.round(sc.clientHeight * 0.7), behavior: (XPIC_STILL() ? "auto" : "smooth")});
+  o.addEventListener("click", async e => { const b = e.target && e.target.closest && e.target.closest(".xc-say"); if (!b || XCARD.saying) return;
+    XCARD.saying = true; b.classList.add("on"); try{ audioUnlock(); await say([b.dataset.say]); }catch(err){} finally{ XCARD.saying = false; b.classList.remove("on"); } });
+  o.querySelector("#xcardOk").onclick = () => { if (XCARD.done) XCARD.done("button"); };
+  return o;
+}
+const XPIC_STILL = () => document.documentElement.dataset.motion === "less" || !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+/* show the card of these keys (one card; a key after the first is a part of it under its own heading) and wait for its button.
+   o.it: the item it comes before (a board card shows that item's own board); o.title, o.ok: for the You tab's "How lessons work" */
+async function explain(keys, o){
+  o = o || {}; keys = (Array.isArray(keys) ? keys : [keys]).filter(k => XCARDS[k]); if (!keys.length) return;
+  while (XCARD.open) await sleep(100);
+  try{ await UI.fonts(); }catch(e){}      // the letters of a board are measured: the faces must be in (a lesson has awaited them already)
+  const el = xcardEl(), body = el.querySelector(".xc-body"), first = XCARDS[keys[0]], lesson = !o.review;
+  XCARD.open = true;
+  if (lesson) { try{ rest(); signal(false); }catch(e){} }      // the lesson waits: Marie at rest, the frame quiet, nothing listened to
+  const title = o.title || first.t;
+  body.innerHTML = `<h2 id="xcTitle">${escX(title)}</h2>`;
+  keys.forEach((k, i) => { const c = XCARDS[k], sec = document.createElement("section"); sec.className = "xc-part"; sec.dataset.key = k;
+    if (i > 0 || o.title) sec.insertAdjacentHTML("beforeend", `<h3>${escX(c.t)}</h3>`);
+    c.parts.forEach(p => { if (p.pic) { const fig = document.createElement("div"); fig.className = "xc-pic"; try{ const s = p.pic(o.it); if (s) fig.appendChild(s); }catch(e){ trace("FAULT explanation card picture " + k + ": " + e.message); } if (fig.firstChild) sec.appendChild(fig); }
+      sec.insertAdjacentHTML("beforeend", p.h); });
+    body.appendChild(sec); });
+  el.querySelector("#xcardOk .lbl").textContent = o.ok || (keys.length === 1 && first.ok) || "Got it";
+  el.classList.toggle("top", !!o.review); el.classList.remove("out"); el.hidden = false;
+  const sc = el.querySelector(".xc-scroll"); sc.scrollTop = 0; requestAnimationFrame(() => XCARD.hint && XCARD.hint());
+  try{ sc.focus({preventScroll: true}); }catch(e){}      // the card has the focus (no ring drawn on its button for a finger; Tab reaches the button)
+  if (lesson) keys.forEach(k => trace("explanation card: " + k + " shown"));
+  const how = await new Promise(res => { XCARD.done = res;
+    if (navigator.webdriver && !window.__xcardHold) setTimeout(() => { if (XCARD.done === res) res("by itself (a scripted run)"); }, 300); });
+  XCARD.done = null;
+  if (lesson) keys.forEach(k => trace("explanation card: " + k + " dismissed (" + how + ")"));
+  if (XPIC_STILL()) el.hidden = true; else { el.classList.add("out"); await sleep(190); el.hidden = true; el.classList.remove("out"); }
+  body.replaceChildren(); XCARD.open = false;
+  if (lesson) await sleep(200);      // a breath before Marie goes on
+}
+window.EXPLAIN = {show: explain, all: () => explain(XCARDS_ALL, {review: true, title: "How lessons work", ok: "Done"}), CARDS: XCARDS, ALL: XCARDS_ALL};
+/* The conventions, each introduced once just before the first task that uses it (.25; the narrator's wording was agreed with the
+   coordinator on 12 Nov 2026; since 16 Nov a card). S.conv remembers, per user, which have been shown. Within one item the cards wait in
+   XQ and come up together, as one card, at the end of convIntro. */
+const XQ = {on: false, keys: []};
+async function convOnce(key){ S.conv = S.conv || {}; if (S.conv[key]) return false; S.conv[key] = true; save(); ph("introduction: " + key);
+  if (XQ.on) XQ.keys.push(key); else await explain([key]);
+  return true; }
+/* (16 Nov; the owner: "Lesson 5, Exercise 1 starts with a test step and then goes into a series of models and leads. Why is this?") A delayed
+   test (runDelayed: a part's tests asked again after the next exercise and at the next lesson's start) or an exercise carried by R4c
+   (runCarried) came with nothing to say it belongs to an earlier exercise, so it looked like the next exercise starting with a test. Now a
+   light label over the stage, under the chrome, says where it is from ("From Lesson 4", "From earlier"), with
+   that exercise's first picture; it stays through the run of checks and goes when the next exercise begins (runExercise) or the lesson ends.
+   The first time ever, one card says what it is (S.conv.check). It does not stop anything else: the checks are run exactly as before (they
+   already counted neither in the progress bar nor in the next exercise's result: UI.onLog, exResult). */
+const XCHECK = {el: null, key: null};
+const checkLabel = lessonId => { const cur = LESSONS[S.lesson]; return cur && cur.id === lessonId ? "From earlier" : "From Lesson " + String(lessonId).replace(/^L/, ""); };
+function checkThumb(exId, partId){
+  try{ const L = LESSONS.find(l => l.exercises.some(e => e.id === exId)), ex = L && L.exercises.find(e => e.id === exId); if (!ex) return "";
+    const parts = partId ? ex.parts.filter(p => p.id === partId).concat(ex.parts) : ex.parts;
+    for (const p of parts) for (const it of p.items) { const sc = sceneOf(it.scene); const spec = sc && ((sc.row && sc.row.find(x => x)) || sc.L); if (!spec) continue;
+      const s = document.createElementNS(svgNS, "svg"); s.setAttribute("viewBox", "0 0 160 190"); s.setAttribute("aria-hidden", "true");
+      s.innerHTML = `<rect width="160" height="190" rx="16" fill="var(--card)" stroke="var(--line)" stroke-width="3"/>`; s.appendChild(picture(spec)); return s.outerHTML; } }catch(e){}
+  return ""; }
+const checkHtml = (label, thumb) => `<span class="xk-pic">${thumb || ""}</span><span class="xk-t">${escX(label)}</span>`;
+async function checkShow(lessonId, exId, partId, how){
+  trace("delayed test: shown as a check from " + exId + (how ? " (" + how + ")" : ""));
+  S.conv = S.conv || {}; if (!S.conv.check) { S.conv.check = true; save(); ph("introduction: check"); await explain(["check"], {checkFrom: lessonId}); }
+  if (!XCHECK.el) { const e = document.createElement("div"); e.id = "xcheck"; e.hidden = true; e.setAttribute("lang", "en"); e.setAttribute("role", "status"); document.body.appendChild(e); XCHECK.el = e; }
+  const key = lessonId + "|" + exId; if (XCHECK.key === key && !XCHECK.el.hidden) return; XCHECK.key = key;
+  XCHECK.el.innerHTML = checkHtml(checkLabel(lessonId), checkThumb(exId, partId)); XCHECK.el.hidden = false; }
+function checkHide(){ if (XCHECK.el && !XCHECK.el.hidden) { XCHECK.el.hidden = true; XCHECK.key = null; trace("delayed test: the check's label goes"); } }
+XCARDS.check = {t: "A quick look back", parts: [
+  {h: `<div class="xc-checkdemo"><div class="xk-demo">${checkHtml("From Lesson 4", "")}</div></div><p>Something from earlier, asked again.</p>`}]};
+XCARDS_ALL.push("check");
 const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
 async function convIntro(it){
   if(!it || S.settings.manual && S.settings.noConv) return;
+  XQ.on=true; XQ.keys=[];
+  try{ await convIntro0(it); } finally { XQ.on=false; }
+  if(XQ.keys.length){ const k=XQ.keys; XQ.keys=[]; await explain(k, {it}); }      // one card for all of them, before the item
+}
+async function convIntro0(it){
   const w=it.text, said=[];
   if(boardOn(it)){ const P=it.board.parts||[], has=k=>P.some(q=>(q[k]||[]).length);      // (.26) the board's conventions, the first time a board is shown (.43: shown on the screen, boardOn)
     if(await convOnce("words")) said.push("words"); if(has(2)) await convOnce("blue"); if(has(3)) await convOnce("underline"); if(has(4)) await convOnce("wavy"); }
@@ -3853,8 +4338,10 @@ const ACT_HALF = 0.5;
    … double the length of the animation and halve the speed") the smile plays at half speed (people.js: one smile in 2.6 s) and
    is shown twice as long: 2.6 s in Marie's box (ACT_TIME 5200), and one whole smile for a figure too (2.6 s, not a quarter of it)
    (.50) the smile's loop is now 3.2 s (it closes in on the face, smiles, and comes back): wholeLoop makes every wait one whole loop */
-const FIGURE_TIME = act => act==="smile" ? 2600 : Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:5200, "raise hand":3600, eat:3600, drink:3600, stop:2200};
+/* (figures 12; Jon, 16 Nov: "all the animations should be brought down to the speed of something like jumping, standing up, or sitting
+   down ... the smiling one is too long") the smile's own floors go: one whole loop of it (1.6 s in people.js) is shown, as for every action */
+const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200};
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
@@ -4038,18 +4525,19 @@ async function presentAct(a){
   if(own) await setPortraits(sc); else actBox(null);
   rest();
 }
-/* Before the first such task, once (.24): the narrator says that the figure is the learner. The figure stands in the box, with
-   the learner's name tag, while it is said. */
+/* Before the first such task, once (.24): the figure is the learner. Until 16 Nov the narrator said it while the figure stood (and danced)
+   in the box; now a card says it, the learner's own figure dancing in it, with their name tag. */
 async function youDoIntro(){
   if(S.youDoSeen) return;
-  ph("introduction: the learner's figure"); rest();
-  // (.25: said before the first command the learner answers by a tap; the pictures make way for the figure while it is said)
-  const fr=document.getElementById("frameRow"), op=fr.style.opacity, tg=TXT.g.getAttribute("opacity"); fr.style.opacity=0; TXT.g.setAttribute("opacity",0); const kept=ACTBOX.key;
+  ph("introduction: the learner's figure"); S.youDoSeen=true; save();
+  if(XQ.on) XQ.keys.push("you_do"); else await explain(["you_do"]);
+}
+async function youDoIntro_narrated(){      // (the narrator's version, kept for the record until the cards are adopted: dev/design/tools/cards/delete.txt)
+  const fr=document.getElementById("frameRow"), op=fr.style.opacity, tg=TXT.g.getAttribute("opacity"); fr.style.opacity=0; TXT.g.setAttribute("opacity",0);
   actBox("you", "stop", {still:true}); await narrate("you_do"); await sleep(300);
-  actBox("you", "dance"); await narrate("you_do_ex"); actBox("you", "stop", {still:true}); await sleep(300);      // (.35, Jon 12 Nov 17:53) the example, the figure dancing while it is said
+  actBox("you", "dance"); await narrate("you_do_ex"); actBox("you", "stop", {still:true}); await sleep(300);
   await narrate("you_do_b"); actBox(null);      // (.34, Jon 12 Nov: no English about French) "This is you. When Marie tells you to do something, tap the picture of it … Later, Marie will ask about your actions, now and before …" (the English examples of the questions and answers, you_do_c, are gone)
   fr.style.opacity=op; TXT.g.setAttribute("opacity", tg==null?1:tg);
-  S.youDoSeen=true; save();
 }
 /* "say" (Lessons 9+): the teacher says a line and nobody answers (red border, like a model). Two uses. Her reply in a
    conversation ("Ça va bien, merci." after the learner's "Ça va ?"). And a command to a pictured person, "Arrête." to
@@ -4107,7 +4595,8 @@ async function presentModel(m){
   if(m.introOnly && S.introSeen) return;
   await thingGoes(m); await setPortraits(m.scene); itemStart(m); await convIntro(m);
   if(m.gen){ if(goldThingOf(m)) await goldClear(m.at);
-    if(m.qIntro && !S.qIntroSeen) await presentQIntro(m); else await presentGenModel(m);
+    if(m.qIntro && !S.qIntroSeen) await presentQIntro(m);
+    await presentGenModel(m);
     await litStill();      // (.59) the lit card goes still after the answer, once a whole loop has been seen
     const end=performance.now(), gap=m.pauseAfterMs>0 ? m.pauseAfterMs : COUNT_GAP;
     if(gap>COUNT_GAP){ await sleep(gap-GOLD_BLINK); trace("pause after the model: "+gap+" ms"); }      // the border stays on its card
@@ -4124,9 +4613,8 @@ async function presentModel(m){
     for(let i=0;i<m.units.length;i++){ await pointAt("s"+i); await say(m.units[i]); await sleep(120); }
   } else if(m.intro && !S.introSeen){
     await presentIntro(m);
-  } else if(m.qIntro && !S.qIntroSeen){
-    await presentQIntro(m);
   } else if(m.questionUnits.length){           // the teacher asks her own question and answers it
+    if(m.qIntro && !S.qIntroSeen) await presentQIntro(m);      // the first of the course: its card first
     ph("model: question and answer");
     await gestureEar(); await say(PHR.amoi);
     await pointAt(m); await say(m.questionUnits); await sleep(300); await sayAnswer(m);
@@ -4141,8 +4629,25 @@ async function presentModel(m){
    does, shown by the on-screen learner, in the formats of the exercise that follows. Red border: listen only. ("Avec moi",
    saying it with the teacher, was shown here until .23; taken out with every lead of the app's own, Jon, 11 Nov 2026.) "Répète": say it once,
    alone. "Vas-y" and the teacher points: say the name. Last: the learner only speaks when the border is green. */
+/* (16 Nov) The introduction is a card ("How a lesson works": the red and the green frame, "Répète", speak clearly, the phone flat, the
+   cross), its pictures drawn by the page; its button starts the lesson (the start screen that came after the demonstration is gone).
+   INTRO_DEMO: the demonstration after it, as before but with no narrator (the learner seen from behind, who listens on red and says
+   the name on green). Off: the card's pictures show it, and Pierre and Sylvie show it in the course straight after. */
+const INTRO_DEMO=false;
 async function presentIntro(m){
-  ph("introduction"); await setScene("class");
+  ph("introduction");
+  await explain(["intro"], {it:m});
+  if(INTRO_DEMO){ await setScene("class");
+    await gestureEar(); await say(PHR.amoi); await pointAt(m); await sleep(250); await multipleModels(m, 3, true); rest(); await sleep(400);
+    ph("introduction: repeat");
+    await gesturePalm(m); await pointAt(m); await sleep(300); await say(repeatCue(m.target));
+    await untilSignal(); glow(true); await sleep(200); await say(answerUnits(m), "group"); glow(false);
+    rest(); await sleep(300); await setScene("one"); }
+  S.introSeen=true; save();
+  ph("after the introduction: your turn");
+}
+async function presentIntro_narrated(m){      // (the narrator's version, kept for the record until the cards are adopted: delete.txt)
+  await setScene("class");
   await narrate("watch");
   await narrate("red");
   await gestureEar(); await say(PHR.amoi); await pointAt(m); await sleep(250); await multipleModels(m, 3, true); rest(); await sleep(400);
@@ -4161,10 +4666,15 @@ async function presentIntro(m){
   ph("after the introduction: your turn");
   const waitTap = afterDemoScreen(); narrate("yourturn"); await waitTap;   // "Speak clearly and loudly" on screen and spoken
 }
-// The first question ever (C'est qui ?): the teacher asks it and answers it herself; asked again, the on-screen learner
-// says only the answer. Shown once, the first time a question appears.
+// The first question ever (C'est qui ?): the teacher asks it and answers it herself. Since 16 Nov its card comes first ("Say only the
+// answer"), then the model as any other (until then the narrator, and a learner seen from behind who said only the answer). Once.
 async function presentQIntro(m){
-  ph("question introduction"); await setScene("class");
+  ph("question introduction");
+  await explain(["q"], {it:m});
+  S.qIntroSeen=true; save();
+}
+async function presentQIntro_narrated(m){      // (the narrator's version, kept for the record until the cards are adopted: delete.txt)
+  await setScene("class");
   await narrate("q_a");
   await gestureEar(); await say(PHR.amoi); await pointAt(m); await say(m.questionUnits); await sleep(300); await sayAnswer(m); rest(); await sleep(400);
   await narrate("q_b");
@@ -4220,7 +4730,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   curCue = (t.questionUnits||[]).join(" "); KEEP_THIS = Array.isArray(t.soundPair) && ["le|les","la|les","des|deux"].includes(t.soundPair.map(x=>String(x).toLowerCase()).sort().join("|"));      // the recording of a le / les, la / les, deux / des answer is always kept (ruled on by ear)
   let r = await askAndListen(t, expect, think, t.alsoOk||[], cued);
   if(r.status==="silence" || r.status==="echo"){   // once more, unscored, in case the microphone failed or heard only the app
-    if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; rest(); await narrate("swamped"); }      // before asking again: the learner can put the phone down
+    if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; await explain(["swamped"]); }      // before asking again: the learner can put the phone down
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, result:(r.status==="echo"?"only the app's own words heard":"silence")+" (repeated, unscored)", heard:r.heard.slice(0,6), ...lx(r), delayed:!!ctx.delayedRec});
     r = await askAndListen(t, expect, think, t.alsoOk||[]);
   }
@@ -4276,7 +4786,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   /* The learner spoke (the recording has speech) but the recogniser returned nothing, twice: a listening fault, not the
      learner's error (Jon 9 Nov: "un" said exactly as the teacher said it, rejected every time). Not scored, not corrected:
      the teacher says the answer and the lesson goes on; the recording is kept so the listener can be trained on it. */
-  if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; rest(); await narrate("swamped"); }      // "Put your phone on a flat surface. The microphone is picking up a loud noise."
+  if(r.swamped && !ctx.swampSaid){ ctx.swampSaid=true; await explain(["swamped"]); }      // "Put your phone on a flat surface. The microphone is picking up a loud noise."
   if(r.status==="silence" && r.speech){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
               result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
@@ -4564,7 +5074,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       hadError=true; scheduleDelayed(part, anchor, it.id);
       /* The learner said the question back: that is not a wrong French answer but not knowing what is asked for. The
          narrator (English, as in the introduction) says so once, then the usual correction follows. */
-      if(lastRepeatedCue){ lastRepeatedCue=false; rest(); await narrate("onlyanswer"); }
+      if(lastRepeatedCue){ lastRepeatedCue=false; await explain(["onlyanswer"]); }      // (16 Nov: a card, "Just the answer")
 
       if(firstOfItem){
         /* a brand-new item that failed at its first test. Until .23: three models, a lead and the test, and after a right
@@ -4621,7 +5131,8 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
 }
 async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
-  ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
+  await unitReady(ex);      // (speed, stage 2) its clips are on the phone (a short loading screen if they are not)
+  ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null}; checkHide();      // the next exercise begins: a check's label goes
   BOARD_EX=ex.id; textHide();      // (.28) a new exercise: whatever was written goes; only this exercise's board can come up
   /* (next) a board of four lines at full letter size needs room over Marie's head: in an exercise that has one, a row of one or two cards is
      drawn a little lower in height (166 for 190), and the board starts higher. Places in the row and what is shown do not change. */
@@ -4681,11 +5192,13 @@ function r4cFor(lesson){
 // an exercise of an earlier lesson, presented in full where it is carried to (R4c); the learner's place stays where it is
 async function runCarried(id, anchor){
   const L=LESSONS.find(l=>l.exercises.some(e=>e.id===id)), ex=L && L.exercises.find(e=>e.id===id); if(!ex) return null;
+  await unitReady(ex);      // (speed, stage 2)
   ctx={lesson:L.id, ex:ex.id, exKey:ex.id, delayedRec:{key:ex.id+" (R4c)", r4c:true}, part:null};
   BOARD_EX=ex.id; textHide();
   BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
   curSceneKey=null;
   trace("R4c: "+ex.id+" again (not firm in "+L.id+")");
+  await checkShow(L.id, ex.id, null, "R4c");
   return await exerciseRuns(ex, anchor);
 }
 async function runR4c(lesson){
@@ -4700,6 +5213,7 @@ async function runR4c(lesson){
 async function runDelayed(d, anchor){
   const lesson=LESSONS.find(l=>l.id===d.lesson); const ex=lesson && lesson.exercises.find(e=>e.id===d.ex);
   const part=ex && ex.parts.find(p=>p.id===d.part); if(!part){ S.delayed=S.delayed.filter(x=>x!==d); save(); return; }
+  await unitReady(ex);      // (speed, stage 2)
   /* (.43) only the tasks that are still what they were when the error was made (see load): a task whose id now names another
      task, or no task, is taken out; a delayed test with none left is dropped, with nothing shown */
   if(d.tasks && d.sig){ const gone=d.tasks.filter(id=>d.sig[id] && !part.items.some(x=>x.id===id && x.type==="task" && taskSig(x)===d.sig[id]));
@@ -4712,6 +5226,7 @@ async function runDelayed(d, anchor){
   BOARD_EX="(a delayed test)"; textHide();
   curSceneKey=null;
   trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
+  await checkShow(d.lesson, d.ex, d.part);      // (16 Nov) the label "From Lesson 4" over the stage (the first time, its card)
   const hadError = await runParts([part], {run: (d.tasks && d.tasks.length) ? {only:new Set(d.tasks)} : "test", anchor});
   if(!hadError){ d.passed=(d.passed||0)+1; if(d.passed>=2) S.delayed=S.delayed.filter(x=>x!==d); }
   save();
@@ -4747,7 +5262,7 @@ async function main(){
   await endScreen();
 }
 async function endScreen(){
-  rest();
+  rest(); checkHide();
   document.getElementById("tick").style.opacity=1;
   await ding(true);
   await sleep(1200);
@@ -4912,7 +5427,7 @@ function courseGrammar(expect){
     base = base.filter(p=>p.split(" ").every(w=>NUMW.has(w))); }
   const own = (expect||[]).length ? norm(phraseOf(expect)) : "";
   if(own && !frag_(own)) { base=base.concat([own]); const w=own.split(" "); if(w.length<=2) base=base.concat(w.filter(x=>x!=="je" && x!=="m'appelle")); }
-  return JSON.stringify([...new Set(base.concat(extra))].concat(["[unk]"]));
+  return JSON.stringify([...new Set(base.concat(extra, FILLERS_HEARD))].concat(["[unk]"]));      // (.72) fillers: see FILLERS_HEARD
 }
 /* (speed, 16 Nov; QA 7b.2) vosk.js (5.8 MB, most of it its worker as text) was a script of the page, read before the page's own script. It is
    now fetched when the listener is started, and the listener is started when the first screen is on the glass: its work is in a worker,
@@ -4967,7 +5482,7 @@ async function startVosk(){
 startVosk();
 /* the rest of the teacher's clips, and the service worker's own copy of every voice, once the listener is there (or has failed, or is
    no longer waited for: the watchdog) and the lesson's own clips are in: on a first start they no longer share the link with either */
-HEAR.over.then(()=>FIRST_SCREEN).then(()=>LESSON_SET.indexes()).then(()=>LESSON_SET.ready||lessonAhead()).then(()=>{ teacherRest();
+HEAR.over.then(()=>FIRST_SCREEN).then(()=>LESSON_SET.indexes()).then(()=>LESSON_SET.ready||lessonAhead()).then(()=>{      // (speed, stage 2) the other lessons' clips are no longer read into the page (teacherRest): the worker keeps them, a run reads what it needs
   try{ navigator.serviceWorker && navigator.serviceWorker.ready.then(reg=>{ reg.active && reg.active.postMessage("voices"); }).catch(()=>{}); }catch(e){} });
 // ask the browser to keep saved answers (audio) even when the phone is short of space
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist().then(ok=>trace("storage kept: "+ok)); }catch(e){}
@@ -4996,7 +5511,7 @@ document.getElementById("playBtn").onclick=async ()=>{
   }
   lessonTag(); UI.progStart(lesson);
   CLIPS.on=true;      // (speed) from here on a clip asked of the site is a fault in the trace
-  try{ await main(); } finally { running=false; CLIPS.on=false; }
+  try{ await main(); } finally { running=false; CLIPS.on=false; whenIdle(()=>{ LESSON_SET.ready=lessonAhead(); }); }      // (speed, stage 2) the next run's plan, read in on Home
 };
 
 /* ============================================================
