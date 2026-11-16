@@ -1698,7 +1698,8 @@ function frame(k, B, cam, c, floor, o){
   const mixE = (A, Bq, t, bulge) => { const E = { c: [A.c[0] + (Bq.c[0] - A.c[0]) * t, A.c[1] + (Bq.c[1] - A.c[1]) * t], a: (A.a + (Bq.a - A.a) * t) * bulge, b: A.b + (Bq.b - A.b) * t, th: A.th + (Bq.th - A.th) * t }; E.n = 26; return E; };
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
   const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = doBody ? trunkFn(0, 0, 0) : "";
-  const trunkL = form(trunkFn, T, 0.03 * S);
+  const BUST = !!(o && o.bust) && !WD;                      // (a head-and-shoulders portrait, arms hanging: the sleeves fall from the shoulders as part of the jumper, see the arms)
+  const trunkL = form(trunkFn, T, 0.03 * S, false, BUST);
   const trunkUp = () => { let d = ""; for (let i = 1; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], 0, 0, 0); return d + hullOf([Ech, EsL, EsR, Enb], 0, 0, 0); };      // (the teacher: the arms' shadow kept off the hem, where it showed as a dark point under the cuff)
   if (doBody){
   parts.push({ id: "trunk", z: zt, mat: "top", layers: trunkL });
@@ -1711,7 +1712,7 @@ function frame(k, B, cam, c, floor, o){
   if (part === "body"){ const ct = Math.cos(Ehm.th), st = Math.sin(Ehm.th), q = [Ehm.c[0] - Ehm.a * ct - 0.004 * S, Ehm.c[1] - Ehm.a * st - 0.02 * S];      // (the teacher: the hem's near corner in the lit tone, where the lit shape, drawn smaller, left a dark point)
     parts.push({ id: "hemC", z: zt + 0.00015, tag: "clip", clip: trunkD, d: ellPath({ c: q, a: 0.03 * S, b: 0.05 * S, th: 0 }, 0, 0, 0), fill: T.n[0] }); }
   if (!(WD && WD.noRib)) parts.push({ id: "rib", z: zt + 0.0003, mat: "rib", layers: [[band(Ehm, 0.03 * S), T.rib]] });
-  if (WD) parts.push({ id: "tkc", z: zt, tag: "cp", d: trunkD }, { id: "tkl", z: zt, tag: "cp", d: trunkL[2][0] });
+  if (WD) parts.push({ id: "tkc", z: zt, tag: "cp", d: trunkD }, { id: "tkl", z: zt, tag: "cp", d: trunkL[trunkL.length - 1][0] });
   if (c.fem && !c.kid && B.chest[0] * S > 10 && dot(J.Bc.z, cam.view) > 0.5){      // (large, and the chest toward the viewer: see wearer())
     const Bc = J.Bc, on = (x, y, zk) => P(at(J.chest, Bc, [x, y, B.chest[2] * zk])), cv = on(0, B.chest[1] * 0.42, 0.95), cs0 = on(0, -B.chest[1] * 0.05, 0.9), cs1 = P(lerp(J.root, J.chest, 0.15));
     const Ev = ellipse(cv, [cam.lin(mul(Bc.x, B.chest[0] * 1.05)), cam.lin(mul(Bc.y, B.chest[1] * 0.6)), [0, 0, 0]]), wS = B.chest[0] * S * 1.3;
@@ -1753,7 +1754,7 @@ function frame(k, B, cam, c, floor, o){
      rounds with the dark of the jumper between them. Her LAP is one surface: the space between the knees filled in the lit tone of the
      trousers (drawn over both knees, from just under their tops), so the two knees are one lap with the hem resting on it, and a soft
      fold where they meet) */
-  if (B.key === "tutor" && part === "body" && lapQ.L && lapQ.R && !(WD && WD.skirt)){
+  if (B.key === "tutor" && B.lap && part === "body" && lapQ.L && lapQ.R && !(WD && WD.skirt)){
     const dk = (q, k, dy) => { const D = disc([q[0], q[1] + (dy || 0)], q[2] * k); D.n = 20; return D; }, L = lapQ.L, R = lapQ.R, lk = B.lapK == null ? 0.78 : B.lapK, zz = Math.max(L.z, R.z) + 0.0002;
     const lap = hullOf([dk(L[1], lk), dk(R[1], lk), dk(L[2], lk), dk(R[2], lk)], 0, 0, 0), mx = (L[2][0] + R[2][0]) / 2, my = Math.max(L[2][1], R[2][1]) + Math.min(L[2][2], R[2][2]) * 0.7;
     const ct = Math.cos(Ehm.th), st = Math.sin(Ehm.th), lo = []; for (let i = 0; i <= 20; i++){ const t = i / 20 * Math.PI, x = (Ehm.a + 0.4) * Math.cos(t), y = (Ehm.b + 0.4) * Math.sin(t); lo.push([Ehm.c[0] + x * ct - y * st, Ehm.c[1] + x * st + y * ct]); }
@@ -1776,6 +1777,7 @@ function frame(k, B, cam, c, floor, o){
       parts.push({ id: "ak" + s, z: (zu + zf) / 2, mat: "askin" + s + (far ? "f" : "n"), layers: form(sweep(Q, 1, 7), sk, e, far, true) });
       parts.push({ id: "sl" + s, z: Math.max(zu, (zu + zf) / 2) + 0.0002, mat: "sleeve" + s + (farU ? "f" : "n"), layers: form(slf, T, e, farU, true) });
       if (!far) parts.push({ id: "slb" + s, z: Math.max(zu, (zu + zf) / 2) + 0.0003, mat: "slb" + s, layers: [[capsule(q1[0], q1[1], r1 * 0.98, q1[0] + (q1[0] - q0[0]) * 0.06, q1[1] + (q1[1] - q0[1]) * 0.06, r1 * 0.98), T.rib]] }); }
+    else if (BUST) parts.push({ id: "ar" + s, z: zt - 0.0025, mat: mat + "n", layers: form(withY(swA), T, e, false, true) });      // (behind the jumper's body: only the sleeve's outer side shows, no tube beside the trunk)
     else if (farU === far && (zu > zt) === (zf > zt)) parts.push({ id: "ar" + s, z: (zu + zf) / 2, mat: mat + (far ? "f" : "n"), layers: form(withY(swA), T, e, far, true) });
     else { parts.push({ id: "ua" + s, z: zu, mat: mat + (farU ? "f" : "n"), layers: form(withY(swU), T, e, farU, true) }); parts.push({ id: "fa" + s, z: zf, mat: mat + (far ? "f" : "n"), layers: form(sweep(Q, 3, 7), T, e, far, true) }); }
     const kz = z => Math.max(1, Math.min(3.2, 1 + (z - zt - 0.03) / 0.035));          // a part held well out from the body throws its shadow further from itself
@@ -1978,11 +1980,11 @@ function person(sp){ sp = Object.assign({}, AV_DEFAULT, typeof sp === "string" ?
 /* FIG.bust(c, o): the head and shoulders of a person (c: traits) in the 160 x 190 box, turned a little as the portraits are (o.yaw), the head
    o.head units high about y = o.cy, a small smile (o.smile) */
 function bustOf(c, o){ o = o || {}; const B = bodyOf(c, o), k = (o.head || 78) / (2 * B.hh * B.H);
-  return act("stand", c, { still: true, legs: o.legs || c.legs, k, y: (o.cy || 90) + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: o.smile == null ? 0.5 : o.smile, yaw: o.yaw == null ? -12 : o.yaw, heads: o.heads }); }
+  return act("stand", c, { still: true, legs: o.legs || c.legs, k, y: (o.cy || 90) + (0.842 + 0.74 * B.hh) * B.H * k, bare: true, smile: o.smile == null ? 0.5 : o.smile, yaw: o.yaw == null ? -12 : o.yaw, heads: o.heads, bust: true }); }
 /* FIG.avatar(spec, o): o.view "portrait" (head and shoulders) | "standing" | "doing" (o.doing: an action; o.still: its frozen frame) */
 function avatar(sp, o, c0){ o = o || {}; const c = c0 || person(sp), B = bodyOf(c, o);
   if (o.view === "portrait"){ const heads = o.heads || (c.kid ? null : c.teen ? 5 : 5.6), Bp = bodyOf(c, { heads }), k = 78 / (2 * Bp.hh * Bp.H);      // (head and shoulders: an adult's shoulders against the head, as the course's portraits; a teenager's between)
-    return act("stand", c, { still: true, legs: c.legs, k, y: 90 + (0.842 + 0.74 * Bp.hh) * Bp.H * k, bare: true, smile: 0.5, yaw: o.yaw == null ? -12 : o.yaw, heads }); }
+    return act("stand", c, { still: true, legs: c.legs, k, y: 90 + (0.842 + 0.74 * Bp.hh) * Bp.H * k, bare: true, smile: 0.5, yaw: o.yaw == null ? -12 : o.yaw, heads, bust: true }); }
   if (o.view === "doing" && CLIPS[o.doing]) return act(o.doing, c, { still: !!o.still, legs: c.legs, k: o.k || (o.doing === "jump" ? 0.88 : 1), ox: o.doing === "run" || o.doing === "walk" ? -2 : 0, yaw: o.yaw, phase: o.phase });
   return act("stand", c, { still: true, legs: c.legs, k: o.k || 1, smile: 0.5, yaw: o.yaw }); }
 /* ---------- the wardrobe: what the learner buys with tokens and wears outside the lessons (home, You, the wardrobe, celebrations) ----------
@@ -2077,10 +2079,10 @@ function hatParts(h, H){
   }
   else if (h.kind === "straw" || h.kind === "mime" || h.kind === "toque" || h.kind === "musk"){
     /* a crown standing on the head (a short cylinder, or the chef's tall pleated one), a flat brim round it, a band */
-    const T = { straw: { y: 0.58, r: 0.92, hgt: 0.5, brim: 1.62, top: 1 }, mime: { y: 0.46, r: 0.8, hgt: 0.86, brim: 1.12, top: 0.94 }, toque: { y: 0.42, r: 0.93, hgt: 1.5, brim: 0, top: 1.34 }, musk: { y: 0.42, r: 0.92, hgt: 0.62, brim: 1.7, top: 0.86 } }[h.kind];
+    const T = { straw: { y: 0.58, r: 0.92, hgt: 0.5, brim: 1.62, top: 1 }, mime: { y: 0.46, r: 0.8, hgt: 0.86, brim: 1.12, top: 0.94 }, toque: { y: 0.42, r: 0.93, hgt: 1.5, brim: 0, top: 1.34 }, musk: { y: 0.42, r: 0.92, hgt: 0.62, brim: 1.5, top: 0.86, fb: 0.86 } }[h.kind];      // (T4: the musketeer's brim narrower, and shorter front to back: it was very large seen from the side)
     const cy = T.y * hg, c0 = [0, cy, -0.04], tilt = h.kind === "musk" ? [0.16, 0.05] : h.kind === "mime" ? [-0.08, 0.04] : null;
     const bot = ringPts(H, c0, T.r * hg, T.r * hg * 1.04, 28), topR = ringPts(H, [c0[0], cy + T.hgt, c0[2]], T.r * hg * T.top, T.r * hg * T.top * 1.04, 28, h.kind === "mime" ? [0.12, -0.08] : null);
-    if (T.brim){ const br = ringPts(H, [0, cy - 0.02, -0.04], T.brim * hg, T.brim * hg * 1.08, 40, tilt), bd = ptsD(br), bq = br.reduce((a, p) => [a[0] + p[0] / br.length, a[1] + p[1] / br.length], [0, 0]);
+    if (T.brim){ const br = ringPts(H, [0, cy - 0.02, -0.04], T.brim * hg, T.brim * hg * (T.fb || 1.08), 40, tilt), bd = ptsD(br), bq = br.reduce((a, p) => [a[0] + p[0] / br.length, a[1] + p[1] / br.length], [0, 0]);
       const inner = ptsD(br.map(p => [bq[0] + (p[0] - bq[0]) * 0.93 + LIGHT[0] * e * 0.6, bq[1] + (p[1] - bq[1]) * 0.9 + LIGHT[1] * e * 0.6]));
       out.push({ id: "hbR", z: zH, mat: "hbR", layers: [[bd, M.n[1]], [inner, M.n[0]]] });
       if (h.kind === "straw"){ let wv = ""; for (const k of [0.62, 0.78]) wv += ptsD(br.map(p => [bq[0] + (p[0] - bq[0]) * k, bq[1] + (p[1] - bq[1]) * k])); out.push({ id: "hbW", z: zH + 0.00001, mat: "hbW", stroke: [wv, mixc(M.n[1], M.n[0], 0.3), f2(Math.max(0.3, 0.02 * px))] }); }
@@ -2256,13 +2258,19 @@ const croissant = X => { const { J, B, P, S, cam } = X, Bc = J.Bc, M = material(
   out.push({ id: "crsC", z: zc + 0.00002, mat: "crsC", stroke: [cr, "#94561f", f2(Math.max(0.6, 0.009 * S))] }, { id: "crsG", z: zc + 0.00003, mat: "crsG", stroke: [gl, "rgba(255,240,205,.75)", f2(Math.max(0.6, 0.012 * S))] });
   return out; };
 /* the Eiffel Tower worn: a lattice of iron from the shoulders, its legs flaring to an arch round the knees, two platforms; lights that twinkle */
-const eiffel = X => { const { J, B, P, S, cam } = X, Bc = J.Bc, Bp = J.Bp, M = WM.iron, top = at(J.chest, Bc, [0, B.sy + 0.02, 0.0]), out = [], gy = lowestY(J);
+const eiffel = X => { const { J, B, P, S, cam } = X, Bc = J.Bc, Bp = J.Bp, M = WM.iron, top = at(J.chest, Bc, [0, B.sy + 0.02, 0.0]), out = [], gy0 = lowestY(J);
+  /* (T4) the costume hangs from the shoulders and goes with the body: its axis is the trunk's (it leans in the run), and when the legs
+     stride (walk, run, dance) its foot rises toward the knees, so the legs move under it instead of poking out through its sides; standing
+     still it reaches the ground as the tower does */
+  const fwd = nrm([Bp.z[0], 0, Bp.z[2]]), stride = Math.abs(dot(sub(J.ftL.ball, J.ftR.ball), fwd)) + Math.max(0, Math.abs(J.ftL.ball[1] - J.ftR.ball[1]) - 0.02) * 2;
+  const kneeY = Math.min(J.knL[1], J.knR[1]), fS = Math.max(0, Math.min(1, (stride - 0.12) / 0.25)), gy = gy0 + (Math.max(gy0, kneeY - 0.06) - gy0) * fS;
+  const a0 = nrm(sub(J.root, top)), ax = nrm([a0[0] * 0.35, -1, a0[2] * 0.35]), lean = add(top, mul(ax, (top[1] - gy) / Math.max(0.6, -ax[1]))), along = y => { const t = (top[1] - y) / Math.max(1e-6, top[1] - gy); return [top[0] + (lean[0] - top[0]) * t, y, top[2] + (lean[2] - top[2]) * t]; };
   const w = (y, k) => [0.09 + 0.17 * Math.pow(1 - (y - gy) / (top[1] - gy), 2.2), 0.08 + 0.12 * Math.pow(1 - (y - gy) / (top[1] - gy), 2.2)];
-  const ring = (y, k) => { const c2 = [J.root[0], y, J.root[2]], W2 = w(y); return [-1, 1].flatMap(sx => [-1, 1].map(sz => P(add(c2, add(mul(nrm([Bp.x[0], 0, Bp.x[2]]), sx * W2[0]), mul(nrm([Bp.z[0], 0, Bp.z[2]]), sz * W2[1])))))); };
+  const ring = (y, k) => { const c2 = along(y), W2 = w(y); return [-1, 1].flatMap(sx => [-1, 1].map(sz => P(add(c2, add(mul(nrm([Bp.x[0], 0, Bp.x[2]]), sx * W2[0]), mul(nrm([Bp.z[0], 0, Bp.z[2]]), sz * W2[1])))))); };
   const ys = []; for (let i = 0; i <= 8; i++) ys.push(gy + 0.05 + (top[1] - gy - 0.05) * i / 8);
   const sil = poly(hull(ys.flatMap(y => ring(y).map(p => [p[0], p[1]])))), zz = X.zt + 0.0003;
   /* the arch between the legs (cut out of the outline: the legs show through it) */
-  const ac = P([J.root[0], gy + 0.05, J.root[2]]), aw = w(gy + 0.05)[0] * S * 0.62, ah = (ys[3] - gy) * S * 0.9;
+  const ac = P(along(gy + 0.05)), aw = w(gy + 0.05)[0] * S * 0.62, ah = (ys[3] - gy) * S * 0.9;
   const fill = `<path d="${sil}M${f1(ac[0] - aw)} ${f1(ac[1] + 2)}Q${f1(ac[0])} ${f1(ac[1] - ah * 1.6)} ${f1(ac[0] + aw)} ${f1(ac[1] + 2)}Z" fill-rule="evenodd" fill="${M.n[1]}"/>`;
   let lat = ""; for (let i = 0; i < 8; i++){ const A = ring(ys[i]), Bq = ring(ys[i + 1]), fr = [A[0], A[2], Bq[0], Bq[2]].map(p => p); lat += `M${f1(A[1][0])} ${f1(A[1][1])}L${f1(Bq[3][0])} ${f1(Bq[3][1])}M${f1(A[3][0])} ${f1(A[3][1])}L${f1(Bq[1][0])} ${f1(Bq[1][1])}`; }
   const pl = i => { const A = ring(ys[i]); return `M${f1(Math.min(...A.map(p => p[0])) - 2)} ${f1((A[1][1] + A[3][1]) / 2)}H${f1(Math.max(...A.map(p => p[0])) + 2)}`; };
@@ -2451,10 +2459,7 @@ function wardrobeThumb0(id, sp, opt){ const it = WARD[id], v = THUMB_VIEW[it.slo
   else if (v === "whole"){ const f = avatarW(S, { view: "standing", wear, noShine: 1 }); put(f, "translate(80 184) scale(1.1) translate(-80 -174)"); }
   else if (v === "pose"){ const f = avatarW(S, { view: "standing", wear, noShine: 1 }); put(f, "translate(80 180) scale(1.0) translate(-80 -172)"); }
   else if (opt.live){ const f = avatarW(S, { view: "celebrate", wear, noShine: 1 }); put(f, "translate(80 184) scale(1) translate(-80 -176)"); }
-  else { const fr = 8, C = clipOf(id), dur = C.dur; let s = "";      // (the first frame shown, and the one a still copy shows, is the dance's own card frame)
-    for (let i = 0; i < fr; i++){ const f = avatarW(S, { view: "celebrate", wear, still: true, phase: (C.still + i / fr) % 1, noShine: 1 }), vals = Array.from({ length: fr }, (_, j) => j === i ? "visible" : "hidden").join(";");
-      s += `<g visibility="${i ? "hidden" : "visible"}"><animate attributeName="visibility" values="${vals}" calcMode="discrete" dur="${f2(dur)}s" repeatCount="indefinite"/>${f.innerHTML}</g>`; }
-    const h = mk(s); h.setAttribute("transform", "translate(80 184) scale(1) translate(-80 -176)"); g.appendChild(h); }
+  else { const C = clipOf(id), f = avatarW(S, { view: "celebrate", wear, still: true, phase: ({ bow: 0.25 })[id] != null ? ({ bow: 0.25 })[id] : C.still % 1, noShine: 1 }); put(f, "translate(80 184) scale(1) translate(-80 -176)"); }      // (T4: in the grid a dance is ONE still frame, its card frame (the bow: the bend on the way down, the deepest point read as a fall): the 8-frame flip book was ~260 KB of markup each; the item's own sheet asks {live: true} and plays the loop)
   if (it.tier === "costume" || it.tier === "wild") { const f = mk(sparkles([[132, 30, 5, 0.4], [30, 52, 4, 1.4]], "#ffffff", 3)); while (f.firstChild) g.appendChild(f.firstChild); }
   return g; }
 /* ---------- the close-ups: smiling, not smiling, eating, drinking, sleeping, singing, reading, writing ----------
@@ -2651,13 +2656,13 @@ function closeUp(name, c, o){
      rig.blink()                one blink; she also blinks by herself when nothing is being said or shown (o.autoBlink false: never)
      rig.still(on)              on: no blink and no breath until it is turned off (for the page to hold her still through a cue) */
 const TUT0 = { sw: 44, chest: 0.9, waist: 0.72, hip: 1.0, rSh: 0.9, sy: 0.08, nb: 0.15, shY: 440, mouthY: 385, arm: 0.78, pwk: 0.21, elOut: 0.3, nkY: 1.6, nkV: 1.0, castK: 0.5, legK: 0.86, nkDy: 0, tagX: 0.014, bust: 0, bustX: 0.043, bustY: 0.05, chairUp: 0.16, fwd: 0.4, palmHd: [0.55, -0.2, 0.8], palmPn: [-0.15, 0.85, 0.45], palmOut: 16, palmK: 1.2, smW: 2, smH: 2.2, smLift: 1.8, smLid: 0.03, lid: 0.018, tagY: 0.079, selfDy: 24, chestDx: -10, chestDy: -14, chestRot: -112, rNeck: 0.9, chairCol: ["#b0a291", "#857767"],
-  legs: [[-0.07, -0.13, 0.99, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.07, -0.13, 0.99, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };
+  legs: [[-0.13, -0.13, 0.98, 0.02, -0.98, -0.18, 0.06, -0.3, 0.95], [-0.13, -0.13, 0.98, -0.01, -0.99, 0.04, 0.04, -0.3, 0.95]] };      // (T4: the thighs turned in a little more, -0.07 -> -0.13: the knees touch, one lap, not two separate rounds)
 function tutor(c, o){
   o = o || {}; const TUT = Object.assign({}, TUT0, o.tut);
   const u = "tu" + (seq++) + "_", SEAT = clipOf("seat"), SWAY = clipOf("sway"); let B = Object.assign({}, build(c.fem === false ? "man" : "teacher", 6, 1), { key: "tutor", sy: 0.06, nb: 0.112 });        // her shoulders slope from the neck, as shoulders do
   for (const r of ["rUa", "rEl", "rFa"]) B[r] *= TUT.arm;
   const PX = 50.5, S = PX / B.hh; B.sw = TUT.sw / S; B.hand = 57.8 / S;
-  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rKnee *= TUT.kneeK == null ? 1 : TUT.kneeK; B.rTh *= TUT.thK == null ? 1 : TUT.thK; B.hipK = TUT.hipK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
+  B.chest = [B.chest[0] * TUT.chest, B.chest[1], B.chest[2] * 1.04]; B.waist = [B.waist[0] * TUT.waist, B.waist[1], B.waist[2] * 1.04]; B.hem = [B.hem[0] * (TUT.hip == null ? TUT.waist : TUT.hip), B.hem[1], B.hem[2]]; B.pwk = TUT.pwk; B.lap = TUT.lap; B.lapK = TUT.lapK; B.nkY = TUT.nkY; B.nkV = TUT.nkV; B.nkDy = TUT.nkDy; B.castK = TUT.castK; for (const r of ["rHip", "rTh", "rKnee", "rCalf", "rCuff"]) B[r] *= TUT.legK; B.rKnee *= TUT.kneeK == null ? 1 : TUT.kneeK; B.rTh *= TUT.thK == null ? 1 : TUT.thK; B.hipK = TUT.hipK; B.rSh *= TUT.rSh; B.sy = TUT.sy; B.nb = TUT.nb; B.rNeck *= TUT.rNeck;      // the hand 58 long, as the page's poses expect (the pointing fingertip 55 from the wrist); the shoulders, chest and waist fuller than the woman of the cards (a grown woman's frame on the stage, as the present drawing's)
   const pitch = 7 * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch), now = () => performance.now();
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
   const base = Float32Array.from(SEAT.keys[0]); setv(base, 27, [1, 0, 0]); setv(base, 30, [0, 1, 0.03]);          // the head level, facing the learner
