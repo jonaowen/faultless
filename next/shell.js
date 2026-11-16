@@ -230,7 +230,7 @@ const SHELL = (()=>{
   function ringRows(R, compact){ const tick2=ic("check");
     const day = R.day.n>=2 ? `<b>Goal met${tick2}</b><small class="gold">${ic("star")} Two lessons</small>` : R.day.n>=1 ? `<b>Goal met${tick2}</b>` : `<b>One lesson</b>${compact ? `<small>${R.day.f>0?"under way":"today's goal"}</small>` : ""}`;
     const week = R.week.closed ? `<b>${R.week.n} lesson${R.week.n===1?"":"s"}${tick2}</b><small>Goal met: ${R.week.goal}</small>` : `<b>${R.week.n} of ${R.week.goal} lessons</b>${compact ? `<small>the week's goal</small>` : ""}`;
-    const lvl = R.lvl.top ? `<b>C2</b><small>reached</small>` : `<b>${R.lvl.pct}% to ${R.lvl.id}</b>${compact ? `<small>${R.lvl.done} of ${R.lvl.span} lessons${R.lvl.perf ? ` <em class="gold">· ${R.lvl.perf} perfect</em>` : ""}</small>` : R.lvl.perf ? `<small><em class="gold">${R.lvl.perf} perfect</em></small>` : ""}`;
+    const lvl = R.lvl.top ? `<b>C2</b><small>reached</small>` : `<b>${R.lvl.pct}% to ${R.lvl.id}</b>${compact ? `<small>${R.lvl.done} of ${R.lvl.span} lessons</small>${R.lvl.perf ? `<small><em class="gold">${R.lvl.perf} perfect</em></small>` : ""}` : R.lvl.perf ? `<small><em class="gold">${R.lvl.perf} perfect</em></small>` : ""}`;
     return `<div class="rrows${compact?" c":""}"><div class="rr day"><i></i><div><span>Today</span>${day}</div></div><div class="rr week"><i></i><div><span>This week</span>${week}</div></div><div class="rr lvl"><i></i><div><span>Your French</span>${lvl}</div></div></div>`; }
   // a draw-on from the values last shown (on home, after a lesson) to the values now
   function ringsAnimate(root, from, to){ if(!root) return; const svg=root.querySelector("svg.rings"); if(!svg || lessMotion() || !from) return;

@@ -323,14 +323,14 @@ function traits(spec, variant){
       top: M ? ["#4a6b86", "#36536b"] : COL.green, topName: M ? "slate" : "green", iris: M ? "#5e3f27" : "#4a3524", style: M ? "marie" : "you", beard: false,
       brow: M ? "#4a3326" : "#2a2422", lip: M ? "#c4626a" : "#bf6660", cap: "orange", hat: "felt", band: "#2b2b30", pack: "orange", umb: "yellow", scarf: "mustard",
       coat: "camel", suit: "charcoal", tie: null, glasses: "#26262b", round: false, bag: "mustard" };
-    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "pony", lip: "#c75a64", bow: "#3fa9a3" });
+    if (!M && spec.sex === "f") Object.assign(c, { kind: "woman", style: "youF", lip: "#c75a64", bow: "#3fa9a3" });
     /* (the overhaul) the learner's own figure (PICS.setLearner): "you" is the person the learner made, in every picture. On the new figure
        the whole spec is drawn (c.av); the pictures still on the older drawing take from it what they can show: man or woman, skin, hair
        (its colour and the nearest of their own cuts), eyes, beard, glasses, the colour of the top */
     if (!M && LEARNER){ const A = FIG.person(LEARNER), sp = FIG.specParse(FIG.specString(LEARNER)), tn = FIG.AV.top[Math.min(FIG.AV.top.length - 1, sp.top | 0)];
       Object.assign(c, { kind: A.fem ? "woman" : "man", skin: A.skin, hair: A.hair, top: A.top, topName: tn, iris: A.iris, beard: !!A.beard, brow: A.brow, lip: A.lip, bow: A.bow,
-        style: A.headwear ? (A.fem ? "bun" : "crew") : ({ short: "you", side: "sidepart", crop: "crew", bald: "bald", pony: "pony", long: "long", loose: A.fem ? "marie" : "longM", wavy: "wavy", bob: "bob", tucked: "marie" })[A.style] || (A.fem ? "pony" : "you"), av: A });
-      if (A.glassesOn) L.glasses = 1; }      // "you" as a woman: the same skin, black hair and green top, her hair in a ponytail (Marie's is brown and loose, Sylvie's long and down)
+        style: A.headwear ? (A.fem ? "bun" : "crew") : ({ short: "you", side: "sidepart", crop: "crew", bald: "bald", pony: "pony", long: "long", loose: A.fem ? "marie" : "longM", wavy: "wavy", bob: "bob", tucked: "marie", pixie: "bob", pixieS: "bob" })[A.style] || (A.fem ? "pony" : "you"), av: A });
+      if (A.glassesOn) L.glasses = 1; }      // "you" as a woman: the same skin, black hair and green top, her hair to the shoulder, framing the face (Marie's is brown and tucked behind the ears, Sylvie's long and down; a ponytail hid behind the head seen from the front)
   } else if (spec.person){
     const P = spec.person !== "julie";
     c = { named: P ? "paul" : "julie", kind: P ? "man" : "woman", skin: SKIN[P ? "paul" : "julie"], hair: HAIR[P ? "brown" : "black"],
@@ -407,6 +407,7 @@ function hairOf(style, u, c){
   switch (style){
     case "paul": return { front: `<path d="M47 84 q-2-40 33-42 q35 2 33 42 q-4-14-12-20 q-12 4-24 2 q-12-2-18-6 q-8 8-12 24z" fill="${H}"/>
          <path d="M58 54 q8-6 22-6 M64 50 q10-4 22 0 M72 47 q10-2 20 2" stroke="#8c6545" stroke-width="1.1" fill="none" opacity=".6"/>` };
+    case "youF":       // the learner as a woman (no figure made yet): hair to the shoulder, framing the face (on these older drawings, Marie's cut)
     case "marie": { const T = `transform="translate(80 48) scale(.744) translate(-200 -302)"`;   // the tutor's own hair paths, at the size of these heads
       return { back: `<path ${T} d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="${H}"/>`,
         front: `<path ${T} d="M156 354 q-2-58 44-60 q46 2 44 60 q-4-26-16-38 q-14-6-30-3 q-10 4-22 3 q-6 4-10 12 q-6 10-10 26z" fill="${H}"/>
@@ -1487,20 +1488,26 @@ const STYLE = {
   side:  { v: 0.1, top: 0.1, quiff: 0.14, at: SHORT.map(q => [-q[0], q[1]]).reverse(), flip: -1 },
   crop:  { v: 0.05, top: 0.02, quiff: 0, at: TIGHT },
   kid:   { v: 0.13, top: 0.12, quiff: 0.2, at: SHORT },
-  pony:  { v: 0.06, top: 0.05, quiff: 0.04, at: TIGHT, tail: { a: [0, 0.34, -0.93], len: 1.05, r: [0.25, 0.12] } },
+  pony:  { v: 0.07, top: 0.05, quiff: 0.04, ears: false, at: [[-180, -40], [-140, -36], [-112, -34], [-97, -32], [-86, -30], [-75, -4], [-62, 22], [-36, 38], [0, 42], [36, 38], [62, 22], [75, -4], [86, -30], [97, -32], [112, -34], [140, -36], [180, -40]], tail: { a: [0.36, 0.5, -0.8], len: 1.4, r: [0.3, 0.14] },
+    mass: [{ a: [0.78, 0.3, 0.26], drop: 0.4, r: [0.1, 0.4, 0.12], fwd: 1, lock: [[-0.02, 0, 0.08, 0.08], [0.04, 0.4, 0.07, 0.14], [0.02, 0.8, 0.05, 0.08], [-0.04, 1.0, 0.025, 0.025]] }, { a: [-0.78, 0.3, 0.26], drop: 0.4, r: [0.1, 0.4, 0.12], fwd: 1, lock: [[0.02, 0, 0.08, 0.08], [-0.04, 0.4, 0.07, 0.14], [-0.02, 0.8, 0.05, 0.08], [0.04, 1.0, 0.025, 0.025]] }] },      // (and a lock left loose before each ear, down to the jaw)      // swept back over the ears; tied high at the back and a little to one side, so it shows beside the head from the front
   long:  { v: 0.09, top: 0.05, quiff: 0, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.98, r: [0.9, 1.32, 0.5] }, { a: [0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }, { a: [-0.76, -0.2, -0.08], drop: 0.62, r: [0.19, 0.9, 0.27] }] },
-  loose: { v: 0.1, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.62, r: [0.93, 0.96, 0.52] }, { a: [0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }, { a: [-0.78, -0.2, -0.08], drop: 0.42, r: [0.2, 0.7, 0.28] }] },
+  loose: { v: 0.11, top: 0.06, quiff: 0.05, at: SIDE, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.6, r: [0.97, 0.94, 0.52] }, { a: [0.8, 0.1, -0.06], drop: 0.6, r: [0.2, 0.7, 0.3], fwd: 1, lock: [[0, 0, 0.14, 0.1], [0.03, 0.6, 0.16, 0.2], [0.07, 1.14, 0.2, 0.07]] },
+    { a: [-0.8, 0.1, -0.06], drop: 0.6, r: [0.2, 0.7, 0.3], fwd: 1, lock: [[0, 0, 0.14, 0.1], [-0.03, 0.6, 0.16, 0.2], [-0.07, 1.14, 0.2, 0.07]] }] },      // to the shoulder, falling past the ears as one curtain beside the face (the learner as a woman: framing the face, read as a woman from the front at 80 px)
   wavy:  { v: 0.12, top: 0.06, quiff: 0.04, at: DOWN, ears: false, mass: [{ a: [0, -0.1, -0.3], drop: 0.8, r: [1.02, 1.12, 0.56] }, { a: [0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }, { a: [-0.8, -0.2, -0.08], drop: 0.55, r: [0.24, 0.82, 0.3] }] },
   sylvie: { v: 0.1, top: 0.06, quiff: 0.06, at: [[-180, -52], [-112, -52], [-84, -46], [-68, -22], [-56, 6], [-36, 22], [-10, 28], [20, 38], [46, 26], [62, 2], [74, -30], [88, -48], [112, -52], [180, -52]], ears: false,      // long and straight, a side parting, the forehead framed (Sylvie)
     mass: [{ a: [0, -0.1, -0.3], drop: 1.0, r: [0.9, 1.34, 0.5] }, { a: [0.76, -0.2, -0.06], drop: 0.66, r: [0.19, 0.92, 0.27] }, { a: [-0.76, -0.2, -0.06], drop: 0.66, r: [0.19, 0.92, 0.27] }] },
   tucked: { v: 0.1, top: 0.06, quiff: 0.05, at: [[-180, -52], [-128, -50], [-108, -34], [-97, -2], [-86, -6], [-75, 4], [-60, 16], [-36, 30], [-10, 34], [20, 42], [46, 30], [62, 14], [75, 4], [86, -6], [97, -2], [108, -34], [128, -50], [180, -52]],      // to the shoulder, behind the ears (the teacher on the stage)
     mass: [{ a: [0, -0.1, -0.36], drop: 0.6, r: [0.97, 0.98, 0.5] }] },
-  bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.34, r: [0.97, 0.74, 0.62] }, { a: [0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }, { a: [-0.76, -0.2, -0.06], drop: 0.26, r: [0.2, 0.56, 0.34] }] },
+  pixie: { v: 0.12, top: 0.08, quiff: 0.12, ears: false, at: [[-180, -44], [-140, -40], [-112, -36], [-97, -26], [-86, -20], [-75, 0], [-62, 16], [-40, 22], [-12, 26], [18, 34], [45, 30], [62, 16], [75, 0], [86, -20], [97, -26], [112, -36], [140, -40], [180, -44]],      // a woman's short cut: soft and full, over the tops of the ears, a little longer at the nape, a wisp before each ear
+    mass: [{ a: [0, -0.2, -0.5], drop: 0.12, r: [0.62, 0.36, 0.36] }, { a: [0.8, 0.14, 0.24], drop: 0.3, r: [0.1, 0.3, 0.12], fwd: 1, lock: [[-0.02, 0, 0.09, 0.08], [0.02, 0.32, 0.07, 0.12], [-0.02, 0.56, 0.035, 0.035]] }, { a: [-0.8, 0.14, 0.24], drop: 0.3, r: [0.1, 0.3, 0.12], fwd: 1, lock: [[0.02, 0, 0.09, 0.08], [-0.02, 0.32, 0.07, 0.12], [0.02, 0.56, 0.035, 0.035]] }] },
+  bob:   { v: 0.11, top: 0.05, quiff: 0, at: FRINGE, ears: false, mass: [{ a: [0, -0.1, -0.28], drop: 0.36, r: [0.95, 0.74, 0.6] }, { a: [0.82, 0.1, -0.02], drop: 0.4, r: [0.2, 0.5, 0.3], fwd: 1, lock: [[0, 0, 0.13, 0.1], [-0.02, 0.5, 0.14, 0.16], [-0.12, 0.92, 0.13, 0.07]] },
+    { a: [-0.82, 0.1, -0.02], drop: 0.4, r: [0.2, 0.5, 0.3], fwd: 1, lock: [[0, 0, 0.13, 0.1], [0.02, 0.5, 0.14, 0.16], [0.12, 0.92, 0.13, 0.07]] }] },      // to the jaw, straight, its ends a little in: one curtain from the crown (never ear-muffs)
   scarf: { v: 0.07, top: 0.03, quiff: 0, cloth: true, ears: false, at: [[-180, -62], [-100, -62], [-72, -50], [-58, -12], [-46, 20], [-24, 34], [0, 38], [24, 34], [46, 20], [58, -12], [72, -50], [100, -62], [180, -62]],
     mass: [{ a: [0, -0.2, -0.3], drop: 0.72, r: [0.92, 0.98, 0.52] }, { a: [0, -0.88, 0.06], drop: 0.42, r: [0.84, 0.46, 0.78] }] },
   bald:  { v: 0.02, top: 0, quiff: 0, at: [[-180, -30], [-120, -24], [-97, 6], [-80, 10], [-60, 40], [0, 88], [60, 40], [80, 10], [97, 6], [120, -24], [180, -30]] }
 };
-const HAIR_OF = { you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "tucked", longM: "loose",
+STYLE.pixieS = Object.assign({}, STYLE.pixie, { at: STYLE.pixie.at.map(q => [-q[0], q[1]]).reverse(), flip: -1 });      // (the same, parted on the other side: the avatar's "side-parted" on a woman)
+const HAIR_OF = { youF: "loose", you: "short", paul: "short", sidepart: "side", crew: "crop", old: "crop", curly: "short", kshort: "kid", kcurly: "kid", kcrew: "crop", pony: "pony", kpony: "pony", bun: "pony", marie: "tucked", longM: "loose",
   julie: "sylvie", long: "long", xlong: "long", klong: "long", wavy: "wavy", curlyF: "wavy", bob: "bob", kbob: "bob", kmid: "bob", kpig: "bob", pig: "bob", bald: "bald" };
 /* the edge of the hair at an angle round the head: a smooth curve through the points (Catmull-Rom) */
 function lineAt(L, az){ const a = L.at, n = a.length; let i = 1; while (i < n - 1 && az > a[i][0]) i++;
@@ -1537,8 +1544,12 @@ function head(J, B, cam, c, out, zb){
   const beard = c.beard ? patches(jw0, jwR, -112, 112, 28, 4, () => -90, az => lineAt(BEARD, az), (u, t) => 1.035 + 0.025 * Math.min(1, t * 3)) : "";
   /* hair that hangs: each mass hangs straight down from the head (it keeps to the upright when the head tilts), turned with the head */
   const hx = nrm([Bh.x[0], 0, Bh.x[2]]), hz = [-hx[2], 0, hx[0]], extra = [];
-  (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
-    extra.push({ id: "hm" + i, z: m.a[2] < 0 ? (vl[2] > 0.3 ? Math.min(q[2] - 0.004, cam.pt(J.chest)[2] - 0.006) : q[2] - 0.004) : q[2] + 0.033 /* hair down the back: behind the neck and the shoulders of a head that faces the viewer */, mat: "hm" + i, layers: [[ellPath(E, 0, 0, 0), hr.n[1]], [ellPath(E, -me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
+  (L.mass || []).forEach((m, i) => { const top = at(o, Bh, mul(m.a, hh)), cen = [top[0], top[1] - m.drop * hh, top[2]], q = cam.pt(cen), E0 = ellipse(q, [cam.lin(mul(hx, m.r[0] * hh)), cam.lin([0, m.r[1] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]), me = 0.07 * px;
+    /* a lock (m.lock: [[across, down, half-width, half-height], ...] from where it hangs, across in the head's own sideways direction, down
+       straight down): the outline round those ellipses, so hair can fall as one curtain beside the face and end bluntly */
+    let E = E0; if (m.lock){ E = { lock: m.lock.map(k => { const Ek = ellipse(cam.pt(add(add(top, mul(hx, k[0] * hh)), [0, -k[1] * hh, 0])), [cam.lin(mul(hx, k[2] * hh)), cam.lin([0, k[3] * hh, 0]), cam.lin(mul(hz, m.r[2] * hh))]); Ek.n = 16; return Ek; }) }; }
+    const shape = (g, dx, dy) => E.lock ? hullOf(E.lock, g, dx, dy) : ellPath(E, g, dx, dy);
+    extra.push({ id: "hm" + i, z: m.fwd ? (vl[2] > 0.3 ? z - 0.001 : q[2] - 0.004) /* (hair to the shoulder: in front of the jumper, behind the face) */ : m.a[2] < 0 ? (vl[2] > 0.3 ? Math.min(q[2] - 0.004, cam.pt(J.chest)[2] - 0.006) : q[2] - 0.004) : q[2] + 0.033 /* hair down the back: behind the neck and the shoulders of a head that faces the viewer */, mat: "hm" + i, layers: [[shape(0, 0, 0), hr.n[1]], [shape(-me, LIGHT[0] * me, LIGHT[1] * me), hr.n[0]]] }); });
   if (L.tail){ const t = L.tail, A = at(o, Bh, mul(t.a, hh)), Z = add(add(A, [0, -t.len * hh, 0]), mul(Bh.z, -0.22 * hh)), M = [(A[0] + Z[0]) / 2 - Bh.z[0] * 0.14 * hh, (A[1] + Z[1]) / 2, (A[2] + Z[2]) / 2 - Bh.z[2] * 0.14 * hh];
     const Es = [disc(cam.pt(A), t.r[0] * px), disc(cam.pt(M), t.r[0] * 0.92 * px), disc(cam.pt(Z), t.r[1] * px)]; Es.forEach(E => E.n = 14); const te = 0.05 * px, zq = cam.pt(M)[2];
     extra.push({ id: "tail", z: zq - 0.004, mat: "tail", layers: [[hullOf(Es, 0, 0, 0), hr.n[1]], [hullOf(Es, -te, LIGHT[0] * te, LIGHT[1] * te), hr.n[0]]] });
@@ -1570,7 +1581,7 @@ function head(J, B, cam, c, out, zb){
   const noseArt = `<path d="M-.05 -.2Q-.09 .03 -.11 .15Q-.07 .2 -.01 .19" stroke="${sk.n[1]}" stroke-width=".034" fill="none" opacity=".75" stroke-linecap="round"/><ellipse cx="-.078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/><ellipse cx=".078" cy=".2" rx=".036" ry=".02" fill="#8f5c42" opacity=".5"/>`;
   const nb = cam.pt(at(o, Bh, [0, -0.2 * hh, 0.74 * hh])), nt = cam.pt(at(o, Bh, [0, -0.38 * hh, 0.83 * hh])), nr = 0.075 * px, side = Math.abs(vl[0]) > 0.5;
   const parts = [];
-  parts.push({ id: "earF", z: z - 0.02, mat: "earF", layers: [[farEars, sk.f[0]]] });
+  if (L.ears !== false) parts.push({ id: "earF", z: z - 0.02, mat: "earF", layers: [[farEars, sk.f[0]]] });      // (hair that covers the ears covers the far one too)
   parts.push({ id: "skull", z, mat: "skin", layers: [[skullD, sk.n[2]], [hullOf(skull, -rim / 2, -LIGHT[0] * rim / 2, -LIGHT[1] * rim / 2), sk.n[1]], [hullOf(skull, -e, LIGHT[0] * (e - rim), LIGHT[1] * (e - rim)), sk.n[0]]], cast: (dx, dy) => hullOf(skull, 0, dx, dy) });
   /* the nose stands out of the face: seen from the front it is the colour of the face (its line and nostrils are drawn on it); from the side it is the outline */
   parts.push({ id: "nose", z: z + 0.001, mat: "nose", layers: side ? [[capsule(nb[0], nb[1] + 0.02 * px, nr * 0.6, nt[0] + 0.02 * px, nt[1] + 0.03 * px, nr), sk.n[1]], [capsule(nb[0], nb[1], nr * 0.6, nt[0], nt[1], nr), sk.n[0]]] : [[capsule(nb[0], nb[1], nr * 0.6, nt[0], nt[1], nr), sk.n[0]]] });
@@ -1913,7 +1924,7 @@ const specParse = str => { const a = String(str || "").split("."), sp = Object.a
 const HAIRW = { white: ["#f6f6f3", "#e2e2de", "#bdbdb8"] };
 function person(sp){ sp = Object.assign({}, AV_DEFAULT, typeof sp === "string" ? specParse(sp) : sp);
   const pick = (a, i) => a[Math.min(a.length - 1, Math.max(0, i | 0))], fem = sp.body === "f", hc = pick(AV.hairc, sp.hairc), hair = HAIRW[hc] || HAIR[hc], top = COL[pick(AV.top, sp.top)], skinName = pick(AV.skin, sp.skin), deep = skinName === "brown" || skinName === "dark";
-  return { kid: sp.age === "c", teen: sp.age === "t", fem, old: sp.age === "o", girth: sp.girth, skin: SKIN[skinName], hair, style: pick(AV.hair, sp.hair), top, legs: pick(AV.legs, sp.legs), beard: !!sp.beard && !fem && sp.age !== "c" && sp.age !== "t", face: sp.face, iris: pick(AV.eyes, sp.eyes),
+  return { kid: sp.age === "c", teen: sp.age === "t", fem, old: sp.age === "o", girth: sp.girth, skin: SKIN[skinName], hair, style: fem ? ({ short: "pixie", side: "pixieS" })[pick(AV.hair, sp.hair)] || pick(AV.hair, sp.hair) : pick(AV.hair, sp.hair), top, legs: pick(AV.legs, sp.legs), beard: !!sp.beard && !fem && sp.age !== "c" && sp.age !== "t", face: sp.face, iris: pick(AV.eyes, sp.eyes),
     brow: hc === "grey" || hc === "white" ? "#9a9a94" : hair[2], lip: fem ? (deep ? "#a8404e" : "#cf5266") : (deep ? "#8a4a44" : "#b8645f"), glassesOn: !!sp.glasses, freckles: !!sp.freckles, headwear: sp.head ? "scarf" : "", scarfCol: COL[pick(AV.top, sp.scarf)], bow: "#3fa9a3" }; }
 /* FIG.bust(c, o): the head and shoulders of a person (c: traits) in the 160 x 190 box, turned a little as the portraits are (o.yaw), the head
    o.head units high about y = o.cy, a small smile (o.smile) */
