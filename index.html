@@ -3,113 +3,259 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Faultless French</title>
+<title>Flawless French</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f4f1ea">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#F7F2E8">
+<link rel="preload" href="fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+<link rel="stylesheet" href="brand/splash.css">
 <style>
+/* ============================================================
+   next/: the design language (dev/design/DESIGN_LANGUAGE.md). Tokens first; then the lesson player; then the shell.
+   Nothing here changes what is taught, shown or when: it is how the same things look and answer the finger.
+   ============================================================ */
+@font-face{font-family:"Atkinson Hyperlegible Next";src:url(fonts/atkinson-next-latin.woff2) format("woff2");font-weight:200 800;font-display:block;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Atkinson Hyperlegible Next";src:url(fonts/atkinson-next-latin-ext.woff2) format("woff2");font-weight:200 800;font-display:block;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Fraunces";src:url(fonts/fraunces-soft-latin.woff2) format("woff2");font-weight:100 900;font-display:block}
 :root{
-  --bg:#f4f1ea; --ink:#22252b; --muted:#6b7079; --frame:#ffffff; --frame-line:#d9d3c7;
-  --go:#1fa855; --tap:#2f6fd0; --stop:#d5372e; --idle:#d9d3c7; --skin:#e9b996; --skin-d:#d49f7a;
-  --tutor-top:#3d5a73; --tutor-hair:#4a3326; --paul-top:#3f6fb5; --paul-hair:#6b4a2f;
-  --julie-top:#c0453b; --julie-hair:#2a1f1a; --panel:#ffffff;
+  /* ground: warm paper, three depths, and the card that lies on it */
+  --paper:#F7F2E8; --paper-2:#EFE8DA; --paper-3:#E3D9C6; --card:#FFFDF8; --line:#DCD2BF; --line-strong:#C4B79F;
+  /* ink: one deep blue-black; nothing lighter than ink-3 carries words */
+  --ink:#1B2433; --ink-2:#414B5E; --ink-3:#5C6577; --on-colour:#FFFFFF; --shade:27,36,51;
+  /* the three turns (teaching: they mean what the narrator says they mean) */
+  --speak:#16934A; --speak-deep:#0E6E36; --speak-tint:#DCEFE2; --speak-glow:rgba(22,147,74,.40);
+  --listen:#C4412F; --listen-loud:#D5372E; --listen-tint:#F5DED8;
+  --tap:#2C6BD1; --tap-deep:#1F4FA3; --tap-tint:#DCE7FA;
+  --lit:#E3A417; --lit-deep:#A66F00; --lit-glow:rgba(227,164,23,.45);
+  --silent:#1F6FD6;
+  /* the signature: green is "you / your move" */
+  --accent:var(--speak-deep); --accent-press:#0A5A2B; --accent-tint:var(--speak-tint);
+  /* reward: the morning sun and the evening moon */
+  --sun:#F3B33D; --sun-deep:#8F5600; --sun-tint:#FBEBC8; --moon:#5462B0; --moon-deep:#39458A; --moon-tint:#E2E5F5;
+  /* the people (identities only) */
+  --marie:#2E4A6B; --pierre:#3F6FB5; --sylvie:#C0453B; --you:#5AA86D;
+  /* type */
+  --font-ui:"Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-display:"Fraunces","Atkinson Hyperlegible Next",Georgia,serif;
+  --t-display:600 56px/1 var(--font-display); --t-title:600 34px/1.1 var(--font-display); --t-title-s:600 26px/1.15 var(--font-display);
+  --t-head:700 21px/1.25 var(--font-ui); --t-body-l:500 19px/1.42 var(--font-ui); --t-body:500 17px/1.45 var(--font-ui); --t-label:700 15px/1.2 var(--font-ui);
+  /* space, radius, depth */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s7:32px; --s8:40px; --s9:56px;
+  --r1:8px; --r2:12px; --r3:16px; --r4:24px; --r-pill:999px;
+  --e0:0 1.5px 0 var(--line);
+  --e1:0 2px 0 var(--line), 2px 7px 14px -6px rgba(var(--shade),.18);
+  --e2:0 3px 0 var(--line-strong), 4px 14px 28px -10px rgba(var(--shade),.30);
+  /* motion */
+  --d-press:90ms; --d-fast:150ms; --d-base:240ms; --d-slow:420ms; --d-fete:900ms;
+  --ease-out:cubic-bezier(.22,1,.36,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  /* the turn frame's three thicknesses, and the room the chrome takes */
+  --f-listen:8px; --f-speak:14px; --f-tap:11px; --listen-edge:#A93626; --top-h:84px; --bot-h:66px;
+  --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
+  /* the old names, still used by the script and the tester panel */
+  --bg:var(--paper); --muted:var(--ink-3); --frame:var(--card); --frame-line:var(--line); --go:var(--speak); --stop:var(--listen); --panel:var(--card);
+  --skin:#e9b996; --skin-d:#d49f7a; --tutor-top:#2E4A6B; --tutor-hair:#4a3326; --paul-top:#3f6fb5; --paul-hair:#6b4a2f; --julie-top:#c0453b; --julie-hair:#2a1f1a;
 }
+@supports (transition-timing-function:linear(0,1)){ :root{ --spring:linear(0,.009,.035 2.1%,.141 4.4%,.723 12.9%,.938 16.7%,1.017,1.077 20.4%,1.121,1.149 24.3%,1.159,1.163 27%,1.154,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1); } }
+html[data-red="loud"]{ --f-listen:14px; --listen:var(--listen-loud); }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-#signal{position:fixed;inset:0;pointer-events:none;border:14px solid var(--stop);transition:border-color .12s;z-index:20}
-#signal.on{border-color:var(--go)}
-#signal.tap{border-color:transparent}
-#tapBorder{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20;display:none}
-#tapBorder.on{display:block}
-#flag{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(66px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
-#flag.hit{background:#f3d36b;opacity:1}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font:var(--t-body);-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+body{overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text}
+button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--tap);outline-offset:3px}
+.icon{width:28px;height:28px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------------- the turn frame: one object, three states (signal() sets the classes exactly as before) ----------------
+   Three still layers that cross-fade (opacity only: nothing is laid out or repainted when the turn changes).
+   listen: thin, matt, the paper set into it like a page in a frame.  speak (.on): thick, lit from within, and a tab with the microphone.
+   tap (.tap): a plain blue outline, a little wider than listen, and a tab with the tapping finger (the owner, 15 Nov: no band of hands).
+   Each colour sits on a band of the same hue a shade deeper at the screen's own edge, so the frame reads as an object, not a line. */
+#signal{position:fixed;inset:0;pointer-events:none;z-index:20}
+#signal i{position:absolute;display:block;opacity:0;transition:opacity .12s linear;will-change:opacity}
+#signal .fl{inset:var(--f-listen);border-radius:26px;box-shadow:0 0 0 90px var(--listen), 0 0 0 2px var(--listen-edge), inset 0 0 0 1px rgba(255,255,255,.55), inset 0 3px 9px -2px rgba(var(--shade),.20);opacity:1}
+#signal .fs{inset:var(--f-speak);border-radius:28px;box-shadow:0 0 0 90px var(--speak), inset 0 0 0 1px rgba(255,255,255,.6), inset 0 3px 10px -2px rgba(var(--shade),.18)}
+#signal .fg{inset:var(--f-speak);border-radius:28px;box-shadow:inset 0 0 26px 2px var(--speak-glow)}
+#signal .ft{inset:var(--f-tap);border-radius:27px;box-shadow:0 0 0 90px var(--tap), inset 0 0 0 1px rgba(255,255,255,.6), inset 0 3px 10px -2px rgba(var(--shade),.18)}
+#signal.tap .ft{opacity:1}
+#signal.on .fl,#signal.tap .fl{opacity:0}
+#signal.on .fs{opacity:1}
+#signal.on .fg{opacity:1;animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+#tapBorder{display:none!important}
+/* the tab at the bottom edge: where the phone's own microphone is. It holds the microphone and bars that move with the voice, or the tapping hand. */
+#turnTab{position:fixed;left:50%;bottom:0;z-index:21;pointer-events:none;transform:translateX(-50%)}
+#turnTab > div{position:absolute;left:50%;bottom:0;display:flex;align-items:center;gap:10px;height:calc(58px + var(--sab));padding:0 22px calc(6px + var(--sab)) 18px;border-radius:26px 26px 0 0;color:#fff;
+  transform:translate(-50%,105%);transition:transform .14s var(--ease-out)}
+#turnTab .mic{background:var(--speak)} #turnTab .hand{background:var(--tap);padding:0 24px calc(6px + var(--sab))}
+#turnTab .icon{width:30px;height:30px}
+body.turn-speak #turnTab .mic, body.turn-tap #turnTab .hand{transform:translate(-50%,0)}
+html[data-mictab="off"] #turnTab .mic{display:none}
+#micBars{display:flex;align-items:center;gap:4px;height:30px}
+#micBars b{display:block;width:5px;height:30px;border-radius:3px;background:#fff;transform:scaleY(.3);transform-origin:50% 50%;will-change:transform}
+#micBars.idle b{animation:micIdle 1.1s ease-in-out infinite}
+#micBars.idle b:nth-child(2){animation-delay:-.9s}#micBars.idle b:nth-child(3){animation-delay:-.35s}#micBars.idle b:nth-child(4){animation-delay:-.7s}#micBars.idle b:nth-child(5){animation-delay:-.15s}#micBars.idle b:nth-child(6){animation-delay:-.55s}
+@keyframes micIdle{0%,100%{transform:scaleY(.28)}50%{transform:scaleY(.62)}}
+
+/* ---------------- chrome of the player: leave, and how far ---------------- */
+#chrome{position:fixed;z-index:22;left:calc(30px + var(--sal));right:calc(36px + var(--sar));top:calc(28px + var(--sat));display:none;align-items:center;gap:10px}
+body.inLesson #chrome{display:flex}
+#leave{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);background:transparent;border:0;cursor:pointer;transition:transform var(--d-press) var(--ease-out), background var(--d-fast)}
+#leave:active{transform:scale(.88);background:var(--paper-3)}
+#leave .icon{width:26px;height:26px;stroke-width:2.8}
+#bar{position:relative;flex:1;height:12px;border-radius:6px;background:var(--paper-3)}
+#barFill{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:6px;background:var(--ink);transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform var(--d-base) var(--ease-out)}
+#barClip{position:absolute;inset:0;border-radius:6px;overflow:hidden}
+#bead{position:absolute;top:50%;left:0;width:18px;height:18px;margin:-9px 0 0 -11px;border-radius:50%;background:var(--sun);box-shadow:0 0 0 3px var(--card), 0 0 0 4px var(--line-strong);
+  transform:translateX(calc(var(--p,0) * var(--bw,0px)));transition:transform var(--d-base) var(--ease-out)}
+#bead:after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--sun)}
+#bead.pop:after{animation:beadPop .22s var(--ease-out)}
+@keyframes beadPop{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.3);opacity:0}}
+#bar:after{content:"";position:absolute;inset:-4px;border-radius:10px;box-shadow:0 0 0 3px var(--sun);opacity:0;pointer-events:none}
+#bar.exDone:after{animation:exDone .7s var(--ease-out)}
+@keyframes exDone{0%{opacity:0;transform:scale(.99)}25%{opacity:.95}100%{opacity:0;transform:scale(1.02,1.5)}}
+#lessonTag{display:none}
+/* leaving: a sheet that asks once */
+#leaveSheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(var(--shade),.38);padding:0 12px calc(12px + var(--sab))}
+#leaveSheet[hidden]{display:none}
+#leaveSheet .sheet{width:min(440px,100%);padding:24px 20px 20px;border-radius:28px;background:var(--card);box-shadow:var(--e2);display:grid;gap:14px;animation:sheetUp var(--d-base) var(--ease-out)}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0}}
+#leaveSheet h2{margin:0;font:var(--t-title-s);font-variation-settings:"SOFT" 100}
+#leaveSheet p{margin:0;font:var(--t-body-l);color:var(--ink-2)}
+
+/* ---------------- the one button ---------------- */
+.btn{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:0 28px;border:0;border-radius:var(--r-pill);font:700 21px/1 var(--font-ui);color:var(--on-colour);background:var(--accent);cursor:pointer;
+  box-shadow:0 4px 0 var(--accent-press), 2px 12px 22px -10px rgba(14,110,54,.55);transition:transform var(--d-press) var(--ease-out), box-shadow var(--d-press) var(--ease-out)}
+.btn:active,.btn.pressed{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-press), 1px 4px 8px -6px rgba(14,110,54,.5)}
+.btn.released{transition:transform var(--d-base) var(--spring), box-shadow var(--d-base) var(--ease-out)}
+.btn.quiet{background:var(--card);color:var(--ink);box-shadow:0 3px 0 var(--line-strong);border:1.5px solid var(--line-strong)}
+.btn.quiet:active{box-shadow:0 0 0 var(--line-strong)}
+.btn .icon{width:30px;height:30px}
+
+/* ---------------- the stage: the app's own 400 x 700 drawing, fitted inside the frame under the chrome ---------------- */
+#stage{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;
+  padding:calc(var(--top-h) + var(--sat)) var(--sar) 0 var(--sal)}
+svg#scene{display:block;overflow:visible;flex:none;
+  width:min(100vw - 18px - var(--sal) - var(--sar), (100vh - var(--top-h) - var(--bot-h) - var(--sat) - var(--sab)) * 0.6452);height:auto}
+svg#scene text{font-family:var(--font-ui)}
+svg#scene text.numeral{font-family:var(--font-display);font-variation-settings:"SOFT" 60}
+@media (max-height:520px){ :root{ --top-h:20px; --bot-h:20px } #chrome{right:auto;width:150px} #turnTab{left:82%} }
+@media (min-width:700px) and (min-height:700px){ :root{ --top-h:104px; --bot-h:80px; --f-listen:10px; --f-speak:18px; --f-tap:14px }
+  #chrome{left:calc(44px + var(--sal));right:calc(52px + var(--sar));top:calc(40px + var(--sat))} #leave{width:56px;height:56px} #leave .icon{width:32px;height:32px} #bar{height:16px;border-radius:8px} }
+.fade{transition:opacity .25s}
+.limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
+#scene .fade, #actBox{pointer-events:none}
 .gtalk .lb>*{animation:bob .28s infinite alternate}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
-/* (.27) icons that fade in and out over the pictures (the end-of-lesson tick …) take no touch: at opacity 0 the tick
-   still lay over the middle picture and swallowed taps meant for it (taptouch.js) */
-#scene .fade, #actBox{pointer-events:none}
 @keyframes tapdown{0%,55%,100%{transform:translateY(0)}75%{transform:translateY(7px)}}
 #tapSig .tapHand{animation:tapdown 1.1s ease-in-out infinite;transform-box:fill-box}
-#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
-svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
-.limb{transition:transform .35s cubic-bezier(.3,.7,.3,1);transform-box:view-box}
-.fade{transition:opacity .25s}
-#play{position:fixed;inset:0;display:flex;flex-direction:column;gap:28px;align-items:center;justify-content:center;z-index:30;background:rgba(244,241,234,.92);padding:0 24px}
-#howto_unused{display:flex;align-items:center;gap:14px;max-width:320px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
-#howtoBox{display:flex;flex-direction:column;gap:16px}
-.howto{display:flex;align-items:center;gap:14px;max-width:320px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
-.howto .vo{flex:none;width:34px;height:34px}
-.howto .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
-.howto .ph.red{border-color:var(--stop)}
-/* Jon 9 Nov 16:20: "Speak clearly and loudly" and "phone on a flat surface, hands off" on every play screen (app opened, every
-   lesson start), not only after the demo: a brushed microphone made a right answer wrong in his 16:04 run */
-.howto.before{display:none}
-#play.afterDemo .howto.before{display:none}
-#howto_unused .ph{flex:none;width:34px;height:58px;border-radius:7px;border:5px solid var(--go);background:#fff;box-sizing:border-box}
-#play button{width:128px;height:128px;border-radius:50%;border:0;background:var(--go);box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;display:flex;align-items:center;justify-content:center}
-#play button svg{width:56px;height:56px;margin-left:8px}
+/* a card: a face, an edge under it, a soft shadow on the paper (three faint steps: no filter on the stage) */
+.cardSh{fill:rgb(var(--shade));opacity:.05}
+.cardLip{fill:var(--line-strong);transition:fill var(--d-fast)}
+.cardFace{fill:var(--card);stroke:var(--line);stroke-width:1.2}
+.cardIn{transform-box:fill-box;transform-origin:50% 50%;transition:transform var(--d-fast) var(--ease-out)}
+.cardSh{transition:transform var(--d-fast) var(--ease-out), opacity var(--d-fast)}
+/* lit: what Marie means now. The card is picked up: it rises, grows a little, its edge turns, its shadow lengthens; the gold ring is on it. */
+.lit > .cardIn{transform:translateY(-5px) scale(1.025)}
+.lit .cardLip{fill:var(--lit-deep)}
+.lit .cardSh{opacity:.09;transform:translate(2px,7px)}
+#goldRing{stroke:var(--lit);stroke-width:6;transform:translateY(-5px)}
+#goldEdge{fill:none;stroke:var(--lit-deep);stroke-width:1.4;transform:translateY(-5px);transition:opacity .15s}
+#speakRing{stroke:var(--speak);stroke-width:5}
+/* a touch that was taken: the card goes down for a moment */
+.pressed > .cardIn{transform:translateY(2.5px) scale(.985);transition-duration:var(--d-press)}
+.boardFace{fill:var(--card);stroke:var(--line-strong);stroke-width:1.2}
+.boardLip{fill:var(--line-strong)}
+.tapOn{fill:none;stroke:var(--tap);stroke-width:3.2}
+.tapDot{fill:var(--card);stroke:var(--tap);stroke-width:2.6}
+#tick circle{fill:var(--speak-deep)}
+
+/* ---------------- start screen (interim: the home of M3 replaces it; the hooks #play and #playBtn stay) ---------------- */
+#play{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:calc(24px + var(--sat)) 20px calc(24px + var(--sab));background:var(--paper);overflow:auto}
 #play[hidden]{display:none}
-/* Which lesson (Jon, 10 Nov 2026): learners are advised to do one lesson a day, so they must see which lesson they are on
-   and when the day's lesson is done. Large on every start screen; small in the corner while the lesson runs. */
-#lessonHead{text-align:center;font:700 34px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#2b2f36}
-#lessonHead small{display:block;margin-top:8px;font:500 18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:320px}
-#lessonHead .ok{color:var(--go)}
-#play.dayDone button{width:84px;height:84px;background:#8a9099;box-shadow:none}
-#play.dayDone button svg{width:36px;height:36px;margin-left:5px}
+#play .panelCard{width:min(420px,100%);padding:26px 20px 22px;border-radius:var(--r4);background:var(--card);border:1px solid var(--line);box-shadow:var(--e1);display:grid;gap:18px;justify-items:stretch}
+#lessonHead{text-align:center;font:600 46px/1.05 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink);letter-spacing:-.01em}
+#lessonHead small{display:block;margin:10px auto 0;font:var(--t-body-l);font-variation-settings:normal;color:var(--ink-2);max-width:320px;letter-spacing:0}
+#lessonHead .ok{color:var(--ink)}
+#howtoBox{display:grid;gap:10px;padding:14px 16px;border-radius:var(--r3);background:var(--paper)}
+.howto{display:flex;align-items:flex-start;gap:12px;font:500 18px/1.34 var(--font-ui);color:var(--ink)}
+.howto .vo{flex:none;width:28px;height:28px;margin-top:-1px}
+.howto.before{display:none}
 #play.dayDone #howtoBox{display:none}
-#playNext{font:500 16px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#6b7079;margin-top:-16px}
+#playBtn{width:100%;position:relative;overflow:hidden}
+#playBtn .lbl{position:relative}
+#playBtn.loading{background:var(--paper-3);color:var(--ink-2);box-shadow:0 4px 0 var(--line-strong);cursor:progress}
+#playBtn.loading:before{content:"";position:absolute;inset:0;background:var(--speak-tint);transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform .3s linear}
+#playBtn.loading .icon{display:none}
+#playBtn .ready{display:inline} #playBtn .wait{display:none} #playBtn.loading .ready{display:none} #playBtn.loading .wait{display:inline}
+#play.dayDone #playBtn{background:var(--card);color:var(--ink);box-shadow:0 3px 0 var(--line-strong);border:1.5px solid var(--line-strong)}
+#playNext{font:var(--t-body);color:var(--ink-2);text-align:center;margin-top:-8px}
 #playNext:empty{display:none}
-#lessonTag{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));left:calc(18px + env(safe-area-inset-left,0px));z-index:20;height:40px;display:flex;align-items:center;font:600 16px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#6b7079}
-#playBtn.loading{background:conic-gradient(var(--go) calc(var(--p,0)*360deg), #c9c4b8 0);opacity:.85;cursor:progress}
-#playBtn.loading svg{opacity:.5}
-#gender{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:28px;z-index:35;background:var(--bg)}
+
+/* ---------------- first run (interim) ---------------- */
+#gender{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:20px;z-index:35;background:var(--paper)}
 #gender[hidden]{display:none}
-#gender button{width:132px;height:170px;border-radius:20px;border:2px solid var(--frame-line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
-#gender button:focus-visible,#gender button:hover{border-color:var(--go)}
-#who{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:16vh;box-sizing:border-box;z-index:36;background:var(--bg)}   /* in the top half: the phone's keyboard covers the lower half */
+#gender button{width:140px;height:180px;border-radius:var(--r4);border:1px solid var(--line);background:var(--card);box-shadow:var(--e1);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--d-press) var(--ease-out)}
+#gender button:active{transform:translateY(3px)}
+#who{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:calc(14vh + var(--sat));z-index:36;background:var(--paper)}
 #who[hidden]{display:none}
-#who form{display:flex;flex-direction:column;align-items:center;gap:22px;width:min(320px,82vw)}
-#who label{font-size:22px;color:var(--ink,#22252b);text-align:center}
-#who input{width:100%;box-sizing:border-box;font-size:26px;padding:12px 14px;border-radius:14px;border:2px solid var(--frame-line);background:#fff;text-align:center}
-#who input:focus{outline:none;border-color:var(--go)}
-#who button{width:84px;height:84px;border-radius:50%;border:0;background:var(--go);cursor:pointer;display:flex;align-items:center;justify-content:center}
-#who button:disabled{background:#c9c4b8;cursor:default}
-#save{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(114px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
-#save.busy{opacity:.35}
-#save.done{background:var(--go);opacity:1}
-#save.done path{stroke:#fff}
-/* Whose turn on this phone (.23, developer profiles): a small person and the name, top right under the three buttons, on every screen */
-#userBadge{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:calc(18px + env(safe-area-inset-right,0px));z-index:40;max-width:150px;display:flex;align-items:center;gap:5px;padding:2px 8px 2px 5px;border-radius:12px;border:1px solid var(--frame-line);background:var(--panel);font:600 13px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#4a4f58;cursor:pointer;opacity:.9}
-#userBadge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#userBadge svg{flex:none}
-#gear{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:calc(18px + env(safe-area-inset-right,0px));z-index:40;width:40px;height:40px;border-radius:50%;border:1px solid var(--frame-line);background:var(--panel);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
-#caption{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(34,37,43,.82);color:#fff;padding:6px 14px;border-radius:8px;font-size:17px;z-index:25;max-width:90vw;text-align:center}
+#who form{display:flex;flex-direction:column;align-items:center;gap:22px;width:min(340px,86vw)}
+#who label{font:var(--t-title-s);font-variation-settings:"SOFT" 100;color:var(--ink);text-align:center}
+#who input{width:100%;font:600 26px/1.2 var(--font-ui);color:var(--ink);padding:14px 16px;border-radius:var(--r3);border:2px solid var(--line-strong);background:var(--card);text-align:center}
+#who input:focus{outline:none;border-color:var(--accent)}
+#who button{width:84px;height:84px;border-radius:50%;border:0;background:var(--accent);box-shadow:0 4px 0 var(--accent-press);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--d-press) var(--ease-out)}
+#who button:active{transform:translateY(3px)}
+#who button:disabled{background:var(--paper-3);box-shadow:0 4px 0 var(--line-strong);cursor:default}
+
+/* ---------------- tester tools: off the stage. On the start screen a small gear; in a lesson only when the tester flag is on ---------------- */
+#save,#flag,#gear{position:fixed;top:calc(12px + var(--sat));z-index:40;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-3)}
+#gear{right:calc(12px + var(--sar))} #flag{right:calc(68px + var(--sar))} #save{right:calc(124px + var(--sar))}
+#flag.hit{background:var(--sun)} #save.busy{opacity:.35} #save.done{background:var(--speak)} #save.done path{stroke:#fff}
+#userBadge{position:fixed;top:calc(66px + var(--sat));right:calc(12px + var(--sar));z-index:40;max-width:150px;display:flex;align-items:center;gap:5px;padding:4px 10px 4px 7px;border-radius:14px;border:1px solid var(--line);background:var(--card);font:600 14px/1.5 var(--font-ui);color:var(--ink-2);cursor:pointer}
+#userBadge span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #userBadge svg{flex:none}
+body.inLesson #gear, body.inLesson #userBadge, #save, #flag{display:none}
+html[data-tester="on"] body.inLesson #flag, html[data-tester="on"] #save{display:flex}
+html[data-tester="on"] body.inLesson #flag{top:auto;bottom:calc(30px + var(--sab));right:calc(30px + var(--sar))}
+html[data-tester="on"] body.inLesson #save{top:auto;bottom:calc(30px + var(--sab));right:calc(86px + var(--sar))}
+#caption{position:fixed;left:50%;bottom:calc(74px + var(--sab));transform:translateX(-50%);background:rgba(var(--shade),.86);color:#fff;padding:6px 14px;border-radius:8px;font-size:17px;z-index:25;max-width:90vw;text-align:center}
 #caption[hidden]{display:none}
-#manual{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:26;display:flex;gap:10px;align-items:center;background:var(--panel);padding:10px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+#manual{position:fixed;left:50%;bottom:calc(80px + var(--sab));transform:translateX(-50%);z-index:26;display:flex;gap:10px;align-items:center;background:var(--card);padding:10px;border-radius:12px;box-shadow:var(--e2)}
 #manual[hidden]{display:none}
-#manual input{font-size:16px;padding:8px;border:1px solid var(--frame-line);border-radius:8px;width:180px}
-#manual button{font-size:20px;width:46px;height:46px;border-radius:10px;border:1px solid var(--frame-line);background:#fff;cursor:pointer}
-#panel{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);z-index:50;box-shadow:-8px 0 24px rgba(0,0,0,.15);overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;font-size:14px}
+#manual input{font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;width:180px}
+#manual button{font-size:20px;width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer}
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--card);z-index:50;box-shadow:-8px 0 24px rgba(var(--shade),.2);overflow:auto;padding:calc(16px + var(--sat)) 16px 24px;font:14px/1.45 var(--font-ui);-webkit-user-select:text;user-select:text}
 #panel[hidden]{display:none}
 #panel h2{font-size:16px;margin:0 0 4px}
-#panel h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 6px}
+#panel h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin:18px 0 6px}
 #panel .row{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
-#panel button{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--frame-line);background:#fff;cursor:pointer}
+#panel button{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
 #panel table{border-collapse:collapse;width:100%;font-size:12.5px}
 #panel td,#panel th{border-bottom:1px solid #eee;padding:4px 4px;text-align:left;vertical-align:top}
 #panel .ok{color:#1d7a3e}#panel .bad{color:#b3261e}
 #panel select,#panel input[type=range]{max-width:100%}
-.note{color:var(--muted);font-size:12.5px}
+.note{color:var(--ink-3);font-size:12.5px}
+
+/* ---------------- less movement: the chrome is still; the figures' own actions are teaching and still play ---------------- */
+@media (prefers-reduced-motion:reduce){
+  #signal .fg{animation:none!important;opacity:1} #micBars.idle b{animation:none!important;transform:scaleY(.45)} #bead.pop:after{animation:none!important} #bar.exDone:after{animation:none!important}
+  .cardIn,.cardSh,.btn,#leave,#turnTab > div,#barFill,#bead{transition-duration:1ms!important} #leaveSheet .sheet{animation:none!important} }
+html[data-motion="less"] #signal .fg{animation:none!important;opacity:1} html[data-motion="less"] #micBars.idle b{animation:none!important;transform:scaleY(.45)}
+html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-motion="less"] .btn, html[data-motion="less"] #turnTab > div{transition-duration:1ms!important}
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
+<script src="brand/splash.js"></script>
 <div id="stage">
 <svg id="scene" viewBox="0 0 400 700" aria-hidden="true">
   <!-- demo scene: a person, seen from behind, using the app on a phone (first appearance of a new item) -->
   <g id="demoBg" class="fade" opacity="0">
-    <rect x="0" y="0" width="400" height="700" fill="#e3ddd0"/>
-    <rect x="0" y="452" width="400" height="248" fill="#cbbfa8"/>
+    <rect x="-1200" y="-400" width="2800" height="852" fill="#e7e0d2"/>
+    <rect x="-1200" y="452" width="2800" height="1600" fill="#d3c7b2"/>
   </g>
   <!-- the app's screen: full size one-to-one; shrunk into the phone in the demo scene -->
   <g id="screen" style="transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out;transform:translate(0px,0px) scale(1)">
@@ -120,24 +266,24 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
     <rect x="-28" y="-28" width="456" height="756" rx="60" fill="#1d1f24"/>
   </g>
   <rect id="screenBg" class="fade" opacity="0" x="0" y="0" width="400" height="700" fill="var(--bg)"/>
-  <clipPath id="screenClip"><rect x="0" y="0" width="400" height="700"/></clipPath>
+  <clipPath id="screenClip"><rect id="screenClipRect" x="-1200" y="-400" width="2800" height="2400"/></clipPath>
   <g clip-path="url(#screenClip)">
   <g id="room" style="transform-box:view-box;transform-origin:0 0;transition:transform .7s ease-in-out;transform:translate(0px,40px) scale(1)">
   <!-- portrait frames -->
   <g id="frames">
-    <g id="frameL" transform="translate(28,24)">
-      <rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>
+    <g id="frameL" transform="translate(28,24)"><g class="cardIn">
+      <rect class="cardSh" x="3" y="6" width="158" height="188" rx="16"/><rect class="cardSh" x="5" y="9" width="156" height="187" rx="16"/><rect class="cardSh" x="8" y="13" width="152" height="184" rx="16"/><rect class="cardLip" y="3" width="160" height="190" rx="16"/><rect class="cardFace" width="160" height="190" rx="16"/>
       <g class="fade" id="slotL"></g>
-    </g>
-    <g id="frameR" transform="translate(212,24)">
-      <rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>
+    </g></g>
+    <g id="frameR" transform="translate(212,24)"><g class="cardIn">
+      <rect class="cardSh" x="3" y="6" width="158" height="188" rx="16"/><rect class="cardSh" x="5" y="9" width="156" height="187" rx="16"/><rect class="cardSh" x="8" y="13" width="152" height="184" rx="16"/><rect class="cardLip" y="3" width="160" height="190" rx="16"/><rect class="cardFace" width="160" height="190" rx="16"/>
       <g class="fade" id="slotR"></g>
-    </g>
+    </g></g>
     <g id="frameRow" class="fade" opacity="0"></g>
     <g id="actBox" opacity="0"></g>
     <g id="sideBadges"></g>
     <!-- gold border round whatever the teacher is pointing at (Jon 9 Nov: with four pictures the finger alone is not clear) -->
-    <rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
+    <rect id="goldEdge" x="0" y="0" width="10" height="10" rx="14" opacity="0"/><rect id="goldRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#d4a017" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
     <rect id="speakRing" x="0" y="0" width="10" height="10" rx="14" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0" style="transition:opacity .12s"/>
     <g id="askMark"></g>
     <g id="tagMark"></g>
@@ -148,21 +294,21 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
       <radialGradient id="tSkin" gradientUnits="userSpaceOnUse" cx="194" cy="340" r="62"><stop offset="0" stop-color="#f3cfae"/><stop offset="0.62" stop-color="#e8b892"/><stop offset="1" stop-color="#cf9873"/></radialGradient>
       <linearGradient id="tNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c58d68"/><stop offset="0.5" stop-color="#dba582"/><stop offset="1" stop-color="#e3af8b"/></linearGradient>
       <linearGradient id="tHair" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#5c4132"/><stop offset="0.55" stop-color="#4a3326"/><stop offset="1" stop-color="#3a271c"/></linearGradient>
-      <linearGradient id="tTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6b86"/><stop offset="1" stop-color="#36536b"/></linearGradient>
+      <linearGradient id="tTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a5980"/><stop offset="1" stop-color="#27405f"/></linearGradient>
       <linearGradient id="tChair" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6e5140"/><stop offset="0.5" stop-color="#7f604c"/><stop offset="1" stop-color="#6e5140"/></linearGradient>
       <radialGradient id="tBlush" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#e98a7a" stop-opacity="0.32"/><stop offset="1" stop-color="#e98a7a" stop-opacity="0"/></radialGradient>
       <radialGradient id="tIris" cx="0.45" cy="0.4" r="0.6"><stop offset="0" stop-color="#8a6240"/><stop offset="0.7" stop-color="#5e3f27"/><stop offset="1" stop-color="#3b2717"/></radialGradient>
       <clipPath id="eyeClipL"><path d="M175.8 352.2 Q183.6 345.2 192.2 351.6 Q184.4 357.6 175.8 352.2 Z"/></clipPath>
       <clipPath id="eyeClipR"><path d="M224.2 352.2 Q216.4 345.2 207.8 351.6 Q215.6 357.6 224.2 352.2 Z"/></clipPath>
     </defs>
-    <rect x="112" y="300" width="176" height="300" rx="28" fill="url(#tChair)"/>
-    <rect x="118" y="306" width="164" height="288" rx="24" fill="none" stroke="#5e4535" stroke-width="2" opacity=".5"/>
+    <rect x="112" y="300" width="176" height="900" rx="28" fill="url(#tChair)"/>
+    <rect x="118" y="306" width="164" height="888" rx="24" fill="none" stroke="#5e4535" stroke-width="2" opacity=".5"/>
     <!-- back hair: a plain shoulder-length cut -->
     <path d="M153 352 q-3-58 47-60 q50 2 47 60 q2 36-5 58 q-10 4-20 0 h-44 q-10 4-20 0 q-7-22-5-58z" fill="url(#tHair)"/>
     <!-- torso: a soft crew-neck jumper -->
-    <path d="M118 600 v-120 q0-52 52-60 h60 q52 8 52 60 v120z" fill="url(#tTop)"/>
-    <path d="M172 421 q28 16 56 0" stroke="#2f4a60" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
-    <path d="M150 470 q8 40 4 120 M250 470 q-8 40 -4 120" stroke="#2c465b" stroke-width="2" fill="none" opacity=".35"/>
+    <path d="M118 668 v-188 q0-52 52-60 h60 q52 8 52 60 v188 q-82 12 -164 0z" fill="url(#tTop)"/><path d="M110 1200 V676 q4 -14 20 -12 q70 9 140 0 q16 -2 20 12 V1200z" fill="#2b3545"/><path d="M200 690 V1200" stroke="#1f2734" stroke-width="2" opacity=".6"/><path d="M118 662 q82 12 164 0" stroke="#1f3350" stroke-width="5" fill="none" opacity=".55" stroke-linecap="round"/>
+    <path d="M172 421 q28 16 56 0" stroke="#1f3350" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
+    <path d="M150 470 q8 40 4 180 M250 470 q-8 40 -4 180" stroke="#1f3350" stroke-width="2" fill="none" opacity=".35"/>
     <!-- the teacher's name tag, as in DISE (Lesson 1: "Point to your name tag and say your name") -->
     <g id="claireTag" transform="rotate(-3 214 466)"><rect x="189" y="453" width="50" height="23" rx="3.5" fill="#fffdf6" stroke="#b9ae98" stroke-width="1.3"/>
       <rect x="189" y="453" width="50" height="4.6" rx="2" fill="#c8453b"/>
@@ -222,8 +368,8 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
          Gestures recreated from the DISE training videos: "my turn" = hand flat on the chest (Zig, Part 3, 4:57);
          "your turn" = arm reaching towards the learner, open palm up (Zig, Part 3, 4:53), with the teacher facing the learner. -->
     <g id="arms">
-      <g id="armRig_L"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #2f475a)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
-      <g id="armRig_R"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #2f475a)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+      <g id="armRig_L"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #223a58)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+      <g id="armRig_R"><path class="sleeveEdge" d="" stroke="var(--tutor-edge, #223a58)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="sleeve" d="" stroke="var(--tutor-top)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
       <g id="hand_L" class="hand"></g>
       <g id="hand_R" class="hand"></g>
     </g>
@@ -273,7 +419,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   </g><!-- /room -->
   </g>
   <!-- the phone's own border, as the learner's border: brown = no response, green = respond -->
-  <rect id="innerBorder" class="fade" opacity="0" x="7" y="7" width="386" height="686" fill="none" stroke="#7a5434" stroke-width="14" style="transition:opacity .25s, stroke .12s"/>
+  <rect id="innerBorder" class="fade" opacity="0" x="7" y="7" width="386" height="686" rx="20" fill="none" stroke="#7a5434" stroke-width="14" style="transition:opacity .25s, stroke .12s"/>
   </g><!-- /screen -->
   <!-- the model learner, seen from behind, holding the phone -->
   <g id="classroom" class="fade" opacity="0">
@@ -283,9 +429,9 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
         <linearGradient id="lNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a86f50"/><stop offset="1" stop-color="#c48a68"/></linearGradient>
         <radialGradient id="lHair" cx="0.45" cy="0.35" r="0.7"><stop offset="0" stop-color="#4a3a30"/><stop offset="0.7" stop-color="#2f2620"/><stop offset="1" stop-color="#211a15"/></radialGradient>
       </defs>
-      <path d="M96 700 v-40 q0-58 66-66 h76 q66 8 66 66 v40z" fill="url(#lTop)"/>
+      <path d="M96 1500 v-840 q0-58 66-66 h76 q66 8 66 66 v840z" fill="#587d4a"/><path d="M96 760 v-100 q0-58 66-66 h76 q66 8 66 66 v100z" fill="url(#lTop)"/>
       <path d="M170 596 q30 14 60 0" stroke="#4d6f40" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>
-      <path d="M128 640 q10 30 6 60 M272 640 q-10 30 -6 60 M200 610 v90" stroke="#4d6f40" stroke-width="2" fill="none" opacity=".35"/>
+      <path d="M128 640 q10 30 6 260 M272 640 q-10 30 -6 260 M200 610 v290" stroke="#4d6f40" stroke-width="2" fill="none" opacity=".35"/>
       <path d="M182 552 h36 v40 q-18 10 -36 0z" fill="url(#lNeck)"/>
       <ellipse cx="153.5" cy="534" rx="6.5" ry="11" fill="#c48a68"/><ellipse cx="246.5" cy="534" rx="6.5" ry="11" fill="#c48a68"/>
       <path d="M154 538 q-6-62 46-64 q52 2 46 64 q-4 16-14 22 q-14 6-32 6 q-18 0-32-6 q-10-6-14-22z" fill="url(#lHair)"/>
@@ -301,7 +447,19 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   </g>
 </svg>
 </div>
-<div id="signal"></div>
+<div id="signal"><i class="fl"></i><i class="fs"></i><i class="fg"></i><i class="ft"></i></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-play" viewBox="0 0 28 28"><path d="M10 6.2v15.6a1 1 0 0 0 1.5.86l13-7.8a1 1 0 0 0 0-1.72l-13-7.8A1 1 0 0 0 10 6.2z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-close" viewBox="0 0 28 28"><path d="M8 8l12 12M20 8L8 20"/></symbol>
+<symbol id="i-check" viewBox="0 0 28 28"><path d="M6 14.8l5.2 5.2L22 8.6"/></symbol>
+<symbol id="i-mic" viewBox="0 0 28 28"><rect x="10.2" y="3.5" width="7.6" height="13" rx="3.8" fill="currentColor" stroke="none"/><path d="M6.5 13.5a7.5 7.5 0 0 0 15 0M14 21v3.5"/></symbol>
+<symbol id="i-speaker" viewBox="0 0 28 28"><path d="M4.5 11h4.2l6.3-5.2v16.4L8.7 17H4.5z" fill="currentColor" stroke="currentColor" stroke-width="1.6"/><path d="M19 10.3a5.4 5.4 0 0 1 0 7.4M22 7.2a9.6 9.6 0 0 1 0 13.6"/></symbol>
+<symbol id="i-flat" viewBox="0 0 28 28"><rect x="5" y="12.5" width="18" height="6.5" rx="2.2"/><path d="M2.5 23.5h23"/><path d="M11 4l6 5M17 4l-6 5" stroke="var(--listen)"/></symbol>
+<symbol id="i-tap" viewBox="0 0 28 28"><path d="M11 14.5V6.3a2.1 2.1 0 0 1 4.2 0v6.2l5 1.2a2.6 2.6 0 0 1 2 2.9l-.7 5.1a3.2 3.2 0 0 1-3.2 2.8h-4.4a4 4 0 0 1-3.2-1.6L6.6 17.4a1.9 1.9 0 0 1 2.9-2.4z" fill="#fff" stroke="none"/></symbol>
+</defs></svg>
+<div id="turnTab" aria-hidden="true"><div class="mic"><svg class="icon"><use href="#i-mic"/></svg><div id="micBars" class="idle"><b></b><b></b><b></b><b></b><b></b><b></b></div></div><div class="hand"><svg class="icon"><use href="#i-tap"/></svg></div></div>
+<div id="chrome" lang="en"><button id="leave" aria-label="Leave the lesson"><svg class="icon"><use href="#i-close"/></svg><span class="lv">Leave</span></button><div id="bar" role="progressbar" aria-label="How far through the lesson" aria-valuemin="0" aria-valuemax="100"><div id="barClip"><div id="barFill"></div></div><div id="bead"></div></div></div>
+
 <div id="caption" hidden></div>
 <div id="manual" hidden>
   <input id="manualText" placeholder="typed answer" autocomplete="off">
@@ -321,7 +479,7 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
   <button id="gF" aria-label="femme"><svg width="96" height="150" viewBox="0 0 96 150"><circle cx="48" cy="16" r="13" fill="#2b2f36"/><path d="M38 34 h20 q6 0 8 6 l18 56 h-72 l18 -56 q2 -6 8 -6z" fill="#2b2f36"/><rect x="35" y="94" width="11" height="52" rx="5" fill="#2b2f36"/><rect x="50" y="94" width="11" height="52" rx="5" fill="#2b2f36"/></svg></button>
 </div>
 <div id="lessonTag" lang="en"></div>
-<div id="play"><div id="lessonHead" lang="en"></div><div id="howtoBox" lang="en"><div class="howto before"><span class="ph" aria-hidden="true"></span><span>Watch how the learner only responds when the border of their device turns green.</span></div><div class="howto before"><span class="ph red" aria-hidden="true"></span><span>When the border is red, they don't respond.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><path d="M4 12h6l8-7v24l-8-7H4z" fill="#2b2f36"/><path d="M22 11c2.5 3 2.5 9 0 12M26 7c5 5 5 15 0 20" stroke="#2b2f36" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span>Speak clearly and loudly.</span></div><div class="howto after"><svg class="vo" viewBox="0 0 34 34" aria-hidden="true"><rect x="7" y="17" width="20" height="8" rx="2" fill="none" stroke="#2b2f36" stroke-width="2.4"/><path d="M2 28h30" stroke="#2b2f36" stroke-width="2.6" stroke-linecap="round"/><path d="M19 4l-2 9M14 7l3 6 4-4" stroke="#2b2f36" stroke-width="0" fill="none"/><path d="M10 5l14 9M24 5L10 14" stroke="#b3261e" stroke-width="2.6" stroke-linecap="round"/></svg><span>Put your phone on a flat surface and don't touch it or its microphone during the lesson.</span></div></div><button id="playBtn" aria-label="Commencer"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#fff"/></svg></button><div id="playNext" lang="en"></div></div>
+<div id="play"><div class="panelCard"><div id="lessonHead" lang="en"></div><div id="howtoBox" lang="en"><div class="howto before"><span class="ph" aria-hidden="true"></span><span>Watch how the learner only responds when the border of their device turns green.</span></div><div class="howto before"><span class="ph red" aria-hidden="true"></span><span>When the border is red, they don't respond.</span></div><div class="howto after"><svg class="vo icon" aria-hidden="true"><use href="#i-speaker"/></svg><span>Speak clearly and loudly.</span></div><div class="howto after"><svg class="vo icon" aria-hidden="true"><use href="#i-flat"/></svg><span>Put your phone on a flat surface and don't touch it or its microphone during the lesson.</span></div></div><button id="playBtn" class="btn" lang="en"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="lbl"><span class="ready">Start</span><span class="wait">Getting ready…</span></span></button></div><div id="playNext" lang="en"></div></div>
 <button id="save" aria-label="Save run (developer)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z" fill="none" stroke="#6b7079" stroke-width="2" stroke-linejoin="round"/><path d="M8 3v6h8V3M8 21v-7h8v7" fill="none" stroke="#6b7079" stroke-width="2"/></svg></button>
 <button id="flag" aria-label="Tester flag"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 22V3h11l-1.5 4L16 11H7v11z" fill="#6b7079"/></svg></button>
 <button id="gear" aria-label="Tester panel"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#6b7079" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm8.6 4.4l1.9 1.5-2 3.4-2.3-.9c-.6.5-1.2.8-1.9 1.1l-.3 2.4h-4l-.3-2.4c-.7-.3-1.3-.6-1.9-1.1l-2.3.9-2-3.4 1.9-1.5a7 7 0 010-2.2L1.6 8.6l2-3.4 2.3.9c.6-.5 1.2-.8 1.9-1.1L8.1 2.6h4l.3 2.4c.7.3 1.3.6 1.9 1.1l2.3-.9 2 3.4-1.9 1.5a7 7 0 010 2.2z"/></svg></button>
@@ -377,12 +535,13 @@ svg#scene{width:min(100vw,56vh);height:auto;max-height:100vh;display:block}
 <script src="course/lesson10.js"></script>
 <script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
+<script src="things.js"></script>
 <script>
 "use strict";
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.64";
+const APP_VERSION="2026-11-16.65";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -783,14 +942,87 @@ const nextLessonId = lid => { const i=LESSONS.findIndex(l=>l.id===lid); return i
    are carried over at every switch. Recordings are in IndexedDB under ids that begin with the user's id, and a run file has
    only the recordings of its own session (a switch reloads the page, which starts a new session), so one user's recordings
    never get into another's run file. */
-const USERS_KEY="frDI.users", OLD_KEY="frDI.v1";
+/* (switch-over) Where this page keeps the learners' places: SAVE_NS. In next/ (the preview) its own keys, frDIn.*, so that trying the preview
+   never touches a place saved by the live app. Once this page IS the app at the site's root, the live app's own keys, frDI.* (switch_over.sh
+   sets SAVE_NS to "frDI"): a learner's place is then read and written where the live app kept it, so there is no copy that could be stale
+   and nothing to carry; the old app at /old/ reads the same keys. The saved state's format is the live app's (stateVer 12, courseRev, the
+   migrations of load()). The shell's own data stays in frDIn.* whatever SAVE_NS is: frDIn.g.<id> the record, frDIn.a.<id> the figure,
+   frDIn.ui this phone's choices. */
+const SAVE_NS = "frDI";      // (switch-over) the app at the root: the live app's own keys
+/* (next) At its first start on a phone the preview takes a copy of the live app's learners (frDI.users and each frDI.u.<id>, or the single
+   state frDI.v1 of before .23) into its own keys, so that a family keeps its places and names. It only READS the live app's keys: it never
+   writes, changes or removes them. Done once (frDIn.migrated); a phone that already has the preview's own learners is left as it is.
+   A place in a lesson this copy does not serve yet goes to the start of the last lesson it serves. */
+if(SAVE_NS==="frDIn") (function migrateFromLive(){ try{ const ls=localStorage; if(ls.getItem("frDIn.users") || ls.getItem("frDIn.v1") || ls.getItem("frDIn.migrated")) return;
+  const served=Object.keys(window.COURSE||{}).length, fit=raw=>{ try{ const o=JSON.parse(raw); if(o && served && o.lesson>=served){ o.lesson=served-1; o.ex=0; } return JSON.stringify(o); }catch(e){ return raw; } };
+  let u=null; try{ u=JSON.parse(ls.getItem("frDI.users")||"null"); }catch(e){} let n=0;
+  if(u && Array.isArray(u.list) && u.list.length){ for(const x of u.list){ const raw=ls.getItem("frDI.u."+x.id); if(raw){ ls.setItem("frDIn.u."+x.id, fit(raw)); n++; } } ls.setItem("frDIn.users", JSON.stringify(u)); }
+  else { const old=ls.getItem("frDI.v1"); if(old){ ls.setItem("frDIn.v1", fit(old)); n=1; } }
+  ls.setItem("frDIn.migrated", JSON.stringify({at:new Date().toISOString(), learners:n})); }catch(e){} })();
+/* (switch-over) At its first start at the root on a phone (once: frDIn.switched), what the preview kept on this phone is set against the live
+   app's places, so that no place is lost and no stale record can move one:
+   - a learner the live app has and the preview had too (same id, same name): the live app's place stands, and the preview's record of its
+     older copy (frDIn.g.<id>: points, the lesson to do next, the days learned) is put aside under frDIn.pg.<id>, so that the shell starts the
+     record again from the live place (its seed). A stale record would otherwise send the learner back: its "next lesson" is where the copy
+     was, and its last day learned would read as days away (the welcome back's step back). Only when the preview's copy is BOTH further on in
+     the course AND later than the live app's (the learner went on in the preview) does the preview's place win: the live app's state is kept
+     under frDI.pre.u.<id> and the preview's record stays with it;
+   - a learner only the preview has (added in the preview): taken into the live app's list with its place, record and figure (under a new id
+     if the live app has given that id to someone else);
+   - a phone with only the preview: its learners as they are.
+   A copy the preview kept of a place (frDIn.u.<id>) is removed once what it holds is in the live app's keys (taken over) or is not further
+   on than the live place (the live app has all of it): the phone's storage is small (about 5 MB for the site) and a family's places with
+   their logs fill it. A copy that is further on but older than the live app's last work is the one case left in doubt: it is kept as it is.
+   The preview's list of learners (frDIn.users), the records put aside and the figures stay. */
+if(SAVE_NS==="frDI") (function switchOver(){ try{ const ls=localStorage; if(ls.getItem("frDIn.switched")) return;
+  const J=k=>{ try{ return JSON.parse(ls.getItem(k)||"null"); }catch(e){ return null; } }, P=raw=>{ try{ return JSON.parse(raw)||{}; }catch(e){ return {}; } };
+  const now=new Date().toISOString(), note={at:now, version:APP_VERSION, live:[], previewOnly:[], previewAhead:[], previewAheadOlderKept:[], recordsAside:[], copiesRemoved:[]};
+  const hasList=u=>!!(u && Array.isArray(u.list) && u.list.length);
+  let lu=J("frDI.users");
+  if(!hasList(lu) && ls.getItem("frDI.v1")){ const raw=ls.getItem("frDI.v1"), o=P(raw);      // the live app's own step for a state of before .23 (loadUsers), done first here
+    lu={current:"u1", list:[{id:"u1", name: o.learnerName ? String(o.learnerName) : "User 1"}]}; ls.setItem("frDI.u.u1", JSON.stringify(o)); ls.setItem("frDI.users", JSON.stringify(lu)); ls.removeItem("frDI.v1"); }
+  let pu=J("frDIn.users");
+  if(!hasList(pu) && ls.getItem("frDIn.v1")){ const o=P(ls.getItem("frDIn.v1")); pu={current:"u1", list:[{id:"u1", name: o.learnerName ? String(o.learnerName) : "User 1"}]}; ls.setItem("frDIn.u.u1", JSON.stringify(o)); }
+  const liveIds = hasList(lu) ? lu.list.map(x=>x.id) : [];
+  const aside = id=>{ const g=ls.getItem("frDIn.g."+id); if(g!=null){ ls.setItem("frDIn.pg."+id, g); ls.removeItem("frDIn.g."+id); note.recordsAside.push(id); } };
+  // where a saved state is in the course (a detour's own place is the place it goes back to), and when it was last written
+  const at = s=>{ const L = s.detour && s.detour.back ? Math.max(+s.lesson||0, +s.detour.back.lesson||0) : (+s.lesson||0), re=new RegExp("^L"+(L+1)+"E\\d+$");
+    return L*1000 + Object.keys(s.finished||{}).filter(k=>s.finished[k] && re.test(k)).length; };
+  const when = s=>[((s.log||[]).slice(-1)[0]||{}).t||"", ((s.trace||[]).slice(-1)[0]||{}).t||""].sort().pop();
+  const drop = id=>{ ls.removeItem("frDIn.u."+id); note.copiesRemoved.push(id); };
+  const line = (raw, txt)=>{ const o=P(raw); (o.log=o.log||[]).push({t:now, result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": "+txt, heard:[]}); return JSON.stringify(o); };
+  if(hasList(pu)){
+    if(!hasList(lu)){      // a phone with only the preview: its learners, places, records and figures as they are
+      for(const p of pu.list){ const raw=ls.getItem("frDIn.u."+p.id); if(raw!=null){ ls.setItem("frDI.u."+p.id, raw); note.previewOnly.push(p.id); drop(p.id); } }
+      lu={current:pu.current, list:pu.list.map(x=>({id:x.id, name:x.name}))}; ls.setItem("frDI.users", JSON.stringify(lu)); }
+    else {
+      const ahead=new Set(), nm=x=>String(x||"").trim().toLowerCase();
+      for(const p of pu.list){ const raw=ls.getItem("frDIn.u."+p.id); const l=lu.list.find(x=>x.id===p.id);
+        if(l && liveIds.includes(p.id) && nm(l.name)===nm(p.name)){      // the same learner in both
+          const live=ls.getItem("frDI.u."+p.id);
+          if(raw!=null && live!=null){ const A=P(raw), B=P(live);
+            if(at(A)>at(B) && when(A)>when(B)){ ls.setItem("frDI.pre.u."+p.id, live); ls.setItem("frDI.u."+p.id, line(raw, "the place kept by the preview is further on and later than the live app's: it is this learner's place now (the live app's state is kept under frDI.pre.u."+p.id+")")); ahead.add(p.id); note.previewAhead.push(p.id); drop(p.id); }
+            else if(at(A)>at(B)) note.previewAheadOlderKept.push(p.id);
+            else drop(p.id); }
+          else if(raw!=null && live==null){ ls.setItem("frDI.u."+p.id, raw); ahead.add(p.id); note.previewAhead.push(p.id); drop(p.id); } }
+        else if(raw!=null){      // a learner only the preview has
+          let id=p.id; if(lu.list.some(x=>x.id===id)){ const n=Math.max(0, ...lu.list.map(x=>+String(x.id).slice(1)||0), ...pu.list.map(x=>+String(x.id).slice(1)||0))+1; id="u"+n; }
+          let name=String(p.name||"User"); if(lu.list.some(x=>nm(x.name)===nm(name))) name+=" (2)";
+          ls.setItem("frDI.u."+id, raw); lu.list.push({id, name});
+          if(id!==p.id) for(const k of ["frDIn.g.","frDIn.a."]){ const v=ls.getItem(k+p.id); if(v!=null){ ls.setItem(k+id, v); ls.removeItem(k+p.id); } }
+          note.previewOnly.push(p.id+(id!==p.id?" as "+id:"")); drop(p.id); } }
+      for(const id of liveIds) if(!ahead.has(id)) aside(id);
+      note.live=liveIds; ls.setItem("frDI.users", JSON.stringify(lu)); } }
+  else note.live=liveIds;
+  ls.setItem("frDIn.switched", JSON.stringify(note)); }catch(e){} })();
+const USERS_KEY=SAVE_NS+".users", OLD_KEY=SAVE_NS+".v1";   // next/: its own namespace (frDIn.*); at the root the live app's (frDI.*)
 function loadUsers(){
   let u=null; try{ u=JSON.parse(localStorage.getItem(USERS_KEY)||"null"); }catch(e){}
   if(!u || !Array.isArray(u.list) || !u.list.length){
     let old=null; try{ old=JSON.parse(localStorage.getItem(OLD_KEY)||"null"); }catch(e){}
     const name = old && old.learnerName ? String(old.learnerName) : "User 1";
     u={current:"u1", list:[{id:"u1", name}]};
-    try{ if(old) localStorage.setItem("frDI.u.u1", JSON.stringify(old)); localStorage.setItem(USERS_KEY, JSON.stringify(u)); if(old) localStorage.removeItem(OLD_KEY); }catch(e){}
+    try{ if(old) localStorage.setItem(SAVE_NS+".u.u1", JSON.stringify(old)); localStorage.setItem(USERS_KEY, JSON.stringify(u)); if(old) localStorage.removeItem(OLD_KEY); }catch(e){}
   }
   if(!u.list.some(x=>x.id===u.current)) u.current=u.list[0].id;
   return u;
@@ -798,7 +1030,7 @@ function loadUsers(){
 const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
-const KEY="frDI.u."+USERS.current;
+const KEY=SAVE_NS+".u."+USERS.current;
 const defaults = () => ({stateVer:12, courseRev:64, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
@@ -1094,7 +1326,7 @@ function switchUser(id){
   trace("user changed: from "+currentUser().name+" to "+USERS.list.find(x=>x.id===id).name);
   S.trace=(S.trace||[]).slice(-300); S.log=(S.log||[]).slice(-300);
   try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
-  try{ const raw=localStorage.getItem("frDI.u."+id), o=raw?JSON.parse(raw):null; if(o){ o.settings=S.settings; localStorage.setItem("frDI.u."+id, JSON.stringify(o)); } }catch(e){}
+  try{ const raw=localStorage.getItem(SAVE_NS+".u."+id), o=raw?JSON.parse(raw):null; if(o){ o.settings=S.settings; localStorage.setItem(SAVE_NS+".u."+id, JSON.stringify(o)); } }catch(e){}
   USERS.current=id; saveUsers(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload();
 }
 function addUser(name){
@@ -1102,18 +1334,84 @@ function addUser(name){
   if(USERS.list.some(x=>x.name.toLowerCase()===name.toLowerCase())) return "There is already a user called "+name+".";
   const id="u"+(Math.max(0,...USERS.list.map(x=>+String(x.id).slice(1)||0))+1);
   const fresh=defaults(); fresh.learnerName=name; fresh.settings=S.settings;
-  try{ localStorage.setItem("frDI.u."+id, JSON.stringify(fresh)); }catch(e){ return "This phone's storage is full."; }
+  try{ localStorage.setItem(SAVE_NS+".u."+id, JSON.stringify(fresh)); }catch(e){ return "This phone's storage is full."; }
   USERS.list.push({id, name}); saveUsers(); switchUser(id); return "";
 }
 function removeUser(id){
   if(USERS.list.length<2) return "The last user cannot be removed.";
   const u=USERS.list.find(x=>x.id===id); if(!u) return "";
   if(!confirm("Remove "+u.name+" from this phone? Their place in the course and their log are deleted.")) return "";
-  USERS.list=USERS.list.filter(x=>x.id!==id); try{ localStorage.removeItem("frDI.u."+id); }catch(e){}
+  USERS.list=USERS.list.filter(x=>x.id!==id); try{ localStorage.removeItem(SAVE_NS+".u."+id); }catch(e){}
   try{ clipStore("all").then(all=>Object.keys(all).filter(k=>k.startsWith(id+"_")).forEach(k=>clipStore("del", k))); }catch(e){}
   if(USERS.current===id){ USERS.current=USERS.list[0].id; saveUsers(); location.reload(); } else { saveUsers(); renderPanel(); }
   return "";
 }
+
+/* ============================================================
+   (next) THE SURFACE: what the overhaul adds. It draws and answers the finger; it never decides what is taught, shown or when.
+   UI.pref: this phone's choices about the surface (their own key, frDIn.ui: never in the learner's saved state).
+     red "quiet" | "loud" (the listen frame as designed, or as thick and bright as the live app's);  mic true | false (the microphone tab);
+     tester (the flag and save buttons in a lesson);  haptics, sound, motion "auto" | "less".   ?red=loud&mic=off&tester=on in the address sets them.
+   ============================================================ */
+const UI = (()=>{
+  const KEY="frDIn.ui", def={red:"quiet", mic:true, tester:false, haptics:true, sound:true, motion:"auto"};
+  let pref=Object.assign({}, def); try{ Object.assign(pref, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){}
+  try{ const q=new URLSearchParams(location.search); if(q.has("red")) pref.red = q.get("red")==="loud" ? "loud" : "quiet"; pref.mic=true;      /* (the owner, 15 Nov) the microphone tab stays: no flag */
+    if(q.has("tester")) pref.tester = q.get("tester")!=="off"; if(q.has("motion")) pref.motion = q.get("motion")==="less" ? "less" : "auto"; }catch(e){}
+  const apply=()=>{ const h=document.documentElement; h.dataset.red=pref.red; h.dataset.mictab=pref.mic?"on":"off"; h.dataset.tester=pref.tester?"on":"off"; h.dataset.motion=pref.motion; };
+  const savePref=()=>{ try{ localStorage.setItem(KEY, JSON.stringify(pref)); }catch(e){} apply(); };
+  apply();
+  /* Haptics: only for touches (a press, a tap that was taken) and for the end of a lesson. Never when a speaking turn opens:
+     the phone lies on a table and the microphone is open. */
+  const BUZZ={tick:8, tap:12, done:[14,70,22], nudge:[20,60,20]};
+  const haptic=k=>{ if(!pref.haptics) return; try{ navigator.vibrate && navigator.vibrate(BUZZ[k]||8); }catch(e){} };
+  /* The turn: signal() has set the frame's classes; this shows the tab that goes with it (microphone / hand) and runs the bars. */
+  let level=0, raf=0, speakOn=false; const bars=()=>document.getElementById("micBars");
+  const SHAPE=[.55,.85,1,.7,.9,.5];
+  function frame(){ raf=0; if(!speakOn) return; const el=bars(); if(el && MIC.live){ level*=0.86; const v=Math.min(1, level*MIC.gain); [...el.children].forEach((b,i)=>{ b.style.transform="scaleY("+(0.22+0.78*v*SHAPE[i]).toFixed(3)+")"; }); }
+    raf=requestAnimationFrame(frame); }
+  const MIC={live:false, gain:9};
+  function turn(state){ const speak = state===true || state==="listen" || state==="lead", tap = state==="tap", b=document.body.classList;
+    b.toggle("turn-speak", speak); b.toggle("turn-tap", tap);
+    if(speak && !speakOn){ speakOn=true; MIC.live=false; level=0; const el=bars(); if(el){ el.classList.add("idle"); [...el.children].forEach(x=>{ x.style.transform=""; }); } if(!raf) raf=requestAnimationFrame(frame); }
+    if(!speak) speakOn=false; }
+  // the learner's own voice, as the listener hears it (a block of samples): the bars follow it
+  function voice(c){ if(!speakOn || !c || !c.length) return; let e=0; const n=c.length, st=Math.max(1, n>>7); let k=0; for(let i=0;i<n;i+=st){ e+=c[i]*c[i]; k++; } const r=Math.sqrt(e/Math.max(1,k));
+    if(!MIC.live){ MIC.live=true; const el=bars(); if(el) el.classList.remove("idle"); } if(r>level) level=r; }
+  /* How far through the lesson: the tests of the lesson answered right at least once, of all its tests. It only ever grows. Each right
+     answer makes the same small mark at the bar's end (the bead), whatever came before it: nothing shows a correction. */
+  const PROG={lesson:null, total:1, base:0, done:new Set()};
+  const testsOf=ex=>ex.parts.reduce((n,p)=>n+p.items.filter(it=>it.type==="task").length, 0);      // every task that is logged "correct" when answered: tests, taps, and the leads of taps
+  function progStart(L){ if(!L) return; PROG.lesson=L.id; PROG.done=new Set(); PROG.total=Math.max(1, L.exercises.reduce((n,e)=>n+testsOf(e),0));
+    PROG.base=L.exercises.filter(e=>S.finished[e.id]).reduce((n,e)=>n+testsOf(e),0); progDraw(); }
+  function progDraw(){ const bar=document.getElementById("bar"); if(!bar) return; const p=Math.max(0.02, Math.min(1, (PROG.base+PROG.done.size)/PROG.total));
+    bar.style.setProperty("--p", p.toFixed(4)); bar.style.setProperty("--bw", bar.clientWidth+"px"); bar.setAttribute("aria-valuenow", Math.round(p*100)); }
+  function onLog(o){ if(!o || o.result!=="correct" || !o.task || o.lesson!==PROG.lesson) return;
+    if(!o.delayed) PROG.done.add(o.task); progDraw();
+    const bead=document.getElementById("bead"); if(bead){ bead.classList.remove("pop"); void bead.offsetWidth; bead.classList.add("pop"); } }
+  /* The stage is the app's own 400 x 700 drawing. It is fitted under the chrome and inside the frame; what is left over on a tall screen
+     goes partly above the pictures and partly below the tutor, whom the screen's own bottom edge crops (never above y = 690 of the drawing,
+     so her hands at rest stay in the picture). */
+  const VIEW={y0:40, y1:690, extMax:95};
+  function layout(){ const svg=document.getElementById("scene"); if(!svg) return; const cs=getComputedStyle(document.documentElement), px=n=>parseFloat(cs.getPropertyValue(n))||0;
+    const probe=document.getElementById("stage"), pcs=getComputedStyle(probe), top=parseFloat(pcs.paddingTop)||0, vw=window.innerWidth, vh=window.innerHeight;
+    const fl=px("--f-listen"), H=VIEW.y1-VIEW.y0, availW=vw-18-(parseFloat(pcs.paddingLeft)||0)-(parseFloat(pcs.paddingRight)||0), availH=vh-top-fl;
+    const k=Math.max(0.2, Math.min(availW/400, availH/H)), slack=Math.max(0, availH-H*k), ext=Math.min(slack*0.55, VIEW.extMax*k), lead=slack-ext;
+    const vbH=(vh-top-lead)/k;      // the drawing goes on to the bottom of the screen
+    svg.setAttribute("viewBox", `0 ${VIEW.y0} 400 ${vbH.toFixed(1)}`); svg.style.width=(400*k).toFixed(1)+"px"; svg.style.height=(vbH*k).toFixed(1)+"px"; svg.style.marginTop=lead.toFixed(1)+"px";
+    progDraw(); }
+  window.addEventListener("resize", layout); window.addEventListener("orientationchange", ()=>setTimeout(layout, 120));
+  /* The faces must be there before anything is measured with them (the marks on written words are placed by measured widths). */
+  let fontsReady=null;
+  function fonts(){ if(!fontsReady){ const want=['600 24px "Atkinson Hyperlegible Next"','700 14px "Atkinson Hyperlegible Next"','600 100px "Fraunces"'];
+      const all=(document.fonts && document.fonts.load) ? Promise.all(want.map(f=>document.fonts.load(f).catch(()=>null))) : Promise.resolve();
+      fontsReady=Promise.race([all, new Promise(r=>setTimeout(r, 4000))]).then(()=>{ const ok=!document.fonts || !document.fonts.check || document.fonts.check(want[0]); try{ trace("fonts "+(ok?"ready":"NOT ready after 4 s: the system's face is used")); }catch(e){} return ok; }); }
+    return fontsReady; }
+  // a touch that was taken: the card goes down and comes back
+  function press(el){ if(!el) return; el.classList.add("pressed"); setTimeout(()=>el.classList.remove("pressed"), 130); }
+  function exerciseDone(){ const bar=document.getElementById("bar"); if(!bar) return; bar.classList.remove("exDone"); void bar.offsetWidth; bar.classList.add("exDone"); }
+  return {pref, savePref, haptic, turn, voice, progStart, progDraw, onLog, layout, fonts, press, exerciseDone, PROG, VIEW};
+})();
 
 /* ============================================================
    SPEECH OUT — slow, unit by unit, French voice
@@ -1267,11 +1565,12 @@ const MOUTH = (()=>{
     }
     for(let i=0;i<cur.length;i++) cur[i] += (target[i]-cur[i])*0.45;   // smooth: about 40 ms to settle
     smileNow += (smileTarget-smileNow)*0.12;                          // the smile grows and fades over about 300 ms
-    draw(cur);
+    API.draw(cur, smileNow);      // (next) the one drawing call of the mouth, replaceable: a new tutor rig draws the mouth from the same shape (TUTOR.adopt)
     raf = (play || Math.abs(smileNow-smileTarget)>0.005 || cur.some((c,i)=>Math.abs(c-target[i])>0.01)) ? requestAnimationFrame(loop) : null;
   }
   const kick=()=>{ if(!raf) raf=requestAnimationFrame(loop); };
-  return {
+  const API = {
+    draw(v, smile){ draw(v); },      // (next) default: the drawing in this page (v: [open, width, protrusion, closed, teeth, fv, tongue]; smile 0..1)
     plan,
     start(pl, rate){
       if(pl.missing){ trace("no IPA for: "+pl.text); return; }
@@ -1297,6 +1596,7 @@ const MOUTH = (()=>{
     get smiling(){ return smileNow; },
     IPA, VIS,
   };
+  return API;
 })();
 MOUTH.stop();                                  // draw the resting (smiling) mouth straight away
 // reinforcement: a broad, warm smile for a moment after a correct answer
@@ -1533,18 +1833,21 @@ const signalEl = document.getElementById("signal");
    tapping hands all the way round the screen: the same hand as the tap signal on the pictures. Not red, which says "listen, say nothing"
    and left a tester waiting on 13 Nov (.40), and not green. */
 const TAPBORDER = (()=>{ const el=document.createElementNS("http://www.w3.org/2000/svg","svg"); el.id="tapBorder"; el.setAttribute("aria-hidden","true"); document.body.appendChild(el); return el; })();
-function tapBorderDraw(){
-  const W=window.innerWidth, H=window.innerHeight, T=24, k=21/57, r1=n=>n.toFixed(1);       // T: the band's width (px): the pictures begin 28 px in, so it covers none of them; the hand is 21 px tall in it
-  let h=`<path fill-rule="evenodd" d="M0 0H${W}V${H}H0Z M${T} ${T}V${H-T}H${W-T}V${T}Z" fill="#dbe8fb"/><rect x="${T-1}" y="${T-1}" width="${W-2*T+2}" height="${H-2*T+2}" rx="3" fill="none" stroke="#5a6f8a" stroke-width="2"/>`;
+function tapBorderDraw(){ if(!TAPBORDER) return; TAPBORDER.innerHTML=""; return;      // (next, the owner 15 Nov) no band of hands: the tap frame is a plain blue outline with the tab (CSS)
+  /* (next) the same band of tapping hands, in the new language: the band is the frame's tap state (rounded inside like the other two),
+     the hands a little larger and further apart, none where the tab with the hand stands at the bottom */
+  const W=window.innerWidth, H=window.innerHeight, T=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--f-tap"))||22, R=22, k=(T-3)/57, r1=n=>n.toFixed(1);
+  const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let h=`<path fill-rule="evenodd" d="M0 0H${W}V${H}H0Z M${T+R} ${T}H${W-T-R}A${R} ${R} 0 0 1 ${W-T} ${T+R}V${H-T-R}A${R} ${R} 0 0 1 ${W-T-R} ${H-T}H${T+R}A${R} ${R} 0 0 1 ${T} ${H-T-R}V${T+R}A${R} ${R} 0 0 1 ${T+R} ${T}Z" fill="${css("--tap-tint")}"/><rect x="${T}" y="${T}" width="${W-2*T}" height="${H-2*T}" rx="${R}" fill="none" stroke="${css("--tap")}" stroke-width="2.5"/>`;
   const put=(cx,cy)=>{ h+=`<g transform="translate(${r1(cx-1.5*k)},${r1(cy-28*k)}) scale(${k.toFixed(3)})"><use href="#hs_point"/></g>`; };
-  const nx=Math.max(3, Math.round(W/27)), ny=Math.max(3, Math.round((H-2*T)/27));
-  for(let i=0;i<nx;i++){ const cx=(i+0.5)*W/nx; put(cx, T/2); put(cx, H-T/2); }
+  const nx=Math.max(3, Math.round(W/34)), ny=Math.max(3, Math.round((H-2*T)/34));
+  for(let i=0;i<nx;i++){ const cx=(i+0.5)*W/nx; put(cx, T/2); if(Math.abs(cx-W/2)>64) put(cx, H-T/2); }
   for(let j=0;j<ny;j++){ const cy=T+(j+0.5)*(H-2*T)/ny; put(T/2, cy); put(W-T/2, cy); }
   TAPBORDER.innerHTML=h;
 }
 window.addEventListener("resize", ()=>{ if(TAPBORDER.classList.contains("on")) tapBorderDraw(); });
 function signal(state){ signalEl.classList.toggle("on", state===true || state==="listen" || state==="lead"); const tap = state==="tap";
-  signalEl.classList.toggle("tap", tap); if(tap) tapBorderDraw(); TAPBORDER.classList.toggle("on", tap); }
+  signalEl.classList.toggle("tap", tap); if(tap) tapBorderDraw(); TAPBORDER.classList.toggle("on", tap); UI.turn(state); }
 
 function normalise(t){
   return t.toLowerCase().replace(/[’`]/g,"'").replace(/\bc est\b/g,"c'est").replace(/[.,!?;:«»"()\-…\u2010-\u2015\u2212\u00a0]/g," ").replace(/\s+/g," ").trim();
@@ -1749,9 +2052,9 @@ function judge(text, expect, echoes=[], alsoOk=[]){
        about je or tu ("Je fais quoi ?", "Tu fais quoi ?", "Tu vas faire quoi ?": the cue begins with the person) and what was heard is
        that SAME person, the answer is judged: it is the question's person said back. Only that direction: "je" heard for "tu" after
        "Répète : tu danses." or after "Tu fais quoi ?" stays unsure as before. Measured 15 Nov 2026 (the app's listener, the word list of
-       L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's, Helen's and
-       Richard's own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
-       other person: the "je" of 240 recordings heard as je 240 times (Jon 131, Helen 36, Richard 20, 53 unnamed), the "tu" of 86 (all
+       L6E17 / L5E19): the course's three voices, 21 clips of je / tu + verb, the person heard right 21 of 21; Jon's and two other testers'
+       own recordings of "Je m'appelle …" and "Tu t'appelles …" (dev/real_audio), heard against the same phrases with the
+       other person: the "je" of 240 recordings heard as je 240 times (Jon 131, two others 56, 53 unnamed), the "tu" of 86 (all
        Jon's) heard as tu 85 times (once the whole line was heard as "je m'appelle Marie"). So a right "Tu danses." taken for "Je danse."
        is rare (about one in a hundred on the one voice measured), and then corrected once, while the error itself was never corrected. */
     const echoed = (e, w) => { const q=String(curCue||"").trim(), cp = /\?\s*$/.test(q) ? (/^(je|j')\s/i.test(q) ? "JE" : /^tu\s/i.test(q) ? "TU" : null) : null;
@@ -1927,8 +2230,10 @@ function startParallelRecording(){
     let pk=0; for(let i=0;i<cap.all.length;i++){ const v=Math.abs(cap.all[i]); if(v>pk) pk=v; }
     const clip=await keepClip(cap.all); return {clip, recPeak:+pk.toFixed(3), engine:"chrome", speech:cap.speechStartMs>=0}; }};
 }
+/* (switch-over) the learner's own recordings (their own name, played in the own-name model: S.ownClips) are where the live app kept them
+   once this page is the app at the root (SAVE_NS "frDI": "faultless-clips"); the preview keeps its own ("faultless-next-clips") */
 function clipStore(op, key, val){
-  return new Promise((res,rej)=>{ const r=indexedDB.open("faultless-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
+  return new Promise((res,rej)=>{ const r=indexedDB.open(SAVE_NS==="frDI" ? "faultless-clips" : "faultless-next-clips",1); r.onupgradeneeded=()=>r.result.createObjectStore("clips");
     r.onerror=()=>rej(r.error); r.onsuccess=()=>{ const db=r.result, tx=db.transaction("clips", op==="get"||op==="all"?"readonly":"readwrite"), st=tx.objectStore("clips");
       let q; if(op==="put") q=st.put(val,key); else if(op==="del") q=st.delete(key); else if(op==="get") q=st.get(key); else if(op==="all"){ const out={}; const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; return; } else q=st.clear();
       q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }; });
@@ -2069,7 +2374,7 @@ async function listenVosk(expect, alsoOk=[]){
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
   const textNow=()=>voskClean(rawAll(), expect);
   let buf=[], n=0;
-  const feed=c=>{ buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
+  const feed=c=>{ try{ UI.voice(c); }catch(e){} buf.push(c); n+=c.length; if(n>=1600){ const a=new Float32Array(n); let o=0; for(const x of buf){ a.set(x,o); o+=x.length; } buf=[]; n=0; rec.acceptWaveformFloat(a,16000); } };
   const want=listenerWords(phraseOf(expect).toLowerCase().replace(/[.!?]/g,"").trim());
   // an answer that stops part-way ("un…", "je m'appelle…" before the name) may be a slow learner: keep listening a little
   // the answer has ended after 0.45 s of quiet (was 0.7 s; Jon 9 Nov 14:21: responses per minute is what counts). An answer
@@ -2170,8 +2475,16 @@ document.getElementById("manualText").addEventListener("keydown",e=>{ if(e.key==
 const svgNS="http://www.w3.org/2000/svg";
 /* Paul and Julie: drawn in the same realistic style as the teacher (soft skin and hair gradients, eyes with irises
    and catch-lights, natural brows, nose shading, smiling mouths), each with a name tag as in DISE. */
+/* (next) THE PICTURES DRAWN IN THIS FILE, and where each can be replaced by the picture library (people.js) without editing this file:
+     portrait(who)            Pierre / Sylvie head and shoulders with a name tag (.nametag)      <- PICS.portrait(who, name)
+     learnerCard()            the learner's own card with their name tag (.nametag)             <- PICS.learnerCard(name, sex)
+     objectPicture(), onePicture(), fingerCard(), numberCard(), cardOf(), placeholder()         (things of Lessons 1-4, numerals, a card in the hand)
+     the tutor (#tutor in the page: head, eyes, mouth, arms, hands)                              <- PICS.tutor(), through TUTOR below
+   A library picture is used only if it is there and has what the script needs from it (the name tag); otherwise the drawing here stands. */
+const libPic = (fn, ...a) => { try{ if(window.PICS && typeof PICS[fn]==="function"){ const g=PICS[fn](...a); if(g && g.querySelector && g.querySelector(".nametag")) return g; } }catch(e){} return null; };
 let portSeq=0;
 function portrait(who){
+  { const lib=libPic("portrait", who, VOCAB[who].name); if(lib) return lib; }
   const g=document.createElementNS(svgNS,"g"), u="pt"+(portSeq++), P = who==="paul";
   const skin = P ? ["#efc4a0","#dfa883","#c48a66"] : ["#f3d0b4","#e6b694","#cc9674"];
   const hair = P ? ["#7a5638","#5a3d27","#3f2a1a"] : ["#3a2a22","#271b15","#160f0b"];
@@ -2221,8 +2534,9 @@ function portrait(who){
 const LEARNER_TAG = {w:56, h:24};
 function learnerTagName(){ const n=String(S.learnerName||"").trim(); if(n) return n; const u=currentUser(); return u && !/^User \d+$/.test(u.name) ? u.name : ""; }
 function learnerCard(){
+  { const lib=libPic("learnerCard", learnerTagName(), S.learnerGender==="f"?"f":"m"); if(lib) return lib; }
   const g=document.createElementNS(svgNS,"g"), name=learnerTagName();
-  const width = t => { try{ const c=learnerCard.cv||(learnerCard.cv=document.createElement("canvas").getContext("2d")); c.font='700 14px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return c.measureText(t).width; }catch(e){ return t.length*8.4; } };
+  const width = t => { try{ const c=learnerCard.cv||(learnerCard.cv=document.createElement("canvas").getContext("2d")); c.font='700 14px "Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; return c.measureText(t).width; }catch(e){ return t.length*8.4; } };
   const MAXT=136; let lines=[name];
   if(width(name)>MAXT){ const cuts=[...name.matchAll(/[ -]/g)].map(m=>m.index);          // a long name goes on two lines, broken at the space or hyphen nearest the middle
     if(cuts.length){ const c=cuts.reduce((a,b)=>Math.abs(b-name.length/2)<Math.abs(a-name.length/2)?b:a); lines=[name.slice(0, name[c]==="-"?c+1:c), name.slice(c+1)]; } }
@@ -2333,6 +2647,7 @@ const PAL = { black:{c:"#2b2b30",d:"#141417",l:"#5b5b63"}, silver:{c:"#a9adb3",d
   yellow:{c:"#e2b23a",d:"#b8862a",l:"#f7d96b"}, white:{c:"#ece7dc",d:"#bdb4a2",l:"#fffdf6"}, brown:{c:"#8a5a36",d:"#5c3a22",l:"#b07a4e"} };
 const PAL_APPLE = { red:{c:"#c9302c",d:"#8f1d1b",l:"#ef6a55"}, green:{c:"#7fb03a",d:"#4f7a1f",l:"#b6d86c"}, yellow:{c:"#e8c23e",d:"#b88a1e",l:"#f8e37a"} };
 function onePicture(e){
+  { const t = window.THINGS && THINGS.one && THINGS.one(e); if(t) return t; }      // things.js: the new book (later apple, pen, shoe)
   const L=e.looks||[], col=L.find(x=>PAL[x]);
   if(e.is==="book"){ const inst = L.includes("open")?3 : L.includes("thin")?2 : 1;
     const g=objectPicture("livre", inst, {pal: col?PAL[col]:undefined});
@@ -2400,6 +2715,10 @@ function cardOf(inner, k=0.74){
   const c=document.createElementNS(svgNS,"g"); c.setAttribute("transform",`translate(${80-80*k} ${95-95*k}) scale(${k})`); c.appendChild(inner); g.appendChild(c); return g;
 }
 const mkG = html => { const g=document.createElementNS(svgNS,"g"); g.innerHTML=html; return g; };
+/* (next) a card as an object: three faint steps of shadow (the light is upper left: they fall down and a little right), an edge, a face.
+   Every picture frame of the stage is drawn with this; the CSS (.cardSh .cardLip .cardFace .cardIn .lit .pressed) gives it its states. */
+const CARD = (w, h, r=16) => { const f=n=>(+n).toFixed(1); return `<rect class="cardSh" x="3" y="6" width="${f(w-2)}" height="${f(h-2)}" rx="${f(r)}"/><rect class="cardSh" x="5" y="9" width="${f(w-4)}" height="${f(h-3)}" rx="${f(r)}"/><rect class="cardSh" x="8" y="13" width="${f(w-8)}" height="${f(h-6)}" rx="${f(r)}"/><rect class="cardLip" y="${f(Math.min(3, h*0.02))}" width="${f(w)}" height="${f(h)}" rx="${f(r)}"/><rect class="cardFace" width="${f(w)}" height="${f(h)}" rx="${f(r)}"/>`; };
+const cardGroupOf = side => side==="L" ? fL : side==="R" ? fR : side==="pL" ? document.getElementById("badge_paul") : side==="pR" ? document.getElementById("badge_julie") : /^s\d+$/.test(side||"") ? frameRow.querySelector('[data-slot="'+side+'"]') : null;
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", sleeping:"sleep", singing:"sing", reading:"read", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
   working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen",      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
   writing:"write", running:"run", falling:"fall"};      // (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
@@ -2568,9 +2887,7 @@ function picture(spec){ if(typeof spec==="object") return genPicture(spec);
 function numberCard(id, look){
   const INK={black:"#2b3a55", blue:"#1f5fbf", red:"#c0392b", green:"#1e8449", orange:"#d9730d", purple:"#7d3c98"};      // (.58) the ink of the digit; the card stays the same
   const g=document.createElementNS(svgNS,"g"), d=id.slice(1), two=d.length>1;       // "10": two digits in the same card
-  g.innerHTML=`<rect x="22" y="26" width="116" height="142" rx="12" fill="#000" opacity=".08" transform="translate(3 4)"/>
-    <rect x="22" y="26" width="116" height="142" rx="12" fill="#fffdf8" stroke="#d9cfbd" stroke-width="2"/>
-    <text x="80" y="${two?128:140}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="${two?84:116}" font-weight="700" fill="${INK[look]||"#2b3a55"}"${two?' textLength="100" lengthAdjust="spacingAndGlyphs"':''}>${d}</text>`;
+  g.innerHTML=`<text class="numeral" x="80" y="${two?132:140}" text-anchor="middle" font-size="${two?96:128}" font-weight="600" fill="${INK[look]||"#2b3a55"}"${two?' textLength="118" lengthAdjust="spacingAndGlyphs"':''}>${d}</text>`;
   return g;
 }
 /* A scene is two frames {L, R}, or a row of three or four smaller frames {row:[…]} (several of a kind, a series,
@@ -2587,15 +2904,15 @@ function buildRow(items, area={y:24, h:190}){
     if(spec===null){ delete TARGET["s"+i]; delete BOUNDS["s"+i]; return; }       // .24: the place of a card that has not come yet (cards brought in one at a time keep their places)
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     if(spec && spec.appears){ try{ g.animate([{opacity:0},{opacity:1}], {duration:550, easing:"ease-out"}); }catch(e){} }      // the card that is new in this task comes in
-    g.innerHTML=`<rect width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="10" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
-    const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.appendChild(inner);
+    g.innerHTML=`<g class="cardIn">${CARD(w, h, Math.max(8, 16*k))}</g>`;
+    const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${k.toFixed(4)})`); inner.appendChild(picture(spec)); g.firstChild.appendChild(inner);
     g.dataset.slot="s"+i; inner.classList.add("pic");      // (.59) litPlay finds the picture of a place by these
-    frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62}; BOUNDS["s"+i]={x,y,w,h,r:10};
+    frameRow.appendChild(g); TARGET["s"+i]={x:x+w/2, y:y+h*0.62}; BOUNDS["s"+i]={x,y,w,h,r:Math.max(8, 16*k)};
   });
 }
 /* Paul and Julie as model learners (the field-tested course: "Claire says 'Vas-y.' to Paul and points; he names it"):
    small portraits beside the teacher, Paul on the left, Julie on the right. The one who answers lights up. */
-const BOUNDS={L:{x:28,y:24,w:160,h:190,r:14}, R:{x:212,y:24,w:160,h:190,r:14}};
+const BOUNDS={L:{x:28,y:24,w:160,h:190,r:16}, R:{x:212,y:24,w:160,h:190,r:16}};
 /* (.46; the owner's run of 13 Nov 21:17, Lesson 1 on .43: "a book is highlighted and she says un and une, one after the other".
    Measured in the app, L1E6: the border was on the left card, a book, for "Un."; 0.2 s later the row was drawn again with a shoe
    in that place and she said "Répète : une.", and the border had never gone off: it was back on the same place within its own
@@ -2610,11 +2927,15 @@ const goldThing = side => { const p = curScene && curScene.row && /^s\d+$/.test(
 function goldOn(side){ const g=document.getElementById("goldRing"), b=BOUNDS[side];
   if(!b || (curScene && curScene.row && (side==="L"||side==="R"))){ goldOff(); return; }
   const m=4; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m);
-  const thing=goldThing(side), since=performance.now()-GOLD.offAt, show=()=>{ g.setAttribute("opacity",1); GOLD.slot=side; GOLD.thing=thing; };
+  { const e=document.getElementById("goldEdge"); if(e){ e.setAttribute("x",b.x-m-3.6); e.setAttribute("y",b.y-m-3.6); e.setAttribute("width",b.w+2*m+7.2); e.setAttribute("height",b.h+2*m+7.2); e.setAttribute("rx",b.r+m+3.6); } }
+  const thing=goldThing(side), since=performance.now()-GOLD.offAt, show=()=>{ g.setAttribute("opacity",1); GOLD.slot=side; GOLD.thing=thing; litCard(side); };
   clearTimeout(GOLD.timer);
   if(g.getAttribute("opacity")!=="1" && GOLD.slot===side && GOLD.thing!==thing && since<GOLD_BLINK) GOLD.timer=setTimeout(show, GOLD_BLINK-since);
   else show(); }
-function goldOff(){ const g=document.getElementById("goldRing"); if(!g) return; clearTimeout(GOLD.timer); if(g.getAttribute("opacity")==="1") GOLD.offAt=performance.now(); g.setAttribute("opacity",0); }
+function goldOff(){ const g=document.getElementById("goldRing"); if(!g) return; clearTimeout(GOLD.timer); if(g.getAttribute("opacity")==="1") GOLD.offAt=performance.now(); g.setAttribute("opacity",0); litCard(null); }
+// (next) the lit card is picked up (CSS .lit: it rises, its edge turns, its shadow lengthens) for exactly as long as the gold border is on it
+function litCard(side){ document.querySelectorAll("#frames .lit").forEach(el=>el.classList.remove("lit")); const e=document.getElementById("goldEdge"); if(e) e.setAttribute("opacity", side ? 1 : 0);
+  const g=side && cardGroupOf(side); if(g) g.classList.add("lit"); }
 // before a model whose border goes on a different picture in the place the border is on, or left less than GOLD_BLINK ago: off, and wait
 async function goldClear(side){ if(!/^s\d+$/.test(side||"") || GOLD.slot!==side || GOLD.thing===goldThing(side)) return;
   goldOff(); const w=GOLD_BLINK-(performance.now()-GOLD.offAt); if(w>0){ await sleep(w); trace("border off "+Math.round(w)+" ms: a different picture in the same place"); } }
@@ -2623,9 +2944,9 @@ function setSideBadges(side){
   const el=document.getElementById("sideBadges"); el.replaceChildren();
   for(const who of ["paul","julie"]){ if(!side[who]) continue; const b=BADGE[who], h=BW*190/160;
     const g=document.createElementNS(svgNS,"g"); g.id="badge_"+who; g.setAttribute("transform",`translate(${b.x},${b.y})`);
-    g.innerHTML=`<rect class="ring" x="-4" y="-4" width="${BW+8}" height="${h+8}" rx="12" fill="none" stroke="#3fae5a" stroke-width="4" opacity="0"/>
-      <rect width="${BW}" height="${h.toFixed(1)}" rx="9" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/>`;
-    const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${BW/160})`); inner.appendChild(portrait(who)); g.appendChild(inner);
+    g.innerHTML=`<rect class="ring" x="-4" y="-4" width="${BW+8}" height="${h+8}" rx="12" fill="none" stroke="var(--speak)" stroke-width="4" opacity="0"/>
+      <g class="cardIn">${CARD(BW, h, 8)}</g>`;
+    const inner=document.createElementNS(svgNS,"g"); inner.setAttribute("transform",`scale(${BW/160})`); inner.appendChild(portrait(who)); g.lastChild.appendChild(inner);
     el.appendChild(g); TARGET[who==="paul"?"pL":"pR"]={x:b.x+BW/2, y:b.y+h*0.5}; BOUNDS[who==="paul"?"pL":"pR"]={x:b.x,y:b.y,w:BW,h,r:9};
   }
 }
@@ -2663,7 +2984,7 @@ async function setPortraits(sc){
   const first = curSceneKey===null;
   goldOff(); tagLit(null); lastPoint=null;
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
-  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
+  if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : (BOARD_TALL && sc.row.length<=2) ? {y:24, h:166} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
     slotL.style.opacity=1; slotR.style.opacity=1; }
   setSideBadges(sc.side||{});
@@ -2716,7 +3037,7 @@ async function thingGoes(it){
    ARMS — two-joint arms with hand shapes. A pose gives each wrist a target point and a hand shape;
    the elbow is found by reach (inverse kinematics), always bending outwards; poses are eased over ~0.3 s.
    ============================================================ */
-const ARMS = (()=>{
+const ARMS = (()=>{ const API = {};      // (next) API.draw: a new rig draws the arms (TUTOR.adopt gives it); go, the easing, the hand shapes' change and the gold border stay the page's
   const SH = {L:{x:146,y:448}, R:{x:254,y:448}}, UP=72, FORE0=66;
   const svgns="http://www.w3.org/2000/svg";
   const hands = {L:document.getElementById("hand_L"), R:document.getElementById("hand_R")};
@@ -2736,7 +3057,7 @@ const ARMS = (()=>{
     const out = s==="L" ? (e1.x<e2.x?e1:e2) : (e1.x>e2.x?e1:e2);          // the elbow bends away from the body
     return {E:out, W};
   }
-  function draw(){
+  function draw(){ if(API.draw){ API.draw(cur); return; }
     for(const s of ["L","R"]){
       const p=cur[s], {E,W}=solve(s,p);
       const dpath=`M${SH[s].x} ${SH[s].y} L${E.x.toFixed(1)} ${E.y.toFixed(1)} L${W.x.toFixed(1)} ${W.y.toFixed(1)}`;
@@ -2765,7 +3086,7 @@ const ARMS = (()=>{
     return new Promise(res=>{ done=res; raf=requestAnimationFrame(frame); });
   }
   draw();
-  return { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } };
+  return Object.assign(API, { go, REST, SH, solve, set(p){ cur={L:Object.assign({},REST.L,p.L||{}), R:Object.assign({},REST.R,p.R||{})}; draw(); } });
 })();
 // Poses (the teacher's right hand is on the viewer's left)
 const POSE = {
@@ -2828,7 +3149,9 @@ async function setScene(which){
   if(which===scene) return; scene=which;
   const demo = which==="class";
   const scr=document.getElementById("screen");
+  const clip=document.getElementById("screenClipRect"), clipTo=(x,y,w,h)=>{ if(clip){ clip.setAttribute("x",x); clip.setAttribute("y",y); clip.setAttribute("width",w); clip.setAttribute("height",h); } };
   if(demo){
+    clipTo(0,0,400,700);
     innerColour(false); gaze("learner"); preloadLearner();
     ["demoBg","phoneBody","screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=1);
     scr.style.transform="translate(100px,40px) scale(.5)";          // the app shrinks into the model learner's phone (phone and stand move with it)
@@ -2843,6 +3166,7 @@ async function setScene(which){
     document.getElementById("demoBg").style.opacity=0;
     await sleep(950);
     ["phoneBody","screenBg","innerBorder"].forEach(id=>document.getElementById(id).style.opacity=0);
+    clipTo(-1200,-400,2800,2400);
   }
 }
 function innerColour(go){ document.getElementById("innerBorder").style.stroke = go ? "var(--go)" : "var(--stop)"; }
@@ -2906,7 +3230,7 @@ let ctx=null;   // {lesson, ex, delayedRec}
 let phase="", curTask="";
 function trace(ev){ (S.trace=S.trace||[]).push({t:new Date().toISOString(), task:curTask, phase, ev}); if(S.trace.length>4000) S.trace.splice(0, S.trace.length-4000); }
 function ph(p){ phase=p; trace("phase: "+p); }
-function logEntry(o){ S.log.push(Object.assign({t:new Date().toISOString()}, o)); if(S.log.length>2000) S.log.shift(); }
+function logEntry(o){ S.log.push(Object.assign({t:new Date().toISOString()}, o)); if(S.log.length>2000) S.log.shift(); try{ UI.onLog(o); }catch(e){} }
 
 /* Delivery (Zig, DISE training Part 2, 18:59): "There is no pause from one sound to another between the words...
    It's one big word. So if you tap, then it becomes clear what the parts are." The dots in the scripts
@@ -3060,8 +3384,9 @@ async function cueAs(voice, units, at, item){
    ============================================================ */
 const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
 const BOARD = {key:null, b:null, boxes:[]};
+let BOARD_TALL = false;      // (next) this exercise has a board of four lines or more (set by runExercise)
 let BOARD_EX = null;      // (.28) the id of the exercise being run (null: no lesson running, as in the screen tools): a board shows only on its own items      // (.26) the DISE-style board shown now (boardShow)
-const TXT_Y = 244, TXT_SIZE = 24, TXT_BLUE = "#1f6fd6";
+const TXT_Y = 250, TXT_SIZE = 24, TXT_BLUE = "#1F6FD6", TXT_INK = "#1B2433", TXT_HI = "#FFF1B8";
 const mkLayer = (id, parent) => { const g=document.createElementNS(svgNS,"g"); g.id=id; document.getElementById(parent).appendChild(g); return g; };
 TXT.g = mkLayer("textBand", "frames");
 const lettersOf = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9\[\]]/g,"");
@@ -3071,7 +3396,7 @@ function textHide(){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; TXT.g.repl
    a straight line under letters that make ONE sound; a wavy line under letters that do not say what the rules give them.
    A part is [s, e, blue ranges, underline ranges, wavy ranges, 1 = the learner's own name]. Every character is placed at an
    x of its own (measured once with the same font), so the lines and the outline sit exactly under and round the letters. */
-const TXT_FONT = "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+const TXT_FONT = "'Atkinson Hyperlegible Next',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";      // (next) loaded before anything is measured (UI.fonts, awaited at the start button)
 const MEAS = (()=>{ let c=null; return (s, fs)=>{ try{ c=c||document.createElement("canvas").getContext("2d"); c.font=`600 ${fs}px ${TXT_FONT}`; return c.measureText(s).width; }catch(e){ return s.length*fs*0.55; } }; })();
 function charsOf(str, parts){
   const chars=[], partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(b=>i>=b[0] && i<b[1]);
@@ -3099,7 +3424,7 @@ function textShow(str, parts, hi){
   const key=str+"|"+JSON.stringify(parts)+"|"+(learnerTagName()||"");
   if(TXT.cur!==key){
     // every character with its part, its colour and its lines; the learner's own name stands where the file has [prénom]
-    const chars=charsOf(str, parts), r=charsSvg(chars, 200, TXT_Y, TXT_SIZE, 356, "#22303f");
+    const chars=charsOf(str, parts), r=charsSvg(chars, 200, TXT_Y, TXT_SIZE, 356, TXT_INK);
     TXT.g.innerHTML=`<g id="txtBoxes"></g><g id="txtLine">${r.svg}</g>`;
     TXT.cur=key; TXT.chars=chars; TXT.xs=r.xs; TXT.fs=r.fs; }
   TXT.g.setAttribute("opacity",1); TXT.shownCtx=TXT.ctx;
@@ -3115,7 +3440,7 @@ function textHi(hi){
     let b=gr[1]; while(b>gr[0] && /[\s.,?!:;…]/.test(chars[b].c)) b--;        // round the letters, not the full stop after them
     const r=document.createElementNS(svgNS,"rect");
     r.setAttribute("x",(xs[gr[0]]-5).toFixed(1)); r.setAttribute("y",(TXT_Y-fs*0.98).toFixed(1)); r.setAttribute("width",(xs[b+1]-xs[gr[0]]+10).toFixed(1)); r.setAttribute("height",(fs*1.42).toFixed(1));
-    r.setAttribute("rx",6); r.setAttribute("fill","#fffdf2"); r.setAttribute("stroke","#22303f"); r.setAttribute("stroke-width",2.2); box.appendChild(r); }
+    r.setAttribute("rx",7); r.setAttribute("fill",TXT_HI); r.setAttribute("stroke",TXT_INK); r.setAttribute("stroke-width",2.2); box.appendChild(r); }
 }
 // where a unit that is being said stands in a string: the same letters, at word edges, from a place on (or anywhere)
 function findUnit(str, unit, from, fwdOnly){
@@ -3159,14 +3484,15 @@ function boardShow(b){
   const key=JSON.stringify(b)+"|"+(learnerTagName()||"")+"|"+boardRoomSig();      // (.62) laid out again when the room round it changes (side portraits, the row's height)
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
-  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE; { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
+  let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE;      // (next) four lines keep 17: the cards above make room (BOARD_TALL) { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
   /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
      overlapped the bottom of the cards and the learner's name tag in the action box */
   /* (.62) a board of three or four lines (L8E15, L9E18) ran down behind Marie's head and over the side portraits of Pierre and Sylvie:
      where it does not fit as before, it moves up under the pictures as they really are (a row of three or more cards ends well above 214)
      and, only if it must, its letters get smaller, until it ends above Marie's head and, with the side portraits on the screen, it is
-     narrow enough to pass between them (boardFit). A board that fitted is placed exactly as before. */
-  let top0=218; if(n>1){ const f=boardFit(n, lines, fs); fs=f.fs; top0=f.top; }
+     narrow enough to pass between them (boardFit). A board that fitted is placed exactly as before.
+     (next) "as before" is next/'s own place (four lines higher when the cards above make room: BOARD_TALL). */
+  let top0 = n===1 ? TXT_Y : (n>=4 && BOARD_TALL ? 196 : n===2 ? 223 : 219); if(n>1){ const f=boardFit(n, lines, fs, top0); fs=f.fs; top0=f.top; }
   const lh=fs*1.25, y0 = n===1 ? TXT_Y : top0 + fs*1.15;
   const partOf=i=>parts.findIndex(p=>i>=p[0] && i<p[1]), inR=(rs,i)=>(rs||[]).findIndex(r=>i>=r[0] && i<r[1]);
   const isBlank=i=>{ const pi=partOf(i); return (pi>=0 && parts[pi][6]===1) || (b.blanks||[]).some(r=>i>=r[0] && i<r[1]); };
@@ -3175,15 +3501,15 @@ function boardShow(b){
     for(let j=0;j<ln.length;j++){ const i=at+j, pi=partOf(i), p=pi>=0?parts[pi]:null;
       chars.push({c:ln[j], i, part:pi, blank:isBlank(i), blue:!!(p && inR(p[2],i)>=0), under:p && inR(p[3],i)>=0 ? pi*100+inR(p[3],i) : -1, wavy:p && inR(p[4],i)>=0 ? pi*100+inR(p[4],i) : -1}); }
     const shown=chars.map(ch=>ch.blank ? Object.assign({}, ch, {c:"_", hide:true}) : ch);
-    const r=charsSvg(shown.map(ch=>ch.hide ? Object.assign({}, ch, {c:"\u2007"}) : ch), X0+widths[li]/2, y, fs, 0, "#22303f");
+    const r=charsSvg(shown.map(ch=>ch.hide ? Object.assign({}, ch, {c:"\u2007"}) : ch), X0+widths[li]/2, y, fs, 0, TXT_INK);
     svg+=r.svg;
     for(let a=0;a<shown.length;){ if(!shown[a].hide){ a++; continue; } let e=a; while(e<shown.length && shown[e].hide) e++;
-      svg+=`<path d="M${(r.xs[a]+1).toFixed(1)} ${(y+fs*0.12).toFixed(1)} H${(r.xs[e]-1).toFixed(1)}" stroke="#22303f" stroke-width="2.4" stroke-linecap="round"/>`; a=e; }
+      svg+=`<path d="M${(r.xs[a]+1).toFixed(1)} ${(y+fs*0.12).toFixed(1)} H${(r.xs[e]-1).toFixed(1)}" stroke="${TXT_INK}" stroke-width="2.4" stroke-linecap="round"/>`; a=e; }
     chars.forEach((ch,j)=>boxes.push({i:ch.i, part:ch.part, x:r.xs[j], x2:r.xs[j+1], y, fs, c:ch.c}));
     at+=ln.length+1; });
   const x0=X0-24, x1=X0+W+24,      // (.27) more room at the sides: the outline (4 px out) and the first letter must not touch the frame
   top=y0-fs*1.15, bot=y0+(n-1)*lh+fs*0.6;
-  TXT.g.innerHTML=`<rect x="${x0.toFixed(1)}" y="${top.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="8" fill="#f2f6f1" stroke="#9fb3a3" stroke-width="1.6"/><g id="txtBoxes"></g><g id="txtLine">${svg}</g>`;
+  TXT.g.innerHTML=`<rect class="boardLip" x="${x0.toFixed(1)}" y="${(top+2.5).toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="12"/><rect class="boardFace" x="${x0.toFixed(1)}" y="${top.toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${(bot-top).toFixed(1)}" rx="12"/><g id="txtBoxes"></g><g id="txtLine">${svg}</g>`;
   TXT.cur="board"; BOARD.key=key; BOARD.b=b; BOARD.boxes=boxes; TXT.g.setAttribute("opacity",1);
 }
 /* (.62) where a board of several lines can stand (the coordinates of the pictures' layer, as TXT.g): below the pictures, above Marie's head
@@ -3193,15 +3519,15 @@ const BOARD_FLOOR = 291, BOARD_SIDES = {top:254, x0:88, x1:312};
 const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||"")+":"+(HAND.at||""); };
 /* the bottom of an element in the board's own coordinates (the hand resting on a picture is drawn in another layer) */
 const bottomInBoard = el => { try{ const r=el.getBoundingClientRect(), m=TXT.g.getScreenCTM(); return r.height ? (r.bottom - m.f)/m.d : 0; }catch(e){ return 0; } };
-function boardFit(n, lines, fs0){
+function boardFit(n, lines, fs0, t0=218){      // (next) t0: where this board stands when it fits (next/'s own place)
   const H = f => f*(1.15 + 0.6 + (n-1)*1.25), W = f => Math.max(...lines.map(l=>MEAS(l, f))) + 48;
   const sides = !!document.querySelector("#sideBadges > g");
   const fits = (top, f) => top + H(f) <= BOARD_FLOOR && (!sides || top + H(f) <= BOARD_SIDES.top || W(f) <= BOARD_SIDES.x1 - BOARD_SIDES.x0);
   let hand=0; { const hd=document.getElementById("theHand"); if(hd && hd.getAttribute("opacity")==="1" && HAND.at) hand=HAND.bottom||0; }      // a hand resting on a picture (where it will be, not where its move has got to)
-  if(fits(218, fs0) && hand+6<=218) return {fs:fs0, top:218};
+  if(fits(t0, fs0) && hand+6<=t0) return {fs:fs0, top:t0};
   let pics = 0;      // the bottom of what is shown above the board: the row of pictures, or the action box
   for(const el of [frameRow, document.getElementById("actBox")]){ try{ const op = el && (el.style.opacity!=="" ? el.style.opacity : el.getAttribute("opacity")); if(el && el.childNodes.length && op!=="0" && String(op)!=="0"){ const b=el.getBBox(); if(b.height) pics=Math.max(pics, b.y+b.height); } }catch(e){} }
-  const top = hand ? Math.max(hand + 6, pics + 6) : Math.min(218, Math.max(pics ? pics + 6 : 218, 60));
+  const top = hand ? Math.max(hand + 6, pics + 6) : Math.min(t0, Math.max(pics ? pics + 6 : t0, 60));
   let fs = fs0; while(fs > 12 && !fits(top, fs)) fs -= 0.5;
   trace("board of "+n+" lines placed at "+Math.round(top)+", letters "+fs+(fits(top, fs) ? "" : " (FAULT LAYOUT: it still does not fit)"));
   return {fs, top};
@@ -3213,7 +3539,7 @@ function boardHi(list){
     const byLine={}; bs.forEach(x=>(byLine[x.y]=byLine[x.y]||[]).push(x));
     for(const y in byLine){ const L=byLine[y], fs=L[0].fs, xa=Math.min(...L.map(x=>x.x)), xb=Math.max(...L.map(x=>x.x2)), r=document.createElementNS(svgNS,"rect");
       r.setAttribute("x",(xa-4).toFixed(1)); r.setAttribute("y",(+y-fs*0.98).toFixed(1)); r.setAttribute("width",(xb-xa+8).toFixed(1)); r.setAttribute("height",(fs*1.36).toFixed(1));
-      r.setAttribute("rx",6); r.setAttribute("fill","#fffdf2"); r.setAttribute("stroke","#22303f"); r.setAttribute("stroke-width",2.2); box.appendChild(r); } }
+      r.setAttribute("rx",7); r.setAttribute("fill",TXT_HI); r.setAttribute("stroke",TXT_INK); r.setAttribute("stroke-width",2.2); box.appendChild(r); } }
 }
 /* A unit said by Marie or a model learner. The task's points not yet outlined are matched in it, in order: a word part by its
    letters (whole words only, so "toi" alone is not found inside "assieds-toi"), a blank by the next word of the unit. Each is
@@ -3302,14 +3628,14 @@ const HAND_K = 1.45;
 const STRIP = {g:null, pts:[]};
 STRIP.g = mkLayer("stripG", "frames");
 const TAPL = mkLayer("tapLayer", "room"), HANDL = mkLayer("handLayer", "room");
-HANDL.innerHTML=`<circle id="touchPulse" cx="0" cy="0" r="0" fill="none" stroke="#2f6fd0" stroke-width="4" opacity="0"/>
-  <rect id="tapRing" x="0" y="0" width="10" height="10" rx="12" fill="none" stroke="#2f6fd0" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
+HANDL.innerHTML=`<circle id="touchPulse" cx="0" cy="0" r="0" fill="none" stroke="var(--tap)" stroke-width="4" opacity="0"/>
+  <rect id="tapRing" x="0" y="0" width="10" height="10" rx="12" fill="none" stroke="var(--tap)" stroke-width="5" opacity="0" style="transition:opacity .15s"/>
   <g id="theHand" opacity="0" style="transition:transform .2s ease-out, opacity .15s"><g transform="rotate(180) scale(${HAND_K})"><use href="#hs_point"/></g>
-    <rect x="${-11.4*HAND_K}" y="-3" width="${22.8*HAND_K}" height="${22.8*HAND_K}" rx="${4.5*HAND_K}" fill="#3d5a7a" id="handSleeve"/><g id="handTag" transform="translate(0,${(22.8*HAND_K-20).toFixed(1)})"></g></g>`;
+    <rect x="${-11.4*HAND_K}" y="-3" width="${22.8*HAND_K}" height="${22.8*HAND_K}" rx="${4.5*HAND_K}" fill="#2E4A6B" id="handSleeve"/><g id="handTag" transform="translate(0,${(22.8*HAND_K-20).toFixed(1)})"></g></g>`;
 const HAND_LEN = 56*HAND_K, SELF_BOUNDS = {x:112, y:292, w:176, h:330, r:20};
 const boundsOf = slot => slot==="self" ? SELF_BOUNDS : BOUNDS[slot==="strip" ? "strip" : sideOf(slot)] || BOUNDS[slot];
 const handName = by => by==="teacher"||by==="both" ? VOCAB.claire.name : by==="paul"||by==="julie" ? VOCAB[by].name : by==="you" ? "You" : "";
-const SLEEVE = {teacher:"#3d5a7a", both:"#3d5a7a", paul:"#3f6fb5", julie:"#c0453b", you:"#4f9a61"};
+const SLEEVE = {teacher:"#2E4A6B", both:"#2E4A6B", paul:"#3F6FB5", julie:"#C0453B", you:"#5AA86D"};      // (next) the four identity colours (design language 9.1): the sleeve is its owner's top
 function handTo(x, y, by, k=1){
   const h=document.getElementById("theHand"), tag=document.getElementById("handTag"), name=handName(by);
   /* (.62) k < 1: the hand resting on a picture made smaller, its name tag on its sleeve instead of below it, so that a board of several
@@ -3348,7 +3674,7 @@ function buildStrip(spec, above){
      of the frame and the hand comes up from below, inside the frame, so that it never covers the writing under the pictures.
      above: the row of numerals stands under the line (counting silently). */
   const n=spec.count||1, x0=28, W=344, y0=above?24:30, H=above?86:180, cw=Math.min((W-16)/n, 104), ch=above?H*0.9:H*0.5, k=Math.min(cw/160, ch/190)*0.98;
-  const f=document.createElementNS(svgNS,"rect"); f.setAttribute("x",x0); f.setAttribute("y",y0); f.setAttribute("width",W); f.setAttribute("height",H); f.setAttribute("rx",12); f.setAttribute("fill","var(--frame)"); f.setAttribute("stroke","var(--frame-line)"); f.setAttribute("stroke-width",2); STRIP.g.appendChild(f);
+  const f=document.createElementNS(svgNS,"g"); f.setAttribute("transform",`translate(${x0},${y0})`); f.innerHTML=CARD(W, H, 14); STRIP.g.appendChild(f);
   for(let i=0;i<n;i++){ const cx=200-(n*cw)/2+(i+0.5)*cw, cy=y0+(above?H*0.5:H*0.3);
     const g=document.createElementNS(svgNS,"g"); g.setAttribute("transform",`translate(${(cx-80*k).toFixed(1)},${(cy-97*k).toFixed(1)}) scale(${k.toFixed(4)})`);
     g.appendChild(picture({is:spec.is, looks:spec.looks||[], count:1})); STRIP.g.appendChild(g); STRIP.pts.push({x:cx, y:cy+30*k}); }
@@ -3371,11 +3697,11 @@ const TAPSIG = mkLayer("tapSig", "room");
 function tapSignal(slots){
   TAPSIG.replaceChildren(); if(!slots || !slots.length) return;
   const bs=slots.map(boundsOf).filter(Boolean); if(!bs.length) return;
-  let h=""; for(const b of bs) h+=`<rect x="${(b.x-4).toFixed(1)}" y="${(b.y-4).toFixed(1)}" width="${(b.w+8).toFixed(1)}" height="${(b.h+8).toFixed(1)}" rx="${(b.r||10)+4}" fill="none" stroke="#5a6f8a" stroke-width="2.5" stroke-dasharray="7 6" opacity=".85"/>`;
+  let h=""; for(const b of bs) h+=`<rect class="tapOn" x="${(b.x-3.4).toFixed(1)}" y="${(b.y-3.4).toFixed(1)}" width="${(b.w+6.8).toFixed(1)}" height="${(b.h+6.8).toFixed(1)}" rx="${((b.r||10)+3.4).toFixed(1)}"/>`;
   /* the same small hand on EVERY picture that can be tapped (one hand in one place would seem to point at one of them) */
   const r=Math.max(12, Math.min(19, Math.min(...bs.map(b=>b.w))*0.16));
   for(const b of bs){ const cx=b.x+b.w-r*0.55, cy=b.y+r*0.55;
-    h+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><circle r="${r.toFixed(1)}" fill="#fffdf6" stroke="#5a6f8a" stroke-width="2"/>
+    h+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><circle class="tapDot" r="${r.toFixed(1)}"/>
       <clipPath id="tsc${Math.round(cx)}"><circle r="${(r-1.5).toFixed(1)}"/></clipPath><g clip-path="url(#tsc${Math.round(cx)})"><g class="tapHand"><g transform="translate(${(-1.5*r*1.7/57).toFixed(1)},${(-28*r*1.7/57).toFixed(1)}) scale(${(r*1.7/57).toFixed(3)})"><use href="#hs_point"/></g></g></g></g>`; }
   TAPSIG.innerHTML=h;
 }
@@ -3395,9 +3721,9 @@ function tapArm(targets){
     r.addEventListener("pointerdown", e=>{ e.preventDefault(); e.stopPropagation(); tapTouched(slot, e); }); TAPL.appendChild(r); }
 }
 function tapTouched(slot, e){
-  if(tapResolver){ touchLog(e, slot, "accepted"); tapResolver(slot); }
+  if(tapResolver){ touchLog(e, slot, "accepted"); UI.press(cardGroupOf(sideOf(slot))); UI.haptic("tap"); tapResolver(slot); }
   else if(TAPARM.targets && !TAPARM.early && TAPARM.cut && performance.now()-TAPARM.t0<TAP_TOO_SOON) touchLog(e, slot, "ignored: "+Math.round(performance.now()-TAPARM.t0)+" ms after the cue began, before a word of it could be heard");
-  else if(TAPARM.targets && !TAPARM.early){ TAPARM.early={slot, at:Math.round(performance.now()-TAPARM.t0)}; touchLog(e, slot, "kept: during the cue"); if(TAPARM.cut) teacherCut(); }
+  else if(TAPARM.targets && !TAPARM.early){ TAPARM.early={slot, at:Math.round(performance.now()-TAPARM.t0)}; touchLog(e, slot, "kept: during the cue"); UI.press(cardGroupOf(sideOf(slot))); UI.haptic("tap"); if(TAPARM.cut) teacherCut(); }
   else touchLog(e, slot, "ignored: a tap was already taken");
 }
 function tapWait(targets, ms){
@@ -3729,22 +4055,24 @@ function actBox(who, act, opt){
   opt = opt===true ? {still:true} : (opt||{});
   if(who==="pair"){      // (.25) two boxes side by side: "Marie:" doing act, "You:" doing opt.you (with the learner's name tag)
     const key=["pair", act, opt.you].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
-    g.innerHTML=[["marie", act, 30, VOCAB.claire.name+":"], ["you", opt.you, 210, "You:"]].map(([w,a,x,lab],i)=>`<text x="${x+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${lab}</text><g transform="translate(${x},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic${i}"></g></g>`).join("");
+    g.innerHTML=[["marie", act, 30, VOCAB.claire.name+":"], ["you", opt.you, 210, "You:"]].map(([w,a,x,lab],i)=>`<text x="${x+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${lab}</text><g transform="translate(${x},24)">${CARD(160,190,16)}<g id="actPic${i}"></g></g>`).join("");
     [["marie", act], ["you", opt.you]].forEach(([w,a],i)=>{ try{ document.getElementById("actPic"+i).appendChild(actPicture(w, a, {})); }catch(e){ trace("FAULT action picture "+a+": "+e.message); } });
-    const t=/^smil/.test(String(opt.you)) ? null : learnerCard().querySelector(".nametag"); if(t){ const k=1; t.setAttribute("transform",`translate(${(290-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); }
+    const t=/^smil/.test(String(opt.you)) ? null : learnerCard().querySelector(".nametag"); if(t){ const k=1; t.setAttribute("transform",`translate(${(290-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t);
+      const pic=document.getElementById("actPic1"); if(pic) pic.setAttribute("transform","translate(12.8 2.2) scale(.84)"); }
     g.setAttribute("opacity",1); return; }
   const BX = opt.left ? 28 : 120;      // (.25) opt.left: the box stands at the left, a picture of one person beside it (setPortraits)
   const key=[who, act, opt.still?"still":"", opt.stopped?"stopped":opt.will?"will":"", opt.face||"", opt.alsoWill||"", BX, opt.withP||""].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
   const mine = who==="you" || who==="both", label = who==="you" ? (opt.withP && VOCAB[opt.withP] ? VOCAB[opt.withP].name+" and you:" : "You:") : who==="both" ? VOCAB.claire.name+" and you:" : (who==="paul" || who==="julie") ? VOCAB[who].name+":" : (opt.withP && VOCAB[opt.withP] ? VOCAB.claire.name+" and "+VOCAB[opt.withP].name+":" : VOCAB.claire.name+":");
   g.innerHTML=`<text x="${BX+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${label}</text>
-    <g transform="translate(${BX},24)"><rect width="160" height="190" rx="14" fill="var(--frame)" stroke="var(--frame-line)" stroke-width="2"/><g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
+    <g transform="translate(${BX},24)">${CARD(160,190,16)}<g id="actPic"></g></g>`;      // (.24: no green frame round the learner's figure: green means "speak", and nothing is asked)
   try{ document.getElementById("actPic").appendChild(actPicture(who, act, opt)); }catch(e){ trace("FAULT action picture "+act+": "+e.message); }
   /* the learner's own name tag under their figure (.24), as on their card in own-name tasks: the figure is the learner */
   /* (.50; Jon, 14 Nov: a tester took "Souris." to mean "myself") no name tag on a smile: "You:" + a face + a name says "this is me";
      the picture closes in on the mouth as it smiles (people.js), and the label alone says whose smile it is */
   const smiles = /^smil/.test(String(act)) && !opt.stopped && !opt.will;
   if(mine && !opt.face && !smiles){ const t=learnerCard().querySelector(".nametag"); if(t){ const k=1.1, x=(who==="both" ? 160 : 200)+(BX-120);      // PICS.together puts the learner on the left
-    t.setAttribute("transform",`translate(${(x-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t); } }
+    t.setAttribute("transform",`translate(${(x-80*k).toFixed(1)} ${(186-146*k).toFixed(1)}) scale(${k})`); g.appendChild(t);
+    const pic=document.getElementById("actPic"); if(pic && !opt.face) pic.setAttribute("transform","translate(12.8 2.2) scale(.84)"); } }
   g.setAttribute("opacity",1);
 }
 async function presentAct(a){
@@ -4380,6 +4708,9 @@ async function runExercise(li, ei){
   const lesson=LESSONS[li], ex=lesson.exercises[ei];
   ctx={lesson:lesson.id, ex:ex.id, exKey:ex.id, delayedRec:null, part:null};
   BOARD_EX=ex.id; textHide();      // (.28) a new exercise: whatever was written goes; only this exercise's board can come up
+  /* (next) a board of four lines at full letter size needs room over Marie's head: in an exercise that has one, a row of one or two cards is
+     drawn a little lower in height (166 for 190), and the board starts higher. Places in the row and what is shown do not change. */
+  BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
   S.lesson=li; S.ex=ei; save();
   curSceneKey=null;
   const anchor={afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)};
@@ -4391,7 +4722,7 @@ async function runExercise(li, ei){
     if(only.size){ ph("the tasks with an error again (step 5)"); trace("step 5: the tasks with an error again: "+[...only].join(", "));
       await runParts(ex.parts, {run:{only}, firstSeen, errorsByTask, anchor}); }
   }
-  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save();
+  S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save(); try{ UI.exerciseDone(); }catch(e){}
 }
 // a delayed test: the part's test tasks (since .45 opened with no symbol). Passed when it runs with no error;
 // an error resets the count and schedules it again (end of the next exercise, start of the next lesson).
@@ -4449,7 +4780,8 @@ async function endScreen(){
   await ding(true);
   await sleep(1200);
   document.getElementById("tick").style.opacity=0;
-  S.doneDay=dayKey(); save(); trace("lesson finished: Lesson "+(S.lesson+1));
+  S.doneDay=dayKey(); save(); trace("lesson finished: Lesson "+(S.lesson+1)); UI.haptic("done");
+  if(window.SHELL) try{ SHELL.lessonDone(); }catch(e){ trace("FAULT shell lesson complete: "+e.message); }      // (next) the lesson-complete screen, over the home that showPlay brings
   showPlay(true);
 }
 
@@ -4457,7 +4789,8 @@ async function endScreen(){
    START / RESUME
    ============================================================ */
 let running=false;
-function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); if(on) lessonHead(afterDemo); el.hidden=!on; }
+function showPlay(on, afterDemo=false){ const el=document.getElementById("play"); el.classList.toggle("afterDemo", !!afterDemo); if(on) lessonHead(afterDemo); el.hidden=!on;
+  document.body.classList.toggle("inLesson", !on); if(!on) UI.progDraw(); if(on && window.SHELL) try{ SHELL.home(); }catch(e){ trace("FAULT shell home: "+e.message); } }
 /* The start screen says which lesson this is. When the lesson was finished today it says so, and that the next lesson is for
    tomorrow (one lesson a day: what was learned has to fade a little before it is practised again); the button is still
    there, smaller and grey, for anyone who has to go on. On a later day the same state shows the next lesson's number. */
@@ -4474,7 +4807,8 @@ function lessonHead(afterDemo){
   else h.innerHTML = more? "Lesson "+(n+1) : "Lesson "+n+"<small>This is the last lesson there is so far. You can do it again.</small>";
   lessonTag(done && !today && more? n+1 : n);
 }
-function lessonTag(n){ document.getElementById("lessonTag").textContent="Lesson "+(n||S.lesson+1); }
+function lessonTag(n){ document.getElementById("lessonTag").textContent="Lesson "+(n||S.lesson+1);
+  const b=document.querySelector("#playBtn .ready"); if(b) b.textContent = document.getElementById("play").classList.contains("afterDemo") ? "Start" : "Start lesson "+(n||S.lesson+1); }
 let playWaiter=null;
 function afterDemoScreen(){ rest(); showPlay(true, true); return new Promise(r=>{ playWaiter=r; }); }
 /* The listener model is downloaded when the page opens (once; then it is kept on the phone).
@@ -4583,7 +4917,8 @@ try{ navigator.storage && navigator.storage.persist && navigator.storage.persist
 document.getElementById("playBtn").onclick=async ()=>{
   if(running){ if(playWaiter){ const w=playWaiter; playWaiter=null; showPlay(false); audioUnlock(); w(); } return; }
   if(document.getElementById("playBtn").classList.contains("loading")) return;
-  running=true;
+  running=true; UI.haptic("tick");
+  await UI.fonts();      // (next) the faces are there before the first board is measured
   // the audio system is needed for the in-app listener and for recording every answer (whichever recogniser judges it)
   if(window.LISTENER && !S.settings.manual && ((LISTENER.ready && S.settings.engine!=="google") || S.settings.keepAudio)){
     try{ await LISTENER.openMic(); }catch(e){ trace("microphone permission: "+e.message); }
@@ -4598,7 +4933,7 @@ document.getElementById("playBtn").onclick=async ()=>{
     else { lesson.exercises.forEach(e=>delete S.finished[e.id]); S.ex=0; }        // the last lesson there is: replay it
     save();
   }
-  lessonTag();
+  lessonTag(); UI.progStart(lesson);
   try{ await main(); } finally { running=false; }
 };
 
@@ -4697,7 +5032,20 @@ $("btnIntro").onclick=()=>{ if(running) return alertish("Wait until the exercise
 $("save").onclick=async ()=>{ const b=$("save"); b.classList.add("busy"); const n=await saveRun(); b.classList.remove("busy"); b.classList.add("done"); setTimeout(()=>b.classList.remove("done"),1500); };
 function alertish(m){ setStatus(m); }
 
-READY=true; load(); renderVoiceSelect(); renderPanel(); rest(); lessonHead(false);
+{ let leaveT=0; const lv=$("leave");
+  lv.onclick=()=>{ UI.haptic("tick");
+    if(!lv.classList.contains("ask")){ trace("leave asked"); lv.classList.add("ask"); lv.setAttribute("aria-label","Leave the lesson: tap again to leave"); clearTimeout(leaveT); leaveT=setTimeout(()=>{ lv.classList.remove("ask"); lv.setAttribute("aria-label","Leave the lesson"); }, 3000); return; }
+    trace("left the lesson (the exercise starts again next time)"); save(); stopRec(); try{ synth&&synth.cancel(); }catch(e){} try{ window.LISTENER&&LISTENER.micOff(); }catch(e){} location.reload(); }; }
+/* (next) THE TUTOR'S INTERFACE. Everything the script asks of the teacher's figure goes through these: MOUTH (plan, start, startTimeline, word,
+   stop, smile, smiling: the mouth, sound by sound), ARMS (go(pose, ms), SH: the arms and hand shapes), gaze(where), nod(), faceZoom(on),
+   tagLit(slot). A new rig (people.js: PICS.tutor() returning {node, rig}) replaces them call for call with TUTOR.adopt(rig); until one is
+   offered the drawing in this page stands. The rig keeps #handSleeve and the fingertip's place relative to the wrist. */
+const TUTOR = { mouth:MOUTH, arms:ARMS, get gaze(){ return gaze; }, get nod(){ return nod; }, get faceZoom(){ return faceZoom; }, get tagLit(){ return tagLit; },
+  adopt(rig){ if(!rig) return false; try{ if(rig.mouth) Object.assign(MOUTH, rig.mouth); if(rig.arms) Object.assign(ARMS, rig.arms);
+      if(rig.gaze) gaze=rig.gaze; if(rig.nod) nod=rig.nod; if(rig.faceZoom) faceZoom=rig.faceZoom; if(rig.tagLit) tagLit=rig.tagLit; trace("tutor: a new rig adopted"); return true; }catch(e){ trace("FAULT tutor rig: "+e.message); return false; } } };
+// a button that was pressed springs back (the press itself is CSS :active: within the frame of the touch)
+document.addEventListener("pointerup", e=>{ const b=e.target && e.target.closest && e.target.closest(".btn"); if(b){ b.classList.add("released"); setTimeout(()=>b.classList.remove("released"), 280); } }, {passive:true});
+READY=true; load(); renderVoiceSelect(); renderPanel(); rest(); lessonHead(false); UI.layout(); UI.fonts();
 // asked once, at the very start of the course; changeable in the tester panel. First name (typed), then gender (pictures).
 function cleanName(v){ return String(v||"").replace(/[^\p{L}\p{M}' \-]/gu," ").replace(/\s+/g," ").trim().slice(0,30); }
 function askWho(){
@@ -4713,5 +5061,7 @@ $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
 setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, setScene, gestureLead};
 </script>
+<script src="words.js"></script>
+<script src="shell.js"></script>
 </body>
 </html>
