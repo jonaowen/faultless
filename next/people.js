@@ -1057,7 +1057,8 @@ function oneKey(spec){
 function key(spec){
   spec = spec || {};
   const n = spec.count || 1;
-  return n > 1 ? group(n, () => oneKey(spec)) : oneKey(spec);
+  const one1 = () => (window.THINGS && THINGS.one && THINGS.one(Object.assign({}, spec, { is: "key", count: 1 }))) || oneKey(spec);      // things.js: the new key, when it has one
+  return n > 1 ? group(n, one1) : one1();
 }
 
 /* ---------- several of a thing, laid out to be counted ---------- */
@@ -1193,7 +1194,8 @@ function oneDog(spec){
 function dog(spec){
   spec = spec || {};
   const n = spec.count || 1;
-  return n > 1 ? group(n, () => oneDog(spec)) : oneDog(spec);
+  const one1 = () => (window.THINGS && THINGS.one && THINGS.one(Object.assign({}, spec, { is: "dog", count: 1 }))) || oneDog(spec);      // things.js: the new dog, when it has one
+  return n > 1 ? group(n, one1) : one1();
 }
 
 /* ---------- a car, seen from the side ---------- */
@@ -1697,6 +1699,7 @@ function frame(k, B, cam, c, floor, o){
   const rings = [Ehm, mixE(Ehm, Ewa, 0.5, 0.995), Ewa, mixE(Ewa, Ech, 0.5, 1.012), Ech];
   const trunkFn = (g, dx, dy) => { let d = ""; for (let i = 0; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], g, dx, dy); return d + hullOf([Ech, EsL, EsR, Enb], g, dx, dy); }, trunkD = doBody ? trunkFn(0, 0, 0) : "";
   const trunkL = form(trunkFn, T, 0.03 * S);
+  const trunkUp = () => { let d = ""; for (let i = 1; i < 4; i++) d += hullOf([rings[i], rings[i + 1]], 0, 0, 0); return d + hullOf([Ech, EsL, EsR, Enb], 0, 0, 0); };      // (the teacher: the arms' shadow kept off the hem, where it showed as a dark point under the cuff)
   if (doBody){
   parts.push({ id: "trunk", z: zt, mat: "top", layers: trunkL });
   /* the tops of the shoulders face the light from above: lit on both sides (the trunk's shade begins under them), so that the sleeve's top,
@@ -1727,9 +1730,10 @@ function frame(k, B, cam, c, floor, o){
   /* legs: thigh and shin in one outline (its root lies under the hem), the shoe; the hips in the colour of the legs */
   const Epv = ellipse(P(at(J.root, J.Bp, [0, -0.012, 0])), lax(J.Bp, [(B.hw + B.rHip * 0.92) * (B.hipK || 1), 0.062, 0.07]));
   if (!(o && o.noLegs)) parts.push({ id: "hips", z: zt - 0.004, mat: "hips", layers: [[ellPath(Epv, 0, 0, 0), part === "body" ? G.n[0] : G.n[1]]] });      // (the teacher seated: the lap between her knees in the lit tone, so the knees do not read as two outlined rounds)
+  const lapQ = {};                                             // (the teacher seated: the thighs' outlines, for her lap below)
   if (!(o && o.noLegs)) for (const s of ["L", "R"]){
     const hip = J["hip" + s], kn = J["kn" + s], an = J["an" + s], F = J["ft" + s];
-    const farLeg = P(hip)[2] < P(J.root)[2], zb = farLeg ? -0.02 : 0.02, Q = chain(hip, kn, an, [B.rHip, B.rTh, B.rKnee, B.rCalf, B.rCuff]), e = B.rCuff * S * 0.3, mat = "leg" + s;
+    const farLeg = P(hip)[2] < P(J.root)[2], zb = farLeg ? -0.02 : 0.02, Q = chain(hip, kn, an, [B.rHip, B.rTh, B.rKnee, B.rCalf, B.rCuff]), e = B.rCuff * S * 0.3, mat = "leg" + s; lapQ[s] = Q;
     legsD += sweep(Q, 0, 7)(0, 0, 0); const LM = WD && WD.legSkin ? sk : G, zl = (zmid(hip, kn) + zmid(kn, an)) / 2 + zb, zL = WD && WD.skirt ? Math.min(zl, zt - 0.003) : zl;
     parts.push({ id: "tr" + s, z: Math.min(zt - 0.002, zmid(hip, kn) + zb), mat: WD && WD.legSkin ? "legS" + s : mat, layers: form(sweep(Q, 0, 2), LM, e, farLeg, true) });
     parts.push({ id: "lg" + s, z: zL, mat: WD && WD.legSkin ? "legS" + s : part === "body" && !farLeg ? "legN" : mat, layers: form(sweep(Q, 1, 7), LM, e, farLeg, true) });
@@ -1745,6 +1749,14 @@ function frame(k, B, cam, c, floor, o){
     parts.push({ id: "sh" + s, z: -99, mat: "shadow" + s, layers: [[ellPath(ellipse(g0, [cam.lin(mul(fd, 0.15)), cam.lin([fd[2] * 0.085, 0, -fd[0] * 0.085]), [0, 0.03 * S]]), 0, 0, 0), c.shadow]], op: f2(Math.max(0, 1 - hgt / 0.24)) });
   }
   if (legsD){ hemS.tag = "clip"; hemS.clip = legsD; hemS.d = hemS.layers[0][0]; hemS.fill = G.f[1]; delete hemS.layers; }
+  /* (the teacher seated, knees together, the thighs toward us: from the front the thighs foreshortened end-on read as two rounds. Her LAP
+     is one surface: the tops of both thighs from the hips to just short of the knees in the lit tone, drawn over the thighs, under the hem;
+     the knees stay as the lower edge, with the soft fold where they meet) */
+  if (B.key === "tutor" && part === "body" && lapQ.L && lapQ.R && !(WD && WD.skirt)){
+    const dk = (q, k) => { const D = disc([q[0], q[1]], q[2] * k); D.n = 18; return D; }, L = lapQ.L, R = lapQ.R, lk = B.lapK == null ? 0.84 : B.lapK;
+    const lap = hullOf([dk(L[0], lk), dk(R[0], lk), dk(L[2], lk * 0.92), dk(R[2], lk * 0.92)], 0, 0, 0), mx = (L[3][0] + R[3][0]) / 2, my = (L[3][1] + R[3][1]) / 2 + Math.min(L[3][2], R[3][2]) * 0.5;
+    parts.push({ id: "lap", z: zt - 0.0012, mat: "lap", layers: [[lap, G.n[0]]] });
+    parts.push({ id: "lapF", z: zt - 0.00115, tag: "clip", clip: legsD, d: `M${f1(mx - 0.004 * S)} ${f1(my)}Q${f1(mx)} ${f1(my - 0.03 * S)} ${f1(mx + 0.002 * S)} ${f1(my - 0.075 * S)}L${f1(mx + 0.006 * S)} ${f1(my - 0.07 * S)}Q${f1(mx + 0.004 * S)} ${f1(my - 0.03 * S)} ${f1(mx + 0.005 * S)} ${f1(my)}Z`, fill: G.n[1] }); }
   }
   /* arms: the sleeve from the shoulder cap to the wrist in one outline, its cuff, the hand (a palm, the fingers together, a thumb) */
   if (doArms) for (const s of ["L", "R"]){
@@ -1792,7 +1804,7 @@ function frame(k, B, cam, c, floor, o){
   { const ck = B.castK || 1, dx = -LIGHT[0] * 0.028 * S * ck, dy = -LIGHT[1] * 0.032 * S * ck; let d = ""; for (const fn of cast) d += fn(0.003 * S, dx, dy);
     if (part === "arms") castD = d;                                                 // (the teacher: the arms' shadow belongs to the body's group, under her name tag: handed back with the list)
     else { if (skull && skull.z > zt) d += skull.cast(dx * 1.4, dy * 1.9);
-      parts.push({ id: "trunkC", z: zt + 0.0005, tag: "clip", clip: trunkD, d: part ? d + (o.cast || "") : d, fill: T.n[1] }); } }
+      parts.push({ id: "trunkC", z: zt + 0.0005, tag: "clip", clip: B.key === "tutor" ? trunkUp() : trunkD, d: part ? d + (o.cast || "") : d, fill: T.n[1] }); } }
   /* the far parts first; parts of one material that follow each other are drawn tone by tone (all their shade, then all their light), so
      that where two of them meet there is no seam */
   parts.sort((a, b) => a.z - b.z);
@@ -3632,7 +3644,7 @@ function headOnly(T){
 function placePic(spec, draw){
   spec = spec || {};
   const D = draw || oneThing, rel = String(spec.rel || "on").toLowerCase().replace(/[^a-z]+/g, " ").trim(), G = spec.ground || {}, gk = String(G.is || "table").toLowerCase().trim(), ghost = !!spec.was;
-  const T = bare(D(Object.assign({}, spec.thing, { count: 1 }))), put = (cx, yb, mw, mh) => fitted(T, cx, yb, mw, mh, ghost, 0.8);
+  const T = bare(D(Object.assign({}, spec.thing, { count: 1, placed: 1 }))), put = (cx, yb, mw, mh) => fitted(T, cx, yb, mw, mh, ghost, 0.8);
   const gl = lookOf({ looks: G.looks }), gc = gl.cn ? [gl.cn] : [], own = (kind, more, hook) => { const k = lookOf({ looks: gc.concat(more || []) }); Object.assign(k, hook); const t = window.THINGS && THINGS.ground && THINGS.ground(kind, k); return t != null ? t : THING[kind](k, {}); };      // things.js: the new drawing of the ground (table, chair, box), when it has one
   const lay = (cx, cy, s, inner) => `<g transform="translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})">${inner}</g>`;
   if (gk === "table" && (rel === "on" || rel === "under"))
@@ -4438,6 +4450,6 @@ function learnerCardPic(name, sex){ name = String(name || ""); const cT = traits
   try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
   return g; }
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
-window.PICS = { _fig: FIG, _thingsHook: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
+window.PICS = { _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
   things: Object.keys(THING).filter(k => !/^(book|apple|pen|shoe|flag|card|boy|girl)$/.test(k)) };
 })();
