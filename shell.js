@@ -141,6 +141,11 @@ const SHELL = (()=>{
     if(!S.learnerName){ const i=$("hNameIn"), v=cleanName(i ? i.value : ""); if(!v || !nameSet(v)){ e.stopPropagation(); e.preventDefault(); if(i){ i.focus(); i.classList.remove("want"); void i.offsetWidth; i.classList.add("want"); } return; } }
     if(e.isTrusted!==false) uiSound("go");      // the start of a lesson: the brighter sound, on the press itself
     if(MIC.primerNeeded()){ e.stopPropagation(); e.preventDefault(); MIC.primer(); return; }
+    /* (.74; the owner, 16 Nov: "When I select an exercise to redo from the lesson view, it doesn't actually open the exercise anymore. It stays on
+       the lessons view but starts playing the audio") a start from the Lessons or You tab (an exercise again, Go for perfect, the whole lesson
+       again) left that tab's layer over the stage: every tab layer is put away and Home is the tab, so the lesson is on the screen */
+    try{ for(const id of ["lessonsL","you","lessonV","ward","maker"]){ const o=$(id); if(o) o.hidden=true; }
+      if(tabNow!=="today"){ tabNow="today"; for(const [v,id] of NAVT){ const bb=$(id); if(bb){ bb.classList.toggle("on", v==="today"); if(v==="today") bb.setAttribute("aria-current","page"); else bb.removeAttribute("aria-current"); } } try{ MV.tabbed("today"); }catch(e2){} } }catch(e){}
     beadCtx(); try{ const hm=$("home"); if(hm && !hm.closest("[hidden]")) MV.openCard(hm.querySelector(".hero")); }catch(e){}
     if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:Array.isArray(ei)?"perfect":"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
     if(mark()!==seen){ G.next=natural(); G.why=""; pendingAgain=null; look(); }
