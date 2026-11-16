@@ -1579,7 +1579,8 @@ async function lessonLoad(){
       if((await Promise.race([all, dog]))==="stuck"){ trace("FAULT the lesson's content neither loaded nor failed 25 s after its last sign of life: the lesson is let through"); break; } }
     const none=lessonClips().filter(u=>CLIPS.none[u]);
     if(none.length) trace("FAULT lesson content: "+none.length+" clip(s) could not be fetched ("+none.slice(0,3).map(clipName).join(", ")+(none.length>3?" …":"")+")");
-    trace("the lesson's content is on the phone ("+Math.round(performance.now()-t0)+" ms under the loading screen)"); }
+    if(lessonHere()) trace("the lesson's content is on the phone ("+Math.round(performance.now()-t0)+" ms under the loading screen)");
+    else trace("the lesson begins with "+lessonClips().filter(u=>!CLIPS.here[u]).length+" clip(s) of its content still on their way ("+Math.round(performance.now()-t0)+" ms under the loading screen)"); }
   finally{ LOADING.on=false; LOADING.soon=false; try{ window.SPLASH && SPLASH.done(); }catch(e){} }
 }
 async function teacherBuf(k){
