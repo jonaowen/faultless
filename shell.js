@@ -130,7 +130,7 @@ const SHELL = (()=>{
     if(e.isTrusted!==false) uiSound("go");      // the start of a lesson: the brighter sound, on the press itself
     if(MIC.primerNeeded()){ e.stopPropagation(); e.preventDefault(); MIC.primer(); return; }
     beadCtx(); try{ const hm=$("home"); if(hm && !hm.closest("[hidden]")) MV.openCard(hm.querySelector(".hero")); }catch(e){}
-    if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
+    if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:Array.isArray(ei)?"perfect":"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
     if(mark()!==seen){ G.next=natural(); G.why=""; pendingAgain=null; look(); }
     const T = pendingAgain!=null ? pendingAgain : G.next; const kind = pendingAgain!=null ? "again" : (G.why||"");
     if(T!=null && T!==natural()){
@@ -432,7 +432,8 @@ const SHELL = (()=>{
     return `<div class="card rankup"><div class="rkem">${rankEmblem(k, "emb big")}</div><div><small>${got.length>1 ? got.length+" new ranks" : "A new rank"}</small><b>${esc(rankName(k))}</b><p>${tokenIcon()}<span><b class="num">+${t}</b> token${t===1?"":"s"} for your wardrobe</span></p></div></div>`; }
   /* ---- one exercise done again (from the lesson's view): it ran exactly as in its lesson; the learner's place, finished exercises and
      delayed tests are as they were before it (kept in G.replay, so that leaving half-way or closing the app puts them back too) ---- */
-  function replayDone(){ const R0=G.replay, L=LESSONS[R0.li], X=L.exercises[R0.ei], res=RUN.ex.filter(x=>x.id===X.id).pop() || {perfect:false, p:0}; RUN.ex=[];
+  function replayDone(){ if(G.replay && G.replay.run) return perfectRunDone();
+    const R0=G.replay, L=LESSONS[R0.li], X=L.exercises[R0.ei], res=RUN.ex.filter(x=>x.id===X.id).pop() || {perfect:false, p:0}; RUN.ex=[];
     restorePlace(); let bonus=0, badge=null; const today=dayOf(), p0=G.points-(res.p||0);
     if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; G.points+=bonus; G.lpts[L.id]=(G.lpts[L.id]||0)+bonus; badge=newBadge(today); }      // perfect now, by repair: +5 and it counts for the badges (the owner, 15 Nov late)
     delete G.lpts[L.id]; G.cur=null; const ranks=rankSync(); store(); look();
@@ -446,6 +447,29 @@ const SHELL = (()=>{
       + rankUpCard(ranks)
       + `<div class="spacer"></div><div class="donefoot">${rankBar(p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
     longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, res.perfect || !!(ranks && ranks.length)); }
+  /* (.71) the end of "Go for perfect": one praise for the whole run (the owner, 16 Nov: "they get praised for it afterwards. They get told the
+     point total that was added at the end of that repair sequence and the extra … that was added to the overall progress indicator") */
+  function perfectRunDone(){ const R0=G.replay, L=LESSONS[R0.li], eis=R0.eis||[R0.ei], runs=RUN.ex.slice(); RUN.ex=[];
+    const res=eis.map(k=>{ const id=L.exercises[k].id; return runs.filter(x=>x.id===id).pop() || {id, perfect:false, p:0}; });
+    restorePlace(); let bonus=0, badge=null; const today=dayOf();
+    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; G.points+=bonus; badge=newBadge(today); }
+    delete G.lpts[L.id]; G.cur=null; const ranks=rankSync(); store(); look();
+    const made=res.filter(r=>r.p>0).length, already=res.filter(r=>r.perfect && !(r.p>0)).length, left=L.exercises.filter(x=>!(G.ex[x.id] && G.ex[x.id].g)).length;
+    const added=G.points-(R0.p0!=null ? R0.p0 : G.points), lv=(()=>{ try{ return levelNow(); }catch(e){ return null; } })(), lpNow=Object.keys(G.lp).length;
+    try{ trace("go for perfect: Lesson "+(R0.li+1)+": "+made+" of "+eis.length+" made perfect; points +"+added+(bonus?" (with +"+bonus+" for the perfect lesson)":"")+"; "+left+" left; the place is as it was"); }catch(e){}
+    const o=$("done"), name=esc(S.learnerName||""), all=!left;
+    const level = lv && lv.Lv ? `<div class="card prog"><div class="row"><b>Your French</b><span class="lvl">${esc(lv.Lv.id)}</span></div>
+        <p>${bonus ? `Lesson ${R0.li+1} is now one of your <b>${lpNow}</b> perfect lesson${lpNow>1?"s":""}.` : `Perfect lessons: <b>${lpNow}</b>.`} The gold in your ring toward ${esc(lv.Lv.id)} is <b>${lv.perf}%</b>${R0.lv0!=null && lv.perf>R0.lv0 ? `, up from ${R0.lv0}%` : ""}.</p></div>` : "";
+    o.innerHTML = (all ? `<div class="okmark star">${ic("star")}</div><h1>Lesson ${R0.li+1} is perfect${name?", "+name:""}!</h1><div class="sub">Every exercise, every answer right.</div>`
+          : made ? `<div class="okmark star">${ic("star")}</div><h1>${made} more perfect${name?", "+name:""}!</h1><div class="sub">Lesson ${R0.li+1}: ${made} of the ${eis.length} exercise${eis.length>1?"s":""} you went for ${made>1?"are":"is"} perfect now.</div>`
+          : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">Lesson ${R0.li+1}: ${eis.length} exercise${eis.length>1?"s":""} practised. Every go makes them yours.</div>`)
+      + `<div class="card exstrip"><div class="row"><b>Lesson ${R0.li+1}</b>${added>0 ? `<span class="pts">${ic("star")} +<span data-n="${added}">${added}</span></span>` : ""}</div><div class="exdots">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}${eis.includes(k)?" me":""}"></i>`; }).join("")}</div>
+          <small>${added>0 ? `+${added} point${added>1?"s":""}: ${made ? `${made} for the exercise${made>1?"s":""} made perfect` : ""}${bonus ? `${made?", ":""}${bonus} for the whole lesson perfect` : ""}.` : ""} ${all ? "Every exercise is green." : left ? `${left} still to make perfect: go for it again whenever you like.` : ""}</small></div>`
+      + level
+      + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b><p>Every answer right, in ${badge} whole lessons.</p></div></div>` : "")
+      + rankUpCard(ranks)
+      + `<div class="spacer"></div><div class="donefoot">${rankBar(R0.p0!=null?R0.p0:G.points, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
+    longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, made>0 || !!(ranks && ranks.length)); }
   const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
   function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
   /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
@@ -462,11 +486,15 @@ const SHELL = (()=>{
   function restorePlace(){ const R0=G.replay; if(!R0) return; const sn=R0.snap; for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in sn) S[k]=sn[k]; else delete S[k];
     G.replay=null; save(); store(); }
   function startReplay(li, ei){ const snap={}; for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in S) snap[k]=JSON.parse(JSON.stringify(S[k]));
-    G.replay={li, ei, snap, t0:new Date().toISOString()}; store();
-    S.lesson=li; S.ex=ei; LESSONS[li].exercises.forEach((x,k)=>{ if(k===ei) delete S.finished[x.id]; else S.finished[x.id]=true; }); S.delayed=[];
-    logEntry({result:"EXERCISE AGAIN: Lesson "+(li+1)+", exercise "+(ei+1)+" ("+LESSONS[li].exercises[ei].id+"; the learner's own choice: a replay, its delayed tests are not kept, the place is put back after it)", heard:[]}); save(); }
+    const eis = Array.isArray(ei) ? ei.slice() : [ei];      // (.71) "Go for perfect": several exercises, one after another, in one run
+    G.replay={li, ei:eis[0], eis, run: eis.length>1 || Array.isArray(ei), p0:G.points, lp0:Object.keys(G.lp).length, lv0:(()=>{ try{ const n=levelNow(); return n && n.perf; }catch(e){ return null; } })(), snap, t0:new Date().toISOString()}; store();
+    S.lesson=li; S.ex=eis[0]; LESSONS[li].exercises.forEach((x,k)=>{ if(eis.includes(k)) delete S.finished[x.id]; else S.finished[x.id]=true; }); S.delayed=[];
+    logEntry({result: G.replay.run ? "GO FOR PERFECT: Lesson "+(li+1)+", exercises "+eis.map(k=>k+1).join(", ")+" (the learner's own choice: every exercise not yet perfect, one after another; their delayed tests are not kept, the place is put back after it)"
+      : "EXERCISE AGAIN: Lesson "+(li+1)+", exercise "+(ei+1)+" ("+LESSONS[li].exercises[ei].id+"; the learner's own choice: a replay, its delayed tests are not kept, the place is put back after it)", heard:[]}); save(); }
+  // the exercises of a done lesson that are not yet perfect (an error, or done before the record began)
+  const toPerfect = li => LESSONS[li].exercises.map((x,k)=>({x,k})).filter(o=>!(G.ex[o.x.id] && G.ex[o.x.id].g)).map(o=>o.k);
   // the progress bar of a replay counts that one exercise
-  { const ps0=UI.progStart; UI.progStart=function(L){ const r=ps0.apply(this, arguments); try{ if(G.replay && L && L.id===LESSONS[G.replay.li].id){ const X=L.exercises[G.replay.ei]; UI.PROG.total=Math.max(1, X.parts.reduce((n,p)=>n+p.items.filter(it=>it.type==="task").length,0)); UI.PROG.base=0; UI.progDraw(); } }catch(e){} return r; }; }
+  { const ps0=UI.progStart; UI.progStart=function(L){ const r=ps0.apply(this, arguments); try{ if(G.replay && L && L.id===LESSONS[G.replay.li].id){ const eis=G.replay.eis || [G.replay.ei]; UI.PROG.total=Math.max(1, eis.reduce((m,k)=>m+L.exercises[k].parts.reduce((n,p)=>n+p.items.filter(it=>it.type==="task").length,0),0)); UI.PROG.base=0; UI.progDraw(); } }catch(e){} return r; }; }
 
   /* ---- a lesson done, and every exercise in it: green when perfect, yellow when it had an error; any of them can be done again ---- */
   function lessonView(li){ const o=$("lessonV"), L=LESSONS[li], nP=L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length, known=L.exercises.filter(x=>G.ex[x.id]).length;
@@ -474,9 +502,11 @@ const SHELL = (()=>{
       <div class="card lvsum">${G.lp[L.id] ? badgeSvg(li+1, "badge") : `<div class="ring" style="--p:${Math.round(100*nP/L.exercises.length)}%"><b>${nP}</b></div>`}<div><b>${G.lp[L.id] ? "A perfect lesson" : nP+" of "+L.exercises.length+" exercises perfect"}</b><small>${G.lp[L.id] ? "Every exercise right, first time." : "A yellow one done again with every answer right turns green: +"+RULES.POINTS_PERFECT_REPAIR+" each, once. A whole lesson green counts toward your badges."}</small></div></div>
       <div class="exgrid">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<button class="extile ${g ? (g.g?"g":"y") : "u"}" data-ei="${k}" aria-label="Exercise ${k+1}: ${g ? (g.g?"perfect":"had an error") : "done"}"><span class="k">${k+1}</span><span class="mini" data-lz="x|${li}|${k}"></span><span class="st">${g ? (g.g?ic("star"):"") : ""}</span></button>`; }).join("")}</div>
       <div class="legend"><span><i class="g"></i>Perfect</span><span><i class="y"></i>Had an error</span>${known<L.exercises.length?`<span><i class="u"></i>Done before the record began</span>`:""}</div>
+      ${toPerfect(li).length ? `<button class="btn" id="lvPerfect">${ic("star")} Go for perfect in this lesson</button><p class="small center">${toPerfect(li).length===1 ? "The one exercise that is not perfect yet." : `The ${toPerfect(li).length} exercises that are not perfect yet, one after another.`}</p>` : ""}
       <button class="btn quiet" id="lvAll">${ic("redo")} The whole lesson again</button>`;
     o.hidden=false; o.scrollTop=0; LZ.watch(o); freezeMinis(o);
     $("lvBack").onclick=()=>{ tick(); o.hidden=true; };
+    { const gp=$("lvPerfect"); if(gp) gp.onclick=()=>{ tick("go"); o.hidden=true; pendingEx={li, ei:toPerfect(li)}; pendingAgain=null; $("playBtn").click(); }; }
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
     o.querySelectorAll("[data-ei]").forEach(b=>{ b.onclick=()=>{ tick(); const ei=+b.dataset.ei, g=G.ex[L.exercises[ei].id];
       info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); freezeMinis($("sheet")); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
@@ -956,7 +986,10 @@ const SHELL = (()=>{
     G.lastSeen=new Date().toISOString(); store();
     if(document.readyState==="complete") offline(); else window.addEventListener("load", offline);
     // the first screen is drawn (home, who is learning, the first run's name or the welcome back): the loading screen hands over once the faces are in
-    try{ UI.fonts().then(()=>window.SPLASH && SPLASH.done()); }catch(e){ try{ SPLASH.done(); }catch(x){} } }
+    // (speed) "ff-first-screen": the first screen has been painted and the loading screen's fade has begun (two frames after done(), then the frame
+    // let go): what the page kept back for this moment (the listener, the clips ahead, the stage under home) starts now, under the fade
+    const first=()=>{ const go=()=>{ try{ dispatchEvent(new Event("ff-first-screen")); }catch(e){} }; try{ requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(go, 0))); }catch(e){ go(); } };
+    try{ UI.fonts().then(()=>{ try{ window.SPLASH && SPLASH.done(); }finally{ first(); } }); }catch(e){ try{ SPLASH.done(); }catch(x){} first(); } }
   return {RULES, get G(){ return G; }, rankOf, rankName, ringsNow, weekGoal, wardrobe, WARDROBE, TIERS, home, lessonDone, who, maker, you, words, anchors, score, init, AV, MIC, welcome, offerUpdate};
 })();
 window.SHELL = SHELL;      // the page's hooks look for it there

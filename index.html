@@ -394,7 +394,6 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
   <div id="log"></div>
 </aside>
 
-<script src="listener/ort/ort.wasm.min.js"></script>
 <script src="listener/listener.js"></script>
 <script src="course/lesson1.js"></script>
 <script src="course/lesson2.js"></script>
@@ -408,7 +407,6 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson10.js"></script>
 <script src="course/lesson11.js"></script>
 <script src="course/lesson12.js"></script>
-<script src="listener/vosk/vosk.js"></script>
 <script src="people.js"></script>
 <script src="things.js"></script>
 <script>
@@ -416,7 +414,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.70";      // must equal version.json
+const APP_VERSION="2026-11-16.71";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -428,6 +426,12 @@ const APP_VERSION="2026-11-16.70";      // must equal version.json
 })();
 const $=id=>document.getElementById(id);
 let READY=false;
+/* (speed, 16 Nov; the owner: the start "took about 30 seconds") What is not needed to draw the first screen waits until it is on the glass.
+   The shell says so ("ff-first-screen": the first screen painted and the loading screen's hand-over begun); 8 s is the backstop (a page
+   opened in a tab that is not shown paints nothing). whenIdle: between two things the learner can see, a few milliseconds at a time. */
+const FIRST_SCREEN = new Promise(r=>{ addEventListener("ff-first-screen", r, {once:true}); setTimeout(r, 8000); });
+const whenIdle = f => window.requestIdleCallback ? requestIdleCallback(()=>f(), {timeout:3000}) : setTimeout(f, 250);
+const loadScript = src => new Promise(r=>{ const s=document.createElement("script"); s.src=src; s.async=true; s.onload=()=>r(true); s.onerror=()=>r(false); document.head.appendChild(s); });
 /* ============================================================
    CONTENT — Lesson 1, Exercise 1 (C'est qui ?)
    An answer is said as one unit (no gap); after an error it is said in its
@@ -710,8 +714,21 @@ function markOwn(o){
     o.scene=Object.assign({}, sc, {row: sc.row.concat([{person:"you"}])});
   return o;
 }
-function genLesson(c){ return {id:c.id, gen:true, exercises:c.exercises.map(e=>({id:e.id, title:e.title, track:e.track,
-  parts:e.parts.map(p=>({id:p.id, label:p.label, items:p.items.map(genItem).map(markOwn)}))}))}; }
+/* (speed, 16 Nov) A lesson's items are made when they are first read, one exercise at a time, not every lesson at the start (QA 7b.4: about
+   12 ms a lesson on a slow phone, growing with every lesson released). A lesson and its exercises (id, title, track) are there at once, as
+   the shell's path and the migrations read them; an exercise's `parts` are made at their first reading. genItem and markOwn look at one
+   item only, so the order in which exercises are made changes nothing. What is done to every exercise once it is made (markChanges) is kept
+   in GEN_HOOKS and done to each as it is made (genEach). What nobody has read yet is made while the phone is idle, after the first screen,
+   the learner's own lesson first (genRest); whatever needs every lesson (the listener's word list, preloadLearner) simply reads them. */
+const GEN_HOOKS=[], GEN_MADE=[], GEN_ALL=[];
+const genEach = h => { GEN_HOOKS.push(h); GEN_MADE.slice().forEach(h); };
+function genLesson(c){ return {id:c.id, gen:true, exercises:c.exercises.map(e=>{ const E={id:e.id, title:e.title, track:e.track}; let parts=null;
+  Object.defineProperty(E, "parts", {enumerable:true, configurable:true, set(v){ parts=v; },
+    get(){ if(!parts){ parts=e.parts.map(p=>({id:p.id, label:p.label, items:p.items.map(genItem).map(markOwn)})); GEN_MADE.push(E); for(const h of GEN_HOOKS) h(E); } return parts; }});
+  GEN_ALL.push(E); return E; })}; }
+function genRest(){ let i=0; const own=()=>{ try{ LESSONS[S.lesson].exercises.forEach(E=>void E.parts); }catch(e){} };
+  const step=()=>{ const t0=performance.now(); while(i<GEN_ALL.length && performance.now()-t0<6) void GEN_ALL[i++].parts; if(i<GEN_ALL.length) whenIdle(step); };
+  whenIdle(()=>{ own(); whenIdle(step); }); }
 const GEN = window.COURSE ? Object.keys(window.COURSE).sort((a,b)=>+a.slice(1)-+b.slice(1)).map(k=>genLesson(window.COURSE[k])) : [];
 const GEN_L1 = GEN[0] || null;
 /* The narrated explanation of questions ("the learner says only the answer") was tied to an item of the hand-built
@@ -723,7 +740,7 @@ const GEN_L1 = GEN[0] || null;
    (each shown first by Pierre and Sylvie, who say only the answer), and the narration added 15 s to an exercise already too long. */
 { let done=false; for(const L of GEN){ for(const E of L.exercises){ for(const P of E.parts){ for(const it of P.items){
     if(!done && it.type==="task" && it.kind==="test" && (it.cue==="question" || it.cue==="you") && it.questionUnits.length && /\?\s*$/.test(it.questionUnits[it.questionUnits.length-1])) done=true;
-    if(!done && it.type==="model" && it.voice==="teacher" && it.questionUnits.length && /\?\s*$/.test(it.questionUnits[it.questionUnits.length-1])){ it.qIntro=true; done=true; } } } } if(done) break; } }
+    if(!done && it.type==="model" && it.voice==="teacher" && it.questionUnits.length && /\?\s*$/.test(it.questionUnits[it.questionUnits.length-1])){ it.qIntro=true; done=true; } } } if(done) break; } if(done) break; } }      // (speed) stops at the exercise where it is found: nothing after it was ever changed, and the exercises after it need not be made for it
 // the narrated introduction (first use only) comes before the first item of the course
 // (9 Nov 2026: Lesson 1 says no whole noun (gender track), so the introduction demonstrates on the teacher's name)
 if(GEN_L1) GEN_L1.exercises[0].parts[0].items.unshift(Model("claire",PJ,{intro:true, introOnly:true}));
@@ -1471,11 +1488,102 @@ function faceZoom(on){ const r=document.getElementById("room");
 // a line left hanging ("Je m'appelle…", the learner goes on) has its own clip, said with the voice held up: key + "_suite"
 const clipKey = t => t.toLowerCase().replace(/œ/g,"oe").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"").replace(/[^a-z ]/g," ").trim().split(/\s+/).join("_") + (/…\s*$/.test(t) ? "_suite" : "");
 const TEACHER = { index:null, raw:{}, buf:{} };
-fetch("audio/teacher/index.json").then(r=>r.ok?r.json():null).then(ix=>{ TEACHER.index=ix;
-  if(ix) for(const k of Object.keys(ix)) TEACHER.raw[k]=fetch("audio/teacher/"+k+".mp3").then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);
-}).catch(()=>{});
+/* (speed, 16 Nov; QA 7b.1; the owner on .69: "when Pierre is first asked a question, it takes a while for him to answer, about 5+ seconds
+   … the English explanations … All lesson content should be loaded in the loading screen after the lesson start button is tapped.")
+   Until now: the teacher's 1,087 clips were all asked for in one loop the moment their index arrived (0.5 to 0.84 s of a slow phone's start
+   in one stop), and a clip of Pierre, of Sylvie or of the narrator was asked for only when its line came, behind all of those.
+   Now there is one store of clips' bytes (CLIPS: one request a file, whoever asks) and ONE SET FOR A RUN OF THE LESSON (lessonClips):
+     - every clip of Pierre, of Sylvie and of the narrator (4 MB in all: nobody has to guess which the run will say);
+     - the teacher's clips of every exercise the run can present: the lesson (and the next, when this one is finished), a detour's
+       lessons, the lessons of delayed tests, the lesson before one that checks it again (R4c): each line of those exercises, whole
+       and sentence by sentence, as a statement, a question and said slowly (teacherKey: the function that chooses the clip when
+       the line is said), the words those lines are answered with, the counts' numbers, and the few lines the page itself has her say.
+   The set is asked for as soon as the first screen is on the glass; the tap on Start waits for it under the loading screen, with a
+   bar that counts its clips (lessonLoad); only then does the lesson begin. A clip is decoded when its line comes, from bytes that
+   are already there (decoding a whole lesson ahead would hold some tens of MB of sound in memory).
+   Whatever is still asked of the site while a lesson runs is written to the trace as a fault ("FAULT clip fetched during the lesson").
+   The teacher's other clips (other lessons) follow in the background, a few at a time, when the listener is there and the set is in.
+   "Is there a recording" is asked of the index (it was asked of TEACHER.raw, which held a request for every line of the index). */
+const CLIPS_AT_ONCE=12, LESSON_AT_ONCE=24;
+const CLIPS = { raw:{}, here:{}, none:{}, on:false };      // raw: file -> its bytes (a promise; null: not there); here: answered; none: answered "not there"; on: a lesson is being taught
+const clipName = url => url.replace(/^audio\//,"").replace(/\.mp3$/,"");
+function clipRaw(url, ahead){
+  if(!(url in CLIPS.raw)){ if(!ahead && CLIPS.on) trace("FAULT clip fetched during the lesson: "+clipName(url));
+    CLIPS.raw[url]=fetch(url).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null).then(b=>{ CLIPS.here[url]=true; if(!b) CLIPS.none[url]=true; return b; });
+    const m=/^audio\/teacher\/(.*)\.mp3$/.exec(url); if(m) TEACHER.raw[m[1]]=CLIPS.raw[url]; }
+  else if(!ahead && CLIPS.on && !CLIPS.here[url]) trace("FAULT clip fetched during the lesson: "+clipName(url)+" (asked for ahead, still on its way)");
+  return CLIPS.raw[url]; }
+/* several clips ahead, never more than atOnce on their way; resolves when every one has arrived or failed */
+function clipsAhead(urls, atOnce, onOne){ return new Promise(res=>{ const list=[...new Set(urls)]; let i=0, live=0, done=0; if(!list.length) return res(0);
+  const next=()=>{ while(live<atOnce() && i<list.length){ const u=list[i++]; live++; clipRaw(u, true).then(()=>{ live--; done++; if(onOne) onOne(done, list.length); if(done===list.length) res(done); else next(); }); } }; next(); }); }
+const teacherUrl = k => "audio/teacher/"+k+".mp3";
+const teacherRaw = (k, ahead) => clipRaw(teacherUrl(k), ahead);
+/* which clip a line is said with: the question's own recording (<key>_q) when the line is a question and there is one, the slow one
+   (<key>_slow) when it is to be said slowly and there is one. playTeacher says a line with this; lessonClips fetches by it. */
+function teacherKey(text, slow){ let k=clipKey(text);
+  if(/\?\s*$/.test(text) && TEACHER.index && TEACHER.index[k+"_q"]) k+="_q";
+  if(slow && TEACHER.index && TEACHER.index[k+"_slow"]) k+="_slow";
+  return k; }
+TEACHER.ready = fetch("audio/teacher/index.json").then(r=>r.ok?r.json():null).then(ix=>{ TEACHER.index=ix; }).catch(()=>{});
+const NARRATOR = {index:null, noFile:{lis:true}};      // "lis" is named in the index and has no file: it is said as lis_a, "Lis.", lis_b (convention)
+NARRATOR.ready = fetch("audio/narrator/index.json").then(r=>r.ok?r.json():null).then(ix=>{ NARRATOR.index=ix; }).catch(()=>{});
+/* the lessons a run started now can present (as indexes): see the comment above */
+function runLessons(){ const out=new Set(), add=i=>{ if(Number.isInteger(i) && i>=0 && i<LESSONS.length) out.add(i); }, byId=id=>LESSONS.findIndex(l=>l.id===id);
+  add(S.lesson); { const L=LESSONS[S.lesson]; if(L && L.exercises.every(e=>S.finished[e.id])) add(S.lesson+1); }
+  try{ const G=window.SHELL && SHELL.G; if(G){ add(G.next); if(G.replay) add(G.replay.li); } }catch(e){}
+  if(S.detour){ const d=S.detour; add(d.lesson); (d.more||[]).forEach(m=>add(m.lesson)); if(d.back){ add(d.back.lesson); add(d.back.lesson+1); } }
+  for(const d of (S.delayed||[])) add(byId(d.lesson));
+  for(const i of [...out]) if(isFirmCheck(LESSONS[i])) add(i-1);
+  return [...out].sort((a,b)=>a-b); }
+/* the teacher's clips of those lessons */
+function teacherClips(lessons){ const ix=TEACHER.index; if(!ix) return []; const keys=new Set(), read=new Set();
+  const line=t=>{ for(const k of [clipKey(t), teacherKey(t, false), teacherKey(t, true)]) if(ix[k]) keys.add(k); };
+  const text=v=>{ if(v.length>200 || read.has(v)) return; read.add(v); line(v); const u=unitsOf(v); if(u.length>1) u.forEach(line);
+    const c=countParts(v); if(c){ c.nums.forEach(line); line("Répète :"); }
+    if(VOCAB[v]){ const W=VOCAB[v]; for(const f of [W.say, W.rep, W.name && [W.name], W.name && [W.name+"."]]) if(Array.isArray(f)) f.forEach(x=>{ if(typeof x==="string") text(x); }); } };
+  const walk=v=>{ if(typeof v==="string") text(v); else if(Array.isArray(v)) v.forEach(walk); else if(v && typeof v==="object") for(const x in v) walk(v[x]); };
+  ["Vas-y.", "Non.", "Oui.", "Touche.", "À toi.", "Lis.", "Compte.", "Écoute.", "Avec moi.", "Répète :", "Je m'appelle "+VOCAB.claire.name+"."].forEach(text);
+  for(const i of lessons) try{ walk(LESSONS[i].exercises.map(E=>E.parts)); }catch(e){}
+  return [...keys]; }
+/* every clip a run started now can need (files) */
+function lessonClips(){ const urls=[];
+  if(LEARNER.index) for(const k of Object.keys(LEARNER.index)) urls.push("audio/learner/"+k+".mp3");
+  try{ learnerLines(runLessons()).forEach(t=>urls.push(LEARNER_CLIP(t))); }catch(e){}
+  if(NARRATOR.index) for(const k of Object.keys(NARRATOR.index)) if(!NARRATOR.noFile[k]) urls.push("audio/narrator/"+k+".mp3");
+  teacherClips(runLessons()).forEach(k=>urls.push(teacherUrl(k)));
+  return [...new Set(urls)]; }
+const LESSON_SET = { ready:null, wide:()=>LESSON_AT_ONCE };
+LESSON_SET.indexes = () => Promise.all([TEACHER.ready, NARRATOR.ready, LEARNER.ready]);
+/* ask for the set now (after the first screen; again at the tap, when the place may have changed): resolves when all of it is here */
+function lessonAhead(onOne){ return LESSON_SET.indexes().then(()=>{ const set=lessonClips(); trace("lesson content: "+set.length+" clips for Lesson"+(runLessons().length>1?"s ":" ")+runLessons().map(i=>i+1).join(", ")+" ("+set.filter(u=>CLIPS.here[u]).length+" already here)");
+  return clipsAhead(set, LESSON_SET.wide, onOne).then(()=>set); }); }
+const lessonHere = () => !!(TEACHER.index && LEARNER.index && NARRATOR.index) && lessonClips().every(u=>CLIPS.here[u]);
+/* the teacher's other clips (other lessons), in the background: 12 at a time, 2 while a lesson is being taught */
+let restAsked=false;
+function teacherRest(){ if(restAsked || !TEACHER.index) return; restAsked=true; clipsAhead(Object.keys(TEACHER.index).map(teacherUrl), ()=>CLIPS.on ? 2 : CLIPS_AT_ONCE).then(()=>trace("every clip of the teacher is on the phone")); }
+/* THE TAP ON START WAITS HERE, under the loading screen, until the run's set is on the phone (the start button's handler calls it after the
+   faces and the microphone). Nothing is shown when it is all there already (it is asked for from the first screen on). The bar counts
+   the set's clips. As for the listener (.67): when nothing has arrived for 25 s the lesson is let through, with a FAULT line (a clip
+   that is then missing is fetched at its line, as before, and that too is written as a fault). LOADING.soon is set at the tap itself so
+   that the listener's loading screen, if it is up, is not taken down between the two waits. */
+const LOADING = {on:false, soon:false};
+async function lessonLoad(){
+  if(lessonHere()){ LOADING.soon=false; return; }
+  LOADING.on=true; trace("the lesson's content is not all on the phone yet: the loading screen");
+  const LABEL="Loading the lesson", t0=performance.now(); let last=t0;
+  const show=(done,total)=>{ try{ SPLASH.show(); SPLASH.progress(total ? Math.min(0.98, done/total) : null, LABEL+(total ? " · "+done+" of "+total : "")); }catch(e){} };
+  try{ show(0, 0);
+    for(let round=0; round<4 && !lessonHere(); round++){      // again if the place has changed meanwhile (the shell's choice of lesson)
+      const all=lessonAhead((d,t)=>{ last=performance.now(); show(d, t); });
+      const dog=new Promise(r=>{ const w=setInterval(()=>{ if(performance.now()-last>25000){ clearInterval(w); r("stuck"); } }, 1000); all.then(()=>clearInterval(w)); });
+      if((await Promise.race([all, dog]))==="stuck"){ trace("FAULT the lesson's content neither loaded nor failed 25 s after its last sign of life: the lesson is let through"); break; } }
+    const none=lessonClips().filter(u=>CLIPS.none[u]);
+    if(none.length) trace("FAULT lesson content: "+none.length+" clip(s) could not be fetched ("+none.slice(0,3).map(clipName).join(", ")+(none.length>3?" …":"")+")");
+    trace("the lesson's content is on the phone ("+Math.round(performance.now()-t0)+" ms under the loading screen)"); }
+  finally{ LOADING.on=false; LOADING.soon=false; try{ window.SPLASH && SPLASH.done(); }catch(e){} }
+}
 async function teacherBuf(k){
-  if(!(k in TEACHER.buf)) TEACHER.buf[k]=(async()=>{ audioUnlock(); const raw=await TEACHER.raw[k]; if(!raw||!actx) return null; return await actx.decodeAudioData(raw.slice(0)); })().catch(()=>null);
+  if(!(k in TEACHER.buf)) TEACHER.buf[k]=(async()=>{ audioUnlock(); const raw=await teacherRaw(k); if(!raw||!actx) return null; return await actx.decodeAudioData(raw.slice(0)); })().catch(()=>null);
   return TEACHER.buf[k];
 }
 /* Lip-sync self-check (Jon 9 Nov: "how can you figure this out yourself?"). For every clip the app measures how far
@@ -1525,12 +1633,11 @@ const sleepCut = async ms => { const t0=performance.now(); while(!CUT.on && perf
 async function playTeacher(text, onStart){
   // a question that has the same words as a statement ("Il mange ?" / "Il mange.", "Ça va ?" / "Ça va.") has its own
   // recording, with the rising tune, under <key>_q; where there is none, the one recording serves both
-  let k=clipKey(text);
-  if(/\?\s*$/.test(text) && TEACHER.index && TEACHER.index[k+"_q"] && TEACHER.raw[k+"_q"]) k+="_q";
+  let k=teacherKey(text, false);
   // .24: the slow recording of a line (the sound-discrimination format: "Le livre, les livres." said slowly), <key>_slow
-  if(SAY_SLOW){ if(TEACHER.index && TEACHER.index[k+"_slow"] && TEACHER.raw[k+"_slow"]) k+="_slow"; else trace("FAULT no slow recording of \""+text+"\": said at the usual speed"); }
+  if(SAY_SLOW){ const ks=teacherKey(text, true); if(ks!==k) k=ks; else trace("FAULT no slow recording of \""+text+"\": said at the usual speed"); }
   const meta=TEACHER.index && TEACHER.index[k];
-  if(!meta || !TEACHER.raw[k]) return false;
+  if(!meta) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
   await audioFresh(k);
   return new Promise(res=>{
@@ -1562,7 +1669,7 @@ async function playTeacher(text, onStart){
 const NARR={}; 
 async function narrate(key){
   audioUnlock(); trace("narrator: "+key);
-  if(!(key in NARR)) NARR[key]=fetch("audio/narrator/"+key+".mp3").then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&actx.decodeAudioData(b)).catch(()=>null);
+  if(!(key in NARR)) NARR[key]=clipRaw("audio/narrator/"+key+".mp3").then(b=>b&&actx.decodeAudioData(b.slice(0))).catch(()=>null);      // (speed) the bytes are on the phone since the start (lessonClips): decoded here
   const buf=await NARR[key]; if(!buf||!actx){ await sleep(1500); return; }
   await audioFresh("narrator "+key);
   await new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination); src.onended=res; src.start(actx.currentTime+0.02); });
@@ -1584,25 +1691,29 @@ const LEARNER_CLIP = t => { const k=t.toLowerCase().replace(/œ/g,"oe").replace(
 const clipBufs={};
 async function learnerClip(text){
   const url=LEARNER_CLIP(text);
-  if(!(url in clipBufs)) clipBufs[url]=(async()=>{ audioUnlock(); const r=await fetch(url); if(!r.ok) throw new Error("no clip "+url); return await actx.decodeAudioData(await r.arrayBuffer()); })().catch(e=>{ trace(String(e.message||e)); return null; });
+  if(!(url in clipBufs)) clipBufs[url]=(async()=>{ audioUnlock(); const raw=await clipRaw(url); if(!raw) throw new Error("no clip "+url); return await actx.decodeAudioData(raw.slice(0)); })().catch(e=>{ trace(String(e.message||e)); return null; });      // (speed) the bytes are on the phone since the start (lessonClips): decoded here
   return clipBufs[url];
 }
 /* Fetch ahead the model learners' clips the course uses (what Pierre and Sylvie say in a model, the cues they say
    themselves, and their own-name answers), so each starts on time. Only clips that exist are asked for: asking for one per word of the vocabulary gave
    fifteen "no clip" lines in every run's trace, which hid any clip that was really missing. */
-let learnerPreloaded=false;
-function preloadLearner(){
-  if(learnerPreloaded) return; learnerPreloaded=true;
+/* (speed, 16 Nov; the owner: Pierre's first answer came 5 s late) This list was asked for and decoded, for the whole course, when the
+   model learner's phone first came on the screen (some 300 requests and decodings in one queue, behind the teacher's 1,087: the clip
+   Pierre needed first waited at the end of it). The list is now part of what the start loads before the lesson begins (learnerLines:
+   the same lines, of the lessons the run can present; with every clip of the learners' index: lessonClips), and a clip is decoded when
+   its line comes. preloadLearner is left for its caller and has nothing more to do. */
+function learnerLines(lessons){
   const say = voiceLine;
   const want = new Set(["paul","julie"].map(w=>say(w, ["Je m'appelle "+VOCAB[w].name+"."])));
-  GEN.forEach(L=>L.exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
+  lessons.forEach(i=>LESSONS[i].exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
     if(it.type==="model" && it.voice && it.voice!=="teacher") want.add(say(it.voice, it.answerUnits));
     if(it.cueVoice && it.questionUnits.length) want.add(say(it.cueVoice, it.questionUnits));      // a cue in a model learner's own voice
     if(it.introOnly) want.add(answerUnits(it).join(" ")); }))));        // the introduction: the model learner says it with the teacher
-  want.forEach(t=>learnerClip(t));
+  return [...want];
 }
+function preloadLearner(){}
 const LEARNER = {index:null};       // .24: audio/learner/index.json {key: {text, dur, w: the onset of each written word}} for the moving outline and the touches
-fetch("audio/learner/index.json").then(r=>r.ok?r.json():null).then(ix=>{ LEARNER.index=ix; }).catch(()=>{});
+LEARNER.ready = fetch("audio/learner/index.json").then(r=>r.ok?r.json():null).then(ix=>{ LEARNER.index=ix; }).catch(()=>{});
 async function playLearner(text, delay=0){       // resolves when the clip has finished (false if there is no clip)
   const buf=await learnerClip(text); if(!buf || !actx) return false;
   await audioFresh(text);
@@ -1961,11 +2072,6 @@ function listen(expect, alsoOk=[]){
   recentSaid=[];
   if(S.settings.manual || recogBroken){ signal("listen"); return listenManual(expect); }
   if(S.settings.engine!=="google" && VOSK.model && window.LISTENER && LISTENER.audioReady) return listenVosk(expect, alsoOk);
-  // the in-app listener is used only for answers its model has been validated on (listener.json "validated");
-  // anything else goes to Chrome's recogniser until a model that knows it ships
-  const validated = window.LISTENER && LISTENER.json && LISTENER.json.validated || [];
-  if(S.settings.engine!=="google" && !localBroken && window.LISTENER && LISTENER.ready && LISTENER.audioReady
-     && [expect, ...alsoOk].every(w=>validated.includes(phraseOf(w)))) return listenLocal(expect, alsoOk);
   return new Promise(async resolve=>{
     stopRec();
     await synthIdle(); const cueEnd=lastSpeechEnd;   // the cue (the last thing the teacher says) has finished
@@ -2045,26 +2151,8 @@ function phraseOf(want){ const ws=want.filter(x=>x!=="REST");
     if(v.alone && i===0) return v.alone;
     return v.name; }).join(" ");
   return w.charAt(0).toUpperCase()+w.slice(1)+"."; }
-function candidatePhrases(){
-  const c=[]; for(const n of Object.keys(PEOPLE)){ const N=PEOPLE[n].name; c.push(`C'est ${N}.`, `${N}.`, `Euh, c'est ${N}.`); }
-  return c.concat(["C'est.","C'est qui ?","Il est Paul.","Elle est Julie.","Il est Julie.","Elle est Paul.","C'est David.","C'est Marie.","Oui.","Non.","Je ne sais pas."]);
-}
-// The verdict comes from the model's own transcript: it must say the expected words (fillers aside). On held-out
-// recordings this judges exactly as well as also scoring every possible answer, and it is twice as fast on the phone.
-function verdictLocal(rec, expect, alsoOk){
-  const said=normSaid(rec.transcript);
-  const acc=[expect, ...alsoOk].map(w=>normSaid(phraseOf(w)));
-  if(acc.includes(said)) return {ok:true, reason:"", best:rec.transcript};
-  const target=expect[expect.length-1];
-  const names=Object.keys(VOCAB).map(n=>VOCAB[n].name.toLowerCase());
-  const words=said.split(" ");
-  if(!said) return {ok:false, reason:"unclear", best:""};
-  if(names.some(n=>n!==VOCAB[target].name.toLowerCase() && words.includes(n))) return {ok:false, reason: VOCAB[target].kind==="person"?"wrong name":"wrong word", best:rec.transcript};
-  if(said===VOCAB[target].name.toLowerCase() && SLOT[expect[0]]) return {ok:false, reason:"word without its article", best:rec.transcript};
-  return {ok:false, reason:"not the expected words", best:rec.transcript};
-}
-let clipSeq=0, localBroken=false;
-const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||("app/"+(window.LISTENER?LISTENER.version:"")), recPeak:r.recPeak, raw:r.raw} : (r.recNote? {recNote:r.recNote} : {});
+let clipSeq=0;
+const lx = r => r.clip ? {clip:r.clip, lp:r.lp, expectPhrase:r.expectPhrase, engine:r.engine||"app", recPeak:r.recPeak, raw:r.raw} : (r.recNote? {recNote:r.recNote} : {});
 let KEEP_THIS=false;
 async function keepClip(audio){
   if(!S.settings.keepAudio && !KEEP_THIS) return null;       // KEEP_THIS (.24): an answer of a sound-pair task is always kept, so that it can be ruled on from the recording
@@ -2095,25 +2183,6 @@ function clipStore(op, key, val){
     r.onerror=()=>rej(r.error); r.onsuccess=()=>{ const db=r.result, tx=db.transaction("clips", op==="get"||op==="all"?"readonly":"readwrite"), st=tx.objectStore("clips");
       let q; if(op==="put") q=st.put(val,key); else if(op==="del") q=st.delete(key); else if(op==="get") q=st.get(key); else if(op==="all"){ const out={}; const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; return; } else q=st.clear();
       q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }; });
-}
-async function listenLocal(expect, alsoOk){
-  stopRec();
-  await synthIdle(); const cueEnd=lastSpeechEnd;
-  try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
-  trace("mic open");
-  const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
-  // an answer that stops after "C'est" may be a slow learner: keep listening a little longer
-  const cap = await LISTENER.capture({noSpeechMs:7000, endSilenceMs:800, extraSilenceMs:2200,
-    onSpeechEnd: async audio => { try{ const r=await LISTENER.recognise(audio, [], true); const t=normSaid(r.transcript); return t==="c'est" || t==="" ; }catch(e){ return false; } } });
-  clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status);
-  if(cap.status==="silence") { const clip=await keepClip(cap.all); return {status:"silence", heard:[], ok:false, reason:"no answer", clip, expectPhrase:phraseOf(expect)}; }
-  const t0=Date.now(); let rec;
-  try{ rec=await LISTENER.recognise(cap.audio, [], true); }
-  catch(e){ trace("listener error: "+e.message+" — switching to Chrome's recogniser"); localBroken=true; return {status:"silence", heard:[], ok:false, reason:"listener error"}; }
-  const v=verdictLocal(rec, expect, alsoOk);
-  const clip=await keepClip(cap.audio);
-  trace(`listener: "${rec.transcript}" → ${v.ok?"correct":v.reason} (${Date.now()-t0} ms: ${JSON.stringify(rec.ms)})`);
-  return {status:"heard", heard:[rec.transcript||"(unclear)"], ok:v.ok, reason:v.reason, clip, lp:+rec.freeLp.toFixed(2), expectPhrase:phraseOf(expect)};
 }
 // Vosk's output, judged like any transcript; "[unk]" (something outside the course's phrases) at the very start or end is
 // a cough or a filler, anywhere else it is a wrong word
@@ -2820,7 +2889,13 @@ function boxOf(sc){ return !sc ? null : sc.handed ? ["handed", sc.handed, {}] : 
   : sc.teacherWill ? ["marie", sc.teacherWill, {will:true}] : sc.learnerWill ? ["you", sc.learnerWill, {will:true}]      // going to do it: standing, holding the picture card of the action
   : sc.teacherDid ? ["marie", sc.teacherDid, {stopped:true}] : sc.learnerDid ? ["you", sc.learnerDid, {stopped:true}] : sc.learnerFace ? ["you", "face", {face:sc.learnerFace}] : null; }
 const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.strip?"|strip:"+JSON.stringify(sc.strip):"")+(sc.claireTag===false?"|notag":"")+BOX_KEYS.map(k=>sc[k]?"|"+k+":"+sc[k]:"").join("")+(sc.handed?"|handed:"+JSON.stringify(sc.handed):"");
+/* (speed, 16 Nov; QA 7b.3) The stage's first scene was drawn at the start, 330 ms of a slow phone's start for a stage that lies hidden
+   under the start screen. It is drawn once the first screen is shown (stageFirst, while the phone is idle), at the latest at the tap on
+   Start, and always before any other scene: what the stage holds when a lesson begins is what it held before. */
+let FIRST_SCENE=null;
+function stageFirst(){ if(FIRST_SCENE){ const s0=FIRST_SCENE; FIRST_SCENE=null; setPortraits(s0); } }
 async function setPortraits(sc){
+  if(FIRST_SCENE) stageFirst();
   sc=sceneOf(sc); if(!sc) return; const key=sceneKey(sc);
   if(key===curSceneKey) return;
   /* The action box stands where the pictures are. Model learners who are only looking on (nothing to do, no special look)
@@ -2877,7 +2952,7 @@ function markChanges(lessons){
       for(let j=i;j<its.length && oneThingKey(its[j].scene)===k;j++) if(/c'était/i.test(qOf(its[j]))){ its[i].changeIn=true; break; } } }
 }
 let SLIDE_IN=false;      // setPortraits: the next row comes in from the right (the second thing of a "C'était" chain)
-markChanges(LESSONS);
+genEach(E=>markChanges([{exercises:[E]}]));      // (speed) each exercise as it is made (the marks never cross an exercise)
 async function slideOff(){
   goldOff(); frameRow.style.transition="opacity .6s ease-in, transform .6s ease-in"; frameRow.style.transform="translateX(-240px)"; frameRow.style.opacity=0;
   await sleep(650); frameRow.style.transition="none"; frameRow.style.transform=""; void frameRow.getBoundingClientRect(); frameRow.style.transition="";
@@ -4707,11 +4782,27 @@ function lessonTag(n){ document.getElementById("lessonTag").textContent="Lesson 
   const b=document.querySelector("#playBtn .ready"); if(b) b.textContent = document.getElementById("play").classList.contains("afterDemo") ? "Start" : "Start lesson "+(n||S.lesson+1); }
 let playWaiter=null;
 function afterDemoScreen(){ rest(); showPlay(true, true); return new Promise(r=>{ playWaiter=r; }); }
-/* The listener model is downloaded when the page opens (once; then it is kept on the phone).
-   The play button fills as it downloads and can be pressed when it is ready. */
+/* (speed, 16 Nov; the owner: the start "took about 30 seconds") WHAT THE START WAITS FOR. Until now it waited for a second listener, the
+   in-app (Whisper) model: 46 MB and a 14 MB runtime fetched (the runtime again at every start), two sessions made on the main thread (3.4
+   to 4.3 s of one stop on a phone four to six times slower than a desk machine; 12 to 18 s before Start could begin a lesson, with no
+   network cost; half a minute on a slow link, by the watchdog below), 100 to 200 MB of memory. That model never judged an answer: listen()
+   gave it only phrases named in its file as validated, and no model that shipped named one; every answer of every run was judged by Vosk.
+   THE OWNER'S RULING (16 Nov): "get rid of that larger listening model completely … It's not adding anything since it's never used."
+   It is gone: its loading, listenLocal and the branch of listen() that led to it, its files (listener/model/, listener/ort/). LISTENER
+   (listener/listener.js) is now the microphone only: the audio path, the capture of one answer, the recording of every answer; Vosk is
+   fed through it. If Vosk cannot load, the browser's recogniser answers, as before.
+   The start now waits for what a lesson needs to be heard and spoken rightly:
+     - Vosk, the listener that judges every answer: its model on the phone, or failed (then the browser's recogniser);
+       not waited for when the learner answers by tapping (manual) or the browser's recogniser is chosen in the tester panel;
+     - the index of the teacher's recordings (without it Marie would speak with the phone's own voice);
+     - and, at the tap, the lesson's own clips (lessonLoad).
+   The loading screen, its bar and the 25 s watchdog are as they were (.67); the bar now follows the download of Vosk's model. */
+const HEAR={sign:()=>{}, settled:null, settle:null, over:null, giveUp:null};
+HEAR.settled=new Promise(r=>{ HEAR.settle=r; });                                           // Vosk is there, or has failed
+HEAR.over=new Promise(r=>{ HEAR.giveUp=r; }); HEAR.settled.then(()=>HEAR.giveUp());        // the same, or the watchdog has stopped waiting for it
+try{ caches.keys().then(ks=>ks.forEach(k=>{ if(k.startsWith("faultless-listener-")) caches.delete(k); })).catch(()=>{}); }catch(e){}      // the 46 MB the in-app model kept on the phone
 let listenerLoad=null;
 function startListenerLoad(){
-  if(!window.LISTENER || !window.ort){ trace("in-app listener not available"); return; }
   const btn=document.getElementById("playBtn");
   btn.classList.add("loading");
   /* (owner's report, 16 Nov: "this greyed out getting ready button now for ages and can't start") the start button must never stay dead: when the
@@ -4723,17 +4814,22 @@ function startListenerLoad(){
   let lastSign=performance.now(), settled=false, startAsked=false, frac=null;
   const LABEL="Getting ready to hear you";
   const through=()=>{ btn.classList.remove("loading"); if(!startAsked) return; startAsked=false; trace("the listener is there: the lesson asked for starts");
-    try{ btn.click(); }catch(e){} setTimeout(()=>{ try{ window.SPLASH && SPLASH.done(); }catch(e){} }, 120); };
-  listenerLoad = LISTENER.load((got,total)=>{ lastSign=performance.now(); if(total){ frac=Math.min(1, got/total); if(startAsked){ try{ SPLASH.progress(frac<1 ? frac*0.9 : null, LABEL); }catch(e){} } } })
-    .then(r=>{ settled=true; trace("in-app listener ready ("+r.ms+" ms)"); through(); })
-    .catch(e=>{ settled=true; trace("in-app listener failed to load: "+e.message+" — using Chrome's recogniser"); through(); });
+    try{ btn.click(); }catch(e){} setTimeout(()=>{ try{ if(!LOADING.on && !LOADING.soon) window.SPLASH && SPLASH.done(); }catch(e){} }, 120); };      // (speed) not while the lesson's content is still to come under the same screen (lessonLoad takes it down)
+  let label=LABEL;
+  HEAR.sign=(got,total)=>{ lastSign=performance.now(); if(total){ frac=Math.min(1, got/total); label = frac<1 ? LABEL+" · "+Math.round(got/1e6)+" of "+Math.round(total/1e6)+" MB" : LABEL;
+    if(startAsked){ try{ SPLASH.progress(frac<1 ? frac*0.9 : null, label); }catch(e){} } } };
+  const needsVosk=()=>!S.settings.manual && S.settings.engine!=="google";      // read when the index has arrived: the learner's settings are loaded by then
+  listenerLoad = TEACHER.ready.then(()=>needsVosk() ? HEAR.settled : null)
+    .then(()=>{ settled=true; through(); })
+    .catch(()=>{ settled=true; through(); });
   const watch=setInterval(()=>{ if(settled){ clearInterval(watch); return; }
-    if(performance.now()-lastSign>25000){ clearInterval(watch); trace("FAULT in-app listener neither ready nor failed 25 s after its last sign of life: the start is let through"); through(); } }, 1000);
+    if(performance.now()-lastSign>25000){ clearInterval(watch); const late=[!TEACHER.index && "the index of the teacher's recordings", needsVosk() && !VOSK.model && !VOSK.failed && "the listener (Vosk)"].filter(Boolean).join(" and ");
+      trace("FAULT "+late+" neither ready nor failed 25 s after its last sign of life: the start is let through"); HEAR.giveUp(); through(); } }, 1000);
   // before the shell's own handler (this one is registered first): the tap is kept, the loading screen shown, the sound let out by this touch
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || !b.classList.contains("loading")) return;
     e.stopImmediatePropagation(); e.preventDefault(); if(startAsked) return; startAsked=true; try{ audioUnlock(); }catch(_){} try{ UI.haptic("tick"); }catch(_){} try{ window.UISOUND && UISOUND("go"); }catch(_){}
     trace("start asked while the listener is loading: the loading screen");
-    try{ SPLASH.show(); SPLASH.progress(frac!=null && frac<1 ? frac*0.9 : null, LABEL); }catch(_){} }, true);
+    try{ SPLASH.show(); SPLASH.progress(frac!=null && frac<1 ? frac*0.9 : null, label); }catch(_){} }, true);
 }
 startListenerLoad();
 /* The main listener (9 Nov): Vosk (Kaldi, French small model) running in the page, restricted to the phrases the course
@@ -4817,25 +4913,76 @@ function courseGrammar(expect){
   if(own && !frag_(own)) { base=base.concat([own]); const w=own.split(" "); if(w.length<=2) base=base.concat(w.filter(x=>x!=="je" && x!=="m'appelle")); }
   return JSON.stringify([...new Set(base.concat(extra))].concat(["[unk]"]));
 }
+/* (speed, 16 Nov; QA 7b.2) vosk.js (5.8 MB, most of it its worker as text) was a script of the page, read before the page's own script. It is
+   now fetched when the listener is started, and the listener is started when the first screen is on the glass: its work is in a worker,
+   but unpacking that worker from its text is 50 ms of the main thread on a desk machine (200 ms on a slow phone), which now falls under
+   the loading screen's fade instead of before the first screen.
+   voskModel: Vosk.createModel, with two things the library does not give. (1) Signs of life: the worker is started through a few lines
+   that count the bytes of the model as they arrive, note each file of it written to or read from the phone's store, and report them
+   (VOSK_HOOK; the library's own code is then loaded unchanged), so the loading screen's bar and the 25 s watchdog have something true to
+   follow. If those lines cannot start the worker, it is started as the library does. (2) A failure: the library never answers when the model cannot be fetched (the start then waited for the watchdog);
+   its worker's "error" before the model is loaded is now a failure at once. */
+function VOSK_HOOK(modelUrl){ try{ const f=self.fetch, post=(got,total)=>self.postMessage({event:"ff-sign", got, total}); post(0,0);
+  // a sign of life as well while the model is written to the phone's store (a first start) and read from it (every start): its files, one by one
+  try{ let at=0; for(const m of ["put","get"]){ const o=IDBObjectStore.prototype[m]; IDBObjectStore.prototype[m]=function(){ const now=Date.now(); if(now-at>500){ at=now; post(0,0); } return o.apply(this, arguments); }; } }catch(e){}
+  self.fetch=function(u){ const p=f.apply(self, arguments); if(String(u && u.url || u)!==modelUrl) return p;
+    return p.then(r=>{ if(!r.ok || !r.body || typeof TransformStream==="undefined") return r; const total=+r.headers.get("content-length")||0; let got=0, last=0;
+      const ts=new TransformStream({ transform(c, ctl){ got+=c.byteLength; const now=Date.now(); if(now-last>250 || got===total){ last=now; post(got,total); } ctl.enqueue(c); } });
+      return new Response(r.body.pipeThrough(ts), {status:r.status, statusText:r.statusText, headers:r.headers}); }); }; }catch(e){} }
+function voskModel(url, hooked){
+  return new Promise((resolve, reject)=>{ const W=window.Worker; let loaded=false;
+    try{ window.Worker=function(u, o){ window.Worker=W; let w=null;
+        if(hooked){ try{ w=new W(URL.createObjectURL(new Blob(["(", VOSK_HOOK.toString(), ")(", JSON.stringify(url), ");importScripts(", JSON.stringify(String(u)), ");"], {type:"application/javascript"})), o); }catch(e){ w=null; } }
+        if(!w) w=new W(u, o);
+        w.addEventListener("message", e=>{ const d=e.data; if(!d) return;
+          if(d.event==="ff-sign"){ e.stopImmediatePropagation(); try{ HEAR.sign(d.got, d.total); }catch(_){} }
+          else if(d.event==="error" && !d.recognizerId && !loaded) reject(new Error(d.error||"the model could not be loaded")); });
+        w.addEventListener("error", e=>{ if(!loaded){ try{ e.preventDefault(); w.terminate(); }catch(_){} reject(Object.assign(new Error("its worker: "+(e && e.message || "could not start")), {boot:hooked})); } });
+        return w; }; }catch(e){}
+    let p; try{ p=Vosk.createModel(url, -1); }catch(e){ return reject(e); } finally{ window.Worker=W; }
+    p.then(m=>{ loaded=true; resolve(m); }, e=>reject(e||new Error("the model could not be loaded"))); });
+}
+/* vosk.js itself (2.4 MB as it travels): fetched by the page so that the watchdog has signs of life while it comes (on a link of 1.6 Mbit/s
+   it alone took more than the watchdog's 25 s, and the start was let through before the listener's download had even begun), then run
+   from the bytes that came. If that cannot be done, it is loaded as any script. */
+async function voskScript(){
+  try{ const r=await fetch("listener/vosk/vosk.js"); if(!r.ok || !r.body) throw new Error("not fetched"); const rd=r.body.getReader(), parts=[]; let at=0;
+    for(;;){ const {done, value}=await rd.read(); if(done) break; parts.push(value); const now=Date.now(); if(now-at>500){ at=now; HEAR.sign(0,0); } }
+    const u=URL.createObjectURL(new Blob(parts, {type:"text/javascript"})); await loadScript(u); try{ URL.revokeObjectURL(u); }catch(e){} }catch(e){}
+  if(!window.Vosk) await loadScript("listener/vosk/vosk.js");
+}
+function voskWords(){ if(!VOSK.model || VOSK.grammar) return;      // the word list, made from every lesson: while the phone is idle, at the latest at the tap on Start
+  VOSK.grammar = courseGrammar(); trace("Vosk listener ready ("+VOSK.ms+" ms; "+JSON.parse(VOSK.grammar).length+" phrases)"); }
 async function startVosk(){
-  if(!window.Vosk){ trace("Vosk not available"); VOSK.failed=true; return; }
-  const t0=Date.now();
-  try{ VOSK.model = await Vosk.createModel(new URL("listener/vosk/model-fr.tar.gz", location.href).href, -1);
-    VOSK.grammar = courseGrammar(); trace("Vosk listener ready ("+(Date.now()-t0)+" ms; "+JSON.parse(VOSK.grammar).length+" phrases)"); }
-  catch(e){ VOSK.failed=true; trace("Vosk failed to load: "+(e&&e.message||e)+" — using Chrome's recogniser"); }
+  await FIRST_SCREEN;
+  if(!window.Vosk){ const t=Date.now(); HEAR.sign(0,0); await voskScript(); HEAR.sign(0,0); trace("vosk.js "+(window.Vosk?"loaded":"NOT loaded")+" ("+(Date.now()-t)+" ms)"); }
+  if(!window.Vosk){ trace("Vosk not available"); VOSK.failed=true; HEAR.settle(); return; }
+  const t0=Date.now(), url=new URL("listener/vosk/model-fr.tar.gz", location.href).href;
+  try{ try{ VOSK.model = await voskModel(url, true); }
+       catch(e){ if(!(e && e.boot)) throw e; trace("Vosk: its worker did not start with the progress lines: started as the library does"); VOSK.model = await voskModel(url, false); }
+    VOSK.ms=Date.now()-t0; HEAR.settle(); whenIdle(voskWords); }
+  catch(e){ VOSK.failed=true; trace("Vosk failed to load: "+(e&&e.message||e)+" — using Chrome's recogniser"); HEAR.settle(); }
 }
 startVosk();
+/* the rest of the teacher's clips, and the service worker's own copy of every voice, once the listener is there (or has failed, or is
+   no longer waited for: the watchdog) and the lesson's own clips are in: on a first start they no longer share the link with either */
+HEAR.over.then(()=>FIRST_SCREEN).then(()=>LESSON_SET.indexes()).then(()=>LESSON_SET.ready||lessonAhead()).then(()=>{ teacherRest();
+  try{ navigator.serviceWorker && navigator.serviceWorker.ready.then(reg=>{ reg.active && reg.active.postMessage("voices"); }).catch(()=>{}); }catch(e){} });
 // ask the browser to keep saved answers (audio) even when the phone is short of space
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist().then(ok=>trace("storage kept: "+ok)); }catch(e){}
 document.getElementById("playBtn").onclick=async ()=>{
   if(running){ if(playWaiter){ const w=playWaiter; playWaiter=null; showPlay(false); audioUnlock(); w(); } return; }
   if(document.getElementById("playBtn").classList.contains("loading")) return;
   running=true; UI.haptic("tick");
+  stageFirst(); voskWords();      // (speed) whatever of the start's own work has not been done while idle is done now, before the lesson
+  try{ LOADING.soon=!lessonHere(); }catch(e){}
   await UI.fonts();      // (next) the faces are there before the first board is measured
-  // the audio system is needed for the in-app listener and for recording every answer (whichever recogniser judges it)
-  if(window.LISTENER && !S.settings.manual && ((LISTENER.ready && S.settings.engine!=="google") || S.settings.keepAudio)){
+  // the audio system is needed for the phone's own listener (Vosk) and for recording every answer (whichever recogniser judges it)
+  // (speed) it was opened only when the in-app model was loaded (it always was: the start waited for it); now whenever the phone's own listener is chosen
+  if(window.LISTENER && !S.settings.manual && (S.settings.engine!=="google" || S.settings.keepAudio)){
     try{ await LISTENER.openMic(); }catch(e){ trace("microphone permission: "+e.message); }
   }
+  await lessonLoad();      // (speed; the owner, 16 Nov) the loading screen until everything this run of the lesson can need is on the phone
   showPlay(false);
   if(synth){ try{ synth.cancel(); synth.speak(new SpeechSynthesisUtterance("")); }catch(e){} }  // unlock audio on mobile
   audioUnlock();
@@ -4847,7 +4994,8 @@ document.getElementById("playBtn").onclick=async ()=>{
     save();
   }
   lessonTag(); UI.progStart(lesson);
-  try{ await main(); } finally { running=false; }
+  CLIPS.on=true;      // (speed) from here on a clip asked of the site is a fault in the trace
+  try{ await main(); } finally { running=false; CLIPS.on=false; }
 };
 
 /* ============================================================
@@ -4921,7 +5069,7 @@ $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=default
 async function saveRun(){
   const inSession = new Set(SESSION.clips);
   let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ if(!inSession.has(k)) continue; let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
-  const meta={app:APP_VERSION, user:{id:USERS.current, name:currentUser().name}, savedAt:new Date().toISOString(), listener: window.LISTENER&&LISTENER.json ? {model:LISTENER.version, source:LISTENER.json.source, quant:LISTENER.json.quant} : null, engine:S.settings.engine, ua:navigator.userAgent};
+  const meta={app:APP_VERSION, user:{id:USERS.current, name:currentUser().name}, savedAt:new Date().toISOString(), listener: null, engine:S.settings.engine, ua:navigator.userAgent};
   const since=e=>e.t>=SESSION.start;
   const touched=[...new Set(S.log.filter(since).map(e=>e.ex).filter(Boolean))];
   // the app's own fault report for this session: anything a learner would notice, found without anyone reporting it
@@ -4995,7 +5143,8 @@ $("whoForm").onsubmit=e=>{ e.preventDefault(); const v=cleanName($("whoName").va
 askWho();
 $("gM").onclick=()=>{ S.learnerGender="m"; save(); $("gender").hidden=true; };
 $("gF").onclick=()=>{ S.learnerGender="f"; save(); $("gender").hidden=true; };
-setPortraits(LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene);
+FIRST_SCENE=LESSONS[S.lesson].exercises[Math.min(S.ex, LESSONS[S.lesson].exercises.length-1)].parts[0].items[0].scene;      // (speed) drawn after the first screen: see stageFirst
+FIRST_SCREEN.then(()=>{ whenIdle(stageFirst); genRest(); whenIdle(()=>{ LESSON_SET.ready=lessonAhead(); }); });
 window.__app={get S(){return S}, judge, LESSONS, pointAt, gestureEar, gesturePalm, signal, setPortraits, rest, thumb, setScene, gestureLead};
 </script>
 <script src="words.js"></script>
