@@ -1,132 +1,12 @@
 /* ============================================================
-   LISTENER — the app's own speech recogniser, running on the phone (no server).
-   A small Whisper model fine-tuned for this app's answers (6-second window), run with onnxruntime-web.
-   It does not take dictation. For each task it scores how well the learner's speech fits each possible
-   answer (the right one, the other name, the name alone, ...) and also makes a free transcript for the log.
+   LISTENER — the app's own microphone: the audio path, the capture of one answer (when the learner starts and stops
+   speaking), the recording of every answer as a WAV. The recogniser that judges (Vosk, in the page) is fed from here.
+   (Until 16 Nov 2026 this file also held a small Whisper model run with onnxruntime-web. It never judged an answer and the
+   owner had it removed: "It's not adding anything since it's never used.")
    Microphone audio is captured only between the mic opening and the end of the answer.
    ============================================================ */
 (function(){
-  const BASE = (document.currentScript && document.currentScript.src || location.href).replace(/[^/]*$/, "");
-  const MODEL = BASE + "model/";
   const SR = 16000;
-  const MODEL_VERSION = "tiny-r2-200";       // change whenever the model files change, so phones fetch the new ones
-  let J=null, enc=null, dec=null, ready=null, melTabs=null;
-
-  // ---------- model files: downloaded once, then kept in the browser's cache ----------
-  async function fetchCached(url, onBytes){
-    let cache=null; try{ cache = await caches.open("faultless-listener-"+MODEL_VERSION);
-      for(const k of await caches.keys()) if(k.startsWith("faultless-listener-") && k!=="faultless-listener-"+MODEL_VERSION) caches.delete(k); }catch(e){}
-    if(cache){ const hit = await cache.match(url); if(hit){ const b=await hit.arrayBuffer(); onBytes&&onBytes(b.byteLength,b.byteLength); return b; } }
-    const r = await fetch(url); if(!r.ok) throw new Error("download failed: "+url+" "+r.status);
-    const total = +r.headers.get("content-length") || 0; const reader=r.body.getReader(); const parts=[]; let got=0;
-    for(;;){ const {done,value}=await reader.read(); if(done) break; parts.push(value); got+=value.length; onBytes&&onBytes(got,total); }
-    const buf = new Uint8Array(got); let o=0; for(const p of parts){ buf.set(p,o); o+=p.length; }
-    if(cache){ try{ await cache.put(url, new Response(buf.slice().buffer, {headers:{"content-type":"application/octet-stream"}})); }catch(e){} }
-    return buf.buffer;
-  }
-  function load(onProgress){
-    if(ready) return ready;
-    ready = (async()=>{
-      const t0=performance.now();
-      ort.env.wasm.wasmPaths = BASE + "ort/";
-      ort.env.wasm.numThreads = (self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency||1) : 1);
-      const files = {json:MODEL+"listener.json", enc:MODEL+"encoder.onnx", dec:MODEL+"decoder.onnx"};
-      const prog={}, tot={};
-      const p = k => (got,total)=>{ prog[k]=got; tot[k]=total; const g=Object.values(prog).reduce((a,b)=>a+b,0), t=Object.values(tot).reduce((a,b)=>a+b,0); onProgress&&onProgress(g, t); };
-      const [jb, eb, db] = await Promise.all([fetchCached(files.json,p("j")), fetchCached(files.enc,p("e")), fetchCached(files.dec,p("d"))]);
-      J = JSON.parse(new TextDecoder().decode(jb));
-      const opt = {executionProviders:["wasm"], graphOptimizationLevel:"all"};
-      enc = await ort.InferenceSession.create(new Uint8Array(eb), opt);
-      dec = await ort.InferenceSession.create(new Uint8Array(db), opt);
-      buildMel(); buildBytes();
-      await recognise(new Float32Array(SR));           // warm-up
-      return {ms: Math.round(performance.now()-t0)};
-    })();
-    ready.catch(()=>{ ready=null; });
-    return ready;
-  }
-
-  // ---------- log-mel spectrogram, as Whisper computes it ----------
-  function buildMel(){
-    const N=J.n_fft, B=N/2+1, cos=new Float32Array(B*N), sin=new Float32Array(B*N), win=new Float32Array(N);
-    for(let n=0;n<N;n++) win[n]=0.5-0.5*Math.cos(2*Math.PI*n/N);               // periodic Hann
-    for(let k=0;k<B;k++) for(let n=0;n<N;n++){ const a=2*Math.PI*k*n/N; cos[k*N+n]=Math.cos(a); sin[k*N+n]=Math.sin(a); }
-    const mel=new Float32Array(80*B); for(let m=0;m<80;m++) for(let k=0;k<B;k++) mel[m*B+k]=J.mel[m][k];
-    melTabs={N,B,cos,sin,win,mel};
-  }
-  function logMel(audio){
-    const {N,B,cos,sin,win,mel}=melTabs, H=J.hop, F=J.frames, L=F*H;
-    const x=new Float32Array(L); x.set(audio.subarray(0, Math.min(L, audio.length)));
-    const pad=N/2, xp=new Float32Array(L+N);                                    // centre with reflect padding
-    xp.set(x, pad); for(let i=1;i<=pad;i++){ xp[pad-i]=x[i]; xp[pad+L-1+i]=x[L-1-i]; }
-    const out=new Float32Array(80*F), frame=new Float32Array(N), pw=new Float32Array(B);
-    const lastAudio = Math.min(L, audio.length);
-    let zeroLog=null;
-    for(let f=0;f<F;f++){
-      const s=f*H;
-      if(s-pad > lastAudio + N){                                                // all-zero frame
-        if(zeroLog===null) zeroLog=Math.log10(1e-10);
-        for(let m=0;m<80;m++) out[m*F+f]=zeroLog; continue;
-      }
-      for(let n=0;n<N;n++) frame[n]=xp[s+n]*win[n];
-      for(let k=0;k<B;k++){ let re=0, im=0; const o=k*N; for(let n=0;n<N;n++){ re+=frame[n]*cos[o+n]; im-=frame[n]*sin[o+n]; } pw[k]=re*re+im*im; }
-      for(let m=0;m<80;m++){ let v=0; const o=m*B; for(let k=0;k<B;k++) v+=mel[o+k]*pw[k]; out[m*F+f]=Math.log10(Math.max(v,1e-10)); }
-    }
-    let mx=-Infinity; for(let i=0;i<out.length;i++) if(out[i]>mx) mx=out[i];
-    for(let i=0;i<out.length;i++) out[i]=(Math.max(out[i], mx-8)+4)/4;
-    return out;
-  }
-
-  // ---------- the model ----------
-  const softmaxLog = (a, off, V) => { let mx=-Infinity; for(let i=0;i<V;i++) if(a[off+i]>mx) mx=a[off+i]; let s=0; for(let i=0;i<V;i++) s+=Math.exp(a[off+i]-mx); return mx+Math.log(s); };
-  function prefix(){ const s=J.special; return [s["<|startoftranscript|>"], s["<|fr|>"], s["<|transcribe|>"], s["<|notimestamps|>"]]; }
-  async function decode(hidden, seqs){
-    const B=seqs.length, L=Math.max(...seqs.map(s=>s.length));
-    const ids=new BigInt64Array(B*L); for(let b=0;b<B;b++) for(let i=0;i<L;i++) ids[b*L+i]=BigInt(i<seqs[b].length? seqs[b][i] : J.eot);
-    const [, T, D] = hidden.dims; let hd=hidden;
-    if(B>1){ const d=new Float32Array(B*T*D); for(let b=0;b<B;b++) d.set(hidden.data, b*T*D); hd=new ort.Tensor("float32", d, [B,T,D]); }
-    const r = await dec.run({input_ids:new ort.Tensor("int64", ids, [B,L]), hidden:hd});
-    return {logits:r.logits.data, L, V:r.logits.dims[2]};
-  }
-  // average log-probability of each phrase (with the end of speech after it)
-  async function scorePhrases(hidden, phrases){
-    const pre=prefix(), seqs=phrases.map(p=>{ const t=J.phrases[p]; if(!t) throw new Error("phrase not prepared: "+p); return pre.concat(t,[J.eot]); });
-    const {logits,L,V}=await decode(hidden, seqs.map(s=>s.slice(0,-1)));
-    const out={};
-    seqs.forEach((s,b)=>{ let sum=0, n=0; for(let i=pre.length-1;i<s.length-1;i++){ const off=(b*(L)+i)*V; sum+=logits[off+s[i+1]]-softmaxLog(logits,off,V); n++; } out[phrases[b]]=sum/n; });
-    return out;
-  }
-  async function freeTranscript(hidden, maxTok=12){
-    const ids=prefix(), lps=[];
-    for(let k=0;k<maxTok;k++){
-      const {logits,L,V}=await decode(hidden,[ids]); const off=(L-1)*V; const z=softmaxLog(logits,off,V);
-      let best=0, bv=-Infinity; for(let t=0;t<=J.eot;t++) if(logits[off+t]>bv){ bv=logits[off+t]; best=t; }
-      lps.push(bv-z); ids.push(best); if(best===J.eot) break;
-    }
-    const toks=ids.slice(4).filter(t=>t<J.eot);
-    return {text: detok(toks), lp: lps.reduce((a,b)=>a+b,0)/lps.length};
-  }
-  let byteDec=null;
-  function buildBytes(){ const bs=[]; for(let i=33;i<=126;i++) bs.push(i); for(let i=161;i<=172;i++) bs.push(i); for(let i=174;i<=255;i++) bs.push(i);
-    const cs=bs.slice(); let n=0; for(let b=0;b<256;b++) if(!bs.includes(b)){ bs.push(b); cs.push(256+n); n++; }
-    byteDec={}; bs.forEach((b,i)=>byteDec[String.fromCharCode(cs[i])]=b); }
-  function detok(toks){ const s=toks.map(t=>J.vocab[t]||"").join(""); const bytes=[]; for(const ch of s){ if(ch in byteDec) bytes.push(byteDec[ch]); }
-    return new TextDecoder().decode(new Uint8Array(bytes)).trim(); }
-
-  // recognise one answer: audio (Float32, 16 kHz) -> {scores, transcript, ...}
-  async function recognise(audio, phrases=[], withTranscript=true){
-    const t0=performance.now();
-    const feats=new ort.Tensor("float32", logMel(audio), [1,80,J.frames]);
-    const t1=performance.now();
-    const hidden=(await enc.run({input_features:feats})).hidden;
-    const t2=performance.now();
-    const scores = phrases.length ? await scorePhrases(hidden, phrases) : {};
-    const t3=performance.now();
-    const tr = withTranscript ? await freeTranscript(hidden) : {text:"", lp:0};
-    const t4=performance.now();
-    return {scores, transcript:tr.text, freeLp:tr.lp, ms:{mel:Math.round(t1-t0), enc:Math.round(t2-t1), score:Math.round(t3-t2), free:Math.round(t4-t3)}};
-  }
-
   // ---------- microphone ----------
   // The audio system is set up once (it needs a tap from the learner); the microphone itself is switched on
   // only for each answer and off again straight after, so it is never on while the teacher talks or during leads.
@@ -196,7 +76,7 @@
      sound in 160 ms (a click as the microphone opens is not the start of an answer). Replayed on that run's 123 answers:
      ends more than 1.2 s after the last word went from 14 to 3, with none cut short. */
   function capture(opts={}){
-    const noSpeech=opts.noSpeechMs||7000, endSil=opts.endSilenceMs||800, maxMs=opts.longMs || Math.min(opts.maxMs||6000, J? J.frames*10 : 6000);      // longMs (.24): a count said at the touches may take longer than an answer
+    const noSpeech=opts.noSpeechMs||7000, endSil=opts.endSilenceMs||800, maxMs=opts.longMs || Math.min(opts.maxMs||6000, 6000);      // longMs (.24): a count said at the touches may take longer than an answer
     return new Promise(resolve=>{
       chunks=[]; rawChunks=[]; armed=true;
       const fr=320;                   // 20 ms frames
@@ -253,5 +133,5 @@
     for(let i=0;i<n;i++) v.setInt16(44+i*2, Math.max(-1,Math.min(1,audio[i]))*32767, true);
     return new Uint8Array(b);
   }
-  window.LISTENER = {version:MODEL_VERSION, load, openMic, micOn, micOff, capture, swamp, recognise, logMel, wav, get json(){ return J; }, get ready(){ return !!enc; }, get audioReady(){ return !!(ctx && node); }};
+  window.LISTENER = {openMic, micOn, micOff, capture, swamp, wav, get audioReady(){ return !!(ctx && node); }};
 })();

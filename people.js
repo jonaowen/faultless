@@ -2646,6 +2646,10 @@ HANDS.rest = { f: [[0.3, 0.35], [0.34, 0.4], [0.4, 0.45], [0.46, 0.52]], sp: 0.0
 const feelFrame = o => { const half = o.frame !== "face", bub = o.mood === "hungry" || o.mood === "thirsty";
   return { dur: 0, still: 0, yaw: half ? -12 : -8, at: half ? (bub ? [70, 84, 60] : [80, 80, 68]) : (bub ? [66, 106, 104] : [80, 100, 120]) }; };
 /* FIG.close(name, c, o): name smile | neutral | eat | drink | sleep | sing | read | write | feel (o.mood, o.frame); o.still (the card), o.phase, o.tag, o.legs */
+/* (figures 12; Jon, 16 Nov: the learner's smile in the action box drawn far outside its card) a close-up is drawn larger than its card
+   (the smile closes in on the face; the body and arms run on below the card's foot): it is clipped to the card's own box, 160 x 190 with
+   the cards' rounded corners, wherever it is put (the action box, a row); o.box false: not clipped (two side by side, clipped together) */
+const inCard = g => { const u = "cc" + (seq++), w = mk(`<clipPath id="${u}"><rect width="160" height="190" rx="16"/></clipPath><g clip-path="url(#${u})"></g>`); w.lastChild.appendChild(g); return w; };
 function closeUp(name, c, o){
   o = o || {}; const card = o.still && o.phase == null, D = name === "feel" ? feelFrame(o) : CLOSE[name] || CLOSE.neutral, heads = c.kid ? null : c.teen ? 5 : 5.6, B = bodyOf(c, { heads }), u = "cu" + (seq++) + "_", hh = B.hh;
   const setv = (k, i, v) => { const n = nrm(v); k[i] = n[0]; k[i + 1] = n[1]; k[i + 2] = n[2]; }, getv = (k, i) => [k[i], k[i + 1], k[i + 2]];
@@ -2810,7 +2814,7 @@ function closeUp(name, c, o){
     front = note(120, 52, 0.9, 0) + note(136, 30, 1.05, -0.5) + note(112, 22, 0.75, -1); }
   if (name === "feel") front = feelFront(o.mood, D.at[0], D.at[1], D.at[2], o.frame !== "face");
   const g = mk(""), ph0 = o.phase != null ? o.phase : D.still, html = L => L.map(n => nodeHTML(n, u)).join("");
-  if (o.still || !D.dur){ const F = listAt(ph0); g.innerHTML = `<defs>${F.defs}</defs>` + html(F.list) + front; return g; }
+  if (o.still || !D.dur){ const F = listAt(ph0); g.innerHTML = `<defs>${F.defs}</defs>` + html(F.list) + front; return o.box === false ? g : inCard(g); }
   /* the loop: drawn by script at sixty phases a second, with the clock of the page (as figure() is) */
   const dur = D.dur, NF = Math.round(dur * 30), kept = new Array(NF), F0 = listAt(0);
   g.innerHTML = `<defs>${F0.defs}</defs><g class="fig">${html(F0.list)}</g><g opacity="1"><animate attributeName="opacity" values="1;1" dur="${f2(dur)}s" repeatCount="indefinite"/></g>` + front;
@@ -2821,7 +2825,7 @@ function closeUp(name, c, o){
     if (K.ord !== order){ order = K.ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; }
       for (const id in byId) if (!seen[id]){ byId[id].remove(); delete byId[id]; } }
     for (const n of list){ const el = byId[n.id]; if (!el) continue; nodeSet(el, n); if (n.tag === "g" && el._in !== n.inner){ if (el._in != null) el.firstChild.innerHTML = n.inner; el._in = n.inner; } } });      // (a face that changes: the mouth's and the eyes' drawing)
-  return g;
+  return o.box === false ? g : inCard(g);
 }
 /* ---------- the handed thing (voilà / merci; donner): one person hands a thing to another ----------
    FIG.handOver(cA, cB, o): A (the giver, on the left, facing right) holds the thing in front of the waist, holds it out; B (on the right,
@@ -3165,7 +3169,7 @@ function action(act, who, opts){
   if (CLOSEFIG[act] && FIG.close && !opts.card && !opts.size && !opts.old && !opts.bare && !opts.shift && !(opts.looks && opts.looks.length)){
     const cT = traits(spec), c0 = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT, ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[spec.person];
     if (ID) c0.top = [tone(ID, 0.14), tone(ID, -0.2)];
-    return FIG.close(CLOSEFIG[act], c0, { still: act === "not smiling" || still, tag: name || "", phase: opts.phase }); }
+    return FIG.close(CLOSEFIG[act], c0, { still: act === "not smiling" || still, tag: name || "", phase: opts.phase, box: opts.box }); }
   if (LEARNER && who === "you" && !opts._noLearner && CLOSE_OF_YOU[act]){ const keep = LEARNER; LEARNER = null;
     try { return action(act, who, Object.assign({}, opts, { _noLearner: 1 })); } finally { LEARNER = keep; } }
   if (act === "smile"){ spec._smile = still ? "still" : "anim"; return bust(spec, name); }
@@ -4713,9 +4717,10 @@ function together(act, opts){
     const c = mk("");
     c.setAttribute("transform", close ? `translate(${i ? 80 : 0} 47.5) scale(${s})`      // (.50) the smile fills its picture when it closes in: the two side by side, not overlapping
       : `translate(${r2((i ? 120 : 40) + (face ? (i ? -1 : 1) : 0) - 80 * s)} ${r2(face ? 190 - 190 * s : 108 - 110 * s)}) scale(${s})`);
-    c.appendChild(action(act, who, opts)); g.appendChild(c);
+    c.appendChild(action(act, who, face || close ? Object.assign({}, opts, { box: false }) : opts)); g.appendChild(c);
   });
-  return g;
+  if (!(face || close)) return g;      // (figures 12) two close-ups: clipped together to the one card (160 x 190, the cards' rounded corners)
+  const cid = "ct" + (seq++), box = mk(`<clipPath id="${cid}"><rect width="160" height="190" rx="16"/></clipPath><g clip-path="url(#${cid})"></g>`); box.lastChild.appendChild(g); return box;
 }
 /* ---------- PICS.handOver(spec): one person hands a thing to another (voilà / merci; donner) ----------
    spec = { from, to, thing: {is, looks}, phase, still, w, names: {you: "the learner's name"} }
