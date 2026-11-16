@@ -27,6 +27,10 @@
 .day.today span{background:var(--ink);color:var(--card)}
 .life{text-align:center;font:600 15px/1.25 var(--font-ui);color:var(--ink-2)}
 .hero{margin-top:12px;padding:16px 18px 18px;display:grid;gap:11px}
+/* (first run) the first name, on Lesson 1's card: the one thing asked before the first lesson */
+.hname{display:grid;gap:6px;margin:2px 0 0} .hname span{font:var(--t-label);color:var(--ink-2)} .hname input{font:600 20px/1.2 var(--font-ui);color:var(--ink);padding:12px 14px;border-radius:var(--r2);border:2px solid var(--line-strong);background:var(--paper);min-height:52px;width:100%;box-sizing:border-box}
+.hname input:focus{outline:none;border-color:var(--speak)} .hname input.want{border-color:var(--sun-deep);animation:hWant 420ms var(--ease-out)} @keyframes hWant{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@media (prefers-reduced-motion: reduce){ .hname input.want{animation:none} } html[data-motion="less"] .hname input.want{animation:none}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font:var(--t-label);color:var(--ink-2)} .eyebrow .icon{width:20px;height:20px} .eyebrow.sun{color:var(--sun-deep)} .eyebrow.moon{color:var(--moon-deep)}
 .hero h1{margin:4px 0 0;white-space:nowrap;font:600 40px/1 var(--font-display);font-variation-settings:"SOFT" 100;letter-spacing:-.01em}
 .headrow{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
@@ -753,3 +757,5 @@ html[data-motion="less"] #xcard, html[data-motion="less"] #xcard .xc, html[data-
 #xcard .xc-checkdemo{display:flex;justify-content:center;margin:2px 0 14px;padding:14px 8px;border-radius:var(--r3);background:var(--paper);border:1px solid var(--line)}
 #xcard .xk-demo{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:var(--r-pill);background:var(--moon-tint);box-shadow:0 0 0 1.5px var(--moon);font:700 calc(15px * var(--tz,1))/1.2 var(--font-ui);color:var(--moon-deep)}
 html[data-motion="less"] #xcheck{animation:none} @media (prefers-reduced-motion:reduce){ #xcheck{animation:none} }
+
+.wcer.film .wc-f1{opacity:1;transform:none;transition:none} .wcer.film .wc-f0{opacity:0;transition:none}      /* (figures 13) PICS.putOn's film: shown from the flight on */

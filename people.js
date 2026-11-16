@@ -1612,6 +1612,167 @@ function wardrobeThumb0(id, sp, opt){ const it = WARD[id], v = THUMB_VIEW[it.slo
   else { const C = clipOf(id), f = avatarW(S, { view: "celebrate", wear, still: true, phase: ({ bow: 0.25 })[id] != null ? ({ bow: 0.25 })[id] : C.still % 1, noShine: 1 }); put(f, "translate(80 184) scale(1) translate(-80 -176)"); }      // (T4: in the grid a dance is ONE still frame, its card frame (the bow: the bend on the way down, the deepest point read as a fall): the 8-frame flip book was ~260 KB of markup each; the item's own sheet asks {live: true} and plays the loop)
   if (it.tier === "costume" || it.tier === "wild") { const f = mk(sparkles([[132, 30, 5, 0.4], [30, 52, 4, 1.4]], "#ffffff", 3)); while (f.firstChild) g.appendChild(f.firstChild); }
   return g; }
+/* ---------- (figures 13) the two moments of the ceremonies: the high five (rank-up) and putting a thing on (the wardrobe) ----------
+   The shell puts these pictures in its page as MARKUP (outerHTML), so they cannot be the live figure (drawn by script at every frame):
+   each is a short FILM in SMIL alone, begun when it is put in the page and held on its last frame. A film is a few POSES of the figure
+   (the rig's own drawing of a key), shown one after another (<set> of visibility), and between the poses the whole figure is moved by
+   transforms (a step, a lean, a hop, a squash: animateTransform), so that a few drawings make a smooth movement. Parts of the drawing
+   that are the same in several poses are written once (<defs>) and used (<use>): the head, the legs, the trunk are drawn once.
+   Ids from the file's own sequence; no filters. */
+const MOM = { pitch: 7 * Math.PI / 180 };
+/* a pose drawn: c (the person, dressed), o: {yaw, k, x, y (the ground), legs, tag, smile, curl, fix: [key fixes], armK: the arms longer (a stretch)}, key: the body's key */
+function momPose(c, o, key){ c = lookWear(c); const B0 = bodyOf(c, o), B = o.armK ? Object.assign({}, B0, { ua: B0.ua * o.armK, fa: B0.fa * o.armK }) : B0, W = wearer(c, o, o.u), cam = camera(o.yaw * Math.PI / 180, MOM.pitch, B.H * o.k, o.x, o.y);
+  W.curl = o.curl != null ? o.curl : 0.45; let k = Float32Array.from(key); if (W.wd && W.wd.keyFix) k = W.wd.keyFix(k, B); for (const f of o.fix || []) k = f(k, B);
+  const J = skeleton(k, B), fl = lowest(J); return { list: frame(k, B, cam, W, fl, o), defs: W.defs, B, cam, k, J, fl, P: p => cam.pt([p[0], p[1] - fl, p[2]]) }; }
+/* where a point given in the chest's frame (x the figure's left, y up, z forward) is drawn */
+function momAt(p, v){ return p.P(at(p.J.chest, p.J.Bc, v)); }
+/* the wrist target (chest frame) whose drawn place is (X, Y): x across kept; y and z solved (the drawing is linear in them) */
+function momReach(p, x, X, Y, y0, z0){ const f = (y, z) => momAt(p, [x, y, z]), a = f(y0, z0), b = f(y0 + 0.1, z0), c = f(y0, z0 + 0.1);
+  const m11 = (b[0] - a[0]) / 0.1, m12 = (c[0] - a[0]) / 0.1, m21 = (b[1] - a[1]) / 0.1, m22 = (c[1] - a[1]) / 0.1, dx = X - a[0], dy = Y - a[1], det = m11 * m22 - m12 * m21;
+  return [x, y0 + (dx * m22 - dy * m12) / det, z0 + (m11 * dy - m21 * dx) / det]; }
+/* the wrist target (chest frame) whose drawn place is (X, Y) and that is nearest the shoulder s (chest frame): the point of the camera's ray
+   through (X, Y) closest to s */
+function momRay(p, X, Y, s){ const a = momAt(p, [0, 0, 0]), e = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map(v => { const q = momAt(p, v); return [q[0] - a[0], q[1] - a[1]]; });
+  const A = [[e[0][0], e[1][0], e[2][0]], [e[0][1], e[1][1], e[2][1]]], n = [A[0][1] * A[1][2] - A[0][2] * A[1][1], A[0][2] * A[1][0] - A[0][0] * A[1][2], A[0][0] * A[1][1] - A[0][1] * A[1][0]];
+  /* a particular solution in the plane y,z (x = 0) */
+  const dx = X - a[0], dy = Y - a[1], det = A[0][1] * A[1][2] - A[0][2] * A[1][1], v0 = [0, (dx * A[1][2] - dy * A[0][2]) / det, (A[0][1] * dy - A[1][1] * dx) / det];
+  const nn = n[0] * n[0] + n[1] * n[1] + n[2] * n[2], t = ((s[0] - v0[0]) * n[0] + (s[1] - v0[1]) * n[1] + (s[2] - v0[2]) * n[2]) / nn;
+  return [v0[0] + t * n[0], v0[1] + t * n[1], v0[2] + t * n[2]]; }
+/* an arm put where T says (chest frame, the figure's own side sg: 1 left, -1 right), its hand open (curl) */
+const momArm = (side, T) => keyArm(side, () => T);
+/* the film: figs = [{u, defs, poses: [{t (ms from which it shows), list}], move: {tr: [[t, x, y]], rot: [[t, deg]], sq: [[t, sx, sy]], cx, cy}}];
+   dur: ms to the held last frame. Returns the markup of one <g> */
+function momFilm(figs, dur){
+  const D = f2(dur / 1000), kt = (L, f) => { if (L[0][0] !== 0) L = [[0].concat(L[0].slice(1))].concat(L); if (L[L.length - 1][0] < dur) L = L.concat([[dur].concat(L[L.length - 1].slice(1))]);
+    return `values="${L.map(f).join(";")}" keyTimes="${L.map(x => f2(x[0] / dur)).join(";")}"`; };
+  let out = "";
+  for (const F of figs){ const P = F.poses, clips = new Map(), hash = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+    /* a part clipped by a shape of its own (the arms' shadow on the trunk ...): its clip shape written once for every pose that has the same */
+    const html = (n, u) => { if (n.tag !== "clip") return nodeHTML(n, u); const id = u + n.id + hash(n.clip); if (!clips.has(id)) clips.set(id, `<clipPath id="${id}"><path d="${n.clip}"/></clipPath>`);
+      return `<path data-p="${n.id}" clip-path="url(#${id})" d="${n.d}" fill="${n.fill}"/>`; };
+    const raw = P.map(p => p.list.map(n => html(n, p.u)));
+    /* the ids defined in the parts (clip shapes and the like, named by other parts): an id whose defining part is not the same in every pose
+       is made each pose's own, with every name of it in that pose */
+    const defsOf = new Map(); raw.forEach((L, i) => L.forEach(str => { for (const m of str.matchAll(/ id="([^"]+)"/g)){ if (!defsOf.has(m[1])) defsOf.set(m[1], { strs: new Set(), poses: new Set() }); const d = defsOf.get(m[1]); d.strs.add(str); d.poses.add(i); } }));
+    const vary = [...defsOf].filter(([, d]) => d.strs.size > 1 || d.poses.size < P.length).map(([x]) => x);
+    const strs = raw.map((L, i) => L.map(str => { for (const x of vary) if (str.includes(x)) str = str.split(`id="${x}"`).join(`id="${x}p${i}"`).split(`url(#${x})`).join(`url(#${x}p${i})`).split(`href="#${x}"`).join(`href="#${x}p${i}"`); return str; }));
+    const count = new Map(); strs.forEach(L => new Set(L).forEach(s => count.set(s, (count.get(s) || 0) + 1)));
+    const ids = new Map(); let defs = F.defs + [...clips.values()].join(""), nId = 0;
+    for (const [s, n] of count) if (n > 1){ if (/^<clipPath/.test(s)){ defs += s; ids.set(s, ""); continue; }
+      const id = `${F.u}s${nId++}`; ids.set(s, id); defs += s.replace(/^<(path|g) /, `<$1 id="${id}" `); }
+    let poses = "", poseDefs = "";
+    strs.forEach((L, i) => { const t0 = P[i].t, t1 = i + 1 < P.length ? P[i + 1].t : null;
+      const body = L.map(s => { if (ids.has(s)) return ids.get(s) ? `<use href="#${ids.get(s)}"/>` : ""; if (/^<clipPath/.test(s)){ poseDefs += s; return ""; }      // (a pose's own clip shapes in the film's defs, never under a hidden group)
+        return s; }).join("");
+      poses += i === 0 ? `<g>${t1 != null ? `<set attributeName="visibility" to="hidden" begin="${f2(t1 / 1000)}s" fill="freeze"/>` : ""}${body}</g>`
+        : `<g visibility="hidden"><set attributeName="visibility" to="visible" begin="${f2(t0 / 1000)}s"${t1 != null ? ` dur="${f2((t1 - t0) / 1000)}s"` : ` fill="freeze"`}/>${body}</g>`; });
+    const M = F.move || {}, cx = f1(M.cx || 0), cy = f1(M.cy || 0), has = L => L && L.length > 1;
+    const tr = has(M.tr) ? `<animateTransform attributeName="transform" type="translate" ${kt(M.tr, x => f1(x[1]) + " " + f1(x[2]))} dur="${D}s" fill="freeze"/>` : "";
+    const rot = has(M.rot) ? `<animateTransform attributeName="transform" type="rotate" ${kt(M.rot, x => f2(x[1]) + " " + cx + " " + cy)} dur="${D}s" fill="freeze"/>` : "";
+    const sq = has(M.sq) ? `<animateTransform attributeName="transform" type="scale" ${kt(M.sq, x => f2(x[1]) + " " + f2(x[2]))} dur="${D}s" fill="freeze"/>` : "";
+    const t0 = M.tr && M.tr.length ? `translate(${f1(M.tr[0][1])} ${f1(M.tr[0][2])})` : "", r0 = M.rot && M.rot.length ? `rotate(${f2(M.rot[0][1])} ${cx} ${cy})` : "";
+    out += `<defs>${defs}${poseDefs}</defs><g transform="${t0}">${tr}<g transform="${r0}">${rot}<g transform="translate(${cx} ${cy})"><g>${sq}<g transform="translate(${-cx} ${-cy})">${poses}</g></g></g></g></g>`; }
+  return out; }
+
+/* ---------- FIG.highFive(cM, cY, o): Marie (cM, on the left, facing right) and the learner (cY, dressed, on the right, facing left) meet
+   in the middle of a 320 x 200 box and give each other a high five. o: {legsM, legsY, tagM}. The timing of RANKUP.md 5: a step each toward
+   the other (0-350 ms), the wind-up (350-620: the arm nearest the other raised up and back, the palm open, leaning in), CONTACT at 620 ms
+   (the palms meet above the heads at the middle, a slight squash), the follow-through (620-900: the arms swing down and out, the learner
+   hops), settled by 1600 ms (Marie's other hand open, "bravo"), the last frame held. ---------- */
+const HF = { dur: 1600, contact: 620, gy: 188, yaw: 80, h: 122, half: 32, step: 16, lean: 3, stretch: 1.24 };      // (stretch: the arms at the contact, a cartoon's stretch on the snap)
+const fwd = T => T;      // (targets are in the chest's frame, z forward: the way the face looks)
+function highFive(cM, sp, wear, o){ o = o || {}; wear = (wear || []).filter(id => WARD[id] && WARD[id].slot !== "pose" && WARD[id].slot !== "dance");
+  const cY0 = person(sp), cY = wear.length ? dressUp(cY0, wear) : cY0; o.legsY = o.legsY || cY.legs || cY0.legs;
+  const stand = clipOf("stand"), K0 = Float32Array.from(keyAt(stand, 0)), uM = "hm" + (seq++) + "_", uY = "hy" + (seq++) + "_";
+  const BM = bodyOf(lookWear(cM), {}), k = HF.h / ((0.866 + 1.84 * BM.hh) * BM.H);      // one scale for both (a child is smaller)
+  const open = (c, side) => withWd(c, w => { w["curl" + side] = 0; });
+  /* Marie faces right (yaw 78, near profile: the reach is along the line between them), the learner left (yaw -78); each raises the FAR
+     arm (Marie's left, the learner's right): it rises behind the head, so no arm crosses a face, and the two arms make an inverted V above */
+  const M = { c: open(cM, "L"), side: "L", sg: 1, dir: -1, x: 160 - HF.half, o: { yaw: HF.yaw, k, y: HF.gy, legs: o.legsM, tag: o.tagM || "Marie", smile: 1.1, u: uM } };
+  const Y = { c: open(cY, "R"), side: "R", sg: -1, dir: 1, x: 160 + HF.half, o: { yaw: -HF.yaw, k, y: HF.gy, legs: o.legsY, smile: 1.1, u: uY } };
+  const armLen = F => { const B = bodyOf(lookWear(F.c), F.o); return (B.ua + B.fa) * HF.stretch * 0.99; };
+  /* the meeting height: as high as both can reach at the middle (above the heads) */
+  let yC = 30, sol = null;
+  for (; yC < 120; yC += 1){ const r = [M, Y].map(F => { const p = momPose(F.c, Object.assign({}, F.o, { x: F.x, armK: HF.stretch }), K0), B = p.B, sh = p.J["sh" + F.side], Bc = p.J.Bc, ch = p.J.chest;
+      const inv = v => [v[0] - ch[0], v[1] - ch[1], v[2] - ch[2]], dl = inv(sh), sC = [dl[0] * Bc.x[0] + dl[1] * Bc.x[1] + dl[2] * Bc.x[2], dl[0] * Bc.y[0] + dl[1] * Bc.y[1] + dl[2] * Bc.y[2], dl[0] * Bc.z[0] + dl[1] * Bc.z[1] + dl[2] * Bc.z[2]];
+      const hand = B.hand * 0.42 * B.H * F.o.k;      // the palm's middle above the wrist (the hand up)
+      /* the meeting point in the figure's own picture before its lean (the figure leans toward the other about its feet) */
+      const a = -F.dir * HF.lean * Math.PI / 180, X0 = 160 + F.dir * 2.2 - F.x, Y0 = yC + hand - HF.gy, ca = Math.cos(-a), sa = Math.sin(-a), Xl = F.x + X0 * ca - Y0 * sa, Yl = HF.gy + X0 * sa + Y0 * ca;
+      const w = momRay(p, Xl, Yl, sC), d = Math.hypot(w[0] - sC[0], w[1] - sC[1], w[2] - sC[2]);
+      return { w, ok: d <= armLen(F) }; });
+    if (r[0].ok && r[1].ok){ sol = r; break; } }
+  M.wr = sol ? sol[0].w : [-0.05, 0.3, 0.25]; Y.wr = sol ? sol[1].w : [0.05, 0.3, 0.25];
+  /* the arm's poses: keyArm's own convention (x outward from the arm's own side, y up, z forward); the hit's wrist is solved in the chest's
+     own frame, so its x is turned to the arm's side */
+  const A = (F, name) => { const s = F.sg, W = F.wr;
+    return ({ rest: null,
+      wind1: { wr: [0.16, 0.1, 0.0], hd: [0.1, 1, -0.1], pn: [0, 0, 1], pole: [1, -0.6, -0.2] },
+      wind2: { wr: [0.06, 0.37, -0.1], hd: [0, 1, -0.3], pn: [0, 0.2, 1], pole: [0.6, -0.3, -0.8] },
+      hit: { wr: [W[0] * s, W[1], W[2]], hd: [0, 1, 0.3], pn: [0, -0.25, 1], pole: [0.5, -1, -0.4] },
+      after: { wr: [0.27, -0.2, -0.03], hd: [0.35, -0.9, -0.15], pn: [0.9, 0, 0.2], pole: [0.3, -1, 0.2] },
+      settle: { wr: [0.17, -0.27, 0.05], hd: [0.15, -0.95, 0.2], pn: [-0.9, 0, 0.2], pole: [0.4, -1, -0.2] } })[name]; };
+  const bravo = { wr: [0.1, -0.03, 0.15], hd: [-0.15, 0.85, 0.5], pn: [0.3, 0.2, 1], pole: [0.7, -1, -0.1] };      // Marie's other (right, near) hand: open, up, "bravo"
+  const pose = (F, name, c, extra) => { const T = A(F, name), fix = T ? [momArm(F.side, T)] : []; if (extra) fix.push(extra); return momPose(c || F.c, Object.assign({}, F.o, { x: F.x, fix }, name === "hit" ? { armK: HF.stretch } : null), K0); };
+  const cMb = withWd(M.c, w => { w.curlR = 0.05; });
+  const PM = [[0, pose(M, "rest")], [400, pose(M, "wind2")], [620, pose(M, "hit")], [720, pose(M, "after")], [950, pose(M, "settle", cMb, keyArm("R", () => bravo))]];
+  const PY = [[0, pose(Y, "rest")], [400, pose(Y, "wind2")], [620, pose(Y, "hit")], [720, pose(Y, "after")], [950, pose(Y, "rest")]];      // (the learner settles as at rest: drawn once, used twice)
+  const st = HF.step, lean = HF.lean;
+  const figM = { u: uM, defs: PM[0][1].defs, poses: PM.map(([t, p]) => ({ t, list: p.list, u: uM })), move: { cx: M.x, cy: HF.gy,
+    tr: [[0, -st, 0], [175, -st / 2, -2.5], [350, 0, 0], [900, 0, 0], [1200, -3, 0]], rot: [[0, 0], [350, 0], [560, lean], [660, lean], [760, lean * 0.4], [900, 0]], sq: [[0, 1, 1], [450, 1, 1], [600, 0.99, 1.03], [630, 1.03, 0.965], [700, 1, 1]] } };
+  const figY = { u: uY, defs: PY[0][1].defs, poses: PY.map(([t, p]) => ({ t, list: p.list, u: uY })), move: { cx: Y.x, cy: HF.gy,
+    tr: [[0, st, 0], [175, st / 2, -2.5], [350, 0, 0], [700, 0, 0], [780, 1, -11], [880, 2, 0], [940, 3, -2.5], [1000, 3, 0], [1200, 4, 0]], rot: [[0, 0], [350, 0], [560, -lean], [660, -lean], [760, -lean * 0.4], [900, 0]],
+    sq: [[0, 1, 1], [450, 1, 1], [600, 0.99, 1.03], [630, 1.03, 0.965], [700, 1.04, 0.94], [760, 0.97, 1.05], [880, 1.04, 0.95], [960, 1, 1]] } };
+  const g = mk(momFilm([figM, figY], HF.dur));
+  g.setAttribute("data-contact", String(HF.contact)); g.setAttribute("data-dur", String(HF.dur)); g.setAttribute("data-hand", `160 ${f1(yC)}`);
+  return g; }
+
+/* ---------- FIG.putOn(sp, wear, item): the learner puts on what they have just bought, in the 160 x 190 standing framing (as avatar's
+   "standing" view); plays once in 1.2 s at most, the thing ON at data-on (600 ms), the last frame held. By the item's slot: a hat set
+   on the head with both hands and tugged; glasses brought up by one hand, slid on, pushed at the bridge, a nod; a neck thing straightened
+   with both hands; a top or an outfit: a quarter turn and back, the clothes changing on the turn, arms out "ta-da"; a thing carried
+   swung up and held out. A pose or a dance: null (the shell shows them its own way). ---------- */
+const PO = { dur: 1200, on: 600 };
+function putOn(sp, wear, item){ const it = WARD[item]; if (!it || it.slot === "pose" || it.slot === "dance") return null;
+  wear = (wear || []).filter(id => WARD[id] && WARD[id].slot !== "pose" && WARD[id].slot !== "dance"); const before = wear.filter(id => id !== item);
+  const c0 = person(sp), cB = before.length ? dressUp(person(sp), before) : c0, cA = dressUp(person(sp), wear.indexOf(item) < 0 ? wear.concat([item]) : wear);
+  const B = bodyOf(cA, {}), C = clipOf("stand"), yaw0 = C.yaw;
+  const K0 = Float32Array.from(keyAt(C, 0)), u = "po" + (seq++) + "_", base = { k: 1, x: 80, y: GY, legs: cA.legs || c0.legs, smile: 0.5, yaw: yaw0, u };      // (as avatar's standing view: k 1)
+  const P = (c, fixes, extra) => Object.assign(momPose(c, Object.assign({}, base, { fix: fixes || [] }, extra || {}), K0), { u });
+  /* the arms' targets in keyArm's own convention: x outward from the arm's own side, y up, z forward (the chest's frame) */
+  const both = T => [keyArm("L", () => T), keyArm("R", () => T)], one = (side, T) => [keyArm(side, () => T)];
+  const head = (y, z, x) => ({ wr: [x || 0.11, y, z], hd: [-0.55, 0.8, 0.1], pn: [-1, 0, 0], pole: [1, -0.5, -0.3] });
+  const nod = (a) => (k2) => { const r = Float32Array.from(k2), c = Math.cos(a), s = Math.sin(a), rot = i => { const y = r[i + 1], z = r[i + 2]; r[i + 1] = y * c - z * s; r[i + 2] = y * s + z * c; }; rot(24); rot(27); rot(30); return r; };
+  const opn = c => withWd(c, w => { w.curlL = 0.15; w.curlR = 0.15; });
+  let poses = [], move = { cx: 80, cy: GY, tr: [[0, 0, 0]], rot: [[0, 0]], sq: [[0, 1, 1]] };
+  const slot = it.slot;
+  if (slot === "head"){
+    poses = [[0, P(cB)], [220, P(opn(cB), both(head(0.06, 0.12, 0.2)))], [420, P(opn(cB), both(head(0.27, 0.05)))],
+      [600, P(opn(cA), both(head(0.25, 0.04)))], [760, P(opn(cA), both(head(0.21, 0.05)))], [900, P(cA, [], { smile: 1 })]];
+    move.sq = [[0, 1, 1], [600, 1, 1], [700, 1.02, 0.975], [800, 1, 1]]; }
+  else if (slot === "face"){
+    const R = T => one("R", T), at = (y, z, xx) => ({ wr: [xx, y, z], hd: [-0.3, 0.9, 0.3], pn: [-0.6, 0, 1], pole: [1, -0.6, -0.2] });
+    poses = [[0, P(cB)], [200, P(opn(cB), R(at(-0.02, 0.2, 0.1)))], [400, P(opn(cB), R(at(0.16, 0.15, 0.14)))], [600, P(opn(cA), R(at(0.2, 0.08, 0.15)))],
+      [760, P(withWd(cA, w => { w.curlR = 0.6; }), R({ wr: [0.02, 0.19, 0.14], hd: [-0.05, 1, 0.1], pn: [0, 0, 1], pole: [1, -0.7, -0.1] }))], [920, P(cA, [nod(0.16)], { smile: 1 })], [1060, P(cA, [], { smile: 1 })]]; }
+  else if (slot === "neck"){
+    const th = (y, z, xx) => ({ wr: [xx, y, z], hd: [-0.7, 0.6, 0.2], pn: [0, 0, -1], pole: [1, -0.8, 0] });
+    poses = [[0, P(cB)], [250, P(opn(cB), both(th(-0.02, 0.12, 0.12)))], [450, P(opn(cB), both(th(0.05, 0.1, 0.06)))],
+      [600, P(opn(cA), both(th(0.05, 0.1, 0.06)))], [760, P(opn(cA), both(th(0.0, 0.12, 0.1)))], [920, P(cA, [], { smile: 1 })]]; }
+  else if (slot === "hand"){
+    const hs = handSideOf(cA);
+    poses = [[0, P(cB)], [250, P(cB, one(hs, { wr: [0.2, -0.12, 0.2], hd: [0.2, 0.2, 1], pn: [-1, 0, 0], pole: [0.6, -1, -0.2] }))], [600, P(cA)],
+      [780, P(cA, one(hs, { wr: [0.24, 0.07, 0.22], hd: [0.25, 0.7, 0.65], pn: [-0.4, 0, 1], pole: [0.7, -1, -0.3] }), { smile: 1 })]];
+    move.tr = [[0, 0, 0], [780, 0, 0], [850, 0, -3], [940, 0, 0]]; }
+  else {      // a top or an outfit: a quarter turn and back, the clothes changing on the turn, then "ta-da"
+    const ta = both({ wr: [0.36, 0.08, 0.1], hd: [0.8, 0.5, 0.2], pn: [0.2, 0.2, 1], pole: [0.3, -1, -0.3] });
+    /* (three drawings: the turn away is the figure narrowing, the change seen turned, then the front) */
+    poses = [[0, P(cB)], [600, P(cA, [], { yaw: yaw0 + 75 })], [800, P(opn(cA), ta, { smile: 1 })]];
+    move.sq = [[0, 1, 1], [200, 1, 1], [600, 0.55, 1], [640, 0.8, 1], [800, 1, 1], [860, 1.02, 0.98], [940, 1, 1]]; move.tr = [[0, 0, 0], [800, 0, 0], [860, 0, -3], [940, 0, 0]]; }
+  const film = momFilm([{ u, defs: poses[poses.length - 1][1].defs, poses: poses.map(([t, p]) => ({ t, list: p.list, u })), move }], PO.dur);      // (one id prefix: the drawing before and after share every part they have alike; the dressed one's defs hold the undressed one's)
+  let g = mk(film); const top = GY - (0.866 + 1.84 * B.hh + (cA.wd && cA.wd.tall || 0) * B.hh) * B.H;      // (as the standing view: a tall hat, the whole a little smaller)
+  if (top < 6){ const s = (GY - 6) / (GY - top), h = mk(""); h.setAttribute("transform", `translate(80 ${GY}) scale(${f2(s * 100) / 100}) translate(-80 ${-GY})`); h.appendChild(g); g = mk(""); g.appendChild(h); }
+  g.setAttribute("data-dur", String(PO.dur)); g.setAttribute("data-on", String(PO.on)); return g; }
+/* the hand that carries a thing (the wardrobe's own keyArm side for it), else the right */
+function handSideOf(c){ const ids = (c.wd && c.wd.ids) || []; return ids.indexOf("baguette") >= 0 ? "L" : "R"; }
 /* ---------- the close-ups: smiling, not smiling, eating, drinking, sleeping, singing, reading, writing ----------
    The same body, head and camera as every other figure, seen close: the head and shoulders (smiling and not smiling: the face alone, filling
    the card), the arms put where the action needs the hands by the lengths of the two bones (the elbow found as an elbow bends), the hands
@@ -2283,7 +2444,7 @@ function tutor(c, o){
     gaze, nod, blink, still(on){ held = !!on; }, _: { B, S, cam, quiet } };
   return { node: g, rig };
 }
-return { figure, act, part: partPic, worn: lookWear, avatar: avatarW, wardrobeThumb, WARD, person, tutor, close: closeUp, handOver, HO, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
+return { figure, act, highFive, putOn, part: partPic, worn: lookWear, avatar: avatarW, wardrobeThumb, WARD, person, tutor, close: closeUp, handOver, HO, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
 })();
 /* the figure >>> */
 /* ---------- PICS.action(act, who, opts): every action is the ONE figure (FIG), for everybody, with whatever they wear ----------
@@ -2698,9 +2859,17 @@ function learnerCardPic(name, sex){ name = String(name || ""); const c = figOf({
   const g = boxed(FIG.bust(c, { head: 82, cy: 80, yaw: -6, heads: 5.6 })); g.appendChild(mk(flatTag(lines, w, h, tws, MAXT)).firstChild); g.tagBox = { w, h };
   try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
   return g; }
+
+/* ---------- (figures 13) the ceremonies' two films (dev/design/RANKUP.md 5 and 7; the shell calls them through guarded hooks) ----------
+   PICS.highFive({you, wear, marie}): Marie and the learner give each other a high five (320 x 200; data-contact, data-dur, data-hand).
+   PICS.putOn(spec, {wear, item}): the learner puts on what they have just bought (160 x 190, standing; data-dur, data-on); null for a pose
+   or a dance. Both are SMIL alone (the shell puts their markup in its page) and play once, the last frame held. */
+function highFivePic(o){ o = o || {}; const M = figOf({ person: "marie" });
+  return FIG.highFive(M.c, o.you || null, o.wear || [], { legsM: M.legs, tagM: WHO_NAME.marie || "Marie" }); }
+function putOnPic(spec, o){ o = o || {}; return FIG.putOn(spec || null, o.wear || [], o.item); }
 /* the teacher on the stage (see FIG.tutor): Marie as the course knows her (her skin, her brown hair to the shoulder, her navy) */
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
-window.PICS = { _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key: kindPic("key"), group, fingers, dog: kindPic("dog"), car: kindPic("car"), action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard, handOver: handOverPic,
+window.PICS = { _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key: kindPic("key"), group, fingers, dog: kindPic("dog"), car: kindPic("car"), action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard, handOver: handOverPic, highFive: highFivePic, putOn: putOnPic,
   things: ["cake", "pizza", "coffee", "glass", "banana", "plate", "bus", "table", "chair", "bag", "box", "house", "door", "window", "cat", "tree", "bicycle", "horse", "face", "french flag", "picture card", "newspaper", "letter", "weather",
     "ball", "hat", "phone", "bread", "flower", "lamp", "shirt", "trousers", "dress", "fish", "cheese", "tomato", "plane", "motorbike", "baby", "heart", "foot", "hand", "head", "town", "street", "restaurant", "photo", "metro", "sea", "mountain", "leaf", "arm",
     "train", "park", "beach", "garden", "shop", "station", "kitchen"] };
