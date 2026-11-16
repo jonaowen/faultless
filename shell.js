@@ -31,6 +31,9 @@ const SHELL = (()=>{
     DAY_GOAL_LESSONS: 1,              // (owner, brief 14) the inner ring: ONE lesson is today's goal; a second fills it again in gold
     GOAL_SHARE: 0.65,                 // (owner, brief 14) goals at about 60-70 % of what the learner can do: the week's goal from his two moments, then from his record
     GOAL_SHARE_MAX: 0.70,             // (owner) never above 70 % of what the moments allow (14 a week for two a day: at most 10)
+    AGAIN_FILLS_RINGS: false,         // (work: for the owner to rule; QA .67) a PASSED lesson done again by the learner's own choice is practice: it does not close today's ring or count for the week
+                                      // (the rings' goal is a lesson of the programme, brief 14; brief 12: nothing should pull the learner back to old lessons at the cost of new ones).
+                                      // It still counts as a day learned. true: it counts like any lesson (as before). Lessons the rules ask for again (once more, a warm-up) always count.
     GOAL_EASY_BY: 2, GOAL_RISE: 1,    // (work) a week's goal met with 2 or more to spare rises by 1 next week; missed, it falls to where it will be met
     RANKS: [8,28,65,135,225,380,610,870,1240,1740,2280,2920,3800,4700,5500,6300,7400,8700,10400,12700,15400,18800,23100,27200,31500,35500,39500,44000,49000,53000,57500,61500,65500,68000],      // (work: simulation, dev/design/RANKS.md) points for ranks 1..34
     RANK_TOKENS: [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,4,4,4,6,6,6,8,8,8,10,10,10,20,20,20,25,25,25,60],      // (work: simulation) tokens each rank gives: more at the higher ranks (the owner: "way more tokens")
@@ -54,7 +57,8 @@ const SHELL = (()=>{
   const dayOf = (d=new Date())=>{ const x=new Date(d.getTime()-RULES.DAY_STARTS_HOUR*3600e3); return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"); };
   const daysBetween = (a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
   const lessMotion = ()=>UI.pref.motion==="less" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const hm = t=>t.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+  const hmFmt = (()=>{ try{ return new Intl.DateTimeFormat([], {hour:"numeric", minute:"2-digit"}); }catch(e){ return null; } })();      // (QA .67) made once: toLocaleTimeString builds a formatter on every call
+  const hm = t=>hmFmt ? hmFmt.format(t) : t.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
   const atToday = (hhmm, base=new Date())=>{ const [h,m]=String(hhmm||"08:00").split(":").map(Number); const d=new Date(base); if(d.getHours()<RULES.DAY_STARTS_HOUR) d.setDate(d.getDate()-1); d.setHours(h||0, m||0, 0, 0); return d; };
   document.body.appendChild(el(`<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-sun" viewBox="0 0 28 28"><circle cx="14" cy="14" r="5" fill="currentColor" stroke="none"/><path d="M14 3.5v3M14 21.5v3M3.5 14h3M21.5 14h3M6.6 6.6l2.1 2.1M19.3 19.3l2.1 2.1M6.6 21.4l2.1-2.1M19.3 8.7l2.1-2.1"/></symbol>
@@ -97,7 +101,7 @@ const SHELL = (()=>{
   const CW = window.COURSE_WORDS || {lessons:{}, stages:[]};
   const cardsOf = id=>((CW.lessons[id]||{}).cards)||[];
   const passedIdx = i=>i<G.furthest;      // a lesson below the furthest reached has been passed
-  const ownedCards = ()=>{ const out=[]; LESSONS.forEach((L,i)=>{ if(passedIdx(i)) cardsOf(L.id).forEach(c=>out.push(Object.assign({lesson:i}, c))); }); return out; };
+  const ownedCards = ()=>{ const out=[]; LESSONS.forEach((L,i)=>{ if(passedIdx(i)) cardsOf(L.id).forEach((c,ci)=>out.push(Object.assign({lesson:i, ci}, c))); }); return out; };
   const stageOf = n=>(CW.stages||[]).find(s=>n>=s.first && n<=s.last) || null;      // n: a lesson number (1-based)
   function stageLine(n){ const s=stageOf(n); if(!s) return ""; const done=Math.max(0, Math.min(s.last, G.furthest)-s.first+1), of=s.last-s.first+1; return {s, done, of, text:`Stage ${s.id} · ${done} of ${of}`}; }
   function stageBar(n){ const st=stageLine(n); if(!st) return ""; return `<div class="card stage"><div class="row"><span>Stage ${st.s.id}</span><span>${st.done} of ${st.of} lessons</span></div><div class="segs" aria-hidden="true">${Array.from({length:st.of},(_,k)=>`<i class="${k<st.done?"on":""}"></i>`).join("")}</div></div>`; }
@@ -107,7 +111,7 @@ const SHELL = (()=>{
     return `<svg viewBox="0 0 160 190" aria-hidden="true"><text x="80" y="108" text-anchor="middle" font-family="Atkinson Hyperlegible Next" font-weight="700" font-size="${c.fr.length>8?24:30}" fill="#1B2433">${esc(c.fr)}</text></svg>`; }
   let clipNow=null;
   function playClip(key, btn){ if(!key) return; try{ if(clipNow){ clipNow.pause(); } const a=new Audio("audio/teacher/"+key+".mp3"); clipNow=a; if(btn){ btn.classList.add("playing"); a.onended=a.onerror=a.onpause=()=>btn.classList.remove("playing"); } a.play().catch(()=>{ if(btn) btn.classList.remove("playing"); }); }catch(e){} }
-  const wcard = (c, extra="")=>`<button class="wcard${extra}" data-clip="${esc(c.clip||"")}" aria-label="${esc(c.fr)}: play">${cardPic(c)}<span class="sp">${ic("speaker")}</span></button>`;
+  const wcard = (c, extra="", lz="")=>`<button class="wcard${extra}" data-clip="${esc(c.clip||"")}" aria-label="${esc(c.fr)}: play"${lz ? ` data-lz="${lz}"` : ""}>${lz ? "" : cardPic(c)}<span class="sp">${ic("speaker")}</span></button>`;
   const wireCards = root=>root.querySelectorAll(".wcard").forEach(b=>{ b.onclick=()=>{ tick(); playClip(b.dataset.clip, b); }; });
 
   /* ---- which lesson is next (R-152, R-153, R-151). G.next: the lesson to do next (index); G.why: "" | "once" | "back" | "warm" ---- */
@@ -155,7 +159,7 @@ const SHELL = (()=>{
       try{ const L=LESSONS[S.lesson], X=L.exercises[S.ex], t0=[exT0, G.cur&&G.cur.t0||""].sort().pop(), res=exResult(X.id, t0), rec=G.ex[X.id]; let p=0;
         if(!rec){ p = res.perfect ? RULES.POINTS_PERFECT_FIRST : 0; G.ex[X.id]={g:res.perfect, f:res.perfect?"p":"e", n:1, d:dayOf()}; }
         else { rec.n++; if(!rec.g && res.perfect){ p=RULES.POINTS_PERFECT_REPAIR; rec.g=true; rec.r=dayOf(); } }
-        if(!G.replay){ const dd=G.days[dayOf()]||(G.days[dayOf()]={n:0, firstEnd:"", full:false}); if(dd.xl!==L.id) dd.xp=0; dd.xl=L.id; dd.xp=(dd.xp||0)+1; }      // the inner ring fills as today's lesson goes on
+        if(!G.replay && !(G.again && !RULES.AGAIN_FILLS_RINGS)){ const dd=G.days[dayOf()]||(G.days[dayOf()]={n:0, firstEnd:"", full:false}); if(dd.xl!==L.id) dd.xp=0; dd.xl=L.id; dd.xp=(dd.xp||0)+1; }      // the inner ring fills as today's lesson goes on
         G.points+=p; G.lpts[L.id]=(G.lpts[L.id]||0)+p; RUN.ex.push({id:X.id, i:S.ex, perfect:res.perfect, p}); exT0=new Date().toISOString(); store();
         if(res.perfect) barCheer(p);
         try{ trace("exercise "+X.id+": "+(res.perfect?"perfect":res.errs+" error(s)")+"; points +"+p); }catch(e){} }catch(e){}
@@ -256,6 +260,7 @@ const SHELL = (()=>{
   const rankGrade = k=>k===0 || k===RULES.RANKS.length ? 0 : (k-1)%3+1;
   const fem = ()=>{ try{ return AV.has() && AV.get() ? PICS.avatarParse(AV.get()).body==="f" : S.learnerGender==="f"; }catch(e){ return false; } };
   const rankName = (k, stars=true)=>{ const t=TITLES[rankTitle(k)][fem()?1:0], g=rankGrade(k); return t+(stars && g ? " "+"★".repeat(g) : ""); };
+  const rankIn = k=>rankName(k).replace(" ★", "\u00a0★");      // (QA .67) inside a sentence ("8 points to Visiteur ★") the stars never drop to a line of their own
   const rankLabel = k=>{ const g=rankGrade(k); return TITLES[rankTitle(k)][fem()?1:0]+(g ? ", grade "+g : ""); };      // for a screen reader
   const tokensFor = k=>k>=1 ? RULES.RANK_TOKENS[k-1] : 0;
   // the emblem: a shield whose metal and sign grow with the title (bronze, silver, gold, enamel; the last, the Académie's green and a laurel),
@@ -292,7 +297,7 @@ const SHELL = (()=>{
   // the bar along the bottom of the lesson-complete screen: points toward the next rank (from where the lesson began to where it ended)
   function rankBar(p0, p1){ const k=rankOf(p1), last=k>=RULES.RANKS.length, lo=k ? RULES.RANKS[k-1] : 0, hi=last ? lo : RULES.RANKS[k], f=x=>last ? 1 : Math.max(0, Math.min(1, (x-lo)/(hi-lo)));
     const from = rankOf(p0)<k ? 0 : f(p0);
-    return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" points to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${esc(rankName(k))}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankName(k+1))}`}</span></span>
+    return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" points to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${esc(rankName(k))}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
       <span class="rb-track"><i style="--a:${from.toFixed(3)};--b:${Math.max(0.02, f(p1)).toFixed(3)}"></i></span></span></div>`; }
 
   /* ---- the wardrobe (design B with price tiers, brief 15): things for the learner's figure, bought with tokens, worn on home, on You and on
@@ -329,16 +334,16 @@ const SHELL = (()=>{
     const nextTok = k<RULES.RANKS.length ? tokensFor(k+1) : 0;
     const card = it=>{ const own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, can=tok>=it.price;
       return `<button class="witem${own?" own":can?" can":""}${on?" on":""}" data-it="${it.id}" aria-label="${esc(it.fr)}, ${esc(it.en)}: ${own ? (on?"worn":"yours") : it.price+" token"+(it.price>1?"s":"")}">
-        <span class="wthumb">${wardThumb(it)}${on?`<span class="won">${ic("check")}</span>`:""}</span><span class="wfr" lang="fr">${esc(it.fr)}</span><span class="wen">${esc(it.en)}</span>
+        <span class="wthumb" data-lz="w|${it.id}">${on?`<span class="won">${ic("check")}</span>`:""}</span><span class="wfr" lang="fr">${esc(it.fr)}</span><span class="wen">${esc(it.en)}</span>
         <span class="wprice">${own ? (on ? "Wearing" : "Yours") : `${tokenIcon()}<b class="num">${it.price}</b>`}</span></button>`; };
     o.innerHTML=`<div class="mk-bar" style="padding:0"><button class="rb plain" id="wdBack" aria-label="Back">${ic("chev")}</button><h2>Your wardrobe</h2></div>
       <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${esc(rankName(k))}</b>
         <div class="wtok">${tokenIcon()}${MV.num("tokW", tok)}<span>token${tok===1?"":"s"}</span></div>
-        <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} points to ${esc(rankName(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b>` : "The highest rank"}</small></div></div>
+        <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} points to ${esc(rankIn(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b>` : "The highest rank"}</small></div></div>
       <div class="card wrule"><p>Perfect exercises earn points. Points earn ranks. Each rank earns tokens, and higher ranks earn more. Tokens buy anything here.</p></div>
       ${TIERS.map(t=>`<h3 class="gh wh"><span>${t.label}</span><span class="wtier">${tokenIcon()}${t.price} token${t.price>1?"s":""}${t.price>1?"":" each"}</span></h3><div class="wgrid2">${WARDROBE.filter(it=>it.tier===t.id).map(card).join("")}</div>`).join("")}
       <p class="foot">What you wear shows here, on Today and on your celebrations. In the lessons you are always your plain self.</p>`;
-    o.hidden=false; if(!wardrobe.keep) o.scrollTop=0; wardrobe.keep=false; MV.count(o);
+    o.hidden=false; if(!wardrobe.keep) o.scrollTop=0; wardrobe.keep=false; MV.count(o); LZ.watch(o);
     $("wdBack").onclick=()=>{ tick(); o.hidden=true; if(back) back(); else home(); };
     o.querySelectorAll("[data-it]").forEach(b=>{ b.onclick=()=>{ tick(); const it=WARDROBE.find(x=>x.id===b.dataset.it); wardItem(it, back); MV.grow(b.querySelector(".wthumb svg"), document.querySelector("#sheet .wbig svg")); }; }); }
   function tokenIcon(){ return `<svg class="tokn" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#E3A417"/><circle cx="10" cy="10" r="6.2" fill="none" stroke="#A66F00" stroke-width="1.3"/><path d="M10 5.6l1.3 2.8 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4z" fill="#FFF6DA"/></svg>`; }
@@ -347,20 +352,21 @@ const SHELL = (()=>{
     info(it.fr, `<div class="wbig">${wardThumb(it)}</div><p class="wsub">${esc(it.en)}</p>
       ${own ? `<button class="btn" id="wdWear">${on ? "Take it off" : "Wear it"}</button>`
         : short<=0 ? `<p>${it.price} token${it.price>1?"s":""}. You have ${tok}.</p><button class="btn" id="wdBuy">${tokenIcon()} Buy it for ${it.price}</button>`
-        : `<p>${it.price} tokens. You have ${tok}: ${short} more to go. Every rank brings tokens, and higher ranks bring more.</p>`}`);
+        : `<p>${it.price} token${it.price>1?"s":""}. You have ${tok||"none yet"}: ${short} more to go. Every rank brings tokens, and higher ranks bring more.</p>`}`);
     if(it.slot==="dance" && !lessMotion()){ try{ const big=document.querySelector("#sheet .wbig svg"), g=PICS.wardrobeThumb(it.id, PICS.avatarParse(AV.get()), {live:true}); if(big && g){ big.innerHTML=""; big.appendChild(g); } }catch(e){} }  // (figures7) the dance plays on the item's own sheet
     const bb=$("wdBuy"); if(bb) bb.onclick=()=>{ if((G.tokens||0)<it.price) return; G.tokens-=it.price; w.owned[it.id]=new Date().toISOString(); w.worn[it.slot]=it.id; if(it.slot==="outfit"){ for(const s of ["top","head"]) delete w.worn[s]; } else if(["top","head"].includes(it.slot)) delete w.worn.outfit;
-      store(); try{ trace("wardrobe: bought "+it.id+" for "+it.price+" token(s); "+G.tokens+" left"); }catch(e){} try{ UI.haptic("done"); }catch(e){} $("sheet").hidden=true; again(); const c=$("ward").querySelector(`[data-it="${it.id}"]`); if(c && !lessMotion()){ c.classList.add("got"); } };
+      store(); try{ trace("wardrobe: bought "+it.id+" for "+it.price+" token(s); "+G.tokens+" left"); }catch(e){} try{ UI.haptic("done"); }catch(e){} sheetClose($("sheet")); again(); const c=$("ward").querySelector(`[data-it="${it.id}"]`); if(c && !lessMotion()){ c.classList.add("got"); } };
     const bw=$("wdWear"); if(bw) bw.onclick=()=>{ if(on) delete w.worn[it.slot]; else { w.worn[it.slot]=it.id; if(it.slot==="outfit"){ for(const s of ["top","head"]) delete w.worn[s]; } else if(["top","head"].includes(it.slot)) delete w.worn.outfit; }
-      store(); $("sheet").hidden=true; again(); }; }
+      store(); sheetClose($("sheet")); again(); }; }
 
   /* ---- the end of a lesson: the record, the rules, the screen ---- */
   function lessonDone(){ const li=S.lesson, L=LESSONS[li], cur=G.cur && G.cur.lesson===L.id ? G.cur : {lesson:L.id, t0:"", kind:""};
     const R0=ringsNow(), p0 = cur.p0!=null ? cur.p0 : null;
     const sc=score(L.id, cur.t0), passed = !RULES.GATE_ON || sc.y>=RULES.PASS_MARK, now=new Date(), today=dayOf(now), firstPass = passed && li>=G.furthest;
     let why="";
-    if((cur.kind==="again" || (G.again && G.again.li===li)) && li<G.furthest){ /* a lesson already passed, done again by choice: it locks nothing and moves nothing */ }
+    const again = (cur.kind==="again" || (G.again && G.again.li===li)) && li<G.furthest, practice = again && !RULES.AGAIN_FILLS_RINGS;
     if(G.again && G.again.li===li){ try{ trace("a passed lesson done again by choice has ended: the place is put back"); }catch(e){} restoreAgain(); }
+    if(again){ /* a lesson already passed, done again by choice: it locks nothing and moves nothing (QA .67: also when no place was kept for it, e.g. one begun under .65) */ }
     else if(passed){ G.below[L.id]=0; G.next=Math.min(li+1, last); G.furthest=Math.max(G.furthest, li+1); if(G.why==="warm" && G.warmTo!=null && G.next<G.warmTo) G.why="warm"; else { G.why=""; G.warmTo=null; } }
     else if((G.below[L.id]||0)>=RULES.REPEATS_BEFORE_STEP_BACK && li>0){ G.below[L.id]=0; G.next=Math.max(0, li-RULES.STEP_BACK_LESSONS); G.why=why="back"; }
     else { G.below[L.id]=(G.below[L.id]||0)+1; G.next=li; G.why=why="once"; }
@@ -371,8 +377,9 @@ const SHELL = (()=>{
     if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; perfectNow=true; pts+=RULES.POINTS_PERFECT_LESSON; }
     const runPerfect = RUN.ex.length===L.exercises.length && RUN.ex.every(x=>x.perfect), runEx=RUN.ex.slice(); RUN.ex=[];
     const d=G.days[today]||(G.days[today]={n:0, firstEnd:"", full:false});
-    if(d.n===1 && !d.full && cur.t0 && (new Date(cur.t0)-new Date(d.firstEnd))>=RULES.SPACING_GAP_HOURS*3600e3){ d.full=true; bonus=1; }      // recognised, without points (the owner)
-    if(d.n===0){ d.firstEnd=now.toISOString(); d.am = now.getHours()<14;
+    if(!practice && d.n===1 && !d.full && cur.t0 && (new Date(cur.t0)-new Date(d.firstEnd))>=RULES.SPACING_GAP_HOURS*3600e3){ d.full=true; bonus=1; }      // recognised, without points (the owner)
+    if(!practice && d.n===0){ d.firstEnd=now.toISOString(); d.am = now.getHours()<14; }
+    if(d.n===0 && !d.a){      // the first thing done today (a lesson, or a passed lesson done again): the run of days
       const gap = G.run.last ? daysBetween(G.run.last, today) : 0;
       if(!G.run.last) G.run.len=1;
       else if(gap===1) G.run.len++;
@@ -381,8 +388,9 @@ const SHELL = (()=>{
       if(G.run.last && gap-1>=RULES.RETURN_AFTER_DAYS) back=1;      // recognised, without points
       G.run.last=today; G.daysLearned++; G.bestRun=Math.max(G.bestRun, G.run.len);
       if(G.daysLearned-G.restEarnedAt>=RULES.REST_DAY_EARNED_EVERY && G.rest<RULES.REST_DAYS_MAX){ G.rest++; G.restEarnedAt=G.daysLearned; } }
-    else if(d.n===1 && !d.full){ d.soon=true; }
-    d.n++; d.xp=0; G.points+=pts;
+    else if(!practice && d.n===1 && !d.full){ d.soon=true; }
+    if(practice){ d.a=(d.a||0)+1; try{ trace("a passed lesson done again by choice: practice, the rings stand as they were"); }catch(e){} } else { d.n++; d.xp=0; }
+    G.points+=pts;
     // the pace: only a lesson done from its start in one sitting (under an hour and a half)
     if(cur.fromStart && cur.t0){ const secs=(now-new Date(cur.t0))/1000, t=tasksOf(L); if(t>0 && secs>60 && secs<5400){ G.pace.push(+(secs/t).toFixed(2)); G.pace=G.pace.slice(-9); } }
     const owned = firstPass ? cardsOf(L.id) : []; if(firstPass && !G.wordsAt[L.id]) G.wordsAt[L.id]=today;
@@ -391,6 +399,7 @@ const SHELL = (()=>{
     G.cur=null; store(); look();
     try{ trace("lesson complete: Lesson "+(li+1)+": "+sc.x+" correct responses, "+sc.y+" % first time ("+sc.first+" of "+sc.scored+" scored); "+(passed?"passed":"below "+RULES.PASS_MARK+" %: "+why)+"; next: Lesson "+(G.next+1)); }catch(e){}
     showDone({li, sc, passed, why, R0, R1, ranks, p0: p0!=null ? p0 : G.points-exPts-pts, pts:exPts+pts, lessonBonus:pts, perfectNow, runPerfect, runEx, bonus, back, soon: d.soon && d.n===2, owned, badge, level, stageDone: firstPass && stageOf(li+1) && stageOf(li+1).last===li+1 ? stageOf(li+1) : null}); }
+  const longName = o=>{ try{ const h1=o.querySelector("h1"); if(h1 && String(S.learnerName||"").length>11) h1.classList.add("ln"); }catch(e){} };      // (QA .67)
   function showDone(r){ const name=esc(S.learnerName||""), n=r.li+1, o=$("done"), first=completions()<=1, L=LESSONS[r.li], nPerf=r.runEx.filter(x=>x.perfect).length;
     const head = r.runPerfect ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><div class="perfect-tag">${ic("star")} A perfect lesson</div><h1>Magnifique${name?", "+name:""}!</h1><div class="sub">Every answer right, first time. That is how French is spoken.</div>`
       : r.passed ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><h1>Bravo${name?", "+name:""}!</h1><div class="sub">Lesson ${n} is done.</div>`
@@ -399,7 +408,7 @@ const SHELL = (()=>{
       + `<div class="card say">In this lesson you made <b class="first" data-n="${r.sc.x}">${r.sc.x}</b> correct responses and you were <b data-n="${r.sc.y}" data-pc="1">${r.sc.y}%</b> correct.${first?`<small>${r.sc.y}% of your answers were right the first time you were asked.</small>`:""}</div>`
       + (r.why==="once" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>Lesson ${n} once more</b><p>You just need a bit more practice before moving on. Next time we will do this lesson again, and it will feel easier.</p></div></div>`
         : r.why==="back" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>A warm-up first</b><p>You are nearly there. Next time we will start with Lesson ${G.next+1}, which you know, and then come back to Lesson ${n}. Everything you have earned stays yours.</p></div></div>` : "")
-      + `<div class="card exstrip"><div class="row"><b>${nPerf} of ${L.exercises.length} exercises perfect</b><span class="pts">${ic("star")} +<span data-n="${r.pts}">${r.pts}</span></span></div><div class="exdots">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div>
+      + `<div class="card exstrip"><div class="row"><b>${nPerf} of ${L.exercises.length} exercises perfect</b>${r.pts>0 ? `<span class="pts">${ic("star")} +<span data-n="${r.pts}">${r.pts}</span></span>` : ""}</div><div class="exdots">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div>
           <small>${r.perfectNow && r.runPerfect ? `Perfect first time through: +${RULES.POINTS_PERFECT_LESSON} for the lesson.` : r.perfectNow ? `Every exercise is perfect now: +${RULES.POINTS_PERFECT_LESSON} for the lesson.` : nPerf<L.exercises.length ? "Points come from perfect exercises." : ""}</small></div>`
       + (r.bonus ? `<div class="tile two"><div class="orb">${ic("moon")}</div><div><b>A full day</b><small>${G.bonusSaid++<3 ? "Your two lessons were well apart: that is how French sticks." : "Two lessons, well apart."}</small></div></div>` : r.back ? `<div class="tile two back"><div class="orb">${ic("sun")}</div><div><b>Welcome back</b><small>Good to have you here again.</small></div></div>` : "")
       + (r.soon ? `<div class="line">Done. Your next lesson will stick better after a break.</div>` : "")
@@ -411,7 +420,7 @@ const SHELL = (()=>{
       + `<div class="spacer"></div><div class="donefoot">${rankBar(r.p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
     if((r.passed || r.runPerfect) && W().worn.dance && AV.has() && !lessMotion()){ try{ const c=document.createElementNS("http://www.w3.org/2000/svg","svg"); c.setAttribute("viewBox","0 0 160 190"); c.setAttribute("class","celebfig"); c.setAttribute("aria-hidden","true");
         c.appendChild(PICS.avatar(PICS.avatarParse(AV.get()), {view:"celebrate", wear:wearing()})); o.insertBefore(c, o.firstChild); }catch(e){} }  // (figures7) the dance the learner wears, at the celebration
-    store(); o.hidden=false; o.scrollTop=0; wireCards(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1);
+    longName(o); store(); o.hidden=false; o.scrollTop=0; wireCards(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1);
     $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); if(r.level) levelParty(r.level, ()=>home()); else home(); };
     fete(o, r.passed || r.runPerfect || !!(r.ranks && r.ranks.length) || !!(r.R1 && r.R1.week.closed && !r.R0.week.closed)); }
   // a ring closed by this lesson is said in words, once, at its end; a ring still open is just shown (never as missed)
@@ -435,7 +444,7 @@ const SHELL = (()=>{
       + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b><p>Every answer right, in ${badge} whole lessons.</p></div></div>` : "")
       + rankUpCard(ranks)
       + `<div class="spacer"></div><div class="donefoot">${rankBar(p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
-    o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, res.perfect || !!(ranks && ranks.length)); }
+    longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, res.perfect || !!(ranks && ranks.length)); }
   const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
   function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
   /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
@@ -462,16 +471,17 @@ const SHELL = (()=>{
   function lessonView(li){ const o=$("lessonV"), L=LESSONS[li], nP=L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length, known=L.exercises.filter(x=>G.ex[x.id]).length;
     o.innerHTML=`<div class="mk-bar" style="padding:0"><button class="rb plain" id="lvBack" aria-label="Back">${ic("chev")}</button><h2>Lesson ${li+1}</h2></div>
       <div class="card lvsum">${G.lp[L.id] ? badgeSvg(li+1, "badge") : `<div class="ring" style="--p:${Math.round(100*nP/L.exercises.length)}%"><b>${nP}</b></div>`}<div><b>${G.lp[L.id] ? "A perfect lesson" : nP+" of "+L.exercises.length+" exercises perfect"}</b><small>${G.lp[L.id] ? "Every exercise right, first time." : "A yellow one done again with every answer right turns green: +"+RULES.POINTS_PERFECT_REPAIR+" each, once. A whole lesson green counts toward your badges."}</small></div></div>
-      <div class="exgrid">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<button class="extile ${g ? (g.g?"g":"y") : "u"}" data-ei="${k}" aria-label="Exercise ${k+1}: ${g ? (g.g?"perfect":"had an error") : "done"}"><span class="k">${k+1}</span>${firstMini(x)}<span class="st">${g ? (g.g?ic("star"):"") : ""}</span></button>`; }).join("")}</div>
+      <div class="exgrid">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<button class="extile ${g ? (g.g?"g":"y") : "u"}" data-ei="${k}" aria-label="Exercise ${k+1}: ${g ? (g.g?"perfect":"had an error") : "done"}"><span class="k">${k+1}</span><span class="mini" data-lz="x|${li}|${k}"></span><span class="st">${g ? (g.g?ic("star"):"") : ""}</span></button>`; }).join("")}</div>
       <div class="legend"><span><i class="g"></i>Perfect</span><span><i class="y"></i>Had an error</span>${known<L.exercises.length?`<span><i class="u"></i>Done before the record began</span>`:""}</div>
       <button class="btn quiet" id="lvAll">${ic("redo")} The whole lesson again</button>`;
-    o.hidden=false; o.scrollTop=0; freezeMinis(o);
+    o.hidden=false; o.scrollTop=0; LZ.watch(o); freezeMinis(o);
     $("lvBack").onclick=()=>{ tick(); o.hidden=true; };
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
     o.querySelectorAll("[data-ei]").forEach(b=>{ b.onclick=()=>{ tick(); const ei=+b.dataset.ei, g=G.ex[L.exercises[ei].id];
       info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); freezeMinis($("sheet")); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
       $("exGo").onclick=()=>{ tick(); $("sheet").hidden=true; o.hidden=true; pendingEx={li, ei}; pendingAgain=null; $("playBtn").click(); }; }; }); }
-  const firstMini = (x, cls="")=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<span class="mini ${cls}"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1, still:true})).outerHTML}</svg></span>`; } }catch(e){} return `<span class="mini ${cls}"></span>`; };
+  const firstSvg = x=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1, still:true})).outerHTML}</svg>`; } }catch(e){} return ""; };
+  const firstMini = (x, cls="")=>`<span class="mini ${cls}">${firstSvg(x)}</span>`;
 
   /* the one celebration: paper in the four people's colours and the numbers counting up (900 ms). Nothing of it with less movement. */
   let feteT=0;
@@ -479,6 +489,9 @@ const SHELL = (()=>{
   function fete(o, big){ if(lessMotion()) return; const t0=performance.now(), D=900, ease=x=>1-Math.pow(1-x,3);
     const nums=[...o.querySelectorAll("[data-n]")].map(b=>({b, n:+b.dataset.n, pc:!!b.dataset.pc}));
     const step=t=>{ const k=ease(Math.min(1,(t-t0)/D)); for(const x of nums) x.b.textContent=Math.round(x.n*k)+(x.pc?"%":""); if(k<1) requestAnimationFrame(step); }; requestAnimationFrame(step);
+    // (QA .67) whatever the frames do (a slow phone, the screen not showing), the true numbers stand a moment later: a count caught on its way read
+    // "67 correct ... 97% ... +21" beside "A perfect lesson" (the true figures: 69, 100 %, +22)
+    setTimeout(()=>{ for(const x of nums) x.b.textContent=x.n+(x.pc?"%":""); }, D+250);
     o.querySelectorAll(".wcard.turn").forEach(b=>b.classList.add("go")); setTimeout(()=>cardSound(o.querySelectorAll(".wcard.turn").length), 700);
     if(!big) return; stopFete();
     const cols=["#2E4A6B","#3F6FB5","#C0453B","#5AA86D","#F3B33D"], c=el(`<div id="confetti" aria-hidden="true"></div>`);
@@ -515,6 +528,32 @@ const SHELL = (()=>{
   const stillSpec = spec=>spec && typeof spec==="object" ? Object.assign({}, spec, {still:true}) : spec;
   const freezeMinis = root=>{ try{ (root||document).querySelectorAll(".mini svg").forEach(v=>{ try{ v.pauseAnimations(); v.setCurrentTime(0); }catch(e){} }); }catch(e){} };
   const mini = spec=>{ try{ return `<div class="mini"><svg viewBox="0 0 160 190" aria-hidden="true">${pic(stillSpec(spec)).outerHTML}</svg></div>`; }catch(e){ return ""; } };
+  const miniLz = spec=>`<div class="mini" data-lz="p|${esc(JSON.stringify(spec))}"></div>`;      // drawn when it comes near the screen (LZ)
+  /* ---- (QA .67) pictures that are not on the screen yet are drawn when they come near it, and a few at a time while the phone is idle. Measured at a
+     quarter of this machine's speed: the wardrobe (31 figures, 57 kB of drawing each) took 1.8 s to open, and home drew all the path's pictures before
+     its first frame. What is on the screen is drawn at once, as before; nothing is drawn while a lesson runs. data-lz names the picture:
+     "w|item" a wardrobe item on the learner's figure, "x|lesson|exercise" an exercise's first picture, "p|spec" a small picture, "c|lesson|card" a word's card. ---- */
+  const LZ = (()=>{ const ios=new WeakMap(); let gen=0;
+    const draw = a=>{ const r=a.split("|"), k=r.shift();
+      if(k==="w"){ const it=WARDROBE.find(x=>x.id===r[0]); return it ? wardThumb(it) : ""; }
+      if(k==="x") return firstSvg(LESSONS[+r[0]].exercises[+r[1]]);
+      if(k==="p") return `<svg viewBox="0 0 160 190" aria-hidden="true">${pic(stillSpec(JSON.parse(r.join("|")))).outerHTML}</svg>`;
+      if(k==="c"){ const c=cardsOf(LESSONS[+r[0]].id)[+r[1]]; return c ? cardPic(c) : ""; }
+      return ""; };
+    function fill(e){ const a=e.getAttribute("data-lz"); if(a==null) return; e.removeAttribute("data-lz"); try{ e.insertAdjacentHTML("afterbegin", draw(a)); if(e.classList.contains("mini")) freezeMinis(e.parentNode);
+        if(e.classList.contains("wthumb")){ const v=e.querySelector("svg"); if(v){ v.pauseAnimations(); v.setCurrentTime(0.9); } } }catch(x){} }      // a still picture in the grid (its stars twinkle on the item's own sheet)
+    // what has come near the screen is drawn one picture at a time (never a long stop of the screen), then, while the phone is idle, the rest
+    let q=[], pumping=false; const busy=()=>document.body.classList.contains("inLesson");
+    function pump(){ if(pumping) return; pumping=true; const step=()=>{ const e=q.shift(); if(!e || busy()){ pumping=false; q=[]; return; } if(e.isConnected) fill(e); setTimeout(step, 24); }; setTimeout(step, 0); }
+    function watch(sc){ const els=[...sc.querySelectorAll("[data-lz]")]; let io=ios.get(sc); if(io) io.disconnect(); if(!els.length) return;
+      if(!("IntersectionObserver" in window)){ els.forEach(fill); return; }
+      const H=innerHeight; for(const e of els){ const r=e.getBoundingClientRect(); if(r.height && r.bottom>-20 && r.top<H+20) fill(e); }      // on the screen now: at once (no empty frame)
+      if(!io){ io=new IntersectionObserver(es=>{ for(const x of es) if(x.isIntersecting){ io.unobserve(x.target); q.push(x.target); } pump(); }, {root:sc, rootMargin:"700px 0px"}); ios.set(sc, io); }
+      sc.querySelectorAll("[data-lz]").forEach(e=>io.observe(e));
+      const g=++gen, later=f=>window.requestIdleCallback ? requestIdleCallback(f, {timeout:1500}) : setTimeout(f, 180);
+      const step=()=>{ if(g!==gen || !sc.isConnected || sc.closest("[hidden]") || busy()) return; const e=sc.querySelector("[data-lz]"); if(!e) return; if(!q.length) fill(e); later(step); };
+      setTimeout(()=>later(step), 1200); }
+    return {watch}; })();
   const picsOf = (()=>{ const memo={}; return i=>{ if(memo[i]) return memo[i]; const seen=new Set(), out=[];
       for(const ex of LESSONS[i].exercises) for(const p of ex.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; for(const x of row){ if(!x || typeof x!=="object") continue;
         const k=x.person ? "p:"+x.person+(x.doing||"") : (x.is||"")+":"+(x.doing||x.value||""); if(x.person==="you" || seen.has(k)) continue; seen.add(k); out.push(Object.assign({}, x, {count:1})); } }
@@ -531,47 +570,58 @@ const SHELL = (()=>{
     return s; }
   function home(){ const play=$("play"); if(!play || play.hidden) return; syncNext(); store(); look();
     let h=$("home"); if(!h){ h=el(`<div id="home" lang="en"></div>`); play.insertBefore(h, play.firstChild);
-      play.parentNode.insertBefore(el(`<nav id="nav" lang="en"><button class="tab on" id="tabToday"><div class="pillbg">${ic("today")}</div>Today</button><button class="tab" id="tabWords"><div class="pillbg">${ic("words")}</div>Words</button><button class="tab" id="tabYou"><div class="pillbg">${ic("you")}</div>You</button></nav>`), play.nextSibling);
+      play.parentNode.insertBefore(el(`<nav id="nav" lang="en" aria-label="Today, Words, You"><button class="tab on" id="tabToday" aria-current="page"><div class="pillbg">${ic("today")}</div>Today</button><button class="tab" id="tabWords"><div class="pillbg">${ic("words")}</div>Words</button><button class="tab" id="tabYou"><div class="pillbg">${ic("you")}</div>You</button></nav>`), play.nextSibling);
       $("tabToday").onclick=()=>tab("today"); $("tabWords").onclick=()=>tab("words"); $("tabYou").onclick=()=>tab("you"); }
     { const how0=$("howtoBox"), btn0=$("playBtn"); play.appendChild(how0); play.appendChild(btn0); }      // kept out of the part that is drawn again
     const T=G.next, n=T+1, now=new Date(), today=dayOf(now), d=G.days[today]||{n:0}, hr=now.getHours(), greet = hr<4 ? "Good evening" : hr<12 ? "Good morning" : hr<18 ? "Good afternoon" : "Good evening";
     const started = !allDone(S.lesson) && (S.ex>0 || !!S.finished[LESSONS[S.lesson].exercises[0].id]) && S.lesson===T;
     const sl=slots(d, now), two=G.goal!==1;
-    const eyebrow = G.why==="once" ? `<div class="eyebrow sun">${ic("redo")} Once more</div>` : G.why==="back" || G.why==="warm" ? `<div class="eyebrow sun">${ic("redo")} A warm-up</div>` : d.n>=1 ? `<div class="eyebrow moon">${ic("moon")} ${two && d.n===1 ? "Your second lesson today" : "Another lesson"}</div>` : `<div class="eyebrow">${ic("sun")} Today's lesson</div>`;
+    const eyebrow = G.why==="once" ? `<div class="eyebrow sun">${ic("redo")} Once more</div>` : G.why==="back" || G.why==="warm" ? `<div class="eyebrow sun">${ic("redo")} A warm-up</div>` : d.n>=1 ? `<div class="eyebrow moon">${ic("moon")} ${two && d.n===1 ? (sl.twoTomorrow ? "Your next lesson" : "Your second lesson today") : "Another lesson"}</div>` : `<div class="eyebrow">${ic("sun")} Today's lesson</div>`;
     const L=LESSONS[T], mins=minutesFor(L), st=stageLine(Math.min(G.furthest+1, LESSONS.length));
     const R=ringsNow(now), k=G.rank||0;
     h.innerHTML=`<div class="h-top"><button class="h-me" id="hMe" aria-label="You">${avOut("portrait", "t").replace('viewBox="0 0 160 190"','viewBox="27 24 106 106"')}</button><div class="h-hello">${greet},<b>${esc(S.learnerName||"")}</b></div>
-        <button class="h-rank" id="hRank" aria-label="${esc(rankLabel(k))}. Your wardrobe${G.tokens?": "+G.tokens+" token"+(G.tokens===1?"":"s"):""}">${rankEmblem(k, "emb s")}<span class="hr-t"><b>${esc(rankName(k, false))}</b><span>${G.tokens ? `${tokenIcon()}${MV.num("tokH", G.tokens)} to spend` : "Wardrobe"}</span></span></button></div>
+        <button class="h-rank" id="hRank" aria-label="${esc(rankLabel(k))}. Your wardrobe${G.tokens?": "+G.tokens+" token"+(G.tokens===1?"":"s"):""}">${rankEmblem(k, "emb s")}<span class="hr-t"><b>${esc(rankName(k, false))}</b><span>${G.tokens ? `${tokenIcon()}${MV.num("tokH", G.tokens)}<i> to spend</i>` : "Wardrobe"}</span></span></button></div>
       <section class="card rhythm" aria-label="Today, this week, your French"><div class="rbody">${ringsSvg(R)}${ringRows(R)}</div>
-        <div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>
-        ${G.anchors.set ? "" : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
+        ${G.anchors.set ? `<div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>` : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
       ${G.makerOffer && AV.has() ? `<button class="card offer" id="offerMaker"><div class="ic">${AV.svg(AV.get(), "portrait", "t").replace('viewBox="0 0 160 190"','viewBox="30 30 100 100"')}</div><div class="l">Make your figure look like you<small>Face, hair, glasses, clothes: it is you in every picture.</small></div>${ic("chev")}</button>` : ""}
       <section class="card hero"><div class="headrow"><div>${eyebrow}<h1>Lesson ${n}</h1></div><div class="minis">${newPics(T).slice(0,3).map(mini).join("")}</div></div>
-        <div class="meta">${started ? "Carry on from where you stopped." : L.exercises.length+" exercises · about "+mins+" minutes"}</div>${G.why==="once" ? `<div class="meta">A bit more practice, then Lesson ${n+1}.</div>` : G.why==="back" ? `<div class="meta">A warm-up, then Lesson ${n+1}.</div>` : G.why==="warm" && G.warmTo!=null ? `<div class="meta">Warming up, then on to Lesson ${G.warmTo+1}.</div>` : ""}
+        <div class="meta">${started ? "Carry on from where you stopped." : L.exercises.length+" exercises · about "+mins+" minutes"}</div>${G.why==="once" ? `<div class="meta m2">A bit more practice, then Lesson ${n+1}.</div>` : G.why==="back" ? `<div class="meta m2">A warm-up, then Lesson ${n+1}.</div>` : G.why==="warm" && G.warmTo!=null ? `<div class="meta m2">Warming up, then on to Lesson ${G.warmTo+1}.</div>` : ""}
         <div id="heroSlot"></div></section>
       <div class="pathhead"><h2>Your path</h2><span class="meta">${st ? st.text : G.furthest+" done"}</span></div><div class="path">${pathRows(T, st)}</div>`;
     const slot=$("heroSlot"), how=$("howtoBox"), btn=$("playBtn"); slot.appendChild(how); slot.appendChild(btn); slot.style.display="grid"; slot.style.gap="11px";
     const lab=btn.querySelector(".ready"); if(lab && !play.classList.contains("afterDemo")) lab.textContent=(started?"Carry on with lesson ":"Start lesson ")+n;
+    { const of=$("offerMaker"), hero=h.querySelector(".hero"); if(of && hero) hero.after(of); }      // (QA .67) after the lesson's card
     const sm=$("setMoments"); if(sm) sm.onclick=()=>{ tick(); anchors(false); };
     $("hMe").onclick=()=>tab("you"); $("hRank").onclick=()=>{ tick(); wardrobe(()=>home()); };
     ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); MV.count(h.querySelector(".h-top")); store();
     const om=$("offerMaker"); if(om) om.onclick=()=>{ tick(); G.makerOffer=false; store(); maker(false, ()=>home()); };
     h.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
-    freezeMinis(h);
+    h.classList.toggle("due2", two && d.n===1 && !sl.twoTomorrow && sl.two==="Now");      // (QA .67) the second lesson's moment has come: the start button is the green one again (shell.css)
+    LZ.watch(h); freezeMinis(h); fitHome();
     h.querySelectorAll("[data-again]").forEach(b=>{ b.onclick=()=>{ pendingAgain=+b.dataset.again; tick(); const lb=btn.querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(pendingAgain+1)+" again"; h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(pendingAgain+1); }; }); }
+  /* (QA .67; the fault: the start button slipped under the tab bar) The start button stands straight after the lesson's title (shell.css), and here it is
+     the order of home is settled by the SCREEN, not by the day: on a short screen (under 780 px at the text size in use) the lesson's card leads and the
+     rings follow it; on a taller one the rings lead, as designed. A measurement stands behind it: wherever the button would still not be wholly above the
+     tab bar (room kept for the one line that comes and goes, "A bit more practice, then Lesson 7"), the lesson leads. */
+  function fitHome(){ try{ const h=$("home"), nav=$("nav"), btn=$("playBtn"), play=$("play"); if(!h || !nav || !btn || !play || play.hidden || play.classList.contains("afterDemo") || !h.contains(btn)) return;
+      // the name is never cut: a smaller face, the rank chip giving way (its words, then its title: the emblem and the tokens stay), at last two lines
+      const ht=h.querySelector(".h-top"), hb=h.querySelector(".h-hello b"); if(ht && hb){ ht.classList.remove("n1","n2","n3"); for(const c of ["n1","n2","n3"]){ if(hb.scrollWidth<=hb.clientWidth+1) break; ht.classList.add(c); } }
+      h.classList.remove("lead"); const z=parseFloat(getComputedStyle(h).zoom)||1, spare = h.querySelector(".hero .m2") ? 0 : 34*z;
+      if(innerHeight < 780*z || btn.getBoundingClientRect().bottom + h.scrollTop + spare > nav.getBoundingClientRect().top - 8) h.classList.add("lead"); }catch(e){} }
+  { let ft=0; window.addEventListener("resize", ()=>{ clearTimeout(ft); ft=setTimeout(fitHome, 120); }); try{ document.fonts.ready.then(fitHome); }catch(e){} }
   const lessonBadge = L=>{ const n=L.exercises.length, g=L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length, k=L.exercises.filter(x=>G.ex[x.id]).length;
-    return G.lp[L.id] ? `<span class="pf">${ic("star")} Perfect</span>` : k ? `<span class="pp">${g} of ${n} perfect</span>` : `<span class="pp">Exercises</span>`; };
+    return G.lp[L.id] ? `<span class="pf">${ic("star")} Perfect</span>` : k ? `<span class="pp">${ic("star")}${g} of ${n}<i> perfect</i></span>` : `<span class="pp">Exercises</span>`; };
   function pathRows(T, st){ const upto = st ? st.s.last : LESSONS.length, from = st ? st.s.first-1 : 0; let out="";
     for(let i=from;i<upto;i++){ const Lk=LESSONS[i], recs=Lk ? (G.lessons[Lk.id]||[]) : [], pass=i<G.furthest, bestRec=recs.filter(r=>r.passed).slice(-1)[0];
       const cls = i===T ? (G.why ? "once" : "now") : pass ? "done" : "later";
-      out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"${pass && i!==T && Lk ? ` data-lv="${i}"` : ""}><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" aria-label="Lesson ${i+1}: its exercises">${lessonBadge(Lk)}${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(mini).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
+      out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"${pass && i!==T && Lk ? ` data-lv="${i}"` : ""}><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" aria-label="Lesson ${i+1}: its exercises">${lessonBadge(Lk)}${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(miniLz).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
     return out; }
 
   /* ---- the three places at the foot: Today, Words, You ---- */
   const TABS=["today","words","you"], TABEL={today:"home", words:"wordsV", you:"you"}, scrollAt={}; let tabNow="today";
   function tab(which){ tick(); const prev=tabNow, pe=$(TABEL[prev]); if(pe) scrollAt[prev]=pe.scrollTop; tabNow=which;
-    for(const [id,v] of [["tabToday","today"],["tabWords","words"],["tabYou","you"]]){ const b=$(id); if(b){ b.classList.toggle("on", v===which); b.setAttribute("aria-selected", v===which); } }
-    $("wordsV").hidden = which!=="words"; $("you").hidden = which!=="you";
+    for(const [id,v] of [["tabToday","today"],["tabWords","words"],["tabYou","you"]]){ const b=$(id); if(b){ b.classList.toggle("on", v===which); if(v===which) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); } }      // (QA .67) aria-selected is not a plain button's to carry
+    $("wordsV").hidden = which!=="words"; $("you").hidden = which!=="you"; MV.tabbed(which);
     if(which==="words") words(); else if(which==="you") you(); else home();
     const ne=$(TABEL[which]); if(ne){ if(prev!==which){ ne.scrollTop=scrollAt[which]||0; MV.play(ne, TABS.indexOf(which)>TABS.indexOf(prev) ? "mv-tab-r" : "mv-tab-l", 500); } } }
 
@@ -579,15 +629,15 @@ const SHELL = (()=>{
   function words(){ const o=$("wordsV"); const own=ownedCards(), byL={}; own.forEach(c=>{ (byL[c.lesson]=byL[c.lesson]||[]).push(c); });
     const ls=Object.keys(byL).map(Number).sort((a,b)=>b-a);
     o.innerHTML=`<div class="tabhead"><h1>Your words</h1></div>
-      <div class="card owned"><div class="num big">${own.length}</div><div><b>${own.length===1?"French word is yours":"French words are yours"}</b><small>${own.length ? "Each came from a lesson you passed. They stay yours." : "Your first words arrive when you finish Lesson 1."}</small></div></div>
-      ${ls.map(i=>`<h3 class="wl">From Lesson ${i+1}${G.wordsAt[LESSONS[i].id] ? `<small>${new Date(G.wordsAt[LESSONS[i].id]+"T12:00").toLocaleDateString([], {day:"numeric", month:"long"})}</small>` : ""}</h3><div class="wgrid">${byL[i].map(c=>wcard(c)).join("")}</div>`).join("")}
+      <div class="card owned">${own.length ? `<div class="num big">${own.length}</div>` : `<div class="orb">${ic("words")}</div>`}<div><b>${own.length===0 ? "Your French words will live here" : own.length===1?"French word is yours":"French words are yours"}</b><small>${own.length ? "Each came from a lesson you passed. They stay yours." : "The first ones arrive when you finish Lesson 1."}</small></div></div>
+      ${ls.map(i=>`<h3 class="wl">From Lesson ${i+1}${G.wordsAt[LESSONS[i].id] ? `<small>${new Date(G.wordsAt[LESSONS[i].id]+"T12:00").toLocaleDateString([], {day:"numeric", month:"long"})}</small>` : ""}</h3><div class="wgrid">${byL[i].map(c=>wcard(c, "", "c|"+i+"|"+c.ci)).join("")}</div>`).join("")}
       ${own.length ? `<p class="foot">Tap a card to hear it. More come with every lesson.</p>` : ""}`;
-    o.hidden=false; wireCards(o); }
+    o.hidden=false; wireCards(o); LZ.watch(o); }
 
   /* ---- who is learning? (more than one learner on this phone) ---- */
   function who(force){ const o=$("whoL"); if(!o) return; let chosen=false; try{ chosen=sessionStorage.getItem("frDIn.chosen")==="1"; }catch(e){}
     if(!force && (USERS.list.length<2 || chosen || running)) return false;
-    o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && force?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), "portrait")}<span>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div><div class="foot">Each of you has your own place, your own words and your own record.</div>${force?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
+    o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && force?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), "portrait")}<span${u.name.length>9?' class="ln"':""}>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div><div class="foot">Each of you has your own place, your own words and your own record.</div>${force?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
     o.hidden=false;
     o.querySelectorAll("[data-u]").forEach(b=>{ b.onclick=()=>{ try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} if(b.dataset.u===uid){ o.hidden=true; afterWho(); return; } switchUser(b.dataset.u); }; });
     $("whoAdd").onclick=()=>ask({title:"Add someone", label:"Their first name", ok:"Add", value:""}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name."; try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} return addUser(nm); });
@@ -596,13 +646,13 @@ const SHELL = (()=>{
 
   /* ---- a small sheet that asks one thing (a name) ---- */
   function ask(o, done){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(o.title)}"><h2>${esc(o.title)}</h2><label for="askIn">${esc(o.label)}</label><input id="askIn" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" value="${esc(o.value||"")}"><div class="msg" id="askMsg"></div><div class="two"><button class="btn quiet" id="askNo">Cancel</button><button class="btn" id="askOk">${esc(o.ok)}</button></div></div>`;
-    sh.hidden=false; const inp=$("askIn"); setTimeout(()=>inp.focus(), 60);
+    sheetOpen(sh, false); const inp=$("askIn"); setTimeout(()=>inp.focus(), 60);
     const close=()=>sheetClose(sh);
     $("askNo").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
     const go=()=>{ const m=done(inp.value); if(m){ $("askMsg").textContent=m; } else close(); };
     $("askOk").onclick=go; inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); }); }
   function info(title, html){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2><div class="sh-body">${html}</div><button class="btn${/class="btn/.test(html)?" quiet":""}" id="infoOk">Close</button></div>`;
-    sh.hidden=false; const close=()=>sheetClose(sh); $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
+    sheetOpen(sh); const close=()=>sheetClose(sh); $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
 
   /* ---- the avatar maker: built from the picture library's own lists (PICS.avatarOptions), so options can be added without touching this ---- */
   const FIELDS = { body:{label:"Body", vals:["m","f"]}, age:{label:"Age", vals:["c","t","a","o"], names:{c:"Child", t:"Teen", a:"Adult", o:"Older"}}, girth:{label:"Build", n:4}, skin:{label:"Skin", opt:"skin"}, face:{label:"Face", n:5}, eyes:{label:"Eyes", opt:"eyes"},
@@ -615,7 +665,9 @@ const SHELL = (()=>{
     const starters=[["A man",{body:"m",age:"a"}],["A woman",{body:"f",age:"a",hair:6}],["A boy",{body:"m",age:"c"}],["A girl",{body:"f",age:"c",hair:4}]];
     const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if(["c","t"].includes(typeof f==="object" ? f.age : f==="age" && v)) spec.beard=0; draw(); tick(); };
     const finish=()=>{ AV.set(PICS.avatarString(spec)); S.learnerGender = spec.body==="f" ? "f" : "m"; save(); G.makerOffer=false; store(); o.hidden=true; try{ trace("the learner's figure made"); }catch(e){} if(done) done(); else home(); };
-    function draw(){
+    let drawn=null;      // (QA .67) what was drawn last: a new step's cards come in one after another, a new group of choices comes in softly
+    function draw(){ draw0(); if(drawn){ if(drawn.step!==step) MV.stagger(o); else if(drawn.cat!==cat) MV.play(o.querySelector(".mk-tray"), "mv-soft", 300); } drawn={step, cat}; }
+    function draw0(){
       if(step===1){ o.innerHTML=`<div class="mk-step">Step 1 of 3</div><h1>Who will you be?</h1><div class="lede">Pick the one nearest to you. You will make it yours next.</div><div class="big4">${starters.map(([lab,sp],i)=>`<button class="pcard" data-s="${i}">${AV.svg(Object.assign({}, spec, sp), "standing")}<span>${lab}</span></button>`).join("")}</div>`;
         o.querySelectorAll("[data-s]").forEach(b=>{ b.onclick=()=>{ spec=Object.assign({}, spec, starters[+b.dataset.s][1]); step = spec.age==="c" ? 4 : 2; draw(); }; }); return; }
       if(step===4){ const kids=[["A child",{age:"c"}],["A teen",{age:"t"}]];
@@ -629,8 +681,8 @@ const SHELL = (()=>{
       const [, fields]=CATS[cat];
       o.innerHTML=`<div class="mk-bar">${firstRun?"":`<button class="rb plain" id="mkBack" aria-label="Back">${ic("chev")}</button>`}<h2>This is you</h2><button class="rb" id="mkUndo" aria-label="Undo">${ic("undo")}</button><button class="rb" id="mkRnd" aria-label="Surprise me">${ic("shuffle")}</button></div>
         <div class="mk-stage">${AV.svg(spec, "portrait", "big")}<div class="mk-small"><div class="mini">${AV.svg(spec, {view:"doing", doing:"walk", still:true}, "s")}</div><div class="lab">You, in<br>the lessons</div><div class="mini">${AV.svg(spec, "standing", "s")}</div></div></div>
-        <div class="mk-tabs">${CATS.map(([lab],i)=>`<button class="${i===cat?"on":""}" data-c="${i}">${lab}</button>`).join("")}</div>
-        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
+        <div class="mk-tabs">${CATS.map(([lab],i)=>`<button class="${i===cat?"on":""}" data-c="${i}" aria-pressed="${i===cat}">${lab}</button>`).join("")}</div>
+        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-pressed="${String(spec[f])===String(v)}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : f==="body" ? (v==="f" ? "a woman's" : "a man's") : typeof v==="number" ? v+1 : v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
         <div class="mk-foot"><button class="btn" id="mkDone">That's me</button></div>`;
       o.querySelectorAll("[data-c]").forEach(b=>{ b.onclick=()=>{ cat=+b.dataset.c; draw(); }; });
       o.querySelectorAll("[data-f]").forEach(b=>{ b.onclick=()=>{ const f=b.dataset.f, raw=b.dataset.v; set(f, FIELDS[f].vals ? raw : +raw); }; });
@@ -646,7 +698,7 @@ const SHELL = (()=>{
     const gapH=()=>{ const a=A.first.time.split(":").map(Number), b=A.second.time.split(":").map(Number); return ((b[0]*60+b[1])-(a[0]*60+a[1]))/60; };
     function block(k, label, icon){ const list=ROUTINE[k], cur=A[k].after, custom=!list.includes(cur);
       return `<section class="card anc ${k==="first"?"am":"pm"}"><div class="q"><div class="orb">${ic(icon)}</div><div>After <b>${esc(cur)}</b> I do my ${label} lesson.</div></div>
-        <div class="chips">${list.map(w=>`<button class="ch${w===cur?" on":""}" data-k="${k}" data-w="${esc(w)}">${esc(w)}</button>`).join("")}<button class="ch${custom||other[k]?" on":""}" data-k="${k}" data-other="1">something else</button></div>
+        <div class="chips">${list.map(w=>`<button class="ch${w===cur?" on":""}" data-k="${k}" data-w="${esc(w)}" aria-pressed="${w===cur}">${esc(w)}</button>`).join("")}<button class="ch${custom||other[k]?" on":""}" data-k="${k}" data-other="1">something else</button></div>
         ${custom||other[k] ? `<input class="otherIn" data-k="${k}" maxlength="28" placeholder="After …" value="${custom?esc(cur):""}" aria-label="After what?">` : ""}
         <div class="time"><span>About</span><button class="rb" data-k="${k}" data-m="-30" aria-label="Earlier">−</button><b class="num">${tstr(A[k].time)}</b><button class="rb" data-k="${k}" data-m="30" aria-label="Later">+</button></div></section>`; }
     function draw(){ const g=gapH();
@@ -654,7 +706,7 @@ const SHELL = (()=>{
         <div class="lede">Two short lessons a day, well apart, is how French sticks. Tie each one to something you already do.</div>
         ${block("first","first","sun")}${goal===2?block("second","second","moon"):""}
         ${goal===2 && g<RULES.SPACING_GAP_HOURS ? `<div class="hint">${ic("info")} These are close together. Lessons stick best ${RULES.SPACING_GAP_HOURS} hours or more apart.</div>` : ""}
-        <div class="seg" role="group" aria-label="Lessons a day"><button class="${goal===2?"on":""}" data-g="2">Two a day</button><button class="${goal===1?"on":""}" data-g="1">One a day for now</button></div>
+        <div class="seg" role="group" aria-label="Lessons a day"><button class="${goal===2?"on":""}" data-g="2" aria-pressed="${goal===2}">Two a day</button><button class="${goal===1?"on":""}" data-g="1" aria-pressed="${goal===1}">One a day for now</button></div>
         <div class="spacer"></div><button class="btn" id="anOk">${firstRun?"That's my plan":"Done"}</button>`;
       o.querySelectorAll("[data-w]").forEach(b=>{ b.onclick=()=>{ tick(); A[b.dataset.k].after=b.dataset.w; other[b.dataset.k]=false; draw(); }; });
       o.querySelectorAll("[data-other]").forEach(b=>{ b.onclick=()=>{ tick(); other[b.dataset.k]=true; draw(); const i=o.querySelector(`.otherIn[data-k="${b.dataset.k}"]`); if(i) i.focus(); }; });
@@ -705,10 +757,10 @@ const SHELL = (()=>{
     if(RULES.AWAY_ON){ const n=stepFor(days); if(n>0){ const from=G.next; to = G.furthest<RULES.AWAY_MIN_DONE ? 0 : Math.max(0, from-n);
         if(to<from){ G.warmTo=from; G.next=to; G.why="warm"; try{ trace("welcome back after "+days+" days away: a warm-up from Lesson "+(to+1)+" back to Lesson "+(from+1)); }catch(e){} } else to=null; } }
     store(); const o=$("back"), name=esc(S.learnerName||"");
-    o.innerHTML=`<div class="wb-art" aria-hidden="true">${AV.svg(AV.get(), "portrait", "av")}</div><h1>Welcome back${name?", "+name:""}.</h1><div class="sub">Let's warm up.</div>
+    o.innerHTML=`<div class="wb-art" aria-hidden="true">${AV.svg(AV.get(), "portrait", "av")}</div><h1>Welcome back${name?", "+name:""}.</h1><div class="sub">${to!=null ? "Let's warm up." : "It is good to see you."}</div>
       <div class="card nextc warm"><div class="orb">${ic("sun")}</div><div>${to!=null ? `<b>Starting with Lesson ${to+1}</b><p>You know it already. It brings everything back, and then we go on to Lesson ${G.warmTo+1}. Everything you have earned stays yours.</p>` : `<b>Lesson ${G.next+1} is ready</b><p>Everything you have earned stays yours.</p>`}</div></div>
       <div class="spacer"></div><button class="btn" id="wbGo">Let's start</button>`;
-    o.hidden=false; $("wbGo").onclick=()=>{ tick(); o.hidden=true; home(); }; return true; }
+    longName(o); o.hidden=false; $("wbGo").onclick=()=>{ tick(); o.hidden=true; home(); }; return true; }
 
   /* ---- you: the figure, the record, milestones, and the settings (nothing here changes the teaching) ---- */
   const sw = (id, on, label, sub, icon)=>`<button class="grow" id="${id}" role="switch" aria-checked="${on}"><div class="ic">${ic(icon)}</div><div class="l">${label}${sub?`<small>${sub}</small>`:""}</div><span class="sw${on?" on":""}"><i></i></span></button>`;
@@ -717,13 +769,13 @@ const SHELL = (()=>{
     o.innerHTML=`<div class="tabhead"><h1>You</h1></div>
       <button class="card me" id="youAv"><div class="face">${avOut("portrait", "t")}</div><div class="l"><b>${esc(S.learnerName||"")}</b><small>Change how you look ${ic("chev")}</small></div></button>
       <div class="card stats"><div>${MV.num("points", G.points)}<small>points</small></div><div>${MV.num("perfect", perfectCount())}<small>perfect lesson${perfectCount()===1?"":"s"}</small></div><div>${MV.num("words", own)}<small>words</small></div><div>${MV.num("days", G.daysLearned)}<small>days learned</small></div></div>
-      <button class="card rankc" id="youRank">${rankEmblem(G.rank||0, "emb m")}<div class="l"><small>Your rank</small><b>${esc(rankName(G.rank||0))}</b><span>${(G.rank||0)<RULES.RANKS.length ? `<b class="num">${(RULES.RANKS[G.rank||0]-G.points).toLocaleString("en-GB")}</b> points to ${esc(rankName((G.rank||0)+1))}` : "The highest rank"}</span></div><div class="wtok">${tokenIcon()}${MV.num("tokY", G.tokens||0)}<small>Wardrobe</small></div></button>
+      <button class="card rankc" id="youRank">${rankEmblem(G.rank||0, "emb m")}<div class="l"><small>Your rank</small><b>${esc(rankName(G.rank||0))}</b><span>${(G.rank||0)<RULES.RANKS.length ? `<b class="num">${(RULES.RANKS[G.rank||0]-G.points).toLocaleString("en-GB")}</b> points to ${esc(rankIn((G.rank||0)+1))}` : "The highest rank"}</span></div><div class="wtok">${tokenIcon()}${MV.num("tokY", G.tokens||0)}<small>Wardrobe</small></div></button>
       ${levelCard(true)}
       <h3 class="gh">Badges</h3><div class="miles">${bs.map(n=>`<div class="ms">${badgeSvg(n)}<span>${badgeName(n)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${perfectCount()} of ${nextB} perfect lessons</span></div>` : ""}</div>
       ${st ? `<div class="sline">${st.text} lessons · best run ${G.bestRun} day${G.bestRun===1?"":"s"}</div>` : ""}
       <h3 class="gh">Your two moments</h3><div class="card grp">${row("setA1","First lesson","After "+esc(A.first.after),"sun",`<span class="num">${hm(atToday(A.first.time))}</span>`)}${G.goal!==1?row("setA2","Second lesson","After "+esc(A.second.after),"moon",`<span class="num">${hm(atToday(A.second.time))}</span>`):row("setA2","Lessons a day","One for now","moon","")}</div>
       <h3 class="gh">Sound and touch</h3><div class="card grp">${sw("setBead", UI.pref.beadSound!==false, "Sound for right answers", "One soft note for each right answer. Never over Marie.", "speaker")}${sw("setSound", !!UI.pref.sound, "Other sounds", "Cards turning up. Marie's voice is always on.", "speaker")}${sw("setVibe", !!UI.pref.haptics, "Vibration", "A light tap when you press. Never while you speak.", "vibe")}</div>
-      <h3 class="gh">Seeing</h3><div class="card grp"><div class="grow"><div class="ic">${ic("text")}</div><div class="l">Text size</div></div><div class="seg size" role="group" aria-label="Text size">${[1,2,3].map(k=>`<button class="${tz===k?"on":""}" data-tz="${k}" aria-label="Text size ${k}"><span style="font-size:${[16,20,24][k-1]}px">A</span></button>`).join("")}</div>${sw("setMotion", UI.pref.motion==="less", "Less movement", "Celebrations become still. The lessons do not change.", "eye")}</div>
+      <h3 class="gh">Seeing</h3><div class="card grp"><div class="grow"><div class="ic">${ic("text")}</div><div class="l">Text size</div></div><div class="seg size" role="group" aria-label="Text size">${[1,2,3].map(k=>`<button class="${tz===k?"on":""}" data-tz="${k}" aria-pressed="${tz===k}" aria-label="Text size: ${["standard","large","largest"][k-1]}"><span style="font-size:${[16,20,24][k-1]}px">A</span></button>`).join("")}</div>${sw("setMotion", UI.pref.motion==="less", "Less movement", "Celebrations become still. The lessons do not change.", "eye")}</div>
       <h3 class="gh">You and this phone</h3><div class="card grp">${row("setName","Your first name","",  "you", esc(S.learnerName||""))}${row("youWho","Who is learning?", USERS.list.length>1 ? USERS.list.length+" learners on this phone" : "Add someone", "you")}</div>
       <h3 class="gh">Help improve the course</h3><div class="card grp">${row("setRun","Save the run file","Everything you said and tapped, for the course's makers.","file")}${row("setIntro","See the introduction again","How a lesson works, shown.","play")}</div>
       <h3 class="gh">The course</h3><div class="card grp">${row("setAbout","About Flawless French", "Version "+esc(APP_VERSION),"info")}${row("youTester","For testers","","tool")}</div>
@@ -739,10 +791,16 @@ const SHELL = (()=>{
       if(USERS.list.some(x=>x.id!==uid && x.name.toLowerCase()===nm.toLowerCase())) return "Someone on this phone is already called "+nm+".";
       const f=$("optName"); if(f){ f.value=nm; f.dispatchEvent(new Event("change")); } setTimeout(you, 0); return ""; });
     $("setRun").onclick=()=>{ tick(); const b=$("btnDownload"); if(b) b.click(); };
-    $("setIntro").onclick=()=>{ tick(); if(!confirm("See how a lesson works again? It starts from the beginning of Lesson 1's first exercise.")) return; const b=$("btnIntro"); if(b) b.click(); };
+    $("setIntro").onclick=()=>{ tick(); sure({title:"See the introduction again?", body:"It shows how a lesson works, from the beginning of Lesson 1's first exercise.", ok:"Show it"}, ()=>{ const b=$("btnIntro"); if(b) b.click(); }); };
     $("setAbout").onclick=()=>about();
-    $("youRemove").onclick=()=>{ if(USERS.list.length<2){ alert("This is the only learner on this phone."); return; } if(!confirm("Remove "+currentUser().name+"? Their place, record and figure will be deleted.")) return; if(!confirm("Are you sure? This cannot be undone.")) return; try{ localStorage.removeItem(GK); localStorage.removeItem(AK(uid)); }catch(e){} const m=removeUser(uid); if(m) alert(m); };
-    $("youTester").onclick=()=>{ o.hidden=true; $("panel").hidden=false; try{ renderPanel(); }catch(e){} }; }
+    $("youRemove").onclick=()=>{ tick(); const nm=currentUser().name;
+      if(USERS.list.length<2){ info(nm+" is the only learner here", `<p>This phone always keeps one learner. To start afresh, add someone first (You, then Who is learning?), then remove ${esc(nm)}.</p>`); return; }
+      sure({title:"Remove "+nm+"?", body:"Their place, record and figure will be deleted from this phone.", ok:"Remove", no:"Keep", warn:true}, ()=>{
+        sure({title:"Are you sure?", body:"Everything of "+nm+"'s will be gone. This cannot be undone.", ok:"Yes, remove", no:"Keep", warn:true}, ()=>{
+          let m=""; const c0=window.confirm; try{ window.confirm=()=>true; m=removeUser(uid); }catch(e){ m="That did not work. Nothing was removed."; } finally{ window.confirm=c0; }      // asked twice here: the page's own grey box does not ask a third time
+          if(!USERS.list.some(x=>x.id===uid)){ try{ localStorage.removeItem(GK); localStorage.removeItem(AK(uid)); }catch(e){} }      // the record and the figure go only once the learner is gone (they went first: "Cancel" at the third box left the learner without his figure)
+          if(m){ info("Not removed", `<p>${esc(m)}</p>`); return true; } }); return true; }); };
+    $("youTester").onclick=()=>{ tab("today"); $("panel").hidden=false; try{ renderPanel(); }catch(e){} }; }
   function about(){ info("About Flawless French", `<p><b>Flawless French</b> teaches French the way a good teacher does: Marie says, shows and asks; you answer out loud or tap a picture; every answer is heard, and a mistake is put right at once.</p>
       <p><b>How the course moves on.</b> When you are right the first time in ${RULES.PASS_MARK} answers out of a hundred or more, the next lesson opens. Below that, you do the lesson once more, and it feels easier. You can do any lesson you have done again, at any time.</p>
       <p><b>After a break.</b> If you have been away for some days, you start a few lessons back, so that it all comes back before you go on.</p>
@@ -775,27 +833,59 @@ const SHELL = (()=>{
      they lie; lists come in one after another; numbers count; a sheet leaves as it came; a picture the finger chose grows into its sheet.
      Edge swipe and the phone's back button close what has a way back. Nothing of it inside a lesson; none of it with less movement. ---- */
   const MV = (()=>{ const KIND={done:"rise", lvl:"rise", back:"rise", mic:"rise", whoL:"fade", maker:"push", anch:"push", lessonV:"push", ward:"push"};
-    const BACK={lessonV:"lvBack", ward:"wdBack", maker:"mkBack", anch:"anBack"};
+    /* (QA .67) the phone's back button presses these: the screens with a way back, and now also the screens with one way on (lesson complete, a level, welcome
+       back: "Continue"), the microphone's "Not now", who is learning's "Back". From Words or You it goes to Today; in a lesson it asks to leave (the cross
+       becomes "Leave", as when it is pressed; a second press leaves) instead of closing the app in the middle of an exercise. The edge swipe stays with SWIPE. */
+    const BACK={lessonV:"lvBack", ward:"wdBack", maker:"mkBack", anch:"anBack", done:"doneBtn", lvl:"lvGo", back:"wbGo", mic:"micLater", whoL:"whoBack"};
+    const SWIPE={lessonV:1, ward:1, maker:1, anch:1};
     const play=(node, cls, ms)=>{ if(!node || lessMotion()) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); clearTimeout(node["_mv"+cls]); node["_mv"+cls]=setTimeout(()=>node.classList.remove(cls), ms); };
     function stagger(root){ if(!root || lessMotion()) return; let i=0; for(const c of root.children){ if(c.classList.contains("donefoot") || c.classList.contains("btn") || c.classList.contains("spacer")) continue; c.style.setProperty("--i", Math.min(i++, 12)); } play(root, "mv-stag", 1200); }
     function beneath(){ const vis=[...document.querySelectorAll(".over:not([hidden])")]; if(vis.length) return vis.sort((a,b)=>(+getComputedStyle(a).zIndex||0)-(+getComputedStyle(b).zIndex||0)).pop(); return $("home"); }
-    let pushed=0, ignorePop=0, popping=false;
+    // each layer knows whether it has an entry of its own in the phone's history (o._pushed): the entries are alike, so only their number matters
+    let ignorePop=0, popping=false, tabPushed=false, lessonPushed=false, stale=0;
+    const inLesson=()=>document.body.classList.contains("inLesson");
+    /* The phone's history is asked ONE thing at a time: a "back" of ours is done only once the one before it has arrived, and an entry wanted while a
+       "back" is still waiting simply takes its place (the entries are alike). Without this, closing a sheet and a screen and starting a lesson in one
+       breath (the lesson view's "Do exercise 2 again") left the page on its first entry: the next back, or the lesson's end, would have left the app. */
+    const hq=[]; let hfly=false, hflyT=0;
+    const hrun=()=>{ while(!hfly && hq.length){ const op=hq.shift();
+        if(op==="push"){ try{ history.pushState({ff:1}, ""); }catch(e){} }
+        else { hfly=true; ignorePop++; try{ history.back(); }catch(e){ ignorePop--; hfly=false; continue; }
+          clearTimeout(hflyT); hflyT=setTimeout(()=>{ if(hfly){ hfly=false; ignorePop=Math.max(0, ignorePop-1); hrun(); } }, 4000); } } };
+    const push=()=>{ if(hq.length && hq[hq.length-1]==="back") hq.pop(); else hq.push("push"); hrun(); return true; };
+    const unpush=()=>{ if(hq.length && hq[hq.length-1]==="push") hq.pop(); else hq.push("back"); hrun(); };
     const hasBack=o=>o.id==="sheet" ? !!o.querySelector("#infoOk,#askNo") : BACK[o.id] && !!$(BACK[o.id]);
-    function shown(o){ if(o.classList.contains("tabbed")) return; const k=KIND[o.id]||"fade"; play(o, "mv-"+k, 700); stagger(o);
-      if(hasBack(o) && !document.body.classList.contains("inLesson")){ try{ history.pushState({ff:o.id}, ""); pushed++; }catch(e){} } }
-    function gone(o){ if(o.classList.contains("tabbed")) return; play(beneath(), "mv-settle", 600);
-      if(pushed>0 && !popping && (o.id==="sheet" || BACK[o.id])){ pushed--; ignorePop++; try{ history.back(); }catch(e){ ignorePop--; } } }
+    // what lies under the top screen is out of reach of a screen reader and of the keyboard (it was all read out, three screens deep)
+    function inertSync(){ try{ const full=!!document.querySelector(".over:not(.tabbed):not([hidden])"), tabd=!!document.querySelector(".over.tabbed:not([hidden])"), set=(e,v)=>{ if(e && e.inert!==v) e.inert=v; };
+        set($("play"), full); set($("nav"), full); set($("home"), !full && tabd); document.querySelectorAll(".over.tabbed").forEach(o=>set(o, full)); }catch(e){} }
+    function shown(o){ inertSync(); if(o.classList.contains("tabbed")) return; const k=KIND[o.id]||"fade"; play(o, "mv-"+k, 700); stagger(o);
+      if(hasBack(o) && !inLesson()) o._pushed=push(o.id); }
+    function gone(o){ inertSync(); if(o.classList.contains("tabbed")) return; play(beneath(), "mv-settle", 600);
+      if(o._pushed){ o._pushed=false; if(!popping) unpush(); } }
+    // Words and You: one entry while either is open, so that back goes to Today
+    function tabbed(which){ if(which!=="today"){ if(!tabPushed) tabPushed=push("tab"); } else if(tabPushed){ tabPushed=false; if(!popping) unpush(); } inertSync(); }
     const obs=new MutationObserver(ms=>{ for(const m of ms){ const o=m.target, now=o.hasAttribute("hidden"), was=m.oldValue!==null; if(now===was) continue; if(o.id==="sheet") continue; now ? gone(o) : shown(o); } });
     function watch(){ document.querySelectorAll(".over").forEach(o=>obs.observe(o, {attributes:true, attributeFilter:["hidden"], attributeOldValue:true}));
       const sh=$("sheet"); if(sh) new MutationObserver(ms=>{ for(const m of ms){ const now=sh.hasAttribute("hidden"), was=m.oldValue!==null; if(now===was) continue;
-        if(now){ if(pushed>0 && !popping){ pushed--; ignorePop++; try{ history.back(); }catch(e){ ignorePop--; } } } else if(hasBack(sh) && !document.body.classList.contains("inLesson")){ try{ history.pushState({ff:"sheet"}, ""); pushed++; }catch(e){} } } }).observe(sh, {attributes:true, attributeFilter:["hidden"], attributeOldValue:true}); }
-    // the phone's back button: closes the sheet, or the screen with a way back, never leaves the app from inside one
-    window.addEventListener("popstate", ()=>{ if(ignorePop>0){ ignorePop--; return; } if(pushed<=0) return; pushed--;
-      const sh=$("sheet"), b = sh && !sh.hidden ? sh.querySelector("#infoOk,#askNo") : (()=>{ const o=beneath(); return o && BACK[o.id] ? $(BACK[o.id]) : null; })();
-      if(b){ popping=true; try{ b.click(); }finally{ popping=false; } } });
+        if(now){ if(sh._pushed){ sh._pushed=false; if(!popping) unpush(); } } else if(hasBack(sh) && !inLesson()) sh._pushed=push("sheet"); } }).observe(sh, {attributes:true, attributeFilter:["hidden"], attributeOldValue:true});
+      // a lesson has an entry of its own while it runs (nothing else of this is at work inside a lesson)
+      new MutationObserver(()=>{ const on=inLesson(); if(on && !lessonPushed) lessonPushed=push("lesson"); else if(!on && lessonPushed){ lessonPushed=false; unpush(); } }).observe(document.body, {attributes:true, attributeFilter:["class"]});
+      // an entry left over from before a reload (the lesson was left with the back button) is dropped, so that back on Today leaves the app at once
+      try{ if(history.state && history.state.ff && history.length>1){ stale=6; unpush(); } }catch(e){}
+      inertSync(); }
+    // the phone's back button: closes the sheet, or the top screen by its own button; from Words or You, to Today; in a lesson, asks to leave
+    window.addEventListener("popstate", ()=>{
+      if(ignorePop>0){ ignorePop--; hfly=false; clearTimeout(hflyT);      // a "back" of ours has arrived; any entry left over from before a reload goes too
+        if(stale>0){ stale--; try{ const live=tabPushed || lessonPushed || [...document.querySelectorAll(".over, #sheet")].some(o=>o._pushed); if(history.state && history.state.ff && history.length>1 && !live) unpush(); else stale=0; }catch(e){ stale=0; } }
+        hrun(); return; }
+      const press=b=>{ if(b){ popping=true; try{ b.click(); }finally{ popping=false; } } };
+      if(inLesson()){ if(lessonPushed){ lessonPushed=push("lesson"); const lv=$("leave"); if(lv) lv.click(); } return; }
+      const sh=$("sheet"); if(sh && !sh.hidden && sh._pushed){ sh._pushed=false; press(sh.querySelector("#infoOk,#askNo")); return; }
+      const o=beneath(); if(o && o._pushed){ o._pushed=false; press($(BACK[o.id])); return; }
+      if(tabPushed){ tabPushed=false; popping=true; try{ tab("today"); }finally{ popping=false; } } });
     // a swipe from the left edge takes the screen back with the finger; let go past a third (or quickly) and it goes
     let sw=null;
-    document.addEventListener("touchstart", e=>{ const t=e.touches[0]; if(!t || t.clientX>26 || e.touches.length>1) return; const o=beneath(); if(!o || !BACK[o.id] || !$(BACK[o.id])) return;
+    document.addEventListener("touchstart", e=>{ const t=e.touches[0]; if(!t || t.clientX>26 || e.touches.length>1) return; const o=beneath(); if(!o || !SWIPE[o.id] || !$(BACK[o.id])) return;
       sw={o, x0:t.clientX, y0:t.clientY, t0:performance.now(), dx:0, on:false}; }, {passive:true});
     document.addEventListener("touchmove", e=>{ if(!sw) return; const t=e.touches[0], dx=t.clientX-sw.x0, dy=t.clientY-sw.y0;
       if(!sw.on){ if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>8){ sw=null; return; } if(dx>8) sw.on=true; else return; }
@@ -814,12 +904,22 @@ const SHELL = (()=>{
     // numbers count from what was shown last to what is true now
     function count(root){ if(!root) return; root.querySelectorAll("[data-count]").forEach(b=>{ const to=+b.dataset.count, from=+(b.dataset.from||0), fmt=x=>Math.round(x).toLocaleString("en-GB");
       if(lessMotion() || from===to){ b.textContent=fmt(to); return; } const t0=performance.now(), D=Math.min(1100, 500+Math.abs(to-from)*8), ease=x=>1-Math.pow(1-x,3);
-      const step=t=>{ const k=ease(Math.min(1,(t-t0)/D)); b.textContent=fmt(from+(to-from)*k); if(k<1) requestAnimationFrame(step); }; b.textContent=fmt(from); requestAnimationFrame(step); }); }
+      const step=t=>{ const k=ease(Math.min(1,(t-t0)/D)); b.textContent=fmt(from+(to-from)*k); if(k<1) requestAnimationFrame(step); }; b.textContent=fmt(from); requestAnimationFrame(step);
+      setTimeout(()=>{ if(b.isConnected) b.textContent=fmt(to); }, D+250); }); }      // (QA .67) the true number stands whatever the frames did
     const num=(key, v, cls="num")=>{ const seen=(G.seenN||(G.seenN={})); const from = seen[key]!=null ? seen[key] : v; seen[key]=v; return `<b class="${cls}" data-count="${v}" data-from="${from}">${(lessMotion()?v:from).toLocaleString("en-GB")}</b>`; };
-    return {watch, play, stagger, grow, openCard, count, num}; })();
+    return {watch, play, stagger, grow, openCard, count, num, tabbed}; })();
   // a sheet leaves as it came (down and away), then is gone
-  function sheetClose(sh){ if(!sh || sh.hidden) return; if(lessMotion()){ sh.hidden=true; sh.innerHTML=""; return; } if(sh.classList.contains("out")) return;
-    sh.classList.add("out"); setTimeout(()=>{ sh.classList.remove("out"); sh.hidden=true; sh.innerHTML=""; }, 190); }
+  function sheetClose(sh){ if(!sh || sh.hidden) return; const back=()=>{ try{ const f=sh._from; sh._from=null; if(f && f.isConnected) f.focus({preventScroll:true}); }catch(e){} };
+    if(lessMotion()){ sh.hidden=true; sh.innerHTML=""; back(); return; } if(sh.classList.contains("out")) return;
+    sh.classList.add("out"); sh._t=setTimeout(()=>{ sh.classList.remove("out"); sh.hidden=true; sh.innerHTML=""; back(); }, 190); }
+  // (QA .67) a sheet opened while the one before is still leaving is not emptied by that one's timer; the sheet takes the focus and gives it back; Escape closes it
+  function sheetOpen(sh, focusIt=true){ clearTimeout(sh._t); sh.classList.remove("out"); if(sh.hidden) sh._from=document.activeElement; sh.hidden=false;
+    const d=sh.querySelector(".sh"); if(d){ d.setAttribute("aria-modal", "true"); if(focusIt){ d.tabIndex=-1; try{ d.focus({preventScroll:true}); }catch(e){} } } }
+  document.addEventListener("keydown", e=>{ if(e.key!=="Escape") return; const sh=$("sheet"); if(!sh || sh.hidden) return; const b=sh.querySelector("#infoOk,#askNo"); if(b) b.click(); });
+  // the app's own question in place of the browser's grey box (which shows the site's address): yes() may open the next question (it returns true: the sheet stays)
+  function sure(o, yes){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="alertdialog" aria-label="${esc(o.title)}"><h2>${esc(o.title)}</h2><div class="sh-body"><p>${esc(o.body)}</p></div><div class="two"><button class="btn quiet" id="askNo">${esc(o.no||"Cancel")}</button><button class="btn${o.warn?" warn":""}" id="sureOk">${esc(o.ok)}</button></div></div>`;
+    sheetOpen(sh); const close=()=>sheetClose(sh); $("askNo").onclick=()=>{ tick(); close(); }; sh.onclick=e=>{ if(e.target===sh) close(); };
+    $("sureOk").onclick=()=>{ tick(); if(yes()!==true) close(); }; }
 
   /* ---- start ---- */
   for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl","ward"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
