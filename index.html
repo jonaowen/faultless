@@ -2955,13 +2955,13 @@ function badgeLit(who, on){ const r=document.querySelector("#badge_"+who+" .ring
    "On danse."), either of them having just stopped (Lesson 9: the past, shown by do-then-stop: the same figure, now still),
    or the learner's own state (Lesson 9: a face, the answer to "Ça va ?"). */
 const BOX_KEYS=["teacherDoing","learnerDoing","bothDoing","teacherDid","learnerDid","teacherWill","learnerWill","learnerFace"];
-function boxOf(sc){ return !sc ? null : sc.bothDoing ? ["both", sc.bothDoing, {}]
+function boxOf(sc){ return !sc ? null : sc.handed ? ["handed", sc.handed, {}] : sc.bothDoing ? ["both", sc.bothDoing, {}]      /* (handOver) a thing handed: see actBox */
   : sc.teacherDoing && sc.learnerDoing ? ["pair", sc.teacherDoing, {you:sc.learnerDoing}]          // (.25) Marie doing one thing, the learner's figure another: two boxes
   : sc.teacherDoing && sc.teacherWill ? ["marie", sc.teacherDoing, {alsoWill:sc.teacherWill}]      // (.25) Marie doing one thing and holding the card of another
   : sc.teacherDoing ? ["marie", sc.teacherDoing, {}] : sc.learnerDoing ? ["you", sc.learnerDoing, {}]
   : sc.teacherWill ? ["marie", sc.teacherWill, {will:true}] : sc.learnerWill ? ["you", sc.learnerWill, {will:true}]      // going to do it: standing, holding the picture card of the action
   : sc.teacherDid ? ["marie", sc.teacherDid, {stopped:true}] : sc.learnerDid ? ["you", sc.learnerDid, {stopped:true}] : sc.learnerFace ? ["you", "face", {face:sc.learnerFace}] : null; }
-const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.strip?"|strip:"+JSON.stringify(sc.strip):"")+(sc.claireTag===false?"|notag":"")+BOX_KEYS.map(k=>sc[k]?"|"+k+":"+sc[k]:"").join("");
+const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc.side||{}) : sc.L+"|"+sc.R)+(sc.strip?"|strip:"+JSON.stringify(sc.strip):"")+(sc.claireTag===false?"|notag":"")+BOX_KEYS.map(k=>sc[k]?"|"+k+":"+sc[k]:"").join("")+(sc.handed?"|handed:"+JSON.stringify(sc.handed):"");
 async function setPortraits(sc){
   sc=sceneOf(sc); if(!sc) return; const key=sceneKey(sc);
   if(key===curSceneKey) return;
@@ -2991,6 +2991,8 @@ async function setPortraits(sc){
   { const tag=document.getElementById("claireTag"); if(tag) tag.style.opacity = sc.claireTag===false ? 0 : 1; }
   { const b=boxOf(sc); if(b) actBox(b[0], b[1], Object.assign({}, b[2], sc.boxLeft ? {left:true} : {}, sc.boxWith ? {withP:sc.boxWith} : {})); else actBox(null); }
   curScene=sc; curSceneKey=key;
+  /* (HAND-OVER HOOK) a new hand-over: the line waits until the thing is held out between the two hands (HO.t[1] of the 2.6 s loop: 1.04 s) */
+  if(sc.handed && window.PICS && PICS._fig && PICS._fig.HO){ const H=PICS._fig.HO, ms=Math.round(H.dur*1000*H.t[1]); trace("a thing handed: "+JSON.stringify(sc.handed)+" (one hand-over "+Math.round(H.dur*1000)+" ms; held out at "+ms+" ms)"); await sleep(ms); }
   if(sc.row && sc.row.some(x=>x && x.appears)){ trace("a card comes in"); await sleep(650); }      // before the line is said
   if(SLIDE_IN){ SLIDE_IN=false; if(sc.row && sc.row.length){      // (.64) the second thing of a "C'était" chain comes in from the right (thingGoes)
     frameRow.style.transition="none"; frameRow.style.transform="translateX(240px)"; frameRow.style.opacity=0; void frameRow.getBoundingClientRect();
@@ -4053,6 +4055,15 @@ function actBox(who, act, opt){
   const g=document.getElementById("actBox"); if(!g) return;
   if(!who){ g.setAttribute("opacity",0); g.replaceChildren(); ACTBOX.key=null; return; }
   opt = opt===true ? {still:true} : (opt||{});
+  /* ===== HAND-OVER HOOK (the figures agent, 16 Nov; dev/design/HANDOVER_SCENE.md) ===== a thing handed, scene.handed = {from, to, thing}:
+     from / to "teacher" (Marie) | "you" | "paul" | "julie" | a person spec ({is: "man"} ...). ONE box the width of two cards (x 30-370): the
+     giver on the left holds the thing out, the taker on the right takes it and holds it (PICS.handOver: one hand-over in 2.6 s, the end held,
+     a fade, again). Name tags on the figures (the learner's own name on theirs); no label above the box. */
+  if(who==="handed"){ const h=act||{}, W=w=>w==="teacher"?"marie":w, key="handed|"+JSON.stringify(h)+"|"+S.learnerGender+"|"+learnerTagName(); if(key===ACTBOX.key) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
+    g.innerHTML=`<g transform="translate(30,24)">${CARD(340,190,16)}<g id="actPic"></g></g>`;
+    try{ document.getElementById("actPic").appendChild(window.PICS && PICS.handOver ? PICS.handOver({from:W(h.from), to:W(h.to), thing:h.thing, sex:S.learnerGender==="f"?"f":"m", names:{you:learnerTagName()}}) : placeholder("voilà")); }catch(e){ trace("FAULT hand-over picture: "+e.message); }
+    g.setAttribute("opacity",1); return; }
+  /* ===== end of the hand-over hook ===== */
   if(who==="pair"){      // (.25) two boxes side by side: "Marie:" doing act, "You:" doing opt.you (with the learner's name tag)
     const key=["pair", act, opt.you].join("|"); if(key===ACTBOX.key && S.learnerGender===ACTBOX.sex) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
     g.innerHTML=[["marie", act, 30, VOCAB.claire.name+":"], ["you", opt.you, 210, "You:"]].map(([w,a,x,lab],i)=>`<text x="${x+80}" y="14" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink,#2b3a4a)">${lab}</text><g transform="translate(${x},24)">${CARD(160,190,16)}<g id="actPic${i}"></g></g>`).join("");

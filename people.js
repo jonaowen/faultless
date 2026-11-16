@@ -2399,7 +2399,7 @@ const DANCE_FIX = {
     armTo(k, B, "L", at(J.root, Bp, [B.hw + 0.075, 0.07, 0.0]), at0(Bp, [-0.2, -0.5, -0.85]), at0(Bp, [-0.9, 0, 0.3]), at0(Bc, [1, -0.2, -0.4]));
     armTo(k, B, "R", at(J.chest, Bc, [-0.16, 0.36, 0.06]), at0(Bc, [-0.3, 1, 0.1]), at0(Bc, [0, 0, 1]), at0(Bc, [-1, 0.1, -0.2])); return k; },
   bow: (k, B) => { k = Float32Array.from(k); const C = clipOf("bow"); if (C.hi == null){ C.hi = Math.max(...C.keys.map(q => q[1])); C.lo = Math.min(...C.keys.map(q => q[1])); }
-    const dp = Math.max(0, Math.min(1, (C.hi - k[1]) / Math.max(0.05, C.hi - C.lo))), a = 0.5 * dp * dp * (3 - 2 * dp), ax = nrm([k[3], k[4], k[5]]);
+    const dp = Math.max(0, Math.min(1, (C.hi - k[1]) / Math.max(0.05, C.hi - C.lo))), a = 0.3 * dp * dp * (3 - 2 * dp), ax = nrm([k[3], k[4], k[5]]);      // (T5: 0.5 -> 0.3: the deepest point read as a stumble at small sizes)
     const rot = (i, f) => { const v = [k[i], k[i + 1], k[i + 2]], cs = Math.cos(a * f), sn = Math.sin(a * f), d = dot(ax, v), cr = cross(ax, v), r = [v[0] * cs + cr[0] * sn + ax[0] * d * (1 - cs), v[1] * cs + cr[1] * sn + ax[1] * d * (1 - cs), v[2] * cs + cr[2] * sn + ax[2] * d * (1 - cs)]; k[i] = r[0]; k[i + 1] = r[1]; k[i + 2] = r[2]; };
     rot(9, 1); rot(12, 1); rot(15, 1); rot(24, 1.3); rot(27, 1.5); rot(30, 1.5); for (const o of [33, 36, 39, 42, 45, 48, 51, 54]) rot(o, 0.6); return k; },
   jig: (k, B) => { k = Float32Array.from(k); const J = skeleton(k, B), Bp = J.Bp, Bc = J.Bc;
@@ -2639,6 +2639,92 @@ function closeUp(name, c, o){
     for (const n of list){ const el = byId[n.id]; if (!el) continue; nodeSet(el, n); if (n.tag === "g" && el._in !== n.inner){ if (el._in != null) el.firstChild.innerHTML = n.inner; el._in = n.inner; } } });      // (a face that changes: the mouth's and the eyes' drawing)
   return g;
 }
+/* ---------- the handed thing (voilà / merci; donner): one person hands a thing to another ----------
+   FIG.handOver(cA, cB, o): A (the giver, on the left, facing right) holds the thing in front of the waist, holds it out; B (on the right,
+   facing left) raises a hand and takes it; A lets go and lowers the arm; B brings it in and holds it (the end state). Both stand turned to
+   each other and a little to the viewer, as two people are photographed handing something over (refs/hands/handover). One world, one
+   camera: the two figures are placed in it by their feet, the thing by its middle; each hand is put on the thing by the two bones of the arm
+   (armTo), with fingers. The thing is the caller's picture (o.thing = {html, box: [x, y, w, h] in its own 160 x 190 box, size: its longest
+   side in body heights}); it lies in the picture plane, the giver's thumb in front of it, the taker's fingers over its far edge.
+   o.w: the box's width (340: the two from the thighs up, large; 160: both whole, standing); o.still, o.phase (default HO.still: both hands
+   on it); o.tagA / o.tagB: name tags; o.legsA / o.legsB. The loop is HO.dur seconds: one hand-over, the end held, a fade, and again. */
+HANDS.hold = { f: [[0.55, 0.75], [0.6, 0.8], [0.66, 0.84], [0.72, 0.86]], sp: 0, th: [0.35, 0.95, 0.15] };       // the thing's edge between the thumb (in front) and the fingers (behind)
+HANDS.take = { f: [[0.18, 0.22], [0.2, 0.26], [0.24, 0.3], [0.3, 0.34]], sp: 0.05, th: [0.8, 0.35, 0.1] };        // reaching for it, the hand open
+HANDS.over = { f: [[0.5, 0.55], [0.55, 0.6], [0.6, 0.65], [0.66, 0.7]], sp: 0, th: [0.45, 0.8, 0.2] };          // the taker's fingers over the far edge
+const HO = { dur: 2.6, still: 0.47, yaw: 48, pitch: 7, t: [0.08, 0.4, 0.46, 0.53, 0.6, 0.8, 0.88, 0.95] };
+function handOver(cA, cB, o){
+  o = o || {}; const W0 = o.w || 340, wide = W0 > 200, u = "ho" + (seq++) + "_", T = HO.t;
+  const C = clipOf("stand"), BA = bodyOf(cA, {}), BB = bodyOf(cB, {}), WA = wearer(cA, { legs: o.legsA, tag: o.tagA || "", smile: 0.7, tagAt: [BA.chest[0] * 0.1, 0.05] }, u + "a"), WB = wearer(cB, { legs: o.legsB, tag: o.tagB || "", smile: 0.7 }, u + "b");
+  WA.curl = WB.curl = 0.3;
+  const k = wide ? 2.0 : 0.96, man = 146 * k, gy = wide ? 8 + man : 174, gap = (wide ? 0.52 : 0.5) * man, cx = W0 / 2;
+  const pitch = HO.pitch * Math.PI / 180, cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const fig = (c, B, W, side) => { const yawD = side * HO.yaw, yaw = yawD * Math.PI / 180, x = cx - side * gap / 2, s = B.H * k;
+    return { c, B, W, side, x, s, cam: camera(yaw, pitch, s, x, gy), cy: Math.cos(yaw), sy: Math.sin(yaw), floor: floorOf(C, B), base: Float32Array.from(C.keys[0]) }; };
+  const A = fig(cA, BA, WA, 1), Bf = fig(cB, BB, WB, -1);
+  /* world (px, before the camera's pitch): x right from the box's middle, y up from the ground, z toward the viewer */
+  const toFrame = (F, w) => { const wx = w[0] - (F.x - cx); return [(wx * F.cy - w[2] * F.sy) / F.s, w[1] / F.s + F.floor, (wx * F.sy + w[2] * F.cy) / F.s]; };
+  const dirFrame = (F, v) => nrm([v[0] * F.cy - v[2] * F.sy, v[1], v[0] * F.sy + v[2] * F.cy]);
+  const toWorld = (F, p) => [(p[0] * F.cy + p[2] * F.sy) * F.s + (F.x - cx), (p[1] - F.floor) * F.s, (-p[0] * F.sy + p[2] * F.cy) * F.s];
+  const scr = w => [cx + w[0], gy - (w[1] * cp - w[2] * sp)], depth = (F, w) => (w[2] * cp + w[1] * sp) / F.s;
+  /* the thing: its size on the picture and where its middle goes */
+  const TH = o.thing || null, tb = TH ? TH.box : [0, 0, 1, 1], tsz = (TH ? TH.size : 0.17) * man, tk = tsz / Math.max(tb[2], tb[3]), tw = tb[2] * tk, tht = tb[3] * tk;
+  const J0A = skeleton(A.base, A.B), J0B = skeleton(Bf.base, Bf.B);
+  const hold = (F, J) => toWorld(F, at(J.chest, J.Bc, [0, -0.15, 0.2]));
+  const P0 = add(hold(A, J0A), [tw * 0.22, 0, 0]), P2 = add(hold(Bf, J0B), [tw * 0.12, 0.01 * man, 0]);      // (the taker holds it by its far edge, in front of the body)
+  const P1 = [(P0[0] + P2[0]) / 2, (P0[1] + P2[1]) / 2 + 0.01 * man, Math.max(P0[2], P2[2]) + 0.04 * man];
+  const mj = t => { t = Math.max(0, Math.min(1, t)); return t * t * t * (10 - 15 * t + 6 * t * t); };          // a reach's minimum-jerk path (Flash and Hogan 1985)
+  const lerp3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const thingAt = ph => { if (ph <= T[0]) return P0; if (ph < T[1]){ const t = mj((ph - T[0]) / (T[1] - T[0])); return add(lerp3(P0, P1, t), [0, Math.sin(t * Math.PI) * 0.02 * man, 0]); }
+    if (ph <= T[3]) return P1; if (ph < T[5]){ const t = mj((ph - T[3]) / (T[5] - T[3])); return add(lerp3(P1, P2, t), [0, Math.sin(t * Math.PI) * 0.015 * man, 0]); } return P2; };
+  /* a hand put on the thing's edge (world: grip point, fingers' way, palm's way), or hanging at rest, or between the two */
+  const restOf = (F, s) => { const J = skeleton(F.base, F.B); return { wr: J["wr" + s], hd: J["hd" + s], pn: J["pn" + s] }; };
+  const onEdge = (F, g, hdW, pnW, s) => { const hd = dirFrame(F, hdW), pn = dirFrame(F, pnW), p = toFrame(F, g), th = s === "L" ? cross(pn, hd) : cross(hd, pn);
+    return { wr: sub(sub(p, mul(hd, F.B.hand * 0.52)), mul(nrm(sub(pn, mul(hd, dot(pn, hd)))), -0.012)), hd, pn }; };
+  const mixH = (a, b, t) => ({ wr: lerp3(a.wr, b.wr, t), hd: nrm(lerp3(a.hd, b.hd, t)), pn: nrm(lerp3(a.pn, b.pn, t)) });
+  const headTurn = (k2, pch) => { const X = [k2[27], k2[28], k2[29]], Y = [k2[30], k2[31], k2[32]], ax = nrm(X), cs = Math.cos(pch), sn = Math.sin(pch), d = dot(ax, Y), cr = cross(ax, Y);
+    const Y2 = nrm([Y[0] * cs + cr[0] * sn + ax[0] * d * (1 - cs), Y[1] * cs + cr[1] * sn + ax[1] * d * (1 - cs), Y[2] * cs + cr[2] * sn + ax[2] * d * (1 - cs)]); k2[30] = Y2[0]; k2[31] = Y2[1]; k2[32] = Y2[2]; };
+  const hp = (name, sc) => handFlat(HANDS[name]).concat([sc || 1]), blendH = (a, b, t) => { const x = hp(a), y = hp(b); return x.map((v, i) => v + (y[i] - v) * t); };
+  const GA = { hd: [0.85, -0.25, -0.45], pn: [0.3, 0.15, 0.94] }, GB = { hd: [-0.8, 0.1, 0.25], pn: [-0.2, -0.25, -0.95] };      // the giver's grip (thumb in front), the taker's (fingers over the edge)
+  function pose(ph){
+    const Tm = thingAt(ph), ka = Float32Array.from(A.base), kb = Float32Array.from(Bf.base), Ha = { L: hp("relaxed"), R: hp("hold") }, Hb = { L: hp("relaxed"), R: hp("take") };
+    const gA = add(Tm, [-tw / 2 + Math.min(tw * 0.18, 0.02 * man), -tht * 0.08, 0]), gB = add(Tm, [tw / 2 - Math.min(tw * 0.18, 0.02 * man), tht * 0.04, 0]);
+    /* the giver: holding it until T[3], then the hand opens, draws back and comes down to the side */
+    const eA = onEdge(A, gA, GA.hd, GA.pn, "R"), rA = restOf(A, "R");
+    let hA = eA; if (ph > T[3]){ const t1 = mj((ph - T[3]) / (T[4] - T[3])), back = onEdge(A, add(gA, [-0.06 * man, -0.01 * man, 0]), GA.hd, GA.pn, "R"); hA = ph < T[4] ? mixH(eA, back, t1) : mixH(back, rA, mj((ph - T[4]) / (T[6] - T[4]))); Ha.R = blendH("hold", "relaxed", Math.min(1, (ph - T[3]) / (T[4] - T[3]))); }
+    armTo(ka, A.B, "R", hA.wr, hA.hd, hA.pn, [-0.5, -1, -0.5]);
+    /* the taker: the hand comes up open from T[0] + a little, meets the edge at T[1], closes on it, then holds it to the end */
+    const eB = onEdge(Bf, gB, GB.hd, GB.pn, "R"), rB = restOf(Bf, "R"), ts = T[0] + 0.06;
+    let hB = eB; if (ph < T[1]){ const near = onEdge(Bf, add(gB, [0.05 * man, -0.02 * man, 0.01 * man]), GB.hd, GB.pn, "R"), t = mj((ph - ts) / (T[1] - ts)); hB = ph < ts ? rB : t < 0.85 ? mixH(rB, near, t / 0.85) : mixH(near, eB, (t - 0.85) / 0.15); }
+    Hb.R = ph < T[1] ? hp("take") : blendH("take", "over", Math.min(1, (ph - T[1]) / (T[2] - T[1])));
+    armTo(kb, Bf.B, "R", hB.wr, hB.hd, hB.pn, [0.2, -1, -0.6]);
+    /* the heads: down a little to the thing while it passes between them */
+    const look = Math.sin(Math.max(0, Math.min(1, (ph - T[0]) / (T[5] - T[0]))) * Math.PI) * 0.16; headTurn(ka, look); headTurn(kb, look);
+    const holder = ph < T[3] ? "A" : "B";
+    return { ka, kb, Ha, Hb, Tm, holder };
+  }
+  const thingPart = (F, Tm) => { const q = scr(Tm); return { id: "thing", z: depth(F, Tm), tag: "g", m: [tk, 0, 0, tk, q[0] - (tb[0] + tb[2] / 2) * tk, q[1] - (tb[1] + tb[3] / 2) * tk].map(v => Math.round(v * 1000) / 1000), inner: TH ? TH.html : "" }; };
+  const pre = (L, p) => L.map(n => Object.assign({}, n, { id: p + n.id }));
+  const listAt = ph => { const S0 = pose(ph);
+    const la = frame(S0.ka, A.B, A.cam, A.W, A.floor, { hands: S0.Ha, extra: () => S0.holder === "A" && TH ? [thingPart(A, S0.Tm)] : [] });
+    const lb = frame(S0.kb, Bf.B, Bf.cam, Bf.W, Bf.floor, { hands: S0.Hb, extra: () => S0.holder === "B" && TH ? [thingPart(Bf, S0.Tm)] : [] });
+    return pre(la, "a").concat(pre(lb, "b")).map(n => n.id === "athing" || n.id === "bthing" ? Object.assign(n, { id: "thing" }) : n); };
+  /* the still frame says which way it goes: a green arc over the thing, from the giver to the taker */
+  const arrow = ph => { const q = scr(thingAt(ph)), y = q[1] - tht / 2 - (wide ? 22 : 12), w = wide ? 32 : 18, sw = wide ? 5.4 : 4, h = wide ? 12 : 7;
+    return `<path d="M${f1(q[0] - w)} ${f1(y + h * 0.4)}Q${f1(q[0])} ${f1(y - h)} ${f1(q[0] + w - sw)} ${f1(y + h * 0.1)}" stroke="#3fae5a" stroke-width="${sw}" fill="none" stroke-linecap="round"/><path d="M${f1(q[0] + w - 3.4 * sw)} ${f1(y - 1.2 * sw)}L${f1(q[0] + w)} ${f1(y + h * 0.25)}L${f1(q[0] + w - 3 * sw)} ${f1(y + h * 0.25 + 1.6 * sw)}" stroke="#3fae5a" stroke-width="${sw}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`; };
+  const g = mk(""), html = L => L.map(n => nodeHTML(n, u)).join(""), clip = `<clipPath id="${u}box"><rect width="${W0}" height="190" rx="16"/></clipPath>`, defs = `<defs>${WA.defs}${WB.defs}${clip}</defs>`;
+  const ground = wide ? "" : `<ellipse cx="${cx}" cy="${gy + 2}" rx="${f1(gap * 0.95)}" ry="5" fill="#1d2233" opacity=".06"/>`;
+  if (o.still || o.phase != null){ const ph = o.phase != null ? o.phase : HO.still; g.innerHTML = defs + `<g clip-path="url(#${u}box)">${ground}${html(listAt(ph))}</g>` + (o.still && o.arrow !== false ? arrow(ph) : ""); return g; }
+  const dur = HO.dur, NF = Math.round(dur * 30), kept = new Array(NF), F0 = listAt(0);
+  g.innerHTML = defs + `<g clip-path="url(#${u}box)">${ground}<g class="fig"><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;${T[6]};${T[7]};1" dur="${f2(dur)}s" repeatCount="indefinite"/>${html(F0)}</g></g><g opacity="1"><animate attributeName="opacity" values="1;1" dur="${f2(dur)}s" repeatCount="indefinite"/></g>`;
+  const mark = g.lastChild.firstChild; let order = F0.map(n => n.id).join(" "), byId = null;
+  play(g, mark, dur, (root, ph) => { const host = root.querySelector(".fig"), i = ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF); return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
+    if (root._fi === i) return; root._fi = i;
+    if (!byId){ byId = {}; for (const el of host.children) if (el.hasAttribute("data-p")) byId[el.getAttribute("data-p")] = el; }
+    if (K.ord !== order){ order = K.ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; }
+      for (const id in byId) if (!seen[id]){ byId[id].remove(); delete byId[id]; } }
+    for (const n of list){ const el = byId[n.id]; if (el) nodeSet(el, n); } });
+  return g;
+}
 /* ---------- the teacher: a half figure, seated, facing the learner, in the 400 x 700 space of the stage ----------
    The same body and the same camera as every other figure, at a large size (five and a half heads, so that the head is the size it has
    always had on the stage: its middle at 200, 348; the shoulders at 146, 448 and 254, 448; the mouth at 200, 385). Seated as a person sits
@@ -2860,7 +2946,7 @@ function tutor(c, o){
     gaze, nod, blink, still(on){ held = !!on; }, _: { B, S, cam, quiet } };
   return { node: g, rig };
 }
-return { figure, act, avatar: avatarW, wardrobeThumb, WARD, person, tutor, close: closeUp, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
+return { figure, act, avatar: avatarW, wardrobeThumb, WARD, person, tutor, close: closeUp, handOver, HO, bust: bustOf, specString, specParse, AV, CLIPS, clipOf, STAT };
 })();
 /* the figure >>> */
 const ACT_SPEED = 2;
@@ -4433,6 +4519,42 @@ function together(act, opts){
   });
   return g;
 }
+/* ---------- PICS.handOver(spec): one person hands a thing to another (voilà / merci; donner) ----------
+   spec = { from, to, thing: {is, looks}, phase, still, w, names: {you: "the learner's name"} }
+     from, to   "marie" | "paul" | "julie" | "you" | a person spec ({person: "paul"}, {is: "man" | "woman" | "boy" | "girl", looks: [...]})
+     thing      any kind THINGS.one (or this file) draws; a thing nobody carries (a house, a train, a horse ...) is handed as a picture card of it
+     w          340 (default: the box of two cards side by side, x 30-370 of the stage: the two from the thighs up, large) | 160 (one card: both whole)
+     still      the card: one frame, both hands on the thing, a green arc from the giver to the taker; phase 0..1: that frame (no arc)
+   The giver stands on the left facing right, the taker on the right facing left (the thing always travels left to right); Marie, Pierre and
+   Sylvie wear their name tags, "you" the learner's name when spec.names.you is given, an unnamed man or woman none. Moving: one hand-over
+   in FIG.HO.dur seconds (2.6 s: held 0.2 s, out and taken by 1.2 s, brought in by 2.1 s, held, a fade, and again); the page's wait for a
+   whole loop is that loop (actLoopMs reads it). */
+const HO_CARRY = /^(house|train|car|town|restaurant|bus|door|street|horse|mountain|sea|shop|table|chair|tree|bicycle|motorbike|plane|window|park|beach|garden|station|kitchen|metro|weather|dog|cat|face|baby|boy|girl)$/;
+const HO_SIZE = { key: 0.1, pen: 0.13, phone: 0.12, apple: 0.1, tomato: 0.1, banana: 0.14, letter: 0.15, heart: 0.12, photo: 0.15, leaf: 0.13, flower: 0.18, glass: 0.12, coffee: 0.12, ball: 0.13, shoe: 0.15,
+  box: 0.2, computer: 0.22, radio: 0.18, bag: 0.2, cake: 0.17, pizza: 0.2, bread: 0.2, bottle: 0.19, hat: 0.18, shirt: 0.22, dress: 0.25, trousers: 0.25, newspaper: 0.18, plate: 0.17, soup: 0.16, cheese: 0.15, lamp: 0.2, fish: 0.17, flag: 0.2, book: 0.17 };
+function heldThing(spec){
+  spec = Object.assign({}, spec || { is: "book" }, { count: 1, placed: 1 }); const is = String(spec.is || "").toLowerCase();
+  let el = (window.THINGS && THINGS.one && THINGS.one(spec)) || oneThing(spec), size = HO_SIZE[is] || 0.17;
+  el.querySelectorAll('ellipse[fill="#000"]').forEach(e => e.remove());
+  el.querySelectorAll("ellipse").forEach(e => { const f = e.getAttribute("fill") || "", ry = +e.getAttribute("ry") || 0, cy = +e.getAttribute("cy") || 0; if (/^url\(/.test(f) && ry < 16 && cy > 120) e.remove(); });      // its shadow on the ground
+  if (HO_CARRY.test(is)){                                   // nobody hands over a house: a picture card of it
+    const b = measure(el), f = Math.min(104 / b.w, 120 / b.h);
+    el = mk(`<rect x="22" y="20" width="116" height="150" rx="10" fill="#cbbfa8"/><rect x="20" y="17" width="116" height="150" rx="10" fill="#fffdf8" stroke="#b9ae98" stroke-width="3"/><g transform="translate(${r2(78 - (b.x + b.w / 2) * f)} ${r2(92 - (b.y + b.h / 2) * f)}) scale(${r2(f * 1000) / 1000})">${el.outerHTML}</g>`); size = 0.21; }
+  const b = measure(el);
+  return { html: el.innerHTML, box: [b.x, b.y, b.w, b.h], size: size * 1.3 };       // a little larger than life: it must read at phone size
+}
+function handOverPic(spec){
+  spec = spec || {};
+  const one = w => { const sp = typeof w === "string" ? { person: w } : Object.assign({}, w || { person: "you" }), who = sp.person;
+    if (who === "you" && !sp.sex && spec.sex) sp.sex = spec.sex;
+    const cT = traits(sp), c0 = cT.av ? Object.assign({}, cT.av, { L: cT.L }) : cT, ID = { marie: "#2E4A6B", paul: "#3F6FB5", julie: "#C0453B" }[who];
+    if (ID) c0.top = [tone(ID, 0.14), tone(ID, -0.2)];
+    const lg = cT.av ? cT.av.legs : sp.is ? [COL.navy, COL.charcoal, COL.brown][hashStr(c0.kind + c0.topName + c0.style) % 3] : who === "paul" ? COL.navy : who === "julie" ? COL.charcoal : who === "marie" ? ["#77614f", "#5a4738"] : ["#5a6272", "#3f4654"];
+    const tag = who === "you" ? (spec.names && spec.names.you || "") : who ? (spec.names && spec.names[who]) || WHO_NAME[who] || "" : "";
+    return { c: c0, lg, tag }; };
+  const A = one(spec.from || "marie"), B = one(spec.to || "you"), w = spec.w === 160 ? 160 : 340;
+  return FIG.handOver(A.c, B.c, { w, legsA: A.lg, legsB: B.lg, tagA: A.tag, tagB: B.tag, thing: heldThing(spec.thing), still: !!spec.still, phase: spec.phase });
+}
 /* the teacher on the stage (see FIG.tutor): Marie as the course knows her (her skin, her brown hair to the shoulder, her navy) */
 /* PICS.setLearner(spec): the learner's own figure (the spec of the avatar maker: an object, or the string PICS.avatarString gives; null:
    the usual learner again). From then on every picture of "you" is that person. PICS.learner(): the spec now set, or null */
@@ -4458,6 +4580,6 @@ function learnerCardPic(name, sex){ name = String(name || ""); const cT = traits
   try { if (typeof LEARNER_TAG === "object" && LEARNER_TAG){ LEARNER_TAG.w = w; LEARNER_TAG.h = h; } } catch (e){}
   return g; }
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
-window.PICS = { _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard,
+window.PICS = { _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key, group, fingers, dog, car, action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard, handOver: handOverPic,
   things: Object.keys(THING).filter(k => !/^(book|apple|pen|shoe|flag|card|boy|girl)$/.test(k)) };
 })();

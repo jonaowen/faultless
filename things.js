@@ -1608,11 +1608,179 @@ function kitchen(k){
   const B = k.has("wooden") ? C.wood : k.cn && C[k.cn] ? C[k.cn] : P("#9CC7B4", "#6FA08B"), TOP = P("#F3EEE3", "#CFC6B4"), ST = C.steel;
   let s = ground(80, 172, 76, 6, 0.16) + fill(rrd(6, 20, 148, 92, 4), "#F7F1E4") + [...Array(7)].map((_, i) => line(`M6 ${84 + i * 4}H154`, "#E6DCC6", 0.8)).join("") +
     [8, 44, 116].map(x => solid(rrd(x, 22, 34, 40, 3), B, { k: 3, rim: 1 }) + rect(x + (x < 80 ? 26 : 4), 48, 3, 8, ST.s, 1.5)).join("") +
-    solid(rrd(80, 22, 34, 40, 3), B, { k: 3, rim: 1 }) + rect(84, 48, 3, 8, ST.s, 1.5);
+    fill(rrd(79, 20, 36, 46, 2), "#FFFFFF") + fill(rrd(82, 23, 30, 40, 1), "#BFE3F6") + fill("M82 50Q92 44 100 48Q106 44 112 47V63H82Z", "#A8D49A") + rect(96, 23, 2.4, 40, "#FFFFFF") + rect(82, 41, 30, 2.4, "#FFFFFF") + rect(77, 64, 40, 4, "#E8E0D0", 1.5);      // T5: a window between the cupboards
+  s = fill("M2 150H158V176Q158 180 154 180H6Q2 180 2 176Z", "#D9CBB0") + [14, 38, 62, 86, 110, 134].map((x, i) => fill(poly([[x, 166], [x + 24, 166], [x + 30, 180], [x + 4, 180]]), i % 2 ? "#E8DCC4" : "#CDBD9F")).join("") + s;      // T5: the floor, tiled
   s += solid(rrd(4, 110, 96, 58, 3), B, { k: 4, rim: 1 }) + [28, 76].map(x => rect(x - 12, 126, 24, 3, ST.s, 1.5)).join("") + line("M52 114V166", B.s, 1.6) + fill(rrd(2, 104, 100, 8, 2), TOP.l) +
     fill(rrd(18, 104, 36, 5, 2), "#AFC4D6") + line("M36 104V88Q36 82 44 82H48", ST.s, 3.6) + line("M36 104V88Q36 82 44 82H48", ST.l, 1.4);
   s += solid(rrd(102, 104, 54, 64, 3), C.white, { k: 4, rim: 1 }) + fill(rrd(108, 128, 42, 32, 3), "#2E3442") + rect(108, 116, 42, 5, ST.s, 2) + [114, 126, 138].map(x => circ(x, 110, 2.4, "#2E3442")).join("") +
     solid("M108 104V92Q108 88 114 88H134Q140 88 140 92V104Z", C.red, { k: 3, rim: 1 }) + line("M140 94H152", "#2E3442", 3) + [116, 124, 132].map((x, i) => line(`M${x} 84q-5 -7 0 -14t0 -14`, "#A9B0C0", 2.2, `opacity="${i === 1 ? 0.75 : 0.5}"`)).join("");
+  return s;
+}
+
+/* ================================================================ T5: cake, pizza, banana, apple, pen, letter, metro, flag, weather ================================================================
+   (the last of people.js's own drawings of things; references refs/things/T5) */
+/* un gâteau: a round layer cake on a white cake plate, seen a little from above: the cream icing on top, its drips over the side, the side in
+   the sponge's colour. looks: (with strawberries: the usual one) | "chocolate" | "with candles" | "a slice" (a wedge on a small plate: its
+   layers) | "round" | a colour (the icing) */
+function cake(k){
+  const choc = k.has("chocolate"), I = k.cn && C[k.cn] ? C[k.cn] : choc ? P("#7A4A2E", "#55301C") : P("#FBF3E4", "#E3D3B6"), SP = choc ? P("#8E5A38", "#6A3F24") : P("#F1C77A", "#D6A456"),
+    JAM = P("#E0505A", "#B23440"), PL = C.white, SB = P("#E2403F", "#B32A2D");
+  const berry = (x, y, s) => solid(blob([[x - 6 * s, y - 3 * s], [x, y - 6 * s], [x + 6 * s, y - 3 * s], [x + 3 * s, y + 6 * s], [x - 3 * s, y + 6 * s]]), SB, { k: 1.6 * s, rim: 0.8 }) +
+    fill(poly([[x - 5 * s, y - 4 * s], [x, y - 8.5 * s], [x + 5 * s, y - 4 * s], [x, y - 5.5 * s]]), "#4F9A4C") + [[-2, 0], [2, 1], [0, 3.4]].map(([dx, dy]) => circ(x + dx * s, y + dy * s, 0.6 * s, "#F7D36A")).join("");
+  if (k.has("slice")){
+    /* a wedge on its plate: the top (icing), the cut face toward us (sponge, cream, jam, sponge), the curved back */
+    let s = ground(84, 160, 62, 8) + `<ellipse cx="80" cy="150" rx="66" ry="17" fill="${PL.s}"/><ellipse cx="80" cy="147" rx="66" ry="17" fill="${PL.l}"/><ellipse cx="80" cy="147" rx="46" ry="11" fill="${mix(PL.l, PL.s, 0.35)}"/>`;
+    const A = [24, 102], B2 = [100, 62], T0 = [140, 104], h = 46, dn = p => [p[0], p[1] + h];
+    s += fill(poly([B2, T0, dn(T0), dn(B2)]), mix(SP.s, INK, 0.1));                                                          // the back, in shade
+    s += fill(poly([A, T0, dn(T0), dn(A)]), SP.l);                                                                           // the cut face
+    const band = (t0, t1, c) => fill(poly([[A[0], A[1] + h * t0], [T0[0], T0[1] + h * t0], [T0[0], T0[1] + h * t1], [A[0], A[1] + h * t1]]), c);
+    s += band(0.38, 0.5, "#FFF6E6") + band(0.5, 0.58, JAM.l) + band(0, 0.1, I.s) + line(`M${A[0]} ${A[1] + h}L${T0[0]} ${T0[1] + h}`, SP.s, 1.4, 'opacity=".5"');
+    s += fill(poly([A, B2, T0]), I.l) + line(`M${A[0] + 1} ${A[1]}L${B2[0]} ${B2[1] + 0.6}`, I.r, 1.4);                    // the top
+    return s + (choc ? fill(cd(88, 88, 5), "#F3E7D3") : berry(90, 86, 1.5));
+  }
+  const cx = 80, top = 78, rx = 58, ry = 18, h = 50, side = `M${cx - rx} ${top}V${top + h}A${rx} ${ry} 0 0 0 ${cx + rx} ${top + h}V${top}Z`;
+  let s = ground(84, 162, 76, 9) + `<ellipse cx="80" cy="${top + h + 10}" rx="${rx + 14}" ry="${ry + 5}" fill="${PL.s}"/><ellipse cx="80" cy="${top + h + 6}" rx="${rx + 14}" ry="${ry + 5}" fill="${PL.l}"/>`;
+  s += solid(side, SP, { k: 10, rim: 1.4 });
+  /* the icing poured over the edge: a wavy hem of drips round the near side */
+  let drip = `M${cx - rx - 1} ${top}`; const N = 9;
+  for (let i = 0; i <= N; i++){ const a = Math.PI - i / N * Math.PI, x = cx + (rx + 1) * Math.cos(a), y = top + ry * Math.sin(a), L = [10, 18, 9, 22, 12, 16, 8, 20, 11, 14][i]; drip += `L${r1(x - 3)} ${r1(y + L)}Q${r1(x)} ${r1(y + L + 5)} ${r1(x + 3)} ${r1(y + L)}L${r1(x + 3)} ${r1(y + 2)}`; }
+  drip += `L${cx + rx + 1} ${top}Z`;
+  s += solid(drip, I, { k: 3, rim: 1 }) + `<ellipse cx="80" cy="${top}" rx="${rx + 1}" ry="${ry}" fill="${I.l}"/>` + `<ellipse cx="70" cy="${top - 3}" rx="${rx * 0.6}" ry="${ry * 0.48}" fill="${I.r}" opacity=".55"/>`;
+  if (k.has("candles")) [[50, 74], [70, 68], [92, 70], [110, 76], [80, 84]].forEach(([x, y], i) => { const c = [C.blue, C.pink, C.yellow, C.green, C.purple][i];
+    s += rect(x - 2.6, y - 26, 5.2, 26, c.l) + rect(x + 0.4, y - 26, 2.2, 26, c.s) + `<path d="M${x} ${y - 38}Q${x + 5} ${y - 31} ${x} ${y - 28}Q${x - 5} ${y - 31} ${x} ${y - 38}Z" fill="#F7B53A"/><ellipse cx="${x}" cy="${y - 31}" rx="1.6" ry="2.6" fill="#FFF3C4"/>`; });
+  else if (choc) [[56, 74], [80, 70], [104, 74], [70, 84], [94, 84]].forEach(([x, y]) => { s += fill(cd(x, y, 5.5), "#F3E7D3") + fill(cd(x - 1, y - 1.5, 2.4), "#FFFFFF"); });
+  else [[52, 76], [74, 70], [98, 72], [114, 80], [64, 86], [90, 86]].forEach(([x, y]) => { s += berry(x, y, 1.15); });
+  return s;
+}
+/* une pizza: a Margherita on its board, seen from above at an angle: the raised golden rim, the tomato, the melted cheese in pools, basil.
+   looks: "round" (the usual one) | "a slice" | "with tomatoes" (slices of tomato) | "with mushrooms" | "small" | "in a box" | a colour (the crust) */
+function pizza(k){
+  const CR = k.cn && C[k.cn] ? C[k.cn] : P("#E8B65E", "#C48B3A"), TOM = P("#D9452F", "#B03222"), CH = P("#FBE7A8", "#EFCD72"), BA = P("#3F9A4A", "#2A7536");
+  const tops = (cx, cy, rx, ry, clipD) => { let t = ""; const pts = [[-0.45, -0.3], [0.2, -0.45], [0.5, 0.05], [-0.1, 0.25], [-0.55, 0.3], [0.3, 0.45], [0.02, -0.05]];
+    pts.forEach(([a, b], i) => { const x = cx + a * rx, y = cy + b * ry; t += fill(blob([[x - 11, y], [x - 6, y - 6], [x + 4, y - 7], [x + 11, y - 1], [x + 6, y + 6], [x - 5, y + 6]]), CH.l) + fill(cd(x - 3, y - 2, 3), "#FFF6D6"); });
+    if (k.has("tomatoes")) [[-0.25, -0.05], [0.3, -0.2], [0.15, 0.3], [-0.4, 0.38]].forEach(([a, b]) => { const x = cx + a * rx, y = cy + b * ry; t += `<ellipse cx="${r1(x)}" cy="${r1(y)}" rx="9" ry="6" fill="#C72E22"/><ellipse cx="${r1(x)}" cy="${r1(y)}" rx="6.5" ry="4" fill="#E8604A"/>`; });
+    if (k.has("mushrooms")) [[-0.3, 0.05], [0.35, -0.05], [0.05, 0.38], [-0.05, -0.38], [0.45, 0.35]].forEach(([a, b]) => { const x = cx + a * rx, y = cy + b * ry; t += fill(`M${r1(x - 8)} ${r1(y + 1)}Q${r1(x)} ${r1(y - 9)} ${r1(x + 8)} ${r1(y + 1)}Z`, "#C9B49A") + rect(x - 2.6, y, 5.2, 6, "#E9DCC6", 2); });
+    [[-0.15, -0.25], [0.38, 0.18], [-0.35, 0.12]].forEach(([a, b], i) => { const x = cx + a * rx, y = cy + b * ry; t += fill(blob([[x - 7, y + 2], [x - 2, y - 4], [x + 7, y - 3], [x + 2, y + 3]]), i % 2 ? BA.l : BA.s) + line(`M${x - 5} ${y + 1}L${x + 5} ${y - 2.5}`, "#7DC07F", 0.8); });
+    return clipped(clipD, t); };
+  if (k.has("slice")){
+    const T = [80, 162], L = [24, 46], R = [140, 52], rim = `M${L[0]} ${L[1]}Q80 22 ${R[0]} ${R[1]}L${R[0] - 6} ${R[1] + 12}Q80 38 ${L[0] + 6} ${L[1] + 12}Z`, face = `M${T[0]} ${T[1]}L${L[0] + 4} ${L[1] + 8}Q80 32 ${R[0] - 4} ${R[1] + 8}Z`;
+    return ground(86, 168, 46, 6) + fill(`M${T[0]} ${T[1] + 4}L${L[0] + 4} ${L[1] + 12}Q80 36 ${R[0] - 4} ${R[1] + 12}Z`, CR.s) + fill(face, TOM.l) + tops(82, 86, 46, 50, face) +
+      solid(rim, CR, { k: 3, rim: 1 }) + fill(`M70 160Q76 172 72 178Q80 176 82 166Z`, CH.l);
+  }
+  const box = k.has("box"), cx = 80, cy = box ? 104 : 100, rx = 66, ry = 42;
+  let s = box ? fill(poly([[8, 126], [40, 70], [120, 70], [152, 126]]), "#C79A62") + fill(poly([[8, 126], [152, 126], [152, 140], [8, 140]]), "#A87C46") + fill(poly([[40, 70], [120, 70], [128, 26], [32, 26]]), "#D9AE74") + line("M34 28H126", "#E8C590", 1.4)
+    : ground(84, 150, 72, 10) + `<ellipse cx="${cx}" cy="${cy + 8}" rx="${rx + 4}" ry="${ry + 4}" fill="#B98A52"/><ellipse cx="${cx}" cy="${cy + 4}" rx="${rx + 4}" ry="${ry + 4}" fill="#D9AE74"/>`;
+  s += `<ellipse cx="${cx}" cy="${cy + 2}" rx="${rx}" ry="${ry}" fill="${CR.s}"/><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${CR.l}"/><ellipse cx="${cx - 6}" cy="${cy - 6}" rx="${rx - 14}" ry="${ry - 12}" fill="${CR.r}" opacity=".45"/>`;
+  const sauce = `M${cx - rx + 9} ${cy}A${rx - 9} ${ry - 7} 0 1 0 ${cx + rx - 9} ${cy}A${rx - 9} ${ry - 7} 0 1 0 ${cx - rx + 9} ${cy}Z`;
+  s += fill(sauce, TOM.l) + tops(cx, cy, rx - 9, ry - 7, sauce);
+  return s;
+}
+/* une banane: one ripe banana lying on its side, its curve upward, the stalk at one end, the dark tip at the other; the ridges along it.
+   looks: "yellow" (the usual one) | "green" | "spotted" (ripe, brown spots) | "peeled" (the peel open in three flaps, the pale fruit) | a colour */
+function banana(k){
+  const green = k.has("green"), Y = green ? P("#B6CC52", "#86A034") : k.cn && C[k.cn] && k.cn !== "yellow" ? C[k.cn] : P("#F6D445", "#D9A926"), FR = P("#FBF1CF", "#E9D59A");
+  if (k.has("peeled")){
+    const s0 = ground(82, 170, 40, 6);
+    const flap = (pts, ws) => { const d = tube(pts, ws); return solid(d, Y, { k: 3, rim: 1 }); };
+    return s0 + flap([[78, 120], [56, 108], [36, 118], [26, 134]], [16, 14, 10, 4]) + flap([[84, 120], [106, 108], [126, 118], [136, 134]], [16, 14, 10, 4]) +
+      solid(tube([[80, 168], [80, 140], [79, 96], [77, 54], [75, 30]], [12, 22, 24, 21, 12]), FR, { k: 4, rim: 1 }) + line("M75 40Q78 90 79 150", FR.s, 1.2, 'opacity=".5"') +
+      flap([[80, 124], [81, 140], [81, 160]], [24, 20, 16]) + rect(76, 158, 9, 14, "#7A5A2E", 3);
+  }
+  const pts = [[22, 74], [36, 112], [70, 134], [108, 126], [136, 90], [142, 60]], ws = [4, 22, 32, 30, 20, 7];
+  let s = ground(86, 150, 60, 8) + solid(tube(pts, ws), Y, { k: 6, rim: 1.4 }) + line("M30 90Q46 124 80 130Q116 126 136 84", Y.s, 1.6, 'opacity=".55"') + line("M28 80Q40 110 70 120Q106 120 130 82", Y.r, 2, 'opacity=".8"');
+  s += fill(blob([[17, 66], [24, 64], [27, 76], [21, 80]]), "#4A3A26");
+  s += fill(tube([[138, 66], [144, 52], [150, 44]], [8, 7, 6]), green ? "#6A7E2C" : "#8A6A34") + fill(rrd(146, 40, 8, 7, 2), "#5A4424");
+  if (k.has("spotted")) [[48, 118], [62, 126], [84, 128], [100, 124], [118, 112], [72, 120], [92, 118], [128, 96], [40, 106]].forEach(([x, y], i) => { s += `<ellipse cx="${x}" cy="${y}" rx="${2 + (i % 3)}" ry="${1.5 + (i % 2)}" fill="#7A5226" opacity=".8"/>`; });
+  return s;
+}
+/* une pomme: a round apple, a dimple at the top, the stalk and one leaf; its colour on the lit side, a little deeper in shade, a highlight.
+   looks: "red" (the usual one) | "green" | "yellow" | "with a leaf" | "bitten" (a bite out of the right side: the white flesh) | a colour */
+function apple(k){
+  const A = k.has("green") ? P("#9CC84E", "#6E9A32") : k.has("yellow") ? P("#F2D158", "#CDA632") : k.cn && C[k.cn] ? C[k.cn] : P("#DA3B33", "#A82722"), LF = P("#62AE55", "#3F8644");
+  const d = "M80 62C68 52 46 50 34 64C20 80 22 112 36 134C46 150 60 160 72 158C76 157 78 155 80 155C82 155 84 157 88 158C100 160 114 150 124 134C138 112 140 80 126 64C114 50 92 52 80 62Z";
+  let s = ground(84, 164, 52, 7) + solid(d, A, { k: 9, rim: 1.6 }) + `<ellipse cx="56" cy="84" rx="9" ry="15" transform="rotate(25 56 84)" fill="#FFFFFF" opacity=".42"/>` +
+    fill("M70 64Q80 70 90 64Q84 68 80 69Q76 68 70 64Z", mix(A.s, INK, 0.25));
+  if (k.has("bitten")) s += clipped(d, fill("M142 82C122 86 110 102 114 118C116 130 126 140 142 144Z", "#F7EFD2") + line("M140 84C122 90 112 104 115 118C117 129 126 138 140 142", "#E3D4A0", 2.4) + fill(cd(124, 104, 2), "#5A3A22") + fill(cd(126, 120, 2), "#5A3A22"));
+  s += line("M80 66Q79 52 84 40", "#6B4A2A", 4.4);
+  if (k.has("leaf") || !k.S.trim() || k.cn) s += solid("M84 46C92 32 112 28 124 34C114 46 98 52 84 46Z", LF, { k: 2.6, rim: 0.8 }) + line("M86 45Q104 38 120 35", LF.s, 1);
+  return s;
+}
+/* un stylo: a ballpoint pen lying across the card, its point down at the left: the barrel, the grip, the cap on the back with its clip.
+   looks: a colour (the barrel: blue the usual one, black, red, silver ...) | "short" | "long" | "thick" */
+function pen(k){
+  const B = k.cn && C[k.cn] ? C[k.cn] : C.blue, len = k.has("short") ? 92 : k.has("long") ? 136 : 118, w = k.has("thick") ? 20 : 13, a = -32 * RAD, cx = 80, cy = 100;
+  const at = (u, v) => [cx + u * Math.cos(a) - v * Math.sin(a), cy + u * Math.sin(a) + v * Math.cos(a)], q = pts => poly(pts.map(([u, v]) => at(u, v)));
+  const L = len / 2, cap = L * 0.62;
+  let s = ground(84, 150, len * 0.5, 6);
+  s += solid(q([[-L + 14, -w / 2], [L, -w / 2], [L + 4, -w / 2 + 3], [L + 4, w / 2 - 3], [L, w / 2], [-L + 14, w / 2]]), B, { k: 3, rim: 1 });
+  s += fill(q([[-L + 14, -w / 2 + 1], [-L + 34, -w / 2 + 1], [-L + 34, w / 2 - 1], [-L + 14, w / 2 - 1]]), mix(B.s, INK, 0.35));          // the grip
+  s += fill(q([[-L + 14, -w / 2 + 1], [-L, -1.2], [-L - 4, 0], [-L, 1.2], [-L + 14, w / 2 - 1]]), C.silver.l) + fill(q([[-L + 4, -0.8], [-L - 4, 0], [-L + 4, 0.8]]), "#3A3F4C");  // the cone and the point
+  s += fill(q([[cap, -w / 2 - 0.6], [L + 4, -w / 2 - 0.6], [L + 4, w / 2 + 0.6], [cap, w / 2 + 0.6]]), B.s) + fill(q([[cap + 2, -w / 2 - 3.2], [L - 2, -w / 2 - 3.2], [L - 2, -w / 2 - 0.4], [cap + 8, -w / 2 - 0.4]]), C.silver.l);  // the cap, its clip
+  s += line(`M${at(-L + 36, -w / 2 + 2.4).join(" ")}L${at(cap - 2, -w / 2 + 2.4).join(" ")}`, "#FFFFFF", 1.6, 'opacity=".55"');
+  return s;
+}
+/* une lettre: a letter: the sheet written by hand, folded, half out of its envelope; the envelope with a stamp (a picture on it, no word).
+   looks: a colour (the envelope) | "open" */
+function letter(k){
+  const E = k.cn && C[k.cn] ? C[k.cn] : P("#F6EFDF", "#DCCFB2"), PA = C.paper;
+  const scrawl = (x, y, w) => { let d = `M${x} ${y}`; for (let i = 0; i < w / 6; i++) d += `q1.6 -3.6 3 0t3 0`; return line(d, "#3757A8", 1.3, 'opacity=".85"'); };
+  let s = ground(84, 168, 66, 8);
+  s += `<g transform="rotate(-8 70 70)">` + solid(rrd(30, 18, 86, 104, 3), PA, { k: 3, rim: 1 }) + line("M30 70H116", PA.s, 1, 'opacity=".6"') + [32, 42, 52, 62, 80, 90].map((y, i) => scrawl(40, y, [62, 66, 58, 44, 64, 50][i])).join("") + `</g>`;
+  const env = rrd(16, 92, 128, 70, 4);
+  s += solid(env, E, { k: 4, rim: 1.2 }) + fill("M16 96L80 132L144 96", "none") + line("M18 94L80 130L142 94", E.s, 1.6) + line("M18 160L66 122M142 160L94 122", E.s, 1.2, 'opacity=".6"');
+  s += rect(114, 100, 22, 26, "#FFFFFF", 1) + rect(116, 102, 18, 22, "#5F9FD3") + fill("M116 124L124 112L129 118L134 110V124Z", "#3F8A4E") + circ(129, 107, 2.4, "#F7D36A") +
+    line("M100 104q4 -3 8 0t8 0M100 110q4 -3 8 0t8 0", "#7A7F8C", 1, 'opacity=".7"');                                                         // the stamp and its postmark
+  return s;
+}
+/* le métro: a Paris métro train coming into a station: the vaulted tunnel of white bevelled tiles, the train's front (a large windscreen,
+   two lamps lit), the platform's edge with its line. looks: a colour (the train's front; white banded in teal, as the MF 01, the usual one) */
+function metro(k){
+  const T = k.cn && C[k.cn] ? C[k.cn] : P("#F2F4F7", "#C3CAD6"), BL = P("#2FA89B", "#1F7E74"), TI = P("#F7F5EE", "#DCD6C8");      // (the MF 01: white, its front banded in teal: refs T5 metro_1)
+  const vault = "M12 176V82A68 58 0 0 1 148 82V176Z", mouth = "M44 176V100A36 30 0 0 1 116 100V176Z";
+  let s = clipped(vault, fill(vault, TI.l) + [...Array(14)].map((_, i) => line(`M0 ${30 + i * 10}H160`, TI.s, 1.1, 'opacity=".8"')).join("") +
+    [...Array(14)].map((_, i) => [...Array(9)].map((_, j) => line(`M${j * 20 + (i % 2) * 10} ${30 + i * 10}v10`, TI.s, 1.1, 'opacity=".8"')).join("")).join("") +
+    fill("M12 82A68 58 0 0 1 148 82V92A68 58 0 0 0 12 92Z", mix(TI.s, INK, 0.08)) + fill(mouth, "#20232E"));
+  /* the train's front in the tunnel's mouth */
+  const F = "M52 176V108Q52 92 66 90H94Q108 92 108 108V176Z";
+  s += solid(F, T, { k: 5, rim: 1.2 }) + fill("M58 112Q58 98 68 97H92Q102 98 102 112V128H58Z", "#2E3B52") + fill("M60 112Q60 100 69 99H78L66 126H60Z", "#5A6E8E", 'opacity=".6"') +
+    rect(52, 136, 56, 9, BL.l) + rect(52, 141, 56, 4, BL.s) + circ(61, 152, 4.2, "#FFF3B0") + circ(99, 152, 4.2, "#FFF3B0") + `<circle cx="61" cy="152" r="9" fill="#FFF3B0" opacity=".3"/><circle cx="99" cy="152" r="9" fill="#FFF3B0" opacity=".3"/>` +
+    rect(70, 160, 20, 10, "#3A3F4C", 2) + rect(64, 100, 32, 5, "#F0C64A", 1.5);
+  /* the platform in front, at the left, its edge line; the rails at the right */
+  s += fill("M4 154H40L46 182H4Z", C.paving.s) + fill("M4 150H40L44 178H4Z", C.paving.l) + rect(4, 150, 37, 3.4, "#F2C94C");
+  return s;
+}
+/* un drapeau: the French flag on its pole, waving: blue at the pole, white, red; the light on its folds. looks: "French" (the usual one) */
+function flag(k){
+  const wave = (x, y) => [x, y + 8 * Math.sin(x / 120 * Math.PI * 2 * 0.85)], X0 = 40, X1 = 146, Y0 = 34, Y1 = 104;
+  const band = (a, b) => { const top = [], bot = []; for (let i = 0; i <= 10; i++){ const x = a + (b - a) * i / 10; top.push(wave(x, Y0)); bot.push(wave(x, Y1)); } return poly(top.concat(bot.reverse())); };
+  const w = (X1 - X0) / 3, B = P("#2E4FA3", "#1F377A"), W = P("#FBFAF4", "#D8D6CC"), R = P("#E0413A", "#B32B27");
+  let s = ground(40, 176, 22, 4) + rect(34, 22, 6, 154, "#9AA1AC") + rect(34, 22, 2.4, 154, "#C9CFD8") + circ(37, 20, 5, "#E8C150") + `<ellipse cx="37" cy="174" rx="12" ry="4" fill="#6B7280"/>`;
+  s += fill(band(X0, X0 + w), B.l) + fill(band(X0 + w, X0 + 2 * w), W.l) + fill(band(X0 + 2 * w, X1), R.l);
+  const g = uid(), stops = [...Array(11)].map((_, i) => { const x = X0 + (X1 - X0) * i / 10, v = Math.cos(x / 120 * Math.PI * 2 * 0.85); return `<stop offset="${i / 10}" stop-color="${v > 0 ? "#FFFFFF" : INK}" stop-opacity="${r1(Math.abs(v) * (v > 0 ? 0.18 : 0.16) * 100) / 100}"/>`; }).join("");
+  s += `<linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="${X0}" y1="0" x2="${X1}" y2="0">${stops}</linearGradient>` + fill(band(X0, X1), `url(#${g})`);
+  return s;
+}
+/* le temps (the weather), as pictures: the sky in its window, the ground under it. looks: "sun" / "sunny" (the usual one) | "rain" / "rainy"
+   (a dark cloud, slanting rain, puddles with rings) | "snow" / "snowy" (falling snow, snow on the ground and on a little fir) | "cloud" /
+   "cloudy" (a grey-blue sky full of white clouds) | "hot" (a blazing sun, a red thermometer high) | "cold" (snow, a blue thermometer low) */
+function weather(k){
+  const rain = k.has("rain", "rainy", "raining"), snow = k.has("snow", "snowy", "snowing", "cold"), cloudy = k.has("cloud", "cloudy", "grey"), hot = k.has("hot"), cold = k.has("cold");
+  const A = skyArch(rain ? ["#8E9AAE", "#C4CCD8"] : snow ? ["#C9D3DE", "#EEF2F6"] : cloudy ? ["#9DB6CC", "#D6E2EC"] : hot ? ["#F7C35A", "#FBE7B0"] : ["#6FBDE8", "#CDEAF8"]);
+  const G = snow ? P("#FFFFFF", "#D7E0EA") : hot ? P("#E9C77A", "#C9A55A") : C.grass;
+  let s = A.s + lawn(140, G);
+  const bigCloud = (x, y, sc, col) => fill(blob([[x - 34 * sc, y + 10 * sc], [x - 30 * sc, y - 4 * sc], [x - 14 * sc, y - 12 * sc], [x, y - 24 * sc], [x + 18 * sc, y - 16 * sc], [x + 34 * sc, y - 4 * sc], [x + 36 * sc, y + 10 * sc]]), col);
+  const sun = (x, y, r, n) => [...Array(n)].map((_, i) => { const a = i / n * 2 * Math.PI; return line(`M${r1(x + Math.cos(a) * (r + 6))} ${r1(y + Math.sin(a) * (r + 6))}L${r1(x + Math.cos(a) * (r + 16))} ${r1(y + Math.sin(a) * (r + 16))}`, "#F5A623", 5); }).join("") + `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="#FCD45A" opacity=".5"/>` + solid(cd(x, y, r), P("#FCD34D", "#F5A623"), { k: r * 0.2, rim: 1.4 });
+  if (rain){
+    s += clipped(A.d, bigCloud(70, 62, 1.5, "#6E7787") + bigCloud(92, 54, 1.1, "#8790A0") + [...Array(18)].map((_, i) => { const x = 20 + ((i * 53 + (i * i * 7) % 29) % 124), y = 78 + ((i * 31 + (i * i) % 17) % 58); return line(`M${x} ${y}l-5 12`, "#3F6FB5", 2.6, 'opacity=".85"'); }).join(""));
+    s += `<ellipse cx="54" cy="160" rx="22" ry="5" fill="#8FB4D8"/><ellipse cx="54" cy="160" rx="12" ry="2.6" fill="none" stroke="#DCEAF6" stroke-width="1.2"/><ellipse cx="114" cy="166" rx="18" ry="4" fill="#8FB4D8"/><ellipse cx="114" cy="166" rx="9" ry="2" fill="none" stroke="#DCEAF6" stroke-width="1.2"/>`;
+  } else if (snow){
+    s += clipped(A.d, bigCloud(78, 46, 1.2, "#DDE3EA") + [...Array(26)].map((_, i) => { const x = 18 + ((i * 47 + (i * i * 11) % 37) % 124), y = 56 + ((i * 29 + (i * i * 5) % 23) % 84), r = 1.8 + (i * 7 % 3); return circ(x, y, r, "#FFFFFF"); }).join(""));
+    s += fill("M112 150L124 112L136 150Z", "#3F7E55") + fill("M116 132L124 106L132 132Z", "#4C9564") + fill("M118 122L124 104L130 122Z", "#FFFFFF") + fill("M112 150Q124 142 136 150Z", "#FFFFFF") + rect(122, 150, 4, 8, "#7A5A3A");
+  } else if (cloudy){
+    s += clipped(A.d, sun(110, 50, 14, 0) + bigCloud(56, 64, 1.1, "#F4F6F9") + bigCloud(104, 70, 1.3, "#FFFFFF") + bigCloud(78, 104, 0.9, "#E8ECF1"));
+  } else s += clipped(A.d, sun(80, 72, hot ? 26 : 22, 12)) + (hot ? "" : clipped(A.d, bigCloud(126, 108, 0.5, "#FFFFFF")));
+  if (hot || cold){ const c = hot ? "#E0413A" : "#3F7FD0", lv = hot ? 40 : 120;                // the thermometer at the right
+    s += rect(126, 30, 18, 124, "#FFFFFF", 9) + rect(130, 34, 10, 112, "#E6EAF0", 5) + rect(132, lv, 6, 150 - lv, c, 3) + circ(135, 150, 9, c) + [50, 70, 90, 110, 130].map(y => rect(141, y, 5, 2, "#9AA1AC")).join(""); }
   return s;
 }
 
@@ -1676,7 +1844,7 @@ function lookOf(spec){
   const cn = S.trim().split(" ").find(x => C[x] && !/^(cream|stone|brick|wood|tile|slate|glass|leaf|grass|paper|steel|dark|gold|paving)$/.test(x));
   return { S, cn, has: (...w) => w.some(x => S.indexOf(" " + x + " ") >= 0) };
 }
-const DRAW = { house, train, book, car, town, restaurant, bus, phone, heart, coffee, door, photo, street, dog, cat, horse, fish, shoe, bread, soup, bottle, table, box, newspaper, radio, computer, leaf, mountain, sea, shop, glass, plate, ball, hat, flower, tomato, cheese, lamp, key, shirt, trousers, dress, chair, bag, tree, bicycle, motorbike, plane, window: windowPic, park, beach, garden, station, kitchen };
+const DRAW = { house, train, book, car, town, restaurant, bus, phone, heart, coffee, door, photo, street, dog, cat, horse, fish, shoe, bread, soup, bottle, table, box, newspaper, radio, computer, leaf, mountain, sea, shop, glass, plate, ball, hat, flower, tomato, cheese, lamp, key, shirt, trousers, dress, chair, bag, tree, bicycle, motorbike, plane, window: windowPic, park, beach, garden, station, kitchen, cake, pizza, banana, apple, pen, letter, metro, flag, "french flag": flag, weather };
 const PLACED = /^(in an open box|on a table|under a table)$/;
 const FOOT = { car: 140, book: 152, train: 160, bus: 146, heart: 170, coffee: 160, photo: 168, fish: 100, shoe: 146, bread: 154, soup: 160, box: 160, plate: 150, ball: 166, hat: 150, key: 120, plane: 110, tomato: 160, cheese: 156 };      // where each stands in its card (the line a small one shares with a big one)
 /* T4: a white animal or a white shirt on the cream card: no outline in this style, so it gets form and contrast instead: a wider, cooler
