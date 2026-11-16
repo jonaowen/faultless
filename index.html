@@ -371,7 +371,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
   <div class="row">Listening <select id="optEngine"><option value="app">In-app listener (on the phone)</option><option value="google">Chrome's online recogniser (old)</option></select></div>
   <div class="row"><label><input type="checkbox" id="optKeepAudio"> Keep the audio of each answer in the log (stays on this phone until you download the log)</label></div>
   <div class="row">Learner's first name <input type="text" id="optName" maxlength="30" autocomplete="off" autocapitalize="words" spellcheck="false" style="width:11em"></div>
-  <div class="row">Learner's gender <select id="optGender"><option value="m">Man</option><option value="f">Woman</option></select></div>
+  <div class="row">Learner's gender <select id="optGender"><option value="m">Man</option><option value="f">Woman</option><option value="n">Neutral</option></select></div>
   <div class="row">Voice <select id="optVoice"></select></div>
   <div class="row">Pause between units <input type="range" id="optPause" min="150" max="1200" step="50"> <span id="pauseVal"></span> ms</div>
   <div class="row">Speech rate <input type="range" id="optRate" min="0.6" max="1.2" step="0.05"> <span id="rateVal"></span></div>
@@ -414,7 +414,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.72";      // must equal version.json
+const APP_VERSION="2026-11-16.73";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -3160,14 +3160,21 @@ const POSE = {
 function armFor(side){ if(side==="L"||side==="R") return side; if(side==="self") return "L"; if(side==="you") return "R"; if(side==="pL") return "L"; if(side==="pR") return "R";
   const i=+side.slice(1), n=curScene && curScene.row ? curScene.row.length : 2; return i < n/2 ? "L" : "R"; }
 function pointPose(side){            // reach towards the picture frame on that side, index finger extended
-  if(side==="self") return {L:{x:168,y:468, shape:"point", rot:-90, scale:1}};   // pointing to herself: her finger on her name tag
+  if(side==="self") return {L:{x:142,y:518, shape:"point", rot:-115, scale:1.45}};   // pointing to herself: her finger up at her name tag, touching its lower edge under "Ma" (figures 14: larger, from below, the name not covered)
   if(side==="you") return {R:palmUp("R")};                             // to the learner: the open palm held out to them
   const s = armFor(side), S=ARMS.SH[s], T=TARGET[side];
   const dx=T.x-S.x, dy=T.y-S.y, d=Math.hypot(dx,dy), reach=126;
   return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
 }
 
-function rest(){ offering=false; askMark(null); tagLit(null); goldOff(); ARMS.go(POSE.rest, 280); }
+function rest(){ offering=false; askMark(null); tagLit(null); selfTag(false); goldOff(); ARMS.go(POSE.rest, 280); }
+/* (figures 14; Jon, 16 Nov: a tester "couldn't see Marie pointing to her badge") while she points to herself, her own name tag is lit
+   with the ring the other tags have (tagLit's gold, round her tag #claireTag, drawn in her figure), and she glances down at it as her
+   hand arrives, then back at the learner. Taken away by rest(), by any other move of her arms (ARMS.go) and when she points at anything else. */
+function selfTag(on){ const old=document.getElementById("selfTagRing"); if(old) old.remove(); if(!on) return;
+  const t=document.getElementById("claireTag"); if(!t || !t.parentNode || getComputedStyle(t).opacity==="0") return;      // drawn in her figure, over the tag and with its tilt (the page's #tagMark is under her)
+  try{ const r=t.getBBox(), u=r.height/21, q=document.createElementNS("http://www.w3.org/2000/svg","rect"), A={id:"selfTagRing", x:r.x-3*u, y:r.y-3*u, width:r.width+6*u, height:r.height+6*u, rx:5*u, fill:"#f6d35b", "fill-opacity":".28", stroke:"#d4a017", "stroke-width":2.6*u, "pointer-events":"none"};      // u: about a screen pixel (the tag is drawn in its own small units)
+    for(const k in A) q.setAttribute(k, A[k]); if(t.getAttribute("transform")) q.setAttribute("transform", t.getAttribute("transform")); t.parentNode.insertBefore(q, t.nextSibling); }catch(e){} }
 /* The lit name tag (.24): a gold outline round the name tag of the person in that slot (the learner's card, Pierre's or
    Sylvie's picture), with the card's own gold border. Lit for the learner at their own-name turn, and for Pierre or Sylvie
    while they answer their own-name model (with their hand on the tag, askMark). The rule shown: say the name on the lit tag. */
@@ -3181,7 +3188,7 @@ function tagLit(slot){
 const learnerSlot = () => slotOfPerson("you");
 function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
-let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); return armsGo(p,ms); };
+let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); selfTag(false); return armsGo(p,ms); };      // (figures 14) her own tag's ring goes when her hands do anything else
 // Jon 9 Nov 10:27: no pointing at the pictures; the gold border alone shows what the teacher means. Her hand still goes
 // to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
 const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||s==="strip"||/^s\d+$/.test(s);
@@ -3189,7 +3196,7 @@ async function pointAt(who){
   askMark(null);
   // mark:false (the review of 11 Nov, F9): the question is about this picture, but a border on it would give the answer ("Qui danse ?"): nothing is marked
   if(who && typeof who==="object" && who.mark===false && who.kind==="test"){ goldOff(); if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; } return; }
-  const side = sideOf(who); if(side==="none") return;
+  const side = sideOf(who); if(side!=="self") selfTag(false); if(side==="none") return;
   if(ON_SCREEN(side)){ goldOn(side);
     if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
     return; }
@@ -3198,6 +3205,7 @@ async function pointAt(who){
   if(key===lastPoint) return;
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
   armsGo(pose, 340); lastPoint=key;            // the hand moves while she speaks: nothing waits for it
+  if(side==="self"){ selfTag(true); if(scene!=="class"){ gaze("learner"); setTimeout(()=>{ if(scene!=="class") gaze("out"); }, 560); } }      // (figures 14) her tag lit; a glance down to it, then back
 }
 // two scenes: the classroom (teacher and one model learner facing her) and one-to-one (teacher facing the learner)
 let scene="one";

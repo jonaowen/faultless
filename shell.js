@@ -138,6 +138,7 @@ const SHELL = (()=>{
   // before the page's own start handler: the microphone's primer if it is needed; then the place where the rules say, only when that differs
   // from what the page would do by itself
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || b.classList.contains("loading")) return;
+    if(!S.learnerName){ const i=$("hNameIn"), v=cleanName(i ? i.value : ""); if(!v || !nameSet(v)){ e.stopPropagation(); e.preventDefault(); if(i){ i.focus(); i.classList.remove("want"); void i.offsetWidth; i.classList.add("want"); } return; } }
     if(e.isTrusted!==false) uiSound("go");      // the start of a lesson: the brighter sound, on the press itself
     if(MIC.primerNeeded()){ e.stopPropagation(); e.preventDefault(); MIC.primer(); return; }
     beadCtx(); try{ const hm=$("home"); if(hm && !hm.closest("[hidden]")) MV.openCard(hm.querySelector(".hero")); }catch(e){}
@@ -618,13 +619,13 @@ const SHELL = (()=>{
     // the picture library's own "putting on" (when it has one): the figure dressed, its hands bringing the thing to its place
     function putOn(it, after, calm){ if(calm) return ""; try{ if(window.PICS && typeof PICS.putOn==="function"){ const spec = AV.has() && AV.get() ? PICS.avatarParse(AV.get()) : null, g=PICS.putOn(spec, {wear:after, item:it.id});
         if(g && g.outerHTML) return crop(`<svg class="wc-svg" viewBox="0 0 160 190" aria-hidden="true">${g.outerHTML}</svg>`); } }catch(e){} return ""; }
-    function run(it, before, prevWorn){ stop(); const o=$("ward"); if(!o || o.hidden) return; const calm=lessMotion(), after=wearing(), card=o.querySelector(`[data-it="${it.id}"]`);
+    function run(it, before, prevWorn){ stop(); const o=$("ward"); if(!o || o.hidden) return; const calm=lessMotion(), after=wearing(), film=putOn(it, after, calm), card=o.querySelector(`[data-it="${it.id}"]`);
       const dance = it.slot==="dance", tok1=G.tokens||0, tok0=tok1+it.price;
       const cy=(()=>{ try{ const r=card.querySelector(".wthumb").getBoundingClientRect(); return r.top+r.height/2; }catch(e){ return innerHeight; } })();      // the payment's counter away from the card
       const root=el(`<div class="wcer${calm?" calm":""}" style="--pt:${calm ? "38%" : cy>innerHeight*0.5 ? "24%" : "70%"}" role="dialog" aria-modal="true" aria-label="It is yours" tabindex="-1">
         <div class="wc-bg"></div><div class="wc-scrim"></div>
         <div class="wc-pay" aria-hidden="true"><div class="wc-pc"><span class="wc-coin">${tokenIcon()}</span><b class="num wc-n">${calm ? `${tok0}<i>→</i>${tok1}` : tok0}</b><span class="wc-minus">−${it.price}</span></div></div>
-        <div class="wc-stage"><div class="wc-glow"></div><div class="wc-fig wc-f0">${figSvg(before, "wc-svg")}</div><div class="wc-fig wc-f1">${putOn(it, after, calm) || figSvg(after, "wc-svg", dance && !calm ? "celebrate" : "standing")}</div></div>
+        <div class="wc-stage"><div class="wc-glow"></div><div class="wc-fig wc-f0">${figSvg(before, "wc-svg")}</div><div class="wc-fig wc-f1">${film || figSvg(after, "wc-svg", dance && !calm ? "celebrate" : "standing")}</div></div>
         <div class="wc-txt"><div class="wc-lab">It's yours</div><div class="wc-name" lang="fr">${esc(it.fr)}</div><div class="wc-en">${esc(it.en)}</div></div>
         <div class="wc-btns"><button class="btn" id="wcOk">${it.slot==="hand" ? "Carry it now" : it.slot==="dance" || it.slot==="pose" ? "Use it now" : "Wear it now"}</button><button class="btn quiet" id="wcLater">Keep in the wardrobe</button></div>
         <button class="rk-skip" id="wcSkip" hidden>Skip</button><div class="rk-live" aria-live="polite"></div></div>`);
@@ -669,7 +670,9 @@ const SHELL = (()=>{
         c.pt=[gx, gy];
         if(fly){ const b=fly.getBoundingClientRect(), sx=gx-(b.left+b.width/2), sy=gy-(b.top+b.height/2);
           try{ fly.getAnimations().forEach(a=>a.cancel()); fly.animate([{transform:"translateY(-26px) scale(1.12) rotate(-3deg)", opacity:1},{transform:`translate(${sx*.55}px,${sy*.55-60}px) scale(.75) rotate(6deg)`, opacity:1, offset:.55},{transform:`translate(${sx}px,${sy}px) scale(.12) rotate(0)`, opacity:0}], {duration:620, easing:"cubic-bezier(.45,0,.3,1)", fill:"forwards"}); }catch(e){} }
-        SFX.whoosh(); });
+        SFX.whoosh();
+        /* (figures 13) the picture library's own putting-on: its film begins now (put in afresh, as it was given: a new clock) and shows at once */
+        const f1=root.querySelector(".wc-f1"); if(film && f1){ f1.innerHTML=film; root.classList.add("film"); } });
       at(T+600, ()=>{ root.classList.add("on"); SFX.putOn(); const st=root.querySelector(".wc-stage"), sb=st.getBoundingClientRect(); if(c.pt) sparkAt(st, c.pt[0]-sb.left, c.pt[1]-sb.top, 18, {r0:30, r1:90, t0:700, t1:1100, fall:30, cols:["#F3B33D","#FFE9A8","#FFFFFF","#5AA86D","#3F6FB5"]}); });
       at(T+900, ()=>{ root.classList.add("happy"); SFX.cheer(); });
       at(T+1600, ()=>{ root.classList.add("end"); settle(c); }); }
@@ -692,6 +695,7 @@ const SHELL = (()=>{
     // In the order the learner meets them; sel: the element it explains, wherever it lives (and any element marked data-coach="<id>")
     const MARKS = [
       {id:"streak", sel:"#hStreak", when:()=>!!(G.run && G.run.len>=1), text:"A lesson a day keeps your streak."},      // (the streak of streak.patch, on Home: its one rule said once, here)
+      {id:"figure", sel:"#tabYou", when:()=>G.furthest>=1 && !!G.makerOffer, text:"Make your figure look like you."},      // (first run: the figure starts neutral; it is made when the learner wants)
       {id:"path", sel:".lcard[data-lv]", when:()=>G.furthest>=1, text:"Tap to redo its exercises."},
       {id:"rank", sel:"#hRank, #youRank", when:()=>(G.tokens||0)>0, text:"Tap to spend your tokens."},
       {id:"tiles", sel:".exgrid", when:()=>true, text:"Tap one to do it again."},
@@ -1064,7 +1068,7 @@ const SHELL = (()=>{
   function streakBand(now=new Date()){ const st=streakNow(now), hr=now.getHours(), greet = hr<4 ? "Good evening" : hr<12 ? "Good morning" : hr<18 ? "Good afternoon" : "Good evening";
     const title = st.state==="new" ? (st.best ? "A new streak today" : "Start your streak") : `${st.shown}-day streak`;
     return `<button class="card streak s-${st.state}" id="hStreak" data-coach="streak" aria-label="${esc(title)}. ${esc(streakLine(st, now).replace(/<[^>]+>/g,""))}.${st.freezes ? ` ${st.freezes} streak ${pl(st.freezes, "freeze")}.` : ""}">
-      <span class="sdisc">${ic("sun")}<b class="num">${st.shown}</b></span><span class="st-t"><small>${greet}, ${esc(S.learnerName||"")}</small><b>${title}</b><span class="sline">${streakLine(st, now)}</span>${streakWeek(st, now)}</span>
+      <span class="sdisc">${ic("sun")}<b class="num">${st.shown}</b></span><span class="st-t"><small>${greet}${S.learnerName ? ", "+esc(S.learnerName) : ""}</small><b>${title}</b><span class="sline">${streakLine(st, now)}</span>${streakWeek(st, now)}</span>
       <span class="sside">${st.best>st.shown ? `<span class="sbest"><small>Best</small><b class="num">${st.best}</b></span>` : ""}${st.freezes ? `<span class="sfz" title="Streak ${pl(st.freezes, "freeze")}">${ic("snow")}<b class="num">${st.freezes}</b></span>` : ""}</span></button>`; }
   function streakSheet(){ const st=streakNow(), P=G.streakPaid||{};
     info("Your streak", `<div class="ssheet"><div><b>Keeps it</b><span>A lesson a day, new or again</span></div><div><b>Freezes</b><span>${st.freezes} of ${RULES.FREEZE_MAX} held · ${RULES.FREEZE_PRICE} tokens in your Wardrobe</span></div>
@@ -1116,7 +1120,7 @@ const SHELL = (()=>{
     h.innerHTML=`${streakBand(now)}
       <section class="card hero"><div class="headrow"><div>${eyebrow}<h1>Lesson ${n}</h1></div><div class="minis">${newPics(HI).slice(0,3).map(mini).join("")}</div></div>
         ${started ? `<div class="place" role="img" aria-label="Exercise ${S.ex+1} of ${nEx}"><div class="meta"><b>Exercise ${S.ex+1}</b> of ${nEx}</div><span class="pl-track"><i style="--f:${Math.max(0.03, fin/nEx).toFixed(3)}"></i></span></div>` : `<div class="meta">${A!=null ? `Your place stays at Lesson ${T+1}.` : nEx+" exercises · about "+mins+" minutes"}</div>`}${A==null && G.why==="once" ? `<div class="meta m2">A bit more practice, then Lesson ${n+1}.</div>` : A==null && G.why==="back" ? `<div class="meta m2">A warm-up, then Lesson ${n+1}.</div>` : A==null && G.why==="warm" && G.warmTo!=null ? `<div class="meta m2">Warming up, then on to Lesson ${G.warmTo+1}.</div>` : ""}
-        <div id="heroSlot"></div>${A!=null ? `<button class="btn quiet" id="notAgain">Back to Lesson ${T+1}</button>` : ""}</section>
+        ${!S.learnerName ? `<label class="hname" for="hNameIn"><span>Your first name</span><input id="hNameIn" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done"></label>` : ""}<div id="heroSlot"></div>${A!=null ? `<button class="btn quiet" id="notAgain">Back to Lesson ${T+1}</button>` : ""}</section>
       <section class="card rhythm" aria-label="Today, this week, your French"><div class="rbody">${ringsSvg(R)}${ringRows(R)}</div>
         ${G.anchors.set ? `<div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>` : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
       <h2 class="hsec">What you have earned</h2>
@@ -1127,6 +1131,7 @@ const SHELL = (()=>{
         <button class="tile go" id="hWords" data-coach="words" aria-label="${own} French ${pl(own, "word")}: see them in Lessons">${ic("words")}${MV.num("words", own)}<small>French ${pl(own, "word")} ${ic("chev")}</small></button></div>
       <div class="card badgesh"><div class="row"><b>Badges</b></div><div class="miles">${streakBadges()}${bs.slice().reverse().map(b=>`<div class="ms">${badgeSvg(b)}<span>${badgeName(b)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${pc} of ${nextB} perfect lessons</span></div>` : ""}</div></div>
       ${levelCard(true)}`;
+    { const ni=$("hNameIn"); if(ni) ni.onkeydown=ev=>{ if(ev.key!=="Enter") return; ev.preventDefault(); const v=cleanName(ni.value); if(v && nameSet(v)){ tick(); ni.blur(); home(); } }; }
     const slot=$("heroSlot"), how=$("howtoBox"), btn=$("playBtn"); slot.appendChild(how); slot.appendChild(btn); slot.style.display="grid"; slot.style.gap="11px";
     const lab=btn.querySelector(".ready"); if(lab && !play.classList.contains("afterDemo")) lab.textContent = A!=null ? "Start lesson "+n+" again" : (started?"Carry on with lesson ":"Start lesson ")+n;
     const sm=$("setMoments"); if(sm) sm.onclick=()=>{ tick(); anchors(false); };
@@ -1209,7 +1214,7 @@ const SHELL = (()=>{
     sheetOpen(sh); const close=()=>sheetClose(sh); $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
 
   /* ---- the avatar maker: built from the picture library's own lists (PICS.avatarOptions), so options can be added without touching this ---- */
-  const FIELDS = { body:{label:"Body", vals:["m","f"]}, age:{label:"Age", vals:["c","t","a","o"], names:{c:"Child", t:"Teen", a:"Adult", o:"Older"}}, girth:{label:"Build", n:4}, skin:{label:"Skin", opt:"skin"}, face:{label:"Face", n:5}, eyes:{label:"Eyes", opt:"eyes"},
+  const FIELDS = { body:{label:"Body", vals:["m","f","n"], names:{m:"Man", f:"Woman", n:"Neutral"}}, age:{label:"Age", vals:["c","t","a","o"], names:{c:"Child", t:"Teen", a:"Adult", o:"Older"}}, girth:{label:"Build", n:4}, skin:{label:"Skin", opt:"skin"}, face:{label:"Face", n:5}, eyes:{label:"Eyes", opt:"eyes"},
     freckles:{label:"Freckles", n:2}, hair:{label:"Hair", opt:"hair"}, hairc:{label:"Hair colour", opt:"hairc"}, beard:{label:"Beard", n:2}, glasses:{label:"Glasses", n:2}, head:{label:"Headscarf", n:2}, scarf:{label:"Scarf colour", opt:"top"},
     top:{label:"Jumper", opt:"top"}, legs:{label:"Trousers", opt:"legs"} };
   const CATS = [["You",["body","age","girth"]],["Skin",["skin"]],["Face",["face","eyes","freckles"]],["Hair",["hair","hairc","beard"]],["Glasses",["glasses","head","scarf"]],["Clothes",["top","legs"]]];
@@ -1230,8 +1235,8 @@ const SHELL = (()=>{
   function maker(firstRun, done, at){ const o=$("maker"); if(!o || !AV.has()){ if(done) done(); return; }      // at: the group to open on (the wardrobe's "How you look")
     let spec; try{ spec=PICS.avatarParse(AV.get() || PICS.avatarString({})); }catch(e){ spec={}; } const hist=[]; let cat = at>=0 && at<CATS.length ? at : 3, step = firstRun ? 1 : 0;
     const starters=[["A man",{body:"m",age:"a"}],["A woman",{body:"f",age:"a",hair:6}],["A boy",{body:"m",age:"c"}],["A girl",{body:"f",age:"c",hair:4}]];
-    const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if(["c","t"].includes(typeof f==="object" ? f.age : f==="age" && v)) spec.beard=0; draw(); tick(); };
-    const finish=()=>{ AV.set(PICS.avatarString(spec)); S.learnerGender = spec.body==="f" ? "f" : "m"; save(); G.makerOffer=false; store(); o.hidden=true; try{ trace("the learner's figure made"); }catch(e){} if(done) done(); else home(); };
+    const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if(["c","t"].includes(typeof f==="object" ? f.age : f==="age" && v) || spec.body==="n") spec.beard=0; draw(); tick(); };
+    const finish=()=>{ AV.set(PICS.avatarString(spec)); S.learnerGender = spec.body==="f" ? "f" : spec.body==="n" ? "n" : "m"; save(); G.makerOffer=false; store(); o.hidden=true; try{ trace("the learner's figure made"); }catch(e){} if(done) done(); else home(); };
     let drawn=null;      // (QA .67) what was drawn last: a new step's cards come in one after another, a new group of choices comes in softly
     function draw(){ draw0(); if(drawn){ if(drawn.step!==step) MV.stagger(o); else if(drawn.cat!==cat) MV.play(o.querySelector(".mk-tray"), "mv-soft", 300); } drawn={step, cat}; }
     function draw0(){
@@ -1249,7 +1254,7 @@ const SHELL = (()=>{
       o.innerHTML=`<div class="mk-bar">${firstRun?"":`<button class="rb plain" id="mkBack" aria-label="Back">${ic("chev")}</button>`}<h2>${firstRun ? "This is you" : "How you look"}</h2><button class="rb" id="mkUndo" aria-label="Undo">${ic("undo")}</button><button class="rb" id="mkRnd" aria-label="Surprise me">${ic("shuffle")}</button></div>
         <div class="mk-stage">${AV.svg(spec, "portrait", "big")}<div class="mk-small"><div class="mini">${AV.svg(spec, {view:"doing", doing:"walk", still:true}, "s")}</div><div class="lab">You, in<br>the lessons</div><div class="mini">${AV.svg(spec, "standing", "s")}</div></div></div>
         <div class="mk-tabs">${CATS.map(([lab],i)=>`<button class="${i===cat?"on":""}" data-c="${i}" aria-pressed="${i===cat}">${lab}</button>`).join("")}</div>
-        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-pressed="${String(spec[f])===String(v)}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : f==="body" ? (v==="f" ? "a woman's" : "a man's") : typeof v==="number" ? v+1 : v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
+        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.body==="n" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-pressed="${String(spec[f])===String(v)}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : f==="body" ? (v==="f" ? "a woman's" : v==="n" ? "a neutral" : "a man's") : typeof v==="number" ? v+1 : v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
         <div class="mk-foot"><button class="btn" id="mkDone">That's me</button></div>`;
       o.querySelectorAll("[data-c]").forEach(b=>{ b.onclick=()=>{ cat=+b.dataset.c; draw(); }; });
       o.querySelectorAll("[data-f]").forEach(b=>{ b.onclick=()=>{ const f=b.dataset.f, raw=b.dataset.v; set(f, FIELDS[f].vals ? raw : +raw); }; });
@@ -1488,11 +1493,19 @@ const SHELL = (()=>{
   for(const id of ["done","whoL","ward","maker","you","lessonsL","anch","mic","back","lessonV","lvl"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="lessonsL"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
+  const NEUTRAL = {body:"n", age:"a", skin:3, hair:8, hairc:2, top:1};      // the figure a new learner starts with: neither a man's nor a woman's (a bob, a teal top)
+  function firstRun(){ for(const id of ["who","gender"]){ const x=$(id); if(x) x.hidden=true; }      // the page's own first questions are not asked
+    if(!S.learnerGender){ S.learnerGender="n"; try{ if(AV.has() && !AV.get()){ AV.set(PICS.avatarString(NEUTRAL)); G.makerOffer=true; } }catch(e){} save(); store(); try{ trace("a new learner: straight to Home, the figure neutral"); }catch(e){} home(); } }
+  // the first name, on Lesson 1's card (the lessons need it: "Je m'appelle ..." is judged against it, and Marie's pictures carry it); set as the page's own form sets it
+  function nameSet(v){ const wn=$("whoName"), wf=$("whoForm"); if(wn && wf && wf.requestSubmit){ wn.value=v; wf.requestSubmit(); } else { S.learnerName=v; save(); }
+    const w=$("who"); if(w) w.hidden=true; return !!S.learnerName; }
   function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); uiTaps(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
     if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); seed(); rankSync(); syncNext(); store(); home(); MIC.init();
-    // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
-    const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
-    firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));
+    // (the owner, 16 Nov 17:50: "the first time the user uses the app ... it shouldn't go straight to the customization screen. It should take the user
+    // straight into the main app, and then they can customise if they want to. The learner should be gender-neutral if the person chooses to do this.")
+    // A new learner goes straight to Home: no name screen, no pictograms, no maker, no moments first. The figure starts neutral (changed in the
+    // Wardrobe's "How you look"); the first name, which Lesson 1 needs, is one field on Lesson 1's card; the two moments wait on Home's rings.
+    firstRun();
     if(!who(false)) welcome();
     G.lastSeen=new Date().toISOString(); store();
     if(document.readyState==="complete") offline(); else window.addEventListener("load", offline);
