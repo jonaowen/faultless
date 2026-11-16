@@ -543,15 +543,15 @@ const SHELL = (()=>{
     function fill(e){ const a=e.getAttribute("data-lz"); if(a==null) return; e.removeAttribute("data-lz"); try{ e.insertAdjacentHTML("afterbegin", draw(a)); if(e.classList.contains("mini")) freezeMinis(e.parentNode);
         if(e.classList.contains("wthumb")){ const v=e.querySelector("svg"); if(v){ v.pauseAnimations(); v.setCurrentTime(0.9); } } }catch(x){} }      // a still picture in the grid (its stars twinkle on the item's own sheet)
     // what has come near the screen is drawn one picture at a time (never a long stop of the screen), then, while the phone is idle, the rest
-    let q=[], pumping=false; const busy=()=>document.body.classList.contains("inLesson");
-    function pump(){ if(pumping) return; pumping=true; const step=()=>{ const e=q.shift(); if(!e || busy()){ pumping=false; q=[]; return; } if(e.isConnected) fill(e); setTimeout(step, 24); }; setTimeout(step, 0); }
+    let q=[], pumping=false; const busy=()=>document.body.classList.contains("inLesson"), loading=()=>!!document.getElementById("splash");      // (QA 2) nothing off the screen is drawn while the loading screen hands over
+    function pump(){ if(pumping) return; pumping=true; const step=()=>{ if(loading() && q.length){ setTimeout(step, 150); return; } const e=q.shift(); if(!e || busy()){ pumping=false; q=[]; return; } if(e.isConnected) fill(e); setTimeout(step, 24); }; setTimeout(step, 0); }
     function watch(sc){ const els=[...sc.querySelectorAll("[data-lz]")]; let io=ios.get(sc); if(io) io.disconnect(); if(!els.length) return;
       if(!("IntersectionObserver" in window)){ els.forEach(fill); return; }
       const H=innerHeight; for(const e of els){ const r=e.getBoundingClientRect(); if(r.height && r.bottom>-20 && r.top<H+20) fill(e); }      // on the screen now: at once (no empty frame)
       if(!io){ io=new IntersectionObserver(es=>{ for(const x of es) if(x.isIntersecting){ io.unobserve(x.target); q.push(x.target); } pump(); }, {root:sc, rootMargin:"700px 0px"}); ios.set(sc, io); }
       sc.querySelectorAll("[data-lz]").forEach(e=>io.observe(e));
       const g=++gen, later=f=>window.requestIdleCallback ? requestIdleCallback(f, {timeout:1500}) : setTimeout(f, 180);
-      const step=()=>{ if(g!==gen || !sc.isConnected || sc.closest("[hidden]") || busy()) return; const e=sc.querySelector("[data-lz]"); if(!e) return; if(!q.length) fill(e); later(step); };
+      const step=()=>{ if(g!==gen || !sc.isConnected || sc.closest("[hidden]") || busy()) return; const e=sc.querySelector("[data-lz]"); if(!e) return; if(!q.length && !loading()) fill(e); later(step); };
       setTimeout(()=>later(step), 1200); }
     return {watch}; })();
   const picsOf = (()=>{ const memo={}; return i=>{ if(memo[i]) return memo[i]; const seen=new Set(), out=[];
