@@ -128,7 +128,11 @@ const SHELL = (()=>{
     if(pendingEx){ const {li, ei}=pendingEx; pendingEx=null; startReplay(li, ei); exT0=""; G.cur={lesson:LESSONS[li].id, t0:new Date().toISOString(), kind:"exercise", p0:G.points, fromStart:false}; RUN.ex=[]; store(); look(); return; }
     if(mark()!==seen){ G.next=natural(); G.why=""; pendingAgain=null; look(); }
     const T = pendingAgain!=null ? pendingAgain : G.next; const kind = pendingAgain!=null ? "again" : (G.why||"");
-    if(T!=null && T!==natural()){ S.lesson=T; S.ex=0; LESSONS[T].exercises.forEach(x=>{ delete S.finished[x.id]; });
+    if(T!=null && T!==natural()){
+      // (owner's report, 16 Nov) a PASSED lesson done again by the learner's own choice must not move the learner's place: the place is kept
+      // (G.again, as G.replay keeps it for one exercise) and put back when the lesson ends or is left half-way
+      if(kind==="again" && T<G.furthest && !G.again){ const snap={}; for(const k of PLACE_KEYS) if(k in S) snap[k]=JSON.parse(JSON.stringify(S[k])); G.again={li:T, snap, t0:new Date().toISOString()}; S.delayed=[]; store(); }
+      S.lesson=T; S.ex=0; LESSONS[T].exercises.forEach(x=>{ delete S.finished[x.id]; });
       logEntry({result:"LESSON AGAIN: Lesson "+(T+1)+(kind==="again" ? " (the learner's own choice)" : kind==="back" ? " (a step back before Lesson "+(T+2)+")" : kind==="warm" ? " (a warm-up after days away)" : " (once more: below "+RULES.PASS_MARK+" %)"), heard:[]}); save(); }
     const Li=T!=null?T:natural(); G.cur={lesson:LESSONS[Li].id, t0:new Date().toISOString(), kind, p0:G.points, fromStart: S.ex===0 && !LESSONS[Li].exercises.some(x=>S.finished[x.id])}; pendingAgain=null; store(); }, true);
 
@@ -355,7 +359,8 @@ const SHELL = (()=>{
     const R0=ringsNow(), p0 = cur.p0!=null ? cur.p0 : null;
     const sc=score(L.id, cur.t0), passed = !RULES.GATE_ON || sc.y>=RULES.PASS_MARK, now=new Date(), today=dayOf(now), firstPass = passed && li>=G.furthest;
     let why="";
-    if(cur.kind==="again" && li<G.furthest){ /* a lesson already passed, done again by choice: it locks nothing and moves nothing */ }
+    if((cur.kind==="again" || (G.again && G.again.li===li)) && li<G.furthest){ /* a lesson already passed, done again by choice: it locks nothing and moves nothing */ }
+    if(G.again && G.again.li===li){ try{ trace("a passed lesson done again by choice has ended: the place is put back"); }catch(e){} restoreAgain(); }
     else if(passed){ G.below[L.id]=0; G.next=Math.min(li+1, last); G.furthest=Math.max(G.furthest, li+1); if(G.why==="warm" && G.warmTo!=null && G.next<G.warmTo) G.why="warm"; else { G.why=""; G.warmTo=null; } }
     else if((G.below[L.id]||0)>=RULES.REPEATS_BEFORE_STEP_BACK && li>0){ G.below[L.id]=0; G.next=Math.max(0, li-RULES.STEP_BACK_LESSONS); G.why=why="back"; }
     else { G.below[L.id]=(G.below[L.id]||0)+1; G.next=li; G.why=why="once"; }
@@ -431,6 +436,19 @@ const SHELL = (()=>{
       + rankUpCard(ranks)
       + `<div class="spacer"></div><div class="donefoot">${rankBar(p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
     o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); o.hidden=true; stopFete(); home(); }; fete(o, res.perfect || !!(ranks && ranks.length)); }
+  const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
+  function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
+  /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
+     lesson, no rule sent the learner there, and the last "LESSON AGAIN" line of the log is the learner's own choice of that lesson. The place
+     goes to the first lesson not passed, at its first exercise not finished; the passed lesson is finished as it was. */
+  function untrap(){ try{ if(G.fix66) return; G.fix66=1;      // once on each phone: from .66 on the place is kept (G.again), so the fault cannot be met again
+      if(G.again || G.replay || G.why || S.detour || !(S.lesson<G.furthest)) return; const tag="LESSON AGAIN: Lesson "+(S.lesson+1)+" (the learner's own choice)";
+      let lastAgain=null; for(let i=S.log.length-1;i>=0;i--){ const r=String((S.log[i]||{}).result||""); if(r.indexOf("LESSON AGAIN:")===0){ lastAgain=r; break; } }
+      if(!lastAgain || lastAgain.indexOf(tag)!==0) return;
+      const from=S.lesson, to=Math.min(G.furthest, LESSONS.length-1); LESSONS[from].exercises.forEach(x=>{ S.finished[x.id]=true; });
+      S.lesson=to; const k=LESSONS[to].exercises.findIndex(x=>!S.finished[x.id]); S.ex = k<0 ? LESSONS[to].exercises.length-1 : k; G.next=natural(); G.cur=null;
+      logEntry({result:"PLACE PUT BACK: Lesson "+(from+1)+" was being done again by the learner's own choice and was left; the place is Lesson "+(to+1)+", exercise "+(S.ex+1)+" again", heard:[]}); save(); store();
+      trace("a passed lesson done again by choice had been left (release .65's fault): the place is put back to Lesson "+(to+1)+", exercise "+(S.ex+1)); }catch(e){ try{ trace("FAULT untrap: "+e.message); }catch(_){} } }
   function restorePlace(){ const R0=G.replay; if(!R0) return; const sn=R0.snap; for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in sn) S[k]=sn[k]; else delete S[k];
     G.replay=null; save(); store(); }
   function startReplay(li, ei){ const snap={}; for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in S) snap[k]=JSON.parse(JSON.stringify(S[k]));
@@ -447,13 +465,13 @@ const SHELL = (()=>{
       <div class="exgrid">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<button class="extile ${g ? (g.g?"g":"y") : "u"}" data-ei="${k}" aria-label="Exercise ${k+1}: ${g ? (g.g?"perfect":"had an error") : "done"}"><span class="k">${k+1}</span>${firstMini(x)}<span class="st">${g ? (g.g?ic("star"):"") : ""}</span></button>`; }).join("")}</div>
       <div class="legend"><span><i class="g"></i>Perfect</span><span><i class="y"></i>Had an error</span>${known<L.exercises.length?`<span><i class="u"></i>Done before the record began</span>`:""}</div>
       <button class="btn quiet" id="lvAll">${ic("redo")} The whole lesson again</button>`;
-    o.hidden=false; o.scrollTop=0;
+    o.hidden=false; o.scrollTop=0; freezeMinis(o);
     $("lvBack").onclick=()=>{ tick(); o.hidden=true; };
     $("lvAll").onclick=()=>{ tick(); o.hidden=true; pendingAgain=li; pendingEx=null; home(); const lb=$("playBtn").querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(li+1)+" again"; const h=$("home"); h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(li+1); };
     o.querySelectorAll("[data-ei]").forEach(b=>{ b.onclick=()=>{ tick(); const ei=+b.dataset.ei, g=G.ex[L.exercises[ei].id];
-      info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
+      info(`Lesson ${li+1}, exercise ${ei+1}`, `<div class="exprev">${firstMini(L.exercises[ei], "big")}</div><p>${g ? (g.g ? "This one is perfect. Doing it again is good practice; it earns no points." : "It had an error. Do it again with every answer right first time, and it turns green: +"+RULES.POINTS_PERFECT_REPAIR+".") : "Do it again whenever you like."}</p><p class="small">It runs just as it did in the lesson. Your place in the course stays where it is.</p><button class="btn" id="exGo">${ic("play")} Do exercise ${ei+1} again</button>`); freezeMinis($("sheet")); MV.grow(b.querySelector(".mini"), document.querySelector("#sheet .exprev .mini"));
       $("exGo").onclick=()=>{ tick(); $("sheet").hidden=true; o.hidden=true; pendingEx={li, ei}; pendingAgain=null; $("playBtn").click(); }; }; }); }
-  const firstMini = (x, cls="")=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<span class="mini ${cls}"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1})).outerHTML}</svg></span>`; } }catch(e){} return `<span class="mini ${cls}"></span>`; };
+  const firstMini = (x, cls="")=>{ try{ for(const p of x.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; const sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) return `<span class="mini ${cls}"><svg viewBox="0 0 160 190" aria-hidden="true">${picture(Object.assign({}, sp, {count:1, still:true})).outerHTML}</svg></span>`; } }catch(e){} return `<span class="mini ${cls}"></span>`; };
 
   /* the one celebration: paper in the four people's colours and the numbers counting up (900 ms). Nothing of it with less movement. */
   let feteT=0;
@@ -492,7 +510,11 @@ const SHELL = (()=>{
   { const ol0=UI.onLog; UI.onLog=function(o){ const r=ol0.apply(this, arguments); try{ if(o && o.result==="correct" && o.task && !/^lead/.test(o.phase||"") && document.body.classList.contains("inLesson")) beadSound(); }catch(e){} return r; }; }
 
   /* ---- home: today's two moments, the week, the next lesson, the path ---- */
-  const mini = spec=>{ try{ return `<div class="mini"><svg viewBox="0 0 160 190" aria-hidden="true">${pic(spec).outerHTML}</svg></div>`; }catch(e){ return ""; } };
+  /* (owner, 16 Nov: "the two figures I circled are flashing") a small picture on a card is a STILL picture: the frozen frame where the drawing has one
+     (spec.still), and whatever still moves by itself (the unnamed people's loops) is stopped at its first frame by freezeMinis after it is put in the page */
+  const stillSpec = spec=>spec && typeof spec==="object" ? Object.assign({}, spec, {still:true}) : spec;
+  const freezeMinis = root=>{ try{ (root||document).querySelectorAll(".mini svg").forEach(v=>{ try{ v.pauseAnimations(); v.setCurrentTime(0); }catch(e){} }); }catch(e){} };
+  const mini = spec=>{ try{ return `<div class="mini"><svg viewBox="0 0 160 190" aria-hidden="true">${pic(stillSpec(spec)).outerHTML}</svg></div>`; }catch(e){ return ""; } };
   const picsOf = (()=>{ const memo={}; return i=>{ if(memo[i]) return memo[i]; const seen=new Set(), out=[];
       for(const ex of LESSONS[i].exercises) for(const p of ex.parts) for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; for(const x of row){ if(!x || typeof x!=="object") continue;
         const k=x.person ? "p:"+x.person+(x.doing||"") : (x.is||"")+":"+(x.doing||x.value||""); if(x.person==="you" || seen.has(k)) continue; seen.add(k); out.push(Object.assign({}, x, {count:1})); } }
@@ -534,14 +556,15 @@ const SHELL = (()=>{
     $("hMe").onclick=()=>tab("you"); $("hRank").onclick=()=>{ tick(); wardrobe(()=>home()); };
     ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); MV.count(h.querySelector(".h-top")); store();
     const om=$("offerMaker"); if(om) om.onclick=()=>{ tick(); G.makerOffer=false; store(); maker(false, ()=>home()); };
-    h.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });
+    h.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
+    freezeMinis(h);
     h.querySelectorAll("[data-again]").forEach(b=>{ b.onclick=()=>{ pendingAgain=+b.dataset.again; tick(); const lb=btn.querySelector(".ready"); if(lb) lb.textContent="Start lesson "+(pendingAgain+1)+" again"; h.scrollTo({top:0, behavior:"smooth"}); h.querySelector(".hero h1").textContent="Lesson "+(pendingAgain+1); }; }); }
   const lessonBadge = L=>{ const n=L.exercises.length, g=L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length, k=L.exercises.filter(x=>G.ex[x.id]).length;
     return G.lp[L.id] ? `<span class="pf">${ic("star")} Perfect</span>` : k ? `<span class="pp">${g} of ${n} perfect</span>` : `<span class="pp">Exercises</span>`; };
   function pathRows(T, st){ const upto = st ? st.s.last : LESSONS.length, from = st ? st.s.first-1 : 0; let out="";
     for(let i=from;i<upto;i++){ const Lk=LESSONS[i], recs=Lk ? (G.lessons[Lk.id]||[]) : [], pass=i<G.furthest, bestRec=recs.filter(r=>r.passed).slice(-1)[0];
       const cls = i===T ? (G.why ? "once" : "now") : pass ? "done" : "later";
-      out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" data-lv="${i}">${lessonBadge(Lk)}${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(mini).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
+      out+=`<div class="step ${cls}"><div class="node">${pass && i!==T ? ic("check") : i+1}</div><div class="card lcard"${pass && i!==T && Lk ? ` data-lv="${i}"` : ""}><div class="row"><span class="t">Lesson ${i+1}</span>${i===T && G.why ? `<span class="chip">${G.why==="once"?"Once more":"A warm-up"}</span>` : pass && i!==T && Lk ? `<button class="again" aria-label="Lesson ${i+1}: its exercises">${lessonBadge(Lk)}${ic("chev")}</button>` : ""}</div>${pass && bestRec && bestRec.x!=null ? `<div class="pct">${bestRec.x} right · ${bestRec.y}%</div>`:""}<div class="minis">${(Lk && i<=Math.max(T,G.furthest) ? newPics(i).map(mini).join("") : `<div class="mini back"></div>`.repeat(4))}</div></div></div>`; }
     return out; }
 
   /* ---- the three places at the foot: Today, Words, You ---- */
@@ -802,7 +825,8 @@ const SHELL = (()=>{
   for(const id of ["done","whoL","maker","you","wordsV","anch","mic","back","lessonV","lvl","ward"]) document.body.appendChild(el(`<div class="over${id==="you"||id==="wordsV"?" tabbed":""}" id="${id}" hidden lang="en"></div>`));
   document.body.appendChild(el(`<div id="sheet" hidden lang="en"></div>`)); document.body.appendChild(el(`<div id="upd" role="status" hidden lang="en"></div>`));
   function afterWho(){ if(!welcome()) home(); }
-  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); } seed(); rankSync(); syncNext(); store(); home(); MIC.init();
+  function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
+    if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); seed(); rankSync(); syncNext(); store(); home(); MIC.init();
     // first run: the name is asked by the page; then, in place of the two pictograms, the learner makes his own figure, then his two moments
     const firstFigure=()=>{ if(S.learnerName && !S.learnerGender && AV.has()){ const g=$("gender"); if(g) g.hidden=true; maker(true, ()=>anchors(true)); } };
     firstFigure(); const wf=$("whoForm"); if(wf) wf.addEventListener("submit", ()=>setTimeout(firstFigure, 0));

@@ -40,7 +40,10 @@ self.addEventListener("fetch", e => { const req = e.request; if (req.method !== 
   e.respondWith((async () => { const c = await caches.open(CACHE), key = req.mode === "navigate" ? new URL("index.html", self.registration.scope).href : req;
     const kept = await c.match(key, { ignoreSearch: true });
     try {
-      const net = fetch(req); const r = await (req.mode === "navigate" && kept ? Promise.race([net, new Promise((_, no) => setTimeout(() => no(new Error("slow")), 6000))]) : net);
+      // (.66) the app's own code and lessons are asked of the site afresh (a conditional request: "not changed" costs one short answer), so that the
+      // page of a new release never runs with the browser's ten-minute-old copy of shell.js, people.js or a lesson; voices and the listener as before
+      const fresh = req.mode !== "navigate" && /\.(js|css)$/.test(u.pathname) && !/\/listener\//.test(u.pathname);
+      const net = fresh ? fetch(req.url, { cache: "no-cache" }) : fetch(req); const r = await (req.mode === "navigate" && kept ? Promise.race([net, new Promise((_, no) => setTimeout(() => no(new Error("slow")), 6000))]) : net);
       if (r && r.ok && r.status === 200 && r.type === "basic" && !same(r, kept)) e.waitUntil(c.put(key, r.clone()).catch(() => {}));
       return r;
     } catch (err) { if (kept) return kept; throw err; }
