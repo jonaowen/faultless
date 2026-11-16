@@ -357,3 +357,7 @@ html[data-motion="less"] .rb-track i, html[data-motion="less"] .rankup .emb.big{
 :where(#nav) .tab .pillbg{transition:background-color 200ms var(--ease-out), transform 260ms var(--spring, var(--ease-out))} :where(#nav) .tab.on .pillbg{transform:scale(1.04)}
 html[data-motion="less"] :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv-tab-r,.mv-stag > *,#sheet,#sheet .sh){animation:none!important}
 @media (prefers-reduced-motion:reduce){ :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv-tab-r,.mv-stag > *,#sheet,#sheet .sh){animation:none!important} .mv-ghost{display:none} }
+/* (figures7) the learner's own dance at a passed lesson's celebration */
+#done .celebfig{display:block;width:120px;height:142px;margin:0 auto -6px;animation:celebIn .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes celebIn{from{opacity:0;transform:translateY(14px) scale(.9)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){#done .celebfig{animation:none}}
