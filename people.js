@@ -1209,9 +1209,9 @@ function hatParts(h, H){
     const pq = hp([0, crC1(H) + R[1] + 0.16, -0.06]), pr = 0.36 * px, PM = h.pom || WM.cream;
     if (!h.ears) out.push({ id: "wlP", z: zH + 0.0001, mat: "wlP", layers: [[fluff(pq, pr, 9), PM.n[1]], [fluff([pq[0] + LIGHT[0] * pr * 0.16, pq[1] + LIGHT[1] * pr * 0.16], pr * 0.8, 9, 1), PM.n[0]]] });
   }
-  else if (h.kind === "straw" || h.kind === "felt" || h.kind === "mime" || h.kind === "toque" || h.kind === "musk" || h.kind === "tophat" || h.kind === "bucket"){
+  else if (h.kind === "straw" || h.kind === "felt" || h.kind === "mime" || h.kind === "toque" || h.kind === "musk" || h.kind === "tophat" || h.kind === "bucket" || h.kind === "plume"){
     /* a crown standing on the head (a short cylinder, or the chef's tall pleated one), a flat brim round it, a band */
-    const T = { tophat: { y: 0.5, r: 0.9, hgt: 1.42, brim: 1.3, top: 1.04, fb: 1.0 }, bucket: { y: 0.4, r: 1.0, hgt: 0.6, brim: 1.38, top: 0.8, fb: 1.04 }, straw: { y: 0.58, r: 0.92, hgt: 0.5, brim: 1.62, top: 1 }, felt: { y: 0.56, r: 0.92, hgt: 0.56, brim: 1.34, top: 0.88, fb: 1.0 }, mime: { y: 0.46, r: 0.8, hgt: 0.86, brim: 1.12, top: 0.94 }, toque: { y: 0.42, r: 0.93, hgt: 1.5, brim: 0, top: 1.34 }, musk: { y: 0.42, r: 0.92, hgt: 0.62, brim: 1.5, top: 0.86, fb: 0.86 } }[h.kind];      // (T4: the musketeer's brim narrower, and shorter front to back: it was very large seen from the side)
+    const T = { tophat: { y: 0.5, r: 0.9, hgt: 1.42, brim: 1.3, top: 1.04, fb: 1.0 }, bucket: { y: 0.4, r: 1.0, hgt: 0.6, brim: 1.38, top: 0.8, fb: 1.04 }, plume: { y: 0.54, r: 0.92, hgt: 0.5, brim: 1.32, top: 0.9, fb: 0.95 }, straw: { y: 0.58, r: 0.92, hgt: 0.5, brim: 1.62, top: 1 }, felt: { y: 0.56, r: 0.92, hgt: 0.56, brim: 1.34, top: 0.88, fb: 1.0 }, mime: { y: 0.46, r: 0.8, hgt: 0.86, brim: 1.12, top: 0.94 }, toque: { y: 0.42, r: 0.93, hgt: 1.5, brim: 0, top: 1.34 }, musk: { y: 0.42, r: 0.92, hgt: 0.62, brim: 1.5, top: 0.86, fb: 0.86 } }[h.kind];      // (T4: the musketeer's brim narrower, and shorter front to back: it was very large seen from the side)
     const cy = T.y * hg, c0 = [0, cy, -0.04], tilt = h.kind === "musk" ? [0.16, 0.05] : h.kind === "mime" ? [-0.08, 0.04] : null;
     const bot = ringPts(H, c0, T.r * hg, T.r * hg * 1.04, 28), topR = ringPts(H, [c0[0], cy + T.hgt, c0[2]], T.r * hg * T.top, T.r * hg * T.top * 1.04, 28, h.kind === "mime" ? [0.12, -0.08] : null);
     if (T.brim){ const br = ringPts(H, [0, cy - 0.02, -0.04], T.brim * hg, T.brim * hg * (T.fb || 1.08), 40, tilt), bd = ptsD(br), bq = br.reduce((a, p) => [a[0] + p[0] / br.length, a[1] + p[1] / br.length], [0, 0]);
@@ -1229,17 +1229,18 @@ function hatParts(h, H){
     else { out.push({ id: "hcTop", z: zH + 0.00028, mat: "hcTop", layers: [[ptsD(topR), mixc(M.n[0], "#ffffff", h.kind === "straw" ? 0.12 : 0.06)]] });
       const bandC = h.band || ["#2b2b33", "#1c1c22"]; out.push({ id: "hcB", z: zH + 0.0003, mat: "hcB", layers: [[bandD(H, c0, T.r * hg * 1.01, T.r * hg * (1 + (T.top - 1) * 0.3) * 1.01, 0.02, T.hgt * 0.3, 24), bandC[1]], [bandD(H, c0, T.r * hg * 1.01, T.r * hg * 1.01, 0.08, T.hgt * 0.24, 24), bandC[0]]] }); }
     if (h.kind === "straw"){ let wv = ""; for (const k of [0.45, 0.65, 0.85]) wv += bandD(H, c0, T.r * hg * 1.002, T.r * hg * 1.002, T.hgt * k, T.hgt * k + 0.012, 18) ; out.push({ id: "hcW", z: zH + 0.00029, mat: "hcW", layers: [[wv, mixc(M.n[1], M.n[0], 0.4)]] }); }
-    if (h.kind === "mime" || h.kind === "musk"){
+    if (h.kind === "mime" || h.kind === "musk" || h.kind === "plume"){
       /* the mime's red flower on the band; the musketeer's great plume, sweeping back over the brim */
       const sg = -1, fq = hp([sg * T.r * hg * 0.9, cy + 0.18, 0.4]);
       if (h.kind === "mime"){ let pet = ""; for (let i = 0; i < 6; i++){ const a = i / 6 * 2 * Math.PI; pet += ellPath({ c: [fq[0] + Math.cos(a) * 0.13 * px, fq[1] + Math.sin(a) * 0.13 * px], a: 0.11 * px, b: 0.07 * px, th: a }, 0, 0, 0); }
         out.push({ id: "mFl", z: zH + 0.0004, mat: "mFl", layers: [[pet, "#d23b3b"], [ellPath(disc(fq, 0.07 * px), 0, 0, 0), "#f2c94c"]] }); }
       else { const pts = [], n = 10; for (let i = 0; i < n; i++){ const t = i / (n - 1), p = hp([sg * (0.55 + 1.05 * t), cy + 0.35 + 0.75 * Math.sin(t * 2.6), 0.15 - 0.75 * t]); pts.push([p, (0.14 + 0.26 * Math.sin(t * Math.PI * 0.9)) * px]); }
         const Es = pts.map(([q, r]) => ballE(q, r)), zP = vl[2] > -0.2 ? zH + 0.0004 : z - 0.009;
-        out.push({ id: "mPl", z: zP, mat: "mPl", layers: [[hullOf(Es, 0, 0, 0), "#d9d6cf"], [hullOf(Es, -0.05 * px, LIGHT[0] * 0.04 * px, LIGHT[1] * 0.04 * px), "#fbfaf6"]] });
+        const PC = h.plume || ["#d9d6cf", "#fbfaf6", "#c9c3b6"];      // (figures 17: the feather hat's plume in its own colours)
+        out.push({ id: "mPl", z: zP, mat: "mPl", layers: [[hullOf(Es, 0, 0, 0), PC[0]], [hullOf(Es, -0.05 * px, LIGHT[0] * 0.04 * px, LIGHT[1] * 0.04 * px), PC[1]]] });
         let barbs = ""; for (let i = 1; i < n - 1; i++){ const [q, r] = pts[i]; barbs += `M${f1(q[0])} ${f1(q[1])}l${f1(r * 0.7)} ${f1(r * 0.75)}M${f1(q[0])} ${f1(q[1])}l${f1(-r * 0.6)} ${f1(r * 0.8)}`; }
-        out.push({ id: "mPb", z: zP + 0.00001, mat: "mPb", stroke: [barbs, "#c9c3b6", f2(Math.max(0.3, 0.025 * px))] });
-        const tq = pts[2][0]; out.push({ id: "mPr", z: zP + 0.00002, mat: "mPr", layers: [[ellPath(disc([tq[0], tq[1] + 0.12 * px], 0.2 * px), 0, 0, 0), "#c23a3a"]] }); }
+        out.push({ id: "mPb", z: zP + 0.00001, mat: "mPb", stroke: [barbs, PC[2], f2(Math.max(0.3, 0.025 * px))] });
+        const tq = pts[2][0]; out.push({ id: "mPr", z: zP + 0.00002, mat: "mPr", layers: [[ellPath(disc([tq[0], tq[1] + 0.12 * px], 0.2 * px), 0, 0, 0), h.clasp || "#c23a3a"]] }); }
     }
   }
   else if (h.kind === "beret" || h.kind === "beretP"){
@@ -1276,6 +1277,17 @@ function hatParts(h, H){
     out.push({ id: "efL", z: zH + 0.00001, mat: "efL", stroke: [lat, mixc(M.n[1], "#1d2233", 0.35), f2(Math.max(0.35, 0.05 * px))] });
     const pl = [q(-W1 * 2, H3), q(W1 * 2, H3)], m0 = q(0, H3), m1 = q(0, H3 + 0.9);
     out.push({ id: "efP", z: zH + 0.00002, mat: "efP", layers: [[capsule(pl[0][0], pl[0][1], 0.09 * px, pl[1][0], pl[1][1], 0.09 * px), M.n[1]], [capsule(m0[0], m0[1], 0.08 * px, m1[0], m1[1], 0.04 * px), M.n[0]]] });
+  }
+  /* ---------- (figures 17, tier 14: hats of honour) the crown (a gold band round the head, eight points standing up from it, red stones)
+     and the tiara (a silver arc over the front of the head, a central peak, small stones) ---------- */
+  if (h.kind === "crown" || h.kind === "tiara"){
+    const crown = h.kind === "crown", R = [crR[0] * hg * 1.05, crR[1] * hg * 1.05, crR[2] * hg * 1.05], edge = az => (crown ? 0.42 : 0.5) + (crown ? 0.04 : 0.12) * Math.cos(az * Math.PI / 180), top = az => edge(az) + (crown ? 0.28 : 0.12);
+    out.push(...lit("crB", zH, (dx, dy) => shellD(H, R, edge, dx, dy, top, crown ? null : -80, crown ? null : 80), M));
+    const n = crown ? 8 : 5;
+    for (let i = 0; i < n; i++){ const az = crown ? -180 + i * 45 + 22.5 : -60 + i * 30, a = az * Math.PI / 180, y = top(az), b0 = [Math.sin(a) * R[0], y, -0.04 + Math.cos(a) * R[2]], hgt = crown ? 0.42 : (i === 2 ? 0.34 : 0.16), sd = [Math.cos(a), 0, -Math.sin(a)], wd = crown ? 0.17 : 0.08;
+      const q0 = hp(add(b0, mul(sd, wd))), q1 = hp(add(b0, mul(sd, -wd))), qt = hp(add(b0, [Math.sin(a) * 0.05, hgt, Math.cos(a) * 0.05])), fr = Math.sin(a) * vl[0] + Math.cos(a) * vl[2];
+      out.push({ id: "crP" + i, z: fr > -0.1 ? zH + 0.0001 + i * 1e-7 : z - 0.009, mat: "crP", layers: [[poly([q0, qt, q1]), M.n[1]], [poly([q0, qt, [(q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2]]), M.n[0]]] });
+      if (fr > 0.5) out.push({ id: "crJ" + i, z: zH + 0.00012 + i * 1e-7, mat: "crJ", layers: [[ellPath(disc(hp([Math.sin(a) * R[0] * 1.01, (edge(az) + y) / 2, -0.04 + Math.cos(a) * R[2] * 1.01]), (crown ? 0.07 : 0.045) * px), 0, 0, 0), h.stone || "#d63b3b"]] }); }
   }
   /* ---------- (figures 17, tier 1: hats) the sun visor (a band and a long peak, the top of the head bare) and the sports headband (a towelling
      band across the forehead, a stripe) ---------- */
@@ -1881,18 +1893,49 @@ const WARD = {
     w.shine = [[24, 50, 6, 0.3], [138, 44, 6, 1.1], [136, 140, 5, 1.9]]; w.shineCol = "#ffe9a8"; } },
   /* (figures 17) tier 1, hats: five more (the category ladder, CATEGORIES.md) */
   /* (figures 17) tier 4, tops: four more (the stripes, the bands on the sleeves, the collar wings and the buttons of the existing tops) */
+  polo: { slot: "top", tier: "everyday", on: (c, w) => { c.top = WCOL.white; w.sleeve = 0.42; w.noCollar = 1;
+    w.parts.push(X => stripes(X, WM.ink, -X.B.nb + 0.06, 0.26, 0.05, 0.012).concat(collarWings3D(X), onTrunk(X, "plB", t => buttons(2, 0, -X.B.nb + 0.035, 0.03, 0.006, "#273149")))); } },
+  rugby: { slot: "top", tier: "everyday", on: (c, w) => { c.top = ["#2f7a4a", "#1f5a35"]; w.noCollar = 1;
+    w.parts.push(X => stripes(X, WM.white, -X.B.nb + 0.07, 0.26, 0.09, 0.035).concat(collarWings3D(X))); w.armFns.push(A => armBands(A, WM.white, 0.09, 0.035, "rgA")); } },
   jersey: { slot: "top", tier: "everyday", on: (c, w) => { c.top = ["#2b5bb5", "#1f4692"]; w.sleeve = 0.4;
     w.parts.push(X => onTrunk(X, "jsN", t => `<text x="0" y=".11" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size=".12" text-anchor="middle" fill="${t ? "#fbfaf6" : "#d9dbe0"}">10</text><path d="M-.3 .21h.6v.02h-.6z" fill="${t ? "#fbfaf6" : "#d9dbe0"}"/>`)); w.armFns.push(A => A.slv != null ? [] : armBands(A, WM.white, 0.4, 0.02, "jsA")); } },
   fairisle: { slot: "top", tier: "everyday", on: (c, w) => { c.top = ["#ecdcb8", "#c9b48c"]; w.noCollar = 1;
     w.parts.push(X => onTrunk(X, "fiY", t => { const nb = X.B.nb, y0 = -nb + 0.03; let zz = "", dd = ""; for (let x = -0.3; x < 0.3; x += 0.03){ zz += `M${R3(x)} ${R3(y0 + 0.03)}l.015 -.02l.015 .02`; dd += `<circle cx="${R3(x + 0.015)}" cy="${R3(y0 + 0.06)}" r=".006" fill="${t ? "#2b5bb5" : "#1f4692"}"/>`; }
       return `<path d="M-.3 ${R3(y0)}h.6v.012h-.6zM-.3 ${R3(y0 + 0.08)}h.6v.012h-.6z" fill="${t ? "#c8323c" : "#9a222a"}"/><path d="${zz}" stroke="${t ? "#c8323c" : "#9a222a"}" stroke-width=".008" fill="none"/>${dd}`; })); } },
+  /* (figures 17) tier 14, hats of honour: three more */
+  crown: { slot: "head", tier: "everyday", on: (c, w) => { w.hat = { kind: "crown", M: material("#f3cd62", "#c99a2c"), stone: "#d63b3b" }; w.tall = 0.75; } },
+  tiara: { slot: "head", tier: "everyday", on: (c, w) => { w.hat = { kind: "tiara", M: material("#eef0f4", "#b8bec8"), stone: "#7fc8f0" }; w.tall = 0.4; } },
+  featherhat: { slot: "head", tier: "everyday", on: (c, w) => { w.hat = { kind: "plume", M: material("#4a3a6a", "#33284d"), band: ["#c9a24a", "#9c7e2a"], plume: ["#e070a0", "#f59ac0", "#b8507c"], clasp: "#e3b53f" }; w.tall = 1.3; } },
+  /* (figures 17) tier 11, jackets and coats: four more (the coat's drawing: the skirt below the trunk, the lapels over the top beneath) */
+  denim: { slot: "top", tier: "everyday", on: (c, w) => { const own = material(c.top[0], c.top[1]); c.top = ["#5a80b4", "#3f6090"]; w.noRib = 1; w.noCollar = 1; w.skirt = 1;
+    w.parts.push(X => skirtOf(X, 0.25, 0.08).out.concat(lapels(X, X.T, own, 0.08, "#c9ccd2", 1), collarBack(X, X.T, 0.025), onTrunk(X, "dnS", t => { const nb = X.B.nb; return `<path d="M-.11 ${R3(-nb + 0.08)}h.08v.05h-.08zM.03 ${R3(-nb + 0.08)}h.08v.05h-.08z" fill="none" stroke="#d9a050" stroke-width=".004" stroke-dasharray=".008 .005"/><path d="M-.3 .15h.6" stroke="#d9a050" stroke-width=".004" stroke-dasharray=".008 .005"/>`; }))); } },
+  leather: { slot: "top", tier: "everyday", on: (c, w) => { const own = material(c.top[0], c.top[1]); c.top = ["#3a3434", "#221e1e"]; w.noRib = 1; w.noCollar = 1; w.skirt = 1;
+    w.parts.push(X => skirtOf(X, 0.25, 0.08).out.concat(lapels(X, X.T, own, 0.13, null, 0), collarBack(X, X.T, 0.032), onTrunk(X, "lzZ", t => { const nb = X.B.nb; return `<path d="M.035 ${R3(-nb + 0.12)}L.07 .22" stroke="#c9ccd2" stroke-width=".006"/><circle cx=".035" cy="${R3(-nb + 0.12)}" r=".007" fill="#c9ccd2"/>`; }))); } },
+  puffer: { slot: "top", tier: "everyday", on: (c, w) => { c.top = ["#e2553f", "#b63c2b"]; w.noRib = 1; w.noCollar = 1;
+    w.parts.push(X => stripes(X, material("#a8322a", "#7f2420"), -X.B.nb + 0.05, 0.27, 0.055, 0.006).concat(neckWrap(X, material("#e2553f", "#b63c2b"), 0.026, 1, 0.0), onTrunk(X, "pfZ", t => `<path d="M0 ${R3(-X.B.nb + 0.01)}V.27" stroke="#2a2a30" stroke-width=".006"/>`)));
+    w.armFns.push(A => armBands(A, material("#a8322a", "#7f2420"), 0.055, 0.006, "pfA")); } },
+  blazer: { slot: "top", tier: "everyday", on: (c, w) => { const own = material(c.top[0], c.top[1]); c.top = WCOL.ink; w.noRib = 1; w.noCollar = 1; w.skirt = 1;
+    w.parts.push(X => skirtOf(X, 0.3, 0.06).out.concat(lapels(X, X.T, own, 0.15, "#e3b53f", 0), collarBack(X, X.T, 0.03), onTrunk(X, "bzP", t => { const nb = X.B.nb; return `<path d="M.06 ${R3(-nb + 0.1)}l.012 -.018l.012 .018l.012 -.014v.014z" fill="#fbfaf6"/><path d="M.05 ${R3(-nb + 0.1)}h.05" stroke="${t ? "#3a4566" : "#232c45"}" stroke-width=".005"/>${buttons(2, -0.03, 0.1, 0.05, 0.008, "#e3b53f")}`; }))); } },
+  /* (figures 17) tier 10, hair colours (the slot "hairc"): a dye over the learner's own hair, its three tones (lit, middle, shade); the brows
+     keep their own colour, as dyed hair does */
+  hairblue: { slot: "hairc", tier: "everyday", thumb: "portrait", on: (c, w) => { c.hair = ["#5b8fe0", "#3f6fc0", "#2b4f96"]; } },
+  hairpink: { slot: "hairc", tier: "everyday", thumb: "portrait", on: (c, w) => { c.hair = ["#f59ac0", "#e070a0", "#b8507c"]; } },
+  hairgreen: { slot: "hairc", tier: "everyday", thumb: "portrait", on: (c, w) => { c.hair = ["#7ccf86", "#4fae5a", "#2f7a3a"]; } },
+  hairsilver: { slot: "hairc", tier: "everyday", thumb: "portrait", on: (c, w) => { c.hair = ["#e8eaee", "#c4c8d0", "#9097a3"]; } },
+  hairrainbow: { slot: "hairc", tier: "everyday", thumb: "portrait", on: (c, w) => { c.hair = ["#f6c840", "#e85d8a", "#5b6fd8"]; } },      // (a showpiece: the three tones in three hues, the lit one gold, the middle pink, the shade blue)
+  hairflame: { slot: "hairc", tier: "everyday", thumb: "portrait", on: (c, w) => { c.hair = ["#ffd04a", "#f07a2a", "#c0302a"]; } },      // (a showpiece: yellow where lit, orange, red in the shade)
   /* (figures 17) tier 8, pins and badges (the slot "pin", on the left breast) */
   pinsmiley: { slot: "pin", tier: "everyday", on: (c, w) => { w.parts.push(pinP("smiley")); } },
   pinflag: { slot: "pin", tier: "everyday", on: (c, w) => { w.parts.push(pinP("flag")); } },
   pinstar: { slot: "pin", tier: "everyday", on: (c, w) => { w.parts.push(pinP("star")); } },
   pinfr: { slot: "pin", tier: "everyday", on: (c, w) => { w.parts.push(pinP("fr")); } },
   /* (figures 17) tier 9, jewellery (the slot "jewel") */
+  hoops: { slot: "jewel", tier: "everyday", thumb: "portrait", on: (c, w) => { w.earrings = { kind: "hoop" }; } },
+  pearls: { slot: "jewel", tier: "everyday", thumb: "portrait", on: (c, w) => { w.earrings = { kind: "pearl" }; } },
+  pendant: { slot: "jewel", tier: "everyday", on: (c, w) => { w.parts.push(pendantP); } },
   beads: { slot: "jewel", tier: "everyday", on: (c, w) => { w.parts.push(beadsP); } },
+  watch: { slot: "jewel", tier: "everyday", thumb: "hands", on: (c, w) => { w.armFns.push(wristBand("L", ["#3a2a20"], true)); } },
+  bangles: { slot: "jewel", tier: "everyday", thumb: "hands", on: (c, w) => { w.armFns.push(wristBand("R", ["#e3b53f", "#c0c4cc", "#e3b53f"], false)); } },
   /* (figures 17) tier 7, gloves (the slot "hands": the hand drawn in the glove's colours, a cuff at the wrist; w.gloves, the mime's mechanism) */
   woolgloves: { slot: "hands", tier: "everyday", on: (c, w) => { w.gloves = { M: material("#d63b3b", "#a8242c"), cuff: 1.6 }; } },
   gardengloves: { slot: "hands", tier: "everyday", on: (c, w) => { w.gloves = { M: material("#6aa252", "#4a7f38"), cuff: 1.9 }; } },
@@ -1994,7 +2037,7 @@ const WARD = {
   curtain: { slot: "dance", tier: "move", on: (c, w) => { w.dance = "curtain"; } }
 };
 /* the person dressed: c is copied, the items applied (an outfit first, then the slots over it) */
-const SLOT_ORDER = ["outfit", "top", "head", "neck", "face", "hand", "back", "hands", "feet", "pin", "jewel", "pose", "dance", "bg"];      // (feet after the outfit: shoes chosen win over an outfit's own)
+const SLOT_ORDER = ["hairc", "outfit", "top", "head", "neck", "face", "hand", "back", "hands", "feet", "pin", "jewel", "pose", "dance", "bg"];      // (feet after the outfit: shoes chosen win over an outfit's own)
 const WORN_SLOTS = ["head", "face", "neck", "top", "hand", "outfit", "feet", "back", "hands", "pin", "jewel", "hairc"];      // (figures 17: the slots worn on the body in the lesson pictures; not pose, dance, emote, pet, aura, bg)
 function dressUp(c, wear, opt){ const ids = (Array.isArray(wear) ? wear : wear ? [wear] : []).filter(id => WARD[id] && (!opt || !opt.worn || WORN_SLOTS.includes(WARD[id].slot))); if (!ids.length) return c;      // (figures 17: opt.noHold: the held parts and their arm keys left out; opt.worn: only what is worn on the body, no pose or dance)
   c = Object.assign({}, c); const w = { ids, parts: [], armFns: [], legFns: [], keyFix: [], defsFns: [], tall: 0 }; c.wd = w;
@@ -2155,7 +2198,7 @@ function wardrobeThumb0(id, sp, opt){ const it = WARD[id], v = it.thumb || THUMB
 const MOM = { pitch: 7 * Math.PI / 180 };
 /* a pose drawn: c (the person, dressed), o: {yaw, k, x, y (the ground), legs, tag, smile, curl, fix: [key fixes], armK: the arms longer (a stretch)}, key: the body's key */
 function momPose(c, o, key){ c = lookWear(c); const B0 = bodyOf(c, o), B = o.armK ? Object.assign({}, B0, { ua: B0.ua * o.armK, fa: B0.fa * o.armK }) : B0, W = wearer(c, o, o.u), cam = camera(o.yaw * Math.PI / 180, MOM.pitch, B.H * o.k, o.x, o.y);
-  W.curl = o.curl != null ? o.curl : 0.45; let k = Float32Array.from(key); if (W.wd && W.wd.keyFix) k = W.wd.keyFix(k, B); for (const f of o.fix || []) k = f(k, B);
+  W.curl = o.curl != null ? o.curl : 0.45; let k = Float32Array.from(key); if (!o.raw){ if (W.wd && W.wd.keyFix) k = W.wd.keyFix(k, B); for (const f of o.fix || []) k = f(k, B); }      // (hf3: raw, an in-between key made from fixed ones)
   const J = skeleton(k, B), fl = lowest(J); return { list: frame(k, B, cam, W, fl, o), defs: W.defs, B, cam, k, J, fl, P: p => cam.pt([p[0], p[1] - fl, p[2]]) }; }
 /* where a point given in the chest's frame (x the figure's left, y up, z forward) is drawn */
 function momAt(p, v){ return p.P(at(p.J.chest, p.J.Bc, v)); }
@@ -2183,22 +2226,80 @@ function momFilm(figs, dur){
     /* a part clipped by a shape of its own (the arms' shadow on the trunk ...): its clip shape written once for every pose that has the same */
     const html = (n, u) => { if (n.tag !== "clip") return nodeHTML(n, u); const id = u + n.id + hash(n.clip); if (!clips.has(id)) clips.set(id, `<clipPath id="${id}"><path d="${n.clip}"/></clipPath>`);
       return `<path data-p="${n.id}" clip-path="url(#${id})" d="${n.d}" fill="${n.fill}"/>`; };
-    const raw = P.map(p => p.list.map(n => html(n, p.u)));
+    /* (hf3) F.runs: the poses are dense samples (every 1/30 s or closer); consecutive samples whose drawings are alike but for their numbers
+       (the same parts, in the same order) make one RUN: one drawing whose path shapes, clip shapes and
+       colours are interpolated by SMIL between the samples (<animate> of d, fill ...), so the motion is smooth at any frame rate; a run
+       ends where the drawing changes otherwise (a part hidden, the order of the layers: then it moves on to the next run's first sample) */
+    let PP = P, raw;
+    if (F.runs){ const NUM = /-?\d*\.?\d+(?:e[-+]?\d+)?/g, shape = d => String(d).replace(NUM, "#");
+      /* (a path whose commands change from one sample to the next, a piece of a sleeve's shading appearing, stays in its run: SMIL takes
+         that one step without interpolating, at its middle, and interpolates the rest) */
+      const sig = n => !n.tag ? `p|${n.id}|${n.stroke ? "s" : n.op != null ? "o" : ""}` : n.tag === "clip" ? `c|${n.id}` : n.tag === "cp" ? `cp|${n.id}` : "g|" + nodeHTML(n, "");
+      /* two parts that change places in the order of the layers need no new run when they do not overlap (their outlines' boxes apart, by
+         a unit: which is drawn first cannot be seen), or when both are behind the hips (the far arm and the far leg, foot and trousers: the
+         run keeps its first order, the order at rest, which is right where they meet, at the hip, and unseen once the arm is up) */
+      const BB = new Map(), box = n => { if (BB.has(n)) return BB.get(n); let b = null; const d = n.tag && n.tag !== "clip" && n.tag !== "cp" ? null : String(n.d);
+          if (d && !/[a-df-z]/.test(d)){ b = [1e9, 1e9, -1e9, -1e9]; let x = 0, y = 0, pad = 1; const P2 = (X, Y) => { x = X; y = Y; b[0] = Math.min(b[0], X); b[1] = Math.min(b[1], Y); b[2] = Math.max(b[2], X); b[3] = Math.max(b[3], Y); };
+            for (const m of d.matchAll(/([MLHVCSQTAZ])([^MLHVCSQTAZ]*)/g)){ const c = m[1], a = (m[2].match(NUM) || []).map(Number);
+              if (c === "H") a.forEach(v => P2(v, y)); else if (c === "V") a.forEach(v => P2(x, v));
+              else if (c === "A") for (let i = 0; i + 6 < a.length; i += 7){ pad = Math.max(pad, a[i], a[i + 1]); P2(a[i + 5], a[i + 6]); }
+              else for (let i = 0; i + 1 < a.length; i += 2) P2(a[i], a[i + 1]); }
+            b = [b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad]; }
+          BB.set(n, b); return b; };
+      const apart = (m, n) => { const a = box(m), b = box(n); return !!(a && b) && (a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1]); };
+      const join = (r, p) => { const A = r.S[0].list, B = p.list, L0 = r.S[r.S.length - 1].list; if (A.length !== B.length) return null; const kA = A.map(sig), pos = new Map(B.map((n, i) => [sig(n), i]));
+        if (pos.size !== B.length || kA.some(k => !pos.has(k))) return null;
+        const back = A.findIndex(n => n.id === "hips0");      // (the parts drawn behind the hips: the far leg and foot, the far arm and what it holds, a backpack)
+        for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++){ const bi = pos.get(kA[i]), bj = pos.get(kA[j]); if (bi > bj && !(apart(B[bi], B[bj]) && apart(L0[i], L0[j])) && !(j < back)) return null; }
+        return A.map((n, i) => B[pos.get(kA[i])]); };
+      const runs = []; for (const p of P){ const r = runs[runs.length - 1], L = r && join(r, p); if (L) r.S.push({ t: p.t, list: L, u: p.u }); else runs.push({ S: [p], t: p.t, u: p.u }); }
+      /* a run whose next differs only in the order of its layers (a part passing behind another) goes on moving up to the next run's first
+         sample (its parts found by name): only the layering changes there, the shapes never wait */
+      runs.forEach((r, i) => { const nx = runs[i + 1]; if (!nx) return; const by = new Map(nx.S[0].list.map(n => [sig(n), n])); if (by.size !== nx.S[0].list.length) return;
+        const L = r.S[0].list.map(n => by.get(sig(n))); if (L.length === by.size && L.every(Boolean)) r.S.push({ t: nx.S[0].t, list: L, u: r.u }); });
+      const T3 = v => String(Math.round(v) / 1000);
+      /* each animated attribute keeps only the samples it needs: one is dropped where the straight interpolation between the ones kept round
+         it gives every number within 0.5 units (a holding arm, the other arm, a slow stretch cost nothing) */
+      const keep = (vals, ts) => { const V = vals.map(v => (String(v).match(NUM) || []).map(Number)), num = V[0].length > 0 && !/^#|^url/.test(String(vals[0])), K = [0];
+        for (let i = 1; i < vals.length - 1; i++){ const a = K[K.length - 1], b = i + 1; let ok = num ? true : vals[i] === vals[a] && vals[i] === vals[b];
+          if (num) for (let j = a + 1; j < b && ok; j++){ const f = (ts[j] - ts[a]) / (ts[b] - ts[a]); for (let q = 0; q < V[j].length; q++) if (Math.abs(V[a][q] + (V[b][q] - V[a][q]) * f - V[j][q]) > 0.5){ ok = false; break; } }
+          if (!ok) K.push(i); }
+        K.push(vals.length - 1); return K; };
+      raw = runs.map((r, R) => { const S = r.S, t0 = S[0].t, t1 = S[S.length - 1].t, ts = S.map(x => x.t);
+        const an = (attr, vals) => { const K = keep(vals, ts); if (K.length === 2 && String(vals[0]) === String(vals[vals.length - 1])) return "";
+          return `<animate attributeName="${attr}" values="${K.map(i => vals[i]).join(";")}" keyTimes="${K.map(i => +((ts[i] - t0) / Math.max(1, t1 - t0)).toFixed(4)).join(";")}" begin="${T3(t0)}s" dur="${T3(t1 - t0)}s" fill="freeze"/>`; };
+        const L = []; S[0].list.forEach((n, j) => { const N = S.map(x => x.list[j]), u = r.u;
+          if (N.every(x => nodeHTML(x, u) === nodeHTML(n, u))){ L.push(html(n, u)); return; }
+          const A = (attr, k) => N.every(x => String(x[k]) === String(n[k])) ? "" : an(attr, N.map(x => x[k]));
+          if (!n.tag) L.push(n.stroke ? `<path data-p="${n.id}" d="${n.d}" fill="none" stroke="${n.stroke}" stroke-width="${n.sw}" stroke-linecap="round">${A("d", "d")}${A("stroke", "stroke")}${A("stroke-width", "sw")}</path>`
+            : `<path data-p="${n.id}" d="${n.d}" fill="${n.fill}"${n.op != null ? ` opacity="${n.op}"` : ""}>${A("d", "d")}${A("fill", "fill")}${n.op != null ? A("opacity", "op") : ""}</path>`);
+          else if (n.tag === "clip"){ const id = `${u}${n.id}r${R}`; L.push(`<clipPath id="${id}"><path d="${n.clip}">${A("d", "clip")}</path></clipPath>`, `<path data-p="${n.id}" clip-path="url(#${id})" d="${n.d}" fill="${n.fill}">${A("d", "d")}${A("fill", "fill")}</path>`); }
+          else if (n.tag === "cp") L.push(`<clipPath data-p="${n.id}" id="${u}${n.id}"><path d="${n.d}">${A("d", "d")}</path></clipPath>`);
+          else L.push(html(n, u)); });
+        return L; });
+      PP = runs.map(r => ({ t: r.t })); }
+    else raw = P.map(p => p.list.map(n => html(n, p.u)));
     /* the ids defined in the parts (clip shapes and the like, named by other parts): an id whose defining part is not the same in every pose
        is made each pose's own, with every name of it in that pose */
     const defsOf = new Map(); raw.forEach((L, i) => L.forEach(str => { for (const m of str.matchAll(/ id="([^"]+)"/g)){ if (!defsOf.has(m[1])) defsOf.set(m[1], { strs: new Set(), poses: new Set() }); const d = defsOf.get(m[1]); d.strs.add(str); d.poses.add(i); } }));
-    const vary = [...defsOf].filter(([, d]) => d.strs.size > 1 || d.poses.size < P.length).map(([x]) => x);
+    const vary = [...defsOf].filter(([, d]) => d.strs.size > 1 || d.poses.size < PP.length).map(([x]) => x);
     const strs = raw.map((L, i) => L.map(str => { for (const x of vary) if (str.includes(x)) str = str.split(`id="${x}"`).join(`id="${x}p${i}"`).split(`url(#${x})`).join(`url(#${x}p${i})`).split(`href="#${x}"`).join(`href="#${x}p${i}"`); return str; }));
     const count = new Map(); strs.forEach(L => new Set(L).forEach(s => count.set(s, (count.get(s) || 0) + 1)));
     const ids = new Map(); let defs = F.defs + [...clips.values()].join(""), nId = 0;
     for (const [s, n] of count) if (n > 1){ if (/^<clipPath/.test(s)){ defs += s; ids.set(s, ""); continue; }
       const id = `${F.u}s${nId++}`; ids.set(s, id); defs += s.replace(/^<(path|g) /, `<$1 id="${id}" `); }
     let poses = "", poseDefs = "";
-    strs.forEach((L, i) => { const t0 = P[i].t, t1 = i + 1 < P.length ? P[i + 1].t : null;
-      const body = L.map(s => { if (ids.has(s)) return ids.get(s) ? `<use href="#${ids.get(s)}"/>` : ""; if (/^<clipPath/.test(s)){ poseDefs += s; return ""; }      // (a pose's own clip shapes in the film's defs, never under a hidden group)
-        return s; }).join("");
-      poses += i === 0 ? `<g>${t1 != null ? `<set attributeName="visibility" to="hidden" begin="${f2(t1 / 1000)}s" fill="freeze"/>` : ""}${body}</g>`
-        : `<g visibility="hidden"><set attributeName="visibility" to="visible" begin="${f2(t0 / 1000)}s"${t1 != null ? ` dur="${f2((t1 - t0) / 1000)}s"` : ` fill="freeze"`}/>${body}</g>`; });
+    const TB = F.runs ? (v => String(Math.round(v) / 1000)) : (v => f2(v / 1000));      // (hf3: a run's start to the ms)
+    const bodies = strs.map(L => L.map(s => { if (ids.has(s)) return ids.get(s) ? `<use href="#${ids.get(s)}"/>` : ""; if (/^<clipPath/.test(s)){ poseDefs += s; return ""; }      // (a pose's own clip shapes in the film's defs, never under a hidden group)
+        return s; }).filter(Boolean));
+    if (F.runs){ const blocks = L => { const out = []; let cur = []; for (const s of L){ if (/^<use /.test(s)) cur.push(s); else { if (cur.length) out.push(cur.join("")); cur = []; out.push(s); } } if (cur.length) out.push(cur.join("")); return out; };
+      const B = bodies.map(blocks), nB = new Map(); B.forEach(L => new Set(L).forEach(b => { if (/^<use [^>]*\/><use /.test(b)) nB.set(b, (nB.get(b) || 0) + 1); }));
+      const bid = new Map(); let nb = 0; for (const [b, n] of nB) if (n > 1){ const id = `${F.u}b${nb++}`; bid.set(b, id); defs += `<g id="${id}">${b}</g>`; }
+      B.forEach((L, i) => { bodies[i] = L.map(b => bid.has(b) ? `<use href="#${bid.get(b)}"/>` : b); }); }
+    strs.forEach((L, i) => { const t0 = PP[i].t, t1 = i + 1 < PP.length ? PP[i + 1].t : null;
+      const body = bodies[i].join("");
+      poses += i === 0 ? `<g>${t1 != null ? `<set attributeName="visibility" to="hidden" begin="${TB(t1)}s" fill="freeze"/>` : ""}${body}</g>`
+        : `<g visibility="hidden"><set attributeName="visibility" to="visible" begin="${TB(t0)}s"${t1 != null ? ` dur="${TB(t1 - t0)}s"` : ` fill="freeze"`}/>${body}</g>`; });
     const M = F.move || {}, cx = f1(M.cx || 0), cy = f1(M.cy || 0), has = L => L && L.length > 1;
     const tr = has(M.tr) ? `<animateTransform attributeName="transform" type="translate" ${kt(M.tr, x => f1(x[1]) + " " + f1(x[2]))} dur="${D}s" fill="freeze"/>` : "";
     const rot = has(M.rot) ? `<animateTransform attributeName="transform" type="rotate" ${kt(M.rot, x => f2(x[1]) + " " + cx + " " + cy)} dur="${D}s" fill="freeze"/>` : "";
@@ -2232,8 +2333,8 @@ function highFive(cM, sp, wear, o){ o = o || {}; wear = (wear || []).filter(id =
   const Y = { c: open(cY, "R"), side: "R", sg: -1, dir: 1, x: 160 + HF.half, o: { yaw: -HF.yaw, k, y: HF.gy, legs: o.legsY, smile: 1.1, u: uY } };
   const armLen = F => { const B = bodyOf(lookWear(F.c), F.o); return (B.ua + B.fa) * HF.stretch * 0.99; };
   /* the meeting height: as high as both can reach at the middle (above the heads) */
-  let yC = 30, sol = null;
-  for (; yC < 120; yC += 1){ const r = [M, Y].map(F => { const p = momPose(F.c, Object.assign({}, F.o, { x: F.x, armK: HF.stretch }), K0), B = p.B, sh = p.J["sh" + F.side], Bc = p.J.Bc, ch = p.J.chest;
+  let yC = 30, sol = null; const PR = [M, Y].map(F => momPose(F.c, Object.assign({}, F.o, { x: F.x, armK: HF.stretch }), K0));      // (hf3: drawn once, not at every height)
+  for (; yC < 120; yC += 1){ const r = [M, Y].map((F, iF) => { const p = PR[iF], B = p.B, sh = p.J["sh" + F.side], Bc = p.J.Bc, ch = p.J.chest;
       const inv = v => [v[0] - ch[0], v[1] - ch[1], v[2] - ch[2]], dl = inv(sh), sC = [dl[0] * Bc.x[0] + dl[1] * Bc.x[1] + dl[2] * Bc.x[2], dl[0] * Bc.y[0] + dl[1] * Bc.y[1] + dl[2] * Bc.y[2], dl[0] * Bc.z[0] + dl[1] * Bc.z[1] + dl[2] * Bc.z[2]];
       const hand = B.hand * 0.42 * B.H * F.o.k;      // the palm's middle above the wrist (the hand up)
       /* the meeting point in the figure's own picture before its lean (the figure leans toward the other about its feet) */
@@ -2258,15 +2359,40 @@ function highFive(cM, sp, wear, o){ o = o || {}; wear = (wear || []).filter(id =
   /* the drawings (ms from which each shows; C the contact): rest, the arm half up (C - 620), up and back (C - 340), the hands together (C, held
      150 ms as in the reference), on their way down (C + 150), down and out (C + 360), at rest (C + 660) */
   const C = HF.contact;
-  const PM = [[0, pose(M, "rest")], [C - 620, pose(M, "wind1")], [C - 340, pose(M, "wind2")], [C, pose(M, "hit")], [C + 150, pose(M, "swing")], [C + 360, pose(M, "after")], [C + 660, pose(M, "settle", cMb, keyArm("R", () => bravo))]];
-  const PY = [[0, pose(Y, "rest")], [C - 620, pose(Y, "wind1")], [C - 340, pose(Y, "wind2")], [C, pose(Y, "hit")], [C + 150, pose(Y, "swing")], [C + 360, pose(Y, "after")], [C + 660, pose(Y, "rest")]];      // (the learner settles as at rest: drawn once, used twice)
+  const KM = [[0, pose(M, "rest")], [C - 620, pose(M, "wind1")], [C - 340, pose(M, "wind2")], [C, pose(M, "hit")], [C + 150, pose(M, "swing")], [C + 360, pose(M, "after")], [C + 660, pose(M, "settle", cMb, keyArm("R", () => bravo))]];
+  const KY = [[0, pose(Y, "rest")], [C - 620, pose(Y, "wind1")], [C - 340, pose(Y, "wind2")], [C, pose(Y, "hit")], [C + 150, pose(Y, "swing")], [C + 360, pose(Y, "after")], [C + 660, pose(Y, "rest")]];
+  /* (hf3; the owner: "The high five needs more frames because it's currently not smooth") the arms BETWEEN the drawings: each drawing is
+     still reached at its own time (the same timing and contact), and in between the arm's joint angles are interpolated (each bone's way,
+     the hand's and the palm's: normalised linear interpolation of the key's unit vectors; the arms' stretch with them), eased, and drawn
+     every 1/30 s; the film interpolates the drawings' shapes between those samples
+     (momFilm's runs), so the arm moves at the screen's own rate. The motion: at rest to C - 900 (the reference: the hand starts up 600-775 ms
+     before; ours has further to go, from the hip to behind the head), up through the half-raised drawing (C - 620) to up and back (C - 340), held, cocked, to C - 120; the swing into the contact
+     accelerating (ease-in, 120 ms: the snap kept); together through the squash (to C + 30), then parting gradually, still high, to
+     C + 150 (the reference: the hands' distance grows smoothly over the 150 ms after the contact); down and out at C + 360;
+     at rest (Marie: "bravo") at C + 660. */
+  const AK = (F, name) => name === "hit" ? HF.stretch : 1;
+  const segs = F => { const K = F === M ? KM : KY, at = i => K[i][1];
+    return [[0, C - 900, at(0), at(0), "hold"], [C - 900, C - 620, at(0), at(1), "in"], [C - 620, C - 340, at(1), at(2), "out"], [C - 340, C - 120, at(2), at(2), "hold"],
+      [C - 120, C, at(2), at(3), "in"], [C, C + 30, at(3), at(3), "hold"], [C + 30, C + 150, at(3), at(4), "io"], [C + 150, C + 360, at(4), at(5), "io"], [C + 360, C + 660, at(5), at(6), "io"]]; };
+  const EASE = { hold: () => 0, in: u => u * u, out: u => 1 - (1 - u) * (1 - u), io: u => u * u * (3 - 2 * u) };
+  const nlerp = (a, b, s) => { const k = Float32Array.from(a); for (let i = 33; i < 57; i += 3){ if (a[i] === b[i] && a[i + 1] === b[i + 1] && a[i + 2] === b[i + 2]) continue; const v = [0, 1, 2].map(d => a[i + d] + (b[i + d] - a[i + d]) * s), l = Math.hypot(v[0], v[1], v[2]) || 1; for (let d = 0; d < 3; d++) k[i + d] = v[d] / l; }
+    for (let i = 0; i < k.length; i++) if (i < 33 || i >= 57) k[i] = a[i] + (b[i] - a[i]) * s; return k; };      // (33-56: the two arms' bones, hands and palms; the rest is the same in every drawing)
+  const film = F => { const out = [], Ks = F === M ? KM : KY, armA = K => K.B.ua / bodyOf(lookWear(F.c), F.o).ua;
+    for (const [t0, t1, A0, A1, e, fps] of segs(F)){ if (e === "hold"){ out.push([t0, A0]); continue; }
+      const n = Math.max(1, Math.round((t1 - t0) / (1000 / (fps || 30))));
+      for (let i = 0; i < n; i++){ const t = t0 + (t1 - t0) * i / n, s = EASE[e](i / n);
+        if (i === 0){ out.push([t, A0]); continue; }
+        const last = A1 === Ks[Ks.length - 1][1] && F === M, c = last ? withWd(M.c, w => { w.curlR = 0.45 + (0.05 - 0.45) * s; }) : F.c;      // (Marie's other hand opens as it comes up: "bravo")
+        out.push([t, momPose(c, Object.assign({}, F.o, { x: F.x, raw: true, armK: armA(A0) + (armA(A1) - armA(A0)) * s }), nlerp(A0.k, A1.k, s))]); } }
+    out.push([C + 660, Ks[Ks.length - 1][1]]); return out; };
+  const PM = film(M), PY = film(Y);
   /* the moves between the drawings (ms): the step 0-720 with a bob at 360; the lean in 720-1150, held through the contact (the hands together 100 ms, as in the reference), out by 1800; the
      snap: a stretch at C - 30, a squash at C + 13, recovered at C + 100 (crisp: not slowed with the rest); the learner's hop after it (a crouch
      at C + 100, up at C + 284, down at C + 514: about 0.36 s in the air, a hop's own time), a little bounce and a drift */
   const st = HF.step, lean = HF.lean;
-  const figM = { u: uM, defs: PM[0][1].defs, poses: PM.map(([t, p]) => ({ t, list: p.list, u: uM })), move: { cx: M.x, cy: HF.gy,
+  const figM = { u: uM, defs: PM[0][1].defs, runs: true, poses: PM.map(([t, p]) => ({ t, list: p.list, u: uM })), move: { cx: M.x, cy: HF.gy,
     tr: [[0, -st, 0], [360, -st / 2, -2.5], [720, 0, 0], [1800, 0, 0], [2360, -3, 0]], rot: [[0, 0], [720, 0], [1150, lean], [C + 100, lean], [C + 240, lean * 0.4], [1800, 0]], sq: [[0, 1, 1], [920, 1, 1], [C - 30, 0.99, 1.03], [C + 13, 1.03, 0.965], [C + 100, 1, 1]] } };
-  const figY = { u: uY, defs: PY[0][1].defs, poses: PY.map(([t, p]) => ({ t, list: p.list, u: uY })), move: { cx: Y.x, cy: HF.gy,
+  const figY = { u: uY, defs: PY[0][1].defs, runs: true, poses: PY.map(([t, p]) => ({ t, list: p.list, u: uY })), move: { cx: Y.x, cy: HF.gy,
     tr: [[0, st, 0], [360, st / 2, -2.5], [720, 0, 0], [C + 100, 0, 0], [C + 284, 1, -11], [C + 514, 2, 0], [1880, 3, -2.5], [1960, 3, 0], [2360, 4, 0]], rot: [[0, 0], [720, 0], [1150, -lean], [C + 100, -lean], [C + 240, -lean * 0.4], [1800, 0]],
     sq: [[0, 1, 1], [920, 1, 1], [C - 30, 0.99, 1.03], [C + 13, 1.03, 0.965], [C + 100, 1.04, 0.94], [C + 160, 0.97, 1.05], [C + 514, 1.04, 0.95], [1920, 1, 1]] } };
   const g = mk(momFilm([figM, figY], HF.dur));

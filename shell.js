@@ -459,7 +459,7 @@ const SHELL = (()=>{
   // (about one rank-up's tokens in all, so they are bought on the day the tier opens) and one or two showpieces (about two and a half rank-ups:
   // they need saving across unlocks). Set with the ranks' points and tokens by dev/design/tools/ward2/sim.py (a spender and a saver).
   const TIERS = [[1,"Hats"],[2,"Eyewear"],[3,"Scarves and neckwear"],[4,"Tops"],[5,"Shoes"],[6,"Bags"],[7,"Gloves"],[8,"Badges and pins"],
-    [9,"Jewellery",5],[10,"Hair colours",6],[11,"Jackets and coats"],[12,"Things to carry"],[13,"Instruments and art"],[14,"Hats of honour"],[15,"Sashes and honours"],
+    [9,"Jewellery"],[10,"Hair colours"],[11,"Jackets and coats"],[12,"Things to carry"],[13,"Instruments and art"],[14,"Hats of honour"],[15,"Sashes and honours"],
     [16,"Outfits"],[17,"On stage"],[18,"Costumes"],[19,"Grand costumes"],[20,"Something wild"],[21,"Poses"],[22,"Dances"],[23,"Emotes",6],[24,"Companions",4],
     [25,"Auras and frames",4],[26,"Backgrounds"],[27,"The Immortal's coat"]]
     .map(([n, cat, soon], i, a)=>({n, cat, soon:soon||3, rank:Math.max(1, Math.ceil(n*RULES.RANKS.length/a.length))}));
@@ -474,15 +474,17 @@ const SHELL = (()=>{
     ["starspecs","des lunettes étoiles","star glasses",2,"face",17], ["monocle","un monocle","a monocle",2,"face",17],
     ["scarf","une écharpe","a scarf",3,"neck",1], ["bandana","un bandana","a bandana",3,"neck",1], ["tie","une cravate","a tie and shirt collar",3,"neck",1], ["snood","un snood","a chunky knit snood",3,"neck",1], ["lei","un collier de fleurs","a lei of flowers",3,"neck",2],
     ["bowtie","un nœud papillon","a bow tie",3,"neck",19], ["silk","un foulard en soie","a silk scarf",3,"neck",19],
-    ["tshirt","un T-shirt","a T-shirt",4,"top",1], ["checked","une chemise à carreaux","a checked shirt",4,"top",1], ["hoodie","un sweat à capuche","a hoodie",4,"top",1], ["cardigan","un gilet","a cardigan",4,"top",1],
+    ["tshirt","un T-shirt","a T-shirt",4,"top",1], ["checked","une chemise à carreaux","a checked shirt",4,"top",1], ["hoodie","un sweat à capuche","a hoodie",4,"top",1], ["cardigan","un gilet","a cardigan",4,"top",1], ["polo","un polo rayé","a striped polo shirt",4,"top",1], ["rugby","un maillot de rugby","a rugby shirt",4,"top",1], ["jersey","un maillot numéro 10","a number 10 jersey",4,"top",21], ["fairisle","un pull jacquard","a fair-isle jumper",4,"top",21],
     ["trainers","des baskets","white trainers",5,"feet",1], ["redsneakers","des baskets rouges","red sneakers",5,"feet",2], ["wellies","des bottes de pluie","wellies",5,"feet",2], ["cowboyboots","des santiags","cowboy boots",5,"feet",2], ["goldshoes","des souliers dorés","gold shoes",5,"feet",24],
     ["backpack","un sac à dos","a backpack",6,"back",1], ["tote","un tote bag","a tote bag",6,"back",2], ["bumbag","une banane","a bum bag",6,"back",2], ["satchel","une besace","a satchel",6,"back",3], ["rucksack","un sac à dos à badges","a rucksack with badges",6,"back",26],
     ["woolgloves","des gants en laine","woollen gloves",7,"hands",2], ["gardengloves","des gants de jardin","gardening gloves",7,"hands",3], ["leathergloves","des gants en cuir","leather gloves",7,"hands",4], ["whitegloves","des gants blancs","white gloves",7,"hands",30],
-    ["rosette","la rosette","a rosette on the lapel",8,"neck",1], ["medal","la médaille du lauréat","a laureate's medal",8,"neck",33],
-    ["coat","un beau manteau","a smart coat",11,"top",1], ["trench","un imperméable","a raincoat",11,"top",2], ["tweed","une veste en tweed","a tweed jacket with elbow patches",11,"top",2], ["cape","la cape du poète","a poet's cape",11,"top",47],
+    ["rosette","la rosette","a rosette on the lapel",8,"neck",1], ["pinsmiley","un pin's smiley","a smiley pin",8,"pin",2], ["pinflag","un pin's drapeau français","a French flag pin",8,"pin",3], ["pinfr","un badge FR","an “FR” badge",8,"pin",3], ["medal","la médaille du lauréat","a laureate's medal",8,"neck",33], ["pinstar","une étoile dorée","a gold star badge",8,"pin",33],
+    ["beads","un collier de perles","a bead necklace",9,"jewel",2], ["hoops","des créoles","gold hoop earrings",9,"jewel",2], ["pendant","un pendentif","a gold pendant",9,"jewel",3], ["watch","une montre","a watch",9,"jewel",4], ["pearls","des boucles d'oreilles en perle","pearl earrings",9,"jewel",37], ["bangles","des bracelets en or","gold bangles",9,"jewel",37],
+    ["hairblue","des cheveux bleus","blue hair",10,"hairc",2], ["hairpink","des cheveux roses","pink hair",10,"hairc",3], ["hairgreen","des cheveux verts","green hair",10,"hairc",4], ["hairsilver","des cheveux argentés","silver hair",10,"hairc",4], ["hairrainbow","des cheveux arc-en-ciel","rainbow hair",10,"hairc",42], ["hairflame","des cheveux de feu","flame-coloured hair",10,"hairc",42],
+    ["coat","un beau manteau","a smart coat",11,"top",1], ["trench","un imperméable","a raincoat",11,"top",2], ["tweed","une veste en tweed","a tweed jacket with elbow patches",11,"top",2], ["denim","une veste en jean","a denim jacket",11,"top",3], ["puffer","une doudoune","a puffer jacket",11,"top",3], ["blazer","un blazer","a blazer with a pocket square",11,"top",3], ["cape","la cape du poète","a poet's cape",11,"top",47], ["leather","un blouson en cuir","a leather jacket",11,"top",47],
     ["flowers","des fleurs","a bunch of flowers",12,"hand",3], ["baguette","une baguette","a baguette under the arm",12,"hand",5], ["books","une pile de livres","a pile of books",12,"hand",7], ["quill","une plume et un encrier","a quill and an inkwell",12,"hand",52],
     ["mask","un masque de théâtre","a theatre mask",13,"hand",3], ["easel","une toile et un pinceau","a canvas and a brush",13,"hand",4], ["violin","un violon","a violin and bow",13,"hand",58], ["lyre","une lyre","a lyre",13,"hand",58],
-    ["tophat","un haut-de-forme","a top hat",14,"head",3], ["bicorne","un bicorne","a bicorne hat",14,"head",5], ["laurel","une couronne de laurier","a laurel wreath",14,"head",72],
+    ["tophat","un haut-de-forme","a top hat",14,"head",3], ["bicorne","un bicorne","a bicorne hat",14,"head",5], ["tiara","un diadème","a tiara",14,"head",6], ["featherhat","un chapeau à plume","a feathered hat",14,"head",8], ["laurel","une couronne de laurier","a laurel wreath",14,"head",72], ["crown","une couronne","a crown",14,"head",72],
     ["sash","l'écharpe du diplomate","a diplomat's sash",15,"neck",4], ["cane","une canne à pommeau d'or","a gold-topped cane",15,"hand",5], ["sword","l'épée d'académicien","an academician's sword",15,"hand",82], ["goldquill","la plume d'or","a golden quill",15,"hand",82],
     ["beret","un béret et une marinière","a beret and a striped top",16,"outfit",6], ["artbs","le béret et l'écharpe de l'artiste","the artist's beret and long scarf",16,"outfit",11], ["dots","une robe à pois","a polka-dot dress",16,"outfit",15], ["gown","la toge et la toque","a scholar's gown and cap",16,"outfit",110],
     ["tunic","le costume de danseur","a ballet tunic and tights",17,"outfit",12], ["tutu","le tutu","a tutu and pink tights",17,"outfit",27], ["baton","le chef d'orchestre","a conductor: tailcoat and baton",17,"outfit",130],
@@ -821,15 +823,20 @@ const SHELL = (()=>{
     if(!you || !marie) return null;
     return {html:crop(marie)+crop(you), contact:760, dur:0, own:false}; }
   const FIVE = (()=>{ let C=null, lastO=null; const HOLD=1300;
-    // until the tally has shown the points, the screen's foot (the rank bar, already at its new value, and Continue) waits (after())
-    function run(o, then){ stop(); const F=(()=>{ try{ return pairFigs(); }catch(e){ return null; } })();
+    /* (hf3, 17 Nov; the owner: "it should just say magnifique Jon with the rosette and perfect lesson, without the 'every answer right, first
+       time' and without everything underneath ... Then the rosette and other text I approved stays there like it currently does while the
+       high five plays") EVERY end screen (a lesson, one exercise again, Go for perfect) opens on its mark (the rosette, the sun or the
+       star), its badge ("A perfect lesson", "Lesson 1: all green") and its heading alone (class hfpre on the screen); they stay as they are
+       while the high five plays under them (a finished lesson only: five), then the tally; the rest (the line under the heading, the cards,
+       the foot) comes in after the tally (after()). Without the high five the heading is read for the same 1.3 s, then the tally. */
+    function run(o, then, five=true){ stop();
       if(o){ lastO=o; o.classList.add("hfpre"); }
-      if(!o || o.hidden || !F){ if(then) then(); return; }
-      const calm=lessMotion(), nm=String(S.learnerName||"").trim();
+      if(!o || o.hidden){ if(then) then(); return; }
+      const calm=lessMotion(), nm=String(S.learnerName||"").trim(); let F=null;
       const root=el(`<div class="rkc hfc${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="Bravo" tabindex="-1"><div class="hf-veil"></div>
-        <div class="rk-hf" aria-hidden="true"><div class="rk-pair${F.own?" own":""}"><div class="hf-at"></div><div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&#8239;!</div></div></div>
+        <div class="rk-hf" aria-hidden="true"><div class="rk-pair"><div class="hf-at"></div><div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&#8239;!</div></div></div>
         <button class="rk-skip" id="hfSkip" hidden>Skip</button><div class="rk-live" aria-live="polite"></div></div>`);
-      const c = C = {o, root, then, timers:new Set(), done:false};
+      const c = C = {o, root, then, five, timers:new Set(), done:false};
       const at=(ms,f)=>{ const t=setTimeout(()=>{ c.timers.delete(t); if(C!==c) return; try{ f(); }catch(e){ try{ trace("FAULT high five: "+e.message); }catch(_){} } }, Math.max(0, ms)); c.timers.add(t); };
       // the summary stays in view (its heading is what the high five is for) but out of reach until it is over
       c.inert=[...o.children]; c.inert.forEach(x=>{ x.inert=true; }); c.ov=o.style.overflow; o.style.overflow="hidden"; o.scrollTop=0;
@@ -837,12 +844,15 @@ const SHELL = (()=>{
       root.addEventListener("click", e=>{ if(e.target.closest("button") && e.target.id!=="hfSkip") return; if(c.skippable) end(c, "skip"); });
       root.addEventListener("keydown", e=>{ if(e.key==="Escape"){ e.preventDefault(); end(c, "skip"); } });
       at(600, ()=>{ c.skippable=true; });
-      try{ trace("the high five: after the heading, before the tally"); }catch(e){}
-      at(calm ? 900 : HOLD, ()=>{ const hd=o.querySelector(".sub") || o.querySelector("h1"), vh=innerHeight, pr=root.querySelector(".rk-pair");
+      try{ trace(five ? "the high five: after the heading, before the tally" : "the heading alone first, then the tally"); }catch(e){}
+      // the film is made once the heading has come in (a still moment: the making takes a little while), and shown at the end of the hold
+      if(five) at(calm ? 450 : 650, ()=>{ try{ F=pairFigs(); }catch(e){ F=null; } });
+      at(calm ? 900 : HOLD, ()=>{ if(!F){ end(c, "go"); return; }
+        const hd=o.querySelector("h1"), vh=innerHeight, pr=root.querySelector(".rk-pair");
         // under the heading: the stage starts just below it (never so low that the two would not fit)
         let top=hd ? hd.getBoundingClientRect().bottom+14 : vh*0.3; top=Math.max(vh*0.2, Math.min(top, vh-330)); root.style.setProperty("--top", Math.round(top)+"px");
         const k=Math.min(1, (vh-top-24)/(330+56), (innerWidth-16)/350); if(k<1) pr.style.setProperty("--k", k.toFixed(3));
-        root.querySelector(".hf-at").outerHTML=F.html;      // put in now: the film's clock starts here
+        if(F.own) pr.classList.add("own"); root.querySelector(".hf-at").outerHTML=F.html;      // put in now: the film's clock starts here
         root.classList.add("in","sA"); const sk=root.querySelector("#hfSkip"); if(sk){ sk.hidden=false; sk.onclick=()=>end(c, "skip"); }
         const lv=root.querySelector(".rk-live"); if(lv) lv.textContent="Marie: Bravo"+(nm?", "+nm:"")+" !";
         if(calm){ root.classList.add("hit"); at(1500, ()=>end(c, "go")); return; }
@@ -860,13 +870,17 @@ const SHELL = (()=>{
     // over: the tally is put in under it (or the summary is simply there), and it fades out over that, so the screen never goes back to the
     // summary in between (with less movement: a cut)
     function end(c, how){ if(C!==c || c.done) return; c.done=true; C=null; release(c); const r=c.root; if(how==="skip") SFX.hush();
-      try{ trace("the high five closed ("+how+")"+(c.hitAt!=null ? ", the clap at "+Math.round(c.hitAt)+" ms of the film" : "")); }catch(e){}
+      try{ trace((c.five ? "the high five closed (" : "the heading alone closed (")+how+")"+(c.hitAt!=null ? ", the clap at "+Math.round(c.hitAt)+" ms of the film" : "")); }catch(e){}
       if(c.then) try{ c.then(); }catch(e){}
-      if(lessMotion()){ r.remove(); return; } r.style.pointerEvents="none"; const w=how==="skip" ? 0 : 240;      // (the tally's own fade-in: 240 ms)
-      setTimeout(()=>r.classList.add("gone"), w); setTimeout(()=>r.remove(), w+340); }
+      if(lessMotion()){ r.remove(); return; } r.style.pointerEvents="none";      // (hf3: it fades as the tally comes in, together: the two are never seen both at once)
+      requestAnimationFrame(()=>r.classList.add("gone")); setTimeout(()=>r.remove(), 340); }
     // the screen is left another way (Continue by the back button): it goes at once and nothing follows
     function stop(){ after(); const c=C; if(!c) return; C=null; release(c); c.root.remove(); }
-    function after(){ if(lastO){ lastO.classList.remove("hfpre"); lastO=null; } }
+    // the rest of the screen comes in (each part that was waiting rises in, as the screen's own parts do)
+    function after(){ const o=lastO; if(!o) return; lastO=null; if(!o.classList.contains("hfpre")) return;
+      const keep=x=>x.matches(".seal,.sunmark,.okmark,.perfect-tag,h1,.rkc,.tly,.celebfig");
+      o.classList.remove("hfpre"); if(lessMotion() || o.hidden) return; let i=0;
+      for(const x of o.children){ if(keep(x) || x.classList.contains("spacer")) continue; x.style.setProperty("--i", Math.min(i++, 12)); x.classList.add("hf-rev"); setTimeout(()=>x.classList.remove("hf-rev"), 1300); } }
     return {run, stop, after, get on(){ return !!C; }}; })();
   /* (game feel) the other big moments of the lesson-complete screen, briefly and in the same spirit: a perfect lesson's seal stamps on with a
      ring of stars; a new badge drops into place with a chime when it comes into view; a ring closed glows once with its words. Never with less
@@ -1172,7 +1186,8 @@ const SHELL = (()=>{
       + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b></div></div>` : "")
       + `<div class="spacer"></div><div class="donefoot">${rankBar(G.points, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
     longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); home(); };
-    TY.run(o, how=>{ if(how!=="none") summaryIn(o); fete(o, (res.perfect || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:res.p>0 || !!bonus}); }); }
+    // (hf3) its heading alone first (no high five: one exercise is not a lesson finished), then the tally, then the rest
+    FIVE.run(o, ()=>TY.run(o, how=>{ FIVE.after(); if(how!=="none") summaryIn(o); fete(o, (res.perfect || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:res.p>0 || !!bonus}); }), false); }
   /* (.71) the end of "Go for perfect": one praise for the whole run (the owner, 16 Nov: "they get praised for it afterwards. They get told the
      point total that was added at the end of that repair sequence and the extra … that was added to the overall progress indicator") */
   // (MASTERY) "Go for perfect" for a lesson's yellow exercises: the run that already exists, started at once
@@ -1207,7 +1222,7 @@ const SHELL = (()=>{
     $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); if(unlock && G.next>R0.li){ if(lvUp) levelParty(lvUp, ()=>home()); else { home(); setTimeout(()=>{ const b=$("playBtn"); if(b) b.click(); }, 60); } } else if(waits && left){ home(); goPerfect(R0.li); } else after(); };
     { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); after(); }; }
     const tally=()=>TY.run(o, how=>{ FIVE.after(); if(how!=="none") summaryIn(o); fete(o, (made>0 || unlock || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:made>0 || !!bonus}); });
-    if(unlock) FIVE.run(o, tally); else tally(); }      // (hf2) the lesson completed by this run: its high five, as at a lesson's end
+    FIVE.run(o, tally, unlock); }      // (hf2) the lesson completed by this run: its high five, as at a lesson's end; (hf3) else its heading alone first
   const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
   function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
   /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
