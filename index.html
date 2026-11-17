@@ -415,7 +415,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-17.76";      // must equal version.json
+const APP_VERSION="2026-11-17.77";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -955,7 +955,7 @@ function loadUsers(){
 const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
-const KEY=SAVE_NS+".u."+USERS.current;
+const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
 const defaults = () => ({stateVer:12, courseRev:72, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
@@ -1303,6 +1303,7 @@ function migrate54(){
    the users who are not playing are kept with their last 300 of each (switchUser), about 0.1 MB. If a save is still refused,
    the oldest half of this user's trace goes and the save is tried again: the place in the course must never fail to be saved. */
 function save(){
+  if(!USERS.list.some(x=>x.id===KEY_ID)) return;      // (.77) this learner has been removed: nothing of theirs is written again
   for(let k=0;k<4;k++){ try{ localStorage.setItem(KEY, JSON.stringify(S)); break; }
     catch(e){ if(!S.trace || S.trace.length<50) break; S.trace.splice(0, Math.ceil(S.trace.length/2)); S.trace.push({t:new Date().toISOString(), task:"", phase:"", ev:"FAULT STORAGE FULL: the oldest half of the trace was dropped so that the place in the course could be saved"}); } }
   renderPanel(); }
@@ -1319,7 +1320,7 @@ function switchUser(id){
 function addUser(name){
   name=cleanName(name); if(!name) return "Type a name.";
   if(USERS.list.some(x=>x.name.toLowerCase()===name.toLowerCase())) return "There is already a user called "+name+".";
-  const id="u"+(Math.max(0,...USERS.list.map(x=>+String(x.id).slice(1)||0))+1);
+  const id="u"+(Math.max(0, +USERS.top||0, ...USERS.list.map(x=>+String(x.id).slice(1)||0))+1); USERS.top=+id.slice(1);      // (.77) an id is never given again (USERS.top): nothing of a removed learner can come back to a new one
   const fresh=defaults(); fresh.learnerName=name; fresh.settings=S.settings;
   try{ localStorage.setItem(SAVE_NS+".u."+id, JSON.stringify(fresh)); }catch(e){ return "This phone's storage is full."; }
   USERS.list.push({id, name}); saveUsers(); switchUser(id); return "";
@@ -1328,9 +1329,11 @@ function removeUser(id){
   if(USERS.list.length<2) return "The last user cannot be removed.";
   const u=USERS.list.find(x=>x.id===id); if(!u) return "";
   if(!confirm("Remove "+u.name+" from this phone? Their place in the course and their log are deleted.")) return "";
-  USERS.list=USERS.list.filter(x=>x.id!==id); try{ localStorage.removeItem(SAVE_NS+".u."+id); }catch(e){}
-  try{ clipStore("all").then(all=>Object.keys(all).filter(k=>k.startsWith(id+"_")).forEach(k=>clipStore("del", k))); }catch(e){}
-  if(USERS.current===id){ USERS.current=USERS.list[0].id; saveUsers(); location.reload(); } else { saveUsers(); renderPanel(); }
+  USERS.top=Math.max(+USERS.top||0, ...USERS.list.map(x=>+String(x.id).slice(1)||0));
+  USERS.list=USERS.list.filter(x=>x.id!==id); try{ localStorage.removeItem(SAVE_NS+".u."+id); localStorage.removeItem("frDIn.pg."+id); }catch(e){}
+  // (.77) only this learner's keys go; the page starts again once their recordings are gone (or after 2 s), never before
+  let clips=Promise.resolve(); try{ clips=clipStore("all").then(all=>Promise.all(Object.keys(all).filter(k=>k.startsWith(id+"_")).map(k=>clipStore("del", k)))).catch(()=>{}); }catch(e){}
+  if(USERS.current===id){ USERS.current=USERS.list[0].id; saveUsers(); Promise.race([clips, new Promise(r=>setTimeout(r, 2000))]).then(()=>location.reload()); } else { saveUsers(); renderPanel(); }
   return "";
 }
 

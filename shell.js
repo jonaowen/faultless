@@ -54,7 +54,7 @@ const SHELL = (()=>{
   let G = blank(), fresh = true; try{ const raw=localStorage.getItem(GK); if(raw){ Object.assign(G, JSON.parse(raw)); fresh=false; } }catch(e){}
   G.anchors=Object.assign(blank().anchors, G.anchors||{}); for(const k of ["first","second"]) G.anchors[k]=Object.assign({}, blank().anchors[k], G.anchors[k]);
   for(const k of ["lpts","ex","lp","badges","levels","wordsAt"]) if(!G[k]) G[k]={}; if(!Array.isArray(G.pace)) G.pace=[];
-  const store = ()=>{ try{ localStorage.setItem(GK, JSON.stringify(G)); }catch(e){} };
+  const store = ()=>{ if(!USERS.list.some(x=>x.id===uid)) return; try{ localStorage.setItem(GK, JSON.stringify(G)); }catch(e){} };      // (.77) never once the learner is removed
   const el = (html)=>{ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; };
   const pl = (n, one, many)=>Number(n)===1 ? one : (many || one+"s");      // "1 point", "2 points": every count said with its noun goes through this
   const esc = t=>String(t).replace(/[<&"]/g,c=>({"<":"&lt;","&":"&amp;",'"':"&quot;"}[c]));
@@ -102,13 +102,25 @@ const SHELL = (()=>{
 </defs></svg>`));
 
   /* ---- the learner's figure. The course's "you" is drawn from it once the picture library offers PICS.setLearner(spec) ---- */
+  /* (.77, Jon 17 Nov: "I removed myself from the phone, and then my mum's profile changed, and she had some customization") a figure is
+     stored only when the learner makes one (the figure maker). A learner without one is SHOWN the neutral look everywhere (Who is learning,
+     Home, the wardrobe, the lessons' "you"), and nothing is written for them: before, a learner opened for the first time under the shell
+     (as the first learner is, after the current one is removed) was given a figure by gender and it was saved (seed, firstRun). */
+  const NEUTRAL_LOOK = {body:"n", age:"a", skin:3, hair:8, hairc:2, top:1};
   const AV = { has: ()=>!!(window.PICS && PICS.avatar && PICS.avatarParse && PICS.avatarString),
-    get(id=uid){ let s=""; try{ s=localStorage.getItem(AK(id))||""; }catch(e){} return s; },
+    own(id=uid){ let s=""; try{ s=localStorage.getItem(AK(id))||""; }catch(e){} return s; },      // the figure the learner made ("" when none)
+    get(id=uid){ const s=this.own(id); if(s) return s; try{ return this.has() ? PICS.avatarString(NEUTRAL_LOOK) : ""; }catch(e){ return ""; } },      // the figure shown
     set(str){ try{ localStorage.setItem(AK(uid), str); }catch(e){} try{ if(RULES.LEARNER_FIGURE_ON && PICS.setLearner) PICS.setLearner(PICS.avatarParse(str)); }catch(e){} },
     svg(specOrStr, view, cls){ try{ if(this.has() && specOrStr){ const g=PICS.avatar(typeof specOrStr==="string" ? PICS.avatarParse(specOrStr) : specOrStr, typeof view==="string" ? {view} : view);
         return `<svg class="${cls||"av"}" viewBox="0 0 160 190" aria-hidden="true">${g.outerHTML}</svg>`; } }catch(e){}
       return `<svg class="${cls||"av"}" viewBox="0 0 160 190" aria-hidden="true"><circle cx="80" cy="80" r="29" fill="#c9d1da"/><path d="M20 190 v-22 q0-34 38-40 h44 q38 6 38 40 v22z" fill="#aeb9c5"/></svg>`; } };
   try{ if(RULES.LEARNER_FIGURE_ON && AV.has() && AV.get() && PICS.setLearner) PICS.setLearner(PICS.avatarParse(AV.get())); }catch(e){}
+  /* (.77) a figure written by the app and never chosen (.73 to .76: by gender or neutral, with the offer to make one still open) is taken
+     back, for every learner on the phone: the learner is shown the neutral look until they make their own. A figure made in the maker
+     (the offer closed) is never touched. */
+  try{ if(AV.has()){ const auto=[{body:"f"},{body:"m"},NEUTRAL_LOOK].map(x=>PICS.avatarString(x));
+    for(const u of USERS.list){ const s=AV.own(u.id); if(!s || !auto.includes(s)) continue; let g=null; try{ g=JSON.parse(localStorage.getItem("frDIn.g."+u.id)||"null"); }catch(e){}
+      if(g && g.makerOffer===true){ localStorage.removeItem(AK(u.id)); if(u.id===uid && RULES.LEARNER_FIGURE_ON && PICS.setLearner) PICS.setLearner(PICS.avatarParse(AV.get())); } } } }catch(e){}
 
   /* ---- the course's words and stages (next/words.js, made from the plan) ---- */
   const CW = window.COURSE_WORDS || {lessons:{}, stages:[]};
@@ -279,7 +291,7 @@ const SHELL = (()=>{
   const rankOf = p=>{ let k=0; RULES.RANKS.forEach((t,i)=>{ if(p>=t) k=i+1; }); return k; };      // 0: the start (Débutant); 1..34
   const rankTitle = k=>k===0 ? 0 : k===RULES.RANKS.length ? TITLES.length-1 : Math.floor((k-1)/3)+1;
   const rankGrade = k=>k===0 || k===RULES.RANKS.length ? 0 : (k-1)%3+1;
-  const fem = ()=>{ try{ return AV.has() && AV.get() ? PICS.avatarParse(AV.get()).body==="f" : S.learnerGender==="f"; }catch(e){ return false; } };
+  const fem = ()=>{ try{ return AV.has() && AV.own() ? PICS.avatarParse(AV.own()).body==="f" : S.learnerGender==="f"; }catch(e){ return false; } };
   const rankName = (k, stars=true)=>{ const t=TITLES[rankTitle(k)][fem()?1:0], g=rankGrade(k); return t+(stars && g ? " "+"★".repeat(g) : ""); };
   const rankIn = k=>rankName(k).replace(" ★", "\u00a0★");      // (QA .67) inside a sentence ("8 points to Visiteur ★") the stars never drop to a line of their own
   const rankLabel = k=>{ const g=rankGrade(k); return TITLES[rankTitle(k)][fem()?1:0]+(g ? ", grade "+g : ""); };      // for a screen reader
@@ -1419,7 +1431,7 @@ const SHELL = (()=>{
       G.lessons[L.id]=[{date:"", x:null, y:null, passed:true, pts, carried:true}]; G.points+=pts; G.furthest=Math.max(G.furthest, i+1); n++; } });
     RULES.BADGES.forEach(b=>{ if(perfectCount()>=b) G.badges[b]="carried"; });
     if(n){ try{ trace("record started from the saved place: "+n+" lesson(s) entered as passed"); }catch(e){} }
-    if(S.learnerGender && !AV.get() && AV.has()){ try{ AV.set(PICS.avatarString({body:S.learnerGender==="f"?"f":"m"})); G.makerOffer=true; }catch(e){} } }
+    if(!AV.own()) G.makerOffer=true; }      // (.77) no figure is written: the neutral look is shown until the learner makes one
 
 
   /* ---- motion and ease (the owner, brief 18): the shell never snaps. A screen arrives (rising, or pushed in from the right when it has a
@@ -1527,9 +1539,9 @@ const SHELL = (()=>{
       if(toPerfect(li).length){ G.next=li; G.why="perfect"; } else { G.next=Math.min(li+1, last); G.furthest=Math.max(G.furthest, li+1); G.why=""; (G.lessons[LESSONS[li].id]=G.lessons[LESSONS[li].id]||[]).push({date:dayOf(), x:null, y:null, passed:true, perfect:true, via:"mastery"}); }
       try{ trace("mastery: '"+was+"' under the old 90 % gate becomes "+(G.why==="perfect" ? "Go for perfect in Lesson "+(li+1)+" ("+toPerfect(li).length+")" : "Lesson "+(li+2)+" open (Lesson "+(li+1)+" all green)")); }catch(e){} }
     store(); }
-  const NEUTRAL = {body:"n", age:"a", skin:3, hair:8, hairc:2, top:1};      // the figure a new learner starts with: neither a man's nor a woman's (a bob, a teal top)
+  const NEUTRAL = NEUTRAL_LOOK;      // the figure a new learner starts with: neither a man's nor a woman's (a bob, a teal top)
   function firstRun(){ for(const id of ["who","gender"]){ const x=$(id); if(x) x.hidden=true; }      // the page's own first questions are not asked
-    if(!S.learnerGender){ S.learnerGender="n"; try{ if(AV.has() && !AV.get()){ AV.set(PICS.avatarString(NEUTRAL)); G.makerOffer=true; } }catch(e){} save(); store(); try{ trace("a new learner: straight to Home, the figure neutral"); }catch(e){} home(); } }
+    if(!S.learnerGender){ S.learnerGender="n"; if(!AV.own()) G.makerOffer=true; save(); store(); try{ trace("a new learner: straight to Home, the figure neutral"); }catch(e){} home(); } }
   // the first name, on Lesson 1's card (the lessons need it: "Je m'appelle ..." is judged against it, and Marie's pictures carry it); set as the page's own form sets it
   function nameSet(v){ const wn=$("whoName"), wf=$("whoForm"); if(wn && wf && wf.requestSubmit){ wn.value=v; wf.requestSubmit(); } else { S.learnerName=v; save(); }
     const w=$("who"); if(w) w.hidden=true; return !!S.learnerName; }
