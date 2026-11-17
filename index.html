@@ -407,6 +407,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson10.js"></script>
 <script src="course/lesson11.js"></script>
 <script src="course/lesson12.js"></script>
+<script src="course/lesson13.js"></script>
 <script src="people.js"></script>
 <script src="things.js"></script>
 <script>
@@ -414,7 +415,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-16.74";      // must equal version.json
+const APP_VERSION="2026-11-17.75";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -504,6 +505,10 @@ const VOCAB = {
   tutappelles: {name:"tu t'appelles", kind:"phrase", say:["Tu t'appelles…"], accept:["tutappelles"]},
   // "il y en a": one unit, like "je m'appelle" (tokensOf joins it)
   ilyena: {name:"il y en a", kind:"phrase", say:["Il y en a…"], accept:["ilyena"]},
+  ilya: {name:"il y a", kind:"phrase", say:["Il y a…"], accept:["ilya"]},      // (Lesson 13, F-ID-06 "Il y a un livre.")
+  aurevoir: {name:"au revoir", kind:"phrase", say:["Au revoir…"], accept:["aurevoir"]},      // (Lesson 13, F-CONV-19)
+  voila: {name:"voilà", kind:"word", say:["Voilà."], accept:["voila","voilà"]},      // (Lesson 13, F-CONV-04)
+  merci: {name:"merci", kind:"word", say:["Merci."], accept:["merci"]},      // (Lesson 13, F-CONV-04)
   fr_ange: {name:"ange", kind:"frag", say:["Ange."], gram:["ange","anges","en","an"], accept:["ange","anges","hange","anche"]},        // the end of "mange"
   fr_or: {name:"or", kind:"frag", say:["Or."], gram:["or","hors","ors","aure"], accept:["or","hors","ors","ore"]},                      // the end of "dort"
   /* Lessons 5-10 as rebuilt from DISE (version .20, 10 Nov 2026). Everything below is data for the tables of
@@ -569,6 +574,9 @@ const VOCAB = {
   rue: {name:"rue", kind:"object", art:"UNE", say:["Une","rue."], accept:["rue","rues","ru","roue"]},
   bus: {name:"bus", kind:"object", art:"UN", say:["Un","bus."], accept:["bus","busse"]},
   photo: {name:"photo", kind:"object", art:"UNE", say:["Une","photo."], accept:["photo","photos"]},      // (.63) Lesson 10: the name "Photo."
+  mer: {name:"mer", kind:"object", art:"UNE", say:["Une","mer."], accept:["mer","mers","mère","mères","maire","maires"]},      // (.72, R-157) Lesson 10: the name "Mer." (what sounds the same is the same answer)
+  cheval: {name:"cheval", kind:"object", art:"UN", say:["Un","cheval."], accept:["cheval","chevaux","chval"]},      // (.72, R-157) Lesson 13: the name "Cheval."
+  montagne: {name:"montagne", kind:"object", art:"UNE", say:["Une","montagne."], accept:["montagne","montagnes"]},      // (.72, R-157) Lesson 13: the name "Montagne."
   parle: {name:"parle", kind:"word", verb:true, tu:"parles", say:[], accept:["parle","parles","parlent"]},
   arrive: {name:"arrive", kind:"word", verb:true, tu:"arrives", say:[], accept:["arrive","arrives","arrivent"]},
   jarrive: {name:"j'arrive", kind:"word", say:[], accept:["j'arrive","jarrive","j arrive"]},              // one unit, like "j'apprends"
@@ -948,7 +956,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current;
-const defaults = () => ({stateVer:12, courseRev:67, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:72, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -981,6 +989,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=63)) migrate63();      // (.63) a state saved before Lesson 10 came (Lessons 1-9 unchanged)
   if(!(s.courseRev>=64)) migrate64();      // (.64) a state saved before Lessons 6-10 were rebuilt (Pierre and Sylvie ask too, on with them, sur / sous on chairs)
   if(!(s.courseRev>=67)) migrate67();      // (.67) a state saved before Lessons 11 and 12 came (Lessons 1-10 unchanged)
+  if(!(s.courseRev>=72)) migrate72();      // (.72) a state saved before Lessons 1-12 were rebuilt for near-twins by ear (R-157) and Lesson 13 came
   } }catch(e){} }
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
@@ -1101,6 +1110,52 @@ function migrate64(){
 /* (.67) Lessons 11 and 12 are new (the two duplicates of Lesson 10); Lessons 1-10 are the files of .64: no place moves and no record of Lessons
    1-10 is dropped. A learner who has finished Lesson 10 goes on into Lesson 11 at the next start. Only records of an older Lesson 11 or 12
    (from builds no longer served) are dropped, with one log line; a delayed test of Lesson 10 that had no next lesson is due at Lesson 11's start. */
+/* (.72, rules.md R-157; Jon's ruling of 16 Nov 2026: "[six] and [sept] should be taught in different lessons [...] we need to get to a clean
+   sequence as quickly as we can") Lessons 1-12 are rebuilt and Lesson 13 is new: action words, things and numbers moved so that two words a
+   learner could take for one another by ear (marcher / manger, fille / ville, six / sept ...) are taught four lessons apart or more, never
+   asked side by side before an exercise sets them against each other, and set against each other once both are firm.
+   - Records: those of every exercise of the lessons served before that is not the same exercise, word for word (CHANGED_72), are dropped:
+     finished, errors, the counts, delayed tests, and the shell's green dot (its points stay).
+   - Place: a learner whose place is in Lesson C goes on at the start of Lesson RESTART_72[C]: the first rebuilt lesson that brings an action,
+     a thing or a number they were never brought before their place, else the start of Lesson C itself (every lesson of it is rebuilt).
+     A learner who had finished Lesson C counts as in Lesson C+1. The lessons before stay done; those from there on are done again.
+     (Jon, in Lesson 5 with Lessons 1-4 done: Lesson 4 now brings "dormir" in place of "marcher": he does Lesson 4 again.)
+   - A detour of an older version is over (the exercises it served are rebuilt); a lesson or an exercise being done again by choice (the
+     shell's G.again, G.replay) is ended, its saved place given up for this one.
+   - Delayed tests kept (unchanged exercises of the lessons before that lesson) are due at its start and after its first exercise. */
+const RESTART_72 = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 4, "6": 6, "7": 6, "8": 7, "9": 8, "10": 8, "11": 10, "12": 10, "13": 10};
+const CHANGED_72 = ["L1E13", "L1E14", "L1E15", "L1E16", "L1E17", "L2E13", "L2E14", "L2E15", "L2E16", "L2E17", "L2E18", "L3E5", "L3E7", "L3E8", "L3E10", "L3E11", "L3E14", "L4E3", "L4E4", "L4E6", "L4E12", "L4E15", "L4E18", "L4E20", "L4E26", "L5E2", "L5E3", "L5E4", "L5E7", "L5E9", "L5E11", "L5E12", "L5E13", "L5E15", "L5E23", "L6E2", "L6E11", "L6E14", "L6E15", "L6E21", "L6E24", "L6E32", "L6E33", "L6E34", "L6E36", "L7E1", "L7E4", "L7E6", "L7E9", "L7E11", "L7E12", "L7E13", "L7E14", "L7E15", "L7E16", "L7E17", "L7E18", "L7E20", "L7E21", "L7E22", "L7E23", "L7E24", "L7E25", "L7E26", "L7E27", "L7E28", "L7E29", "L7E30", "L7E31", "L7E32", "L7E33", "L7E34", "L7E35", "L7E36", "L7E37", "L7E38", "L7E39", "L8E2", "L8E3", "L8E5", "L8E6", "L8E8", "L8E9", "L8E10", "L8E13", "L8E14", "L8E15", "L8E16", "L8E17", "L8E18", "L8E19", "L8E20", "L8E21", "L8E22", "L8E23", "L8E24", "L8E25", "L8E26", "L8E27", "L8E28", "L8E29", "L8E30", "L8E31", "L8E32", "L8E33", "L8E34", "L8E35", "L8E36", "L8E37", "L8E38", "L8E39", "L8E40", "L8E41", "L8E42", "L8E43", "L8E44", "L8E45", "L8E46", "L8E47", "L8E48", "L9E4", "L9E5", "L9E8", "L9E9", "L9E10", "L9E12", "L9E13", "L9E16", "L9E20", "L9E24", "L9E27", "L9E28", "L9E29", "L9E30", "L9E32", "L9E33", "L9E34", "L9E35", "L9E36", "L9E37", "L9E38", "L9E39", "L9E40", "L9E41", "L9E42", "L9E43", "L9E44", "L9E45", "L9E46", "L9E47", "L9E50", "L10E3", "L10E6", "L10E7", "L10E8", "L10E10", "L10E11", "L10E12", "L10E13", "L10E14", "L10E15", "L10E16", "L10E17", "L10E18", "L10E19", "L10E20", "L10E21", "L10E22", "L10E23", "L10E24", "L10E25", "L10E26", "L10E27", "L10E28", "L10E29", "L10E30", "L10E31", "L10E32", "L10E33", "L10E34", "L10E35", "L10E36", "L10E37", "L10E38", "L10E39", "L10E40", "L10E41", "L10E42", "L10E43", "L10E44", "L10E45", "L10E46", "L10E47", "L10E48", "L10E49", "L10E50", "L10E51", "L10E52", "L10E53", "L11E3", "L11E6", "L11E7", "L11E8", "L11E10", "L11E11", "L11E12", "L11E13", "L11E14", "L11E15", "L11E16", "L11E17", "L11E18", "L11E19", "L11E20", "L11E21", "L11E22", "L11E23", "L11E24", "L11E25", "L11E26", "L11E27", "L11E28", "L11E29", "L11E30", "L11E31", "L11E32", "L11E33", "L11E34", "L11E35", "L11E36", "L11E37", "L11E38", "L11E39", "L11E40", "L11E41", "L11E42", "L11E43", "L11E44", "L11E45", "L11E46", "L11E47", "L11E48", "L11E49", "L11E50", "L11E51", "L11E52", "L11E53", "L12E3", "L12E6", "L12E7", "L12E8", "L12E10", "L12E11", "L12E12", "L12E13", "L12E14", "L12E15", "L12E16", "L12E17", "L12E18", "L12E19", "L12E20", "L12E21", "L12E22", "L12E23", "L12E24", "L12E25", "L12E26", "L12E27", "L12E28", "L12E29", "L12E30", "L12E31", "L12E32", "L12E33", "L12E34", "L12E35", "L12E36", "L12E37", "L12E38", "L12E39", "L12E40", "L12E41", "L12E42", "L12E43", "L12E44", "L12E45", "L12E46", "L12E47", "L12E48", "L12E49", "L12E50", "L12E51", "L12E52", "L12E53"];
+const OLDCOUNT_72 = {"L1": 17, "L2": 18, "L3": 14, "L4": 26, "L5": 27, "L6": 39, "L7": 39, "L8": 48, "L9": 51, "L10": 53, "L11": 53, "L12": 53};      // the number of exercises of each lesson as served before (to tell a lesson finished by its old ids)
+function migrate72(){
+  const exOf = k => String(k).replace(/^(L\d+E\d+).*$/, "$1"), ch = k => CHANGED_72.includes(exOf(k)) || /^L13E/.test(exOf(k));
+  /* (.74; the reader of the R-157 rebuild, C1) a learner caught doing an exercise or a lesson again (the shell's G.replay, G.again: S holds
+     the lesson being done again, the real place is in its snapshot): the real place is put back first, then carried over */
+  let back="";
+  try{ const raw=localStorage.getItem("frDIn.g."+USERS.current), G0=raw && JSON.parse(raw), A=G0 && (G0.replay || G0.again);
+    if(A && A.snap){ for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in A.snap) S[k]=A.snap[k]; else delete S[k];
+      back="; the place before "+(G0.replay ? "an exercise" : "a lesson")+" done again was put back first"; } }catch(e){}
+  const at = S.detour && S.detour.back ? S.detour.back : {lesson:S.lesson, ex:S.ex};
+  const fin = Object.keys(S.finished||{}).filter(k=>S.finished[k]);
+  const lid = "L"+(at.lesson+1), doneHere = fin.filter(k=>new RegExp("^"+lid+"E\\d+$").test(k)).length >= (OLDCOUNT_72[lid]||Infinity);
+  const C = at.lesson+1+(doneHere?1:0), start = Math.min((RESTART_72[C]||C), LESSONS.length)-1;
+  const dropped = fin.filter(ch);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  LESSONS.forEach((L,i)=>{ for(const e of L.exercises){ if(i<start) S.finished[e.id]=true; else { delete S.finished[e.id]; delete S.exHadError[e.id]; } } });
+  const before=(S.delayed||[]).length, li = id => LESSONS.findIndex(L=>L.id===String(id||"").replace(/E\d+.*$/,""));
+  S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||"") && li(d.ex)>=0 && li(d.ex)<start);
+  for(const d of S.delayed){ d.dueLessonStart=LESSONS[start].id; d.dueAfterEx=LESSONS[start].exercises[0].id; }
+  const hadDetour=!!S.detour; S.detour=null; S.lesson=start; S.ex=0;
+  let shell="";
+  try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
+    if(raw){ const G=JSON.parse(raw), was=!!(G.again||G.replay);
+      for(const k of Object.keys(G.ex||{})) if(ch(k)) delete G.ex[k];
+      G.again=null; G.replay=null; G.cur=null; G.next=null; G.why=""; G.warmTo=null;
+      localStorage.setItem(gk, JSON.stringify(G)); if(was) shell="; a lesson or an exercise being done again was ended"; } }catch(e){}
+  if(fin.length || before || hadDetour)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-12 rebuilt (near-twins by ear, R-157) and Lesson 13 new; records dropped of "+dropped.length+" changed exercises"+((before-S.delayed.length)?"; delayed tests dropped: "+(before-S.delayed.length):"")+(hadDetour?"; the detour is over":"")+back+shell+"; this learner goes on at the start of Lesson "+(start+1)+(start+1<C?" (it brings what their Lesson "+(start+1)+" did not)":""), heard:[]});
+  S.courseRev=72;
+}
 function migrate67(){
   const NEW = k => /^L1[12]E\d+/.test(k);
   const had = Object.keys(S.finished||{}).some(NEW) || Object.keys(S.exHadError||{}).some(NEW);
@@ -1993,6 +2048,8 @@ function tokensOf(text){
   n = n.replace(/(^| )l[èe]ves?[- ](?:toi|trois|toits?)(?= |$)/g, "$1levetoi").replace(/(^| )ass(?:ieds?|is|ois)[- ](?:toi|trois|toits?)(?= |$)/g, "$1assiedstoi");
   n = n.replace(/(^| )([1-9]{2,7})(?= |$)/g, (m,a,d)=>a+d.split("").join(" "));                    // "1234" = un, deux, trois, quatre
   n = n.replace(/(^| )(?:il )?y ?'?en a(?= |$)/g, "$1ilyena");                                     // il y en a ("y en a cinq": the "il" is dropped in everyday speech and by the listener; 8 of 32 synthetic voices)
+  n = n.replace(/(^| )(?:il )?y ?'?a(?= |$)/g, "$1ilya");      // (Lesson 13) il y a ("y a": the "il" dropped by the listener, as for il y en a; R-156: the listener's tolerance, not a form taught)
+  n = n.replace(/(^| )au ?revoir(?= |$)/g, "$1aurevoir");      // (Lesson 13) au revoir
   /* "il" and "elle" straight before a verb, as the listener writes them for English speakers. Its word list has "y",
      "en", "a" (the pieces of "il y en a") and "un", and it prefers them to the short words "il" and "elle": of 16 English
      synthetic voices saying "il mange", 13 came out as "y en mange"; "elle mange" came out as "un mange" for 9 and
@@ -4457,10 +4514,11 @@ function actBox(who, act, opt){
   /* ===== HAND-OVER HOOK (the figures agent, 16 Nov; dev/design/HANDOVER_SCENE.md) ===== a thing handed, scene.handed = {from, to, thing}:
      from / to "teacher" (Marie) | "you" | "paul" | "julie" | a person spec ({is: "man"} ...). ONE box the width of two cards (x 30-370): the
      giver on the left holds the thing out, the taker on the right takes it and holds it (PICS.handOver: one hand-over in 2.6 s, the end held,
-     a fade, again). Name tags on the figures (the learner's own name on theirs); no label above the box. */
+     a fade, again). (.72; the reader of Lesson 13, C2 a) once:true: one hand-over, then the taker holding the thing stays on the screen until
+     the scene changes, through the item's lines, the learner's answer and Marie's reply (her "Merci." keeps the scene: actBox's key). Name tags on the figures (the learner's own name on theirs); no label above the box. */
   if(who==="handed"){ const h=act||{}, W=w=>w==="teacher"?"marie":w, key="handed|"+JSON.stringify(h)+"|"+S.learnerGender+"|"+learnerTagName(); if(key===ACTBOX.key) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
     g.innerHTML=`<g transform="translate(30,24)">${CARD(340,190,16)}<g id="actPic"></g></g>`;
-    try{ document.getElementById("actPic").appendChild(window.PICS && PICS.handOver ? PICS.handOver({from:W(h.from), to:W(h.to), thing:h.thing, sex:S.learnerGender==="f"?"f":"m", names:{you:learnerTagName()}}) : placeholder("voilà")); }catch(e){ trace("FAULT hand-over picture: "+e.message); }
+    try{ document.getElementById("actPic").appendChild(window.PICS && PICS.handOver ? PICS.handOver({from:W(h.from), to:W(h.to), thing:h.thing, sex:S.learnerGender==="f"?"f":"m", names:{you:learnerTagName()}, once:true}) : placeholder("voilà")); }catch(e){ trace("FAULT hand-over picture: "+e.message); }
     g.setAttribute("opacity",1); return; }
   /* ===== end of the hand-over hook ===== */
   if(who==="pair"){      // (.25) two boxes side by side: "Marie:" doing act, "You:" doing opt.you (with the learner's name tag)
@@ -5265,9 +5323,23 @@ async function main(){
     const exId=lesson.exercises[ei].id;
     if(!S.finished[exId]) await runExercise(S.lesson, ei);
     // end of an exercise: delayed tests due after it (also catches any left over if the app was closed here)
+    if(ei===lesson.exercises.length-1){ carryPastEnd(lesson, exId); continue; }
     for(const d of S.delayed.filter(x=>x.dueAfterEx===exId)){ d.dueAfterEx=null; await runDelayed(d, {afterEx: nextExId(exId), lessonStart: nextLessonId(lesson.id)}); }
   }
   await endScreen();
+}
+/* (.72; the delta reader of Lesson 13, C5: "Marie leaves, the learner says 'Au revoir, Marie !', and the next screen is Marie in her chair asking
+   'Elle va faire quoi ?'") nothing is asked after a lesson's last exercise: a lesson ends with it (from Lesson 13 that is Marie's goodbye).
+   A delayed test due after the last exercise (an error in the exercise before it, or a delayed test failed again there) is not run; it
+   goes to the next lesson: at its start, and again after its first exercise (the two checks a delayed test has always had). The next
+   lesson's ids are known before it is served ("L14", "L14E1"), as migrate63 did for Lesson 11. */
+const lessonAfterId = lid => nextLessonId(lid) || ("L"+(parseInt(String(lid).slice(1),10)+1));
+function carryPastEnd(lesson, exId){
+  const due=S.delayed.filter(x=>x.dueAfterEx===exId); if(!due.length) return;
+  const nl=lessonAfterId(lesson.id), NL=LESSONS.find(l=>l.id===nl), first=NL ? NL.exercises[0].id : nl+"E1";
+  for(const d of due){ d.dueAfterEx=first; d.dueLessonStart=nl; }
+  trace("delayed test"+(due.length>1?"s ":" ")+due.map(d=>d.key).join(", ")+": due after "+exId+", the lesson's last exercise: moved to the start of "+nl+" (nothing is asked after the lesson's end)");
+  save();
 }
 async function endScreen(){
   rest(); checkHide();
