@@ -516,12 +516,13 @@ const SHELL = (()=>{
     if((r.passed || r.runPerfect) && W().worn.dance && AV.has() && !lessMotion()){ try{ const c=document.createElementNS("http://www.w3.org/2000/svg","svg"); c.setAttribute("viewBox","0 0 160 190"); c.setAttribute("class","celebfig"); c.setAttribute("aria-hidden","true");
         c.appendChild(PICS.avatar(PICS.avatarParse(AV.get()), {view:"celebrate", wear:wearing()})); o.insertBefore(c, o.firstChild); }catch(e){} }  // (figures7) the dance the learner wears, at the celebration
     longName(o); store(); o.hidden=false; o.scrollTop=0; wireCards(o);
-    $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); if(r.why==="perfect"){ home(); goPerfect(r.li); return; } if(r.level) levelParty(r.level, ()=>home()); else home(); };
-    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); home(); }; }
+    $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); if(r.why==="perfect"){ home(); goPerfect(r.li); return; } if(r.level) levelParty(r.level, ()=>home()); else home(); };
+    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); home(); }; }
     const big = r.passed || r.runPerfect || !!(r.ranks && r.ranks.length) || !!(r.R1 && r.R1.week.closed && !r.R0.week.closed);
     // (game feel) a new rank: its ceremony first, then the summary (its numbers count, its rings fill, its moments play once it is in view)
     // (the tally) the points of this lesson (and any left waiting) fill the rank bar first, its rank-ups inside it; then the summary
-    TY.run(o, how=>{ if(how!=="none") summaryIn(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1); fete(o, big && how!=="ward"); moments(o, r); }); }
+    // (hf2) the heading first, then the high five (what it celebrates is in view), then the tally
+    FIVE.run(o, ()=>TY.run(o, how=>{ FIVE.after(); if(how!=="none") summaryIn(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1); fete(o, big && how!=="ward"); moments(o, r); })); }
   // a ring closed by this lesson is said in words, once, at its end; a ring still open is just shown (never as missed)
   function ringsCard(R, R0){ const day = !R0.day.closed && R.day.closed, two = R0.day.n<2 && R.day.n>=2, week = !R0.week.closed && R.week.closed;
     const head = week ? `This week's goal is met: ${R.week.n} lesson${R.week.n===1?"":"s"}!` : two ? "Two lessons today: the gold ring." : day ? "Today's goal is met." : "";
@@ -530,7 +531,7 @@ const SHELL = (()=>{
     return `<div class="card rankup"><div class="rkem">${rankEmblem(k, "emb big")}</div><div><small>${got.length>1 ? got.length+" new ranks" : "A new rank"}</small><b>${esc(rankName(k))}</b><p>${tokenIcon()}<span><b class="num">+${t}</b> token${t===1?"":"s"}</span></p></div></div>`; }
   /* ---- (game feel, 16 Nov) THE RANK-UP CEREMONY. The owner: "When I ranked up, this screen was the only indication that I'd ranked up. Much
      more needs to be made of this ... so it's clear that it's an absolutely massive deal! And it also needs to show very clearly what that new
-     rank gives you." Over the lesson-complete screen, before its summary: (A) the learner and Marie meet and celebrate (PICS.highFive when the
+     rank gives you." Over the lesson-complete screen, before its summary: (A, until hf2: now FIVE, before the tally) the learner and Marie meet and celebrate (PICS.highFive when the
      picture library has it; until then the two figures leap together), (B) the old emblem becomes the new one (anticipation, a flash, the
      reveal: a new star the short way, a new title the full way, Immortel the grandest), (D) what it gives: the tokens fly into the counter and
      the wardrobe turns to a thing the learner can now have. Music made here (Web Audio; the setting "Sounds when you press"). A tap skips to the
@@ -549,22 +550,11 @@ const SHELL = (()=>{
     function ghostEmblem(k){ const t=rankTitle(k), g=rankGrade(k), ink="#B88A1E";
       return `<svg class="emb" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 3.5l20.5 6v20.5c0 14.5-9 22.5-20.5 28.5C16.5 52.5 7.5 44.5 7.5 30V9.5z" fill="#FFFBEF" stroke="#FFE9A8" stroke-width="2.2" stroke-linejoin="round"/>
         <g transform="translate(18 18.5)" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g></svg>`; }
-    function figs(){ const spec = AV.has() && AV.get() ? PICS.avatarParse(AV.get()) : null, still=lessMotion();
-      try{ if(!still && window.PICS && typeof PICS.highFive==="function"){ const g=PICS.highFive({you:spec, wear:wearing(), marie:true});
-          if(g && g.outerHTML){ const c=+g.getAttribute("data-contact") || 900, d=+g.getAttribute("data-dur") || 2000, hand=String(g.getAttribute("data-hand")||"160 62").split(/[ ,]+/).map(Number);
-            return {html:`<svg class="rk-hf5" viewBox="0 0 320 200" aria-hidden="true">${g.outerHTML}</svg>`, contact:c, dur:d, hand, own:true}; } } }catch(e){}
-      const crop=s=>s.replace(/viewBox="0 0 160 190"/, 'viewBox="28 26 104 160"');
-      let you="", marie="";
-      try{ you = spec ? AV.svg(spec, still ? {view:"standing", wear:wearing()} : {view:"doing", doing:"jump", wear:wearing()}, "rk-f rk-y") : `<svg class="rk-f rk-y" viewBox="0 0 160 190" aria-hidden="true">${PICS.action(still?"stop":"jump", "you", still?{after:"jump"}:{}).outerHTML}</svg>`; }catch(e){}
-      try{ marie = `<svg class="rk-f rk-m" viewBox="0 0 160 190" aria-hidden="true">${PICS.action(still?"stop":"jump", "marie", still?{after:"jump"}:{}).outerHTML}</svg>`; }catch(e){}
-      if(!you || !marie) return null;
-      return {html:crop(marie)+crop(you), contact:760, dur:0, own:false}; }
     function itemCard(it, own, tgt){ return `<div class="rk-it${own?" own":""}${tgt?" tgt":""}" data-id="${it.id}"><span class="th"></span><span class="pr">${own ? ic("check")+"Yours" : tokenIcon()+`<b>${it.price}</b>`}</span></div>`; }
     function run(o, got, done, tokNow){ stop(); if(!got || !got.length || !o || o.hidden===undefined){ if(done) done("none"); return; }
       const k1=got[got.length-1], k0=got[0]-1, kind=kindOf(k0, k1), calm=lessMotion(), add=got.reduce((a,j)=>a+tokensFor(j),0), tok1=tokNow!=null ? tokNow : G.tokens||0, tok0=Math.max(0, tok1-add);
-      const P=pick(tok0, tok1), nm=String(S.learnerName||"").trim(), F=figs();
-      const D = calm ? {A:F?1500:0, B:1700, D:900} : kind==="grade" ? {A:1600, B:3200, D:2900} : kind==="title" ? {A:1800, B:3500, D:3000} : {A:1900, B:3900, D:3100};      // (17 Nov) B: the hold, the fall, the strike, the name
-      if(!F) D.A=0; else if(F.own) D.A=Math.max(D.A, Math.min(2600, F.dur+200));
+      const P=pick(tok0, tok1);      // (hf2, 17 Nov) no stage A (the two of them) here now: the high five plays on the lesson-complete screen itself, after its heading and before the tally (FIVE)
+      const D = calm ? {A:0, B:1700, D:900} : kind==="grade" ? {A:0, B:3200, D:2900} : kind==="title" ? {A:0, B:3500, D:3000} : {A:0, B:3900, D:3100};      // (17 Nov) B: the hold, the fall, the strike, the name
       const lab = kind==="top" ? "The highest rank" : got.length>1 ? got.length+" new ranks" : "A new rank";
       const name = rankName(k1);
       // the strip: the wardrobe's things in its own order, around the one to show (from six before it, round the end if need be)
@@ -574,7 +564,6 @@ const SHELL = (()=>{
       const say = `${lab}: ${rankLabel(k1)}. Plus ${add} token${add>1?"s":""}: you have ${tok1}. `+(!P ? "" : P.can ? `You can ${P.fresh?"now ":""}get ${P.it.fr}, ${P.it.en}.` : `${P.short} more for ${P.it.fr}, ${P.it.en}.`);
       const root=el(`<div class="rkc k-${kind}${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="${esc(lab)}" tabindex="-1">
         <div class="rk-bg"></div><div class="rk-bg2"></div>
-        ${F ? `<div class="rk-hf" aria-hidden="true"><div class="rk-pair${F.own?" own":""}">${F.html}<div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&nbsp;!</div></div></div>` : ""}
         <div class="rk-ev"><div class="rk-lab">${esc(lab)}</div><div class="rk-em"><div class="rk-rays"></div><div class="rk-glow"></div><div class="rk-sh"></div><div class="rk-hot"></div><div class="rk-old">${rankEmblem(k0, "emb rk0")}</div><div class="rk-gold">${ghostEmblem(k0)}</div><div class="rk-gnew">${ghostEmblem(k1)}</div><div class="rk-new">${rankEmblem(k1, "emb rk1")}</div>${kind==="grade" ? `<div class="rk-star" style="--sx:50%;--sy:44%"><svg viewBox="0 0 28 28"><use href="#i-star"/></svg></div>` : ""}</div>
           <div class="rk-names"><div class="rk-oname">${rankHtml(k0)}</div><div class="rk-name">${rankHtml(k1)}</div></div></div>
         <div class="rk-gift">
@@ -599,13 +588,7 @@ const SHELL = (()=>{
       root.querySelector("#rkGo").onclick=()=>{ tick(); close("go"); };
       const wb=root.querySelector("#rkWard"); if(wb) wb.onclick=()=>{ tick(); close("ward"); };
       at(1000, ()=>{ c.skippable=true; sk.hidden=false; });
-      // (A) the two of them
       let t=0;
-      if(F){ root.classList.add("sA"); const hit=()=>{ const pr=root.querySelector(".rk-pair"), h=root.querySelector(".rk-hit");
-          // the picture library's own high five says where the hands meet: the burst goes there
-          if(F.own && F.hand){ try{ const sv=pr.querySelector(".rk-hf5"), pt=sv.createSVGPoint(); pt.x=F.hand[0]; pt.y=F.hand[1]; const q=pt.matrixTransform(sv.getScreenCTM()), b=pr.getBoundingClientRect(); h.style.left=(q.x-b.left)+"px"; h.style.top=(q.y-b.top)+"px"; }catch(e){} }
-          root.classList.add("hit"); if(!calm){ SFX.clap(); sparkAt(pr, h.offsetLeft, h.offsetTop, 16, {r0:40, r1:120, t0:700, t1:1100, fall:40}); } };
-        at(calm ? 250 : F.contact, hit); at(D.A-320, ()=>root.classList.add("aOut")); t=D.A; }
       // (B) the emblem becomes the new one
       at(t, ()=>stageB(c, D)); t+=D.B;
       // (D) what it gives
@@ -676,6 +659,72 @@ const SHELL = (()=>{
     // the screen is left another way (the phone's back button presses Continue): the ceremony goes at once
     function stop(){ const c=C; if(!c) return; C=null; finish(c); SFX.hush(); c.root.remove(); }
     return {run, stop, close, get on(){ return !!C; }}; })();
+  /* ---- (hf2, 17 Nov; the owner: "The high five with Marie is too quick. Should take about twice as long so the user can actually see it
+     happen. Also, the high five should come after the well done screen, so the user understands what the high five relates to") THE HIGH
+     FIVE, on the lesson-complete screen itself: the screen comes up as always (its heading, the result) and is read for a moment; then the
+     lower part warms and Marie and the learner meet under the heading and give each other a high five (PICS.highFive, 3.2 s; the burst, the
+     clap and a short pulse in the hand exactly when the palms meet); it fades, and then the points fill the rank bar (the tally) with any
+     rank-up's brand, then the summary. At the end of every lesson (and of a Go for perfect that completes one): the lesson is what it
+     celebrates; a rank-up on its own (Home, one exercise done again) is the brand alone. A tap (after 0.6 s) or Skip goes on to the tally;
+     with less movement the two stand side by side, "Bravo", still, for 1.5 s. dev/design/RANKUP.md 11. ---- */
+  function pairFigs(){ const spec = AV.has() && AV.get() ? PICS.avatarParse(AV.get()) : null, still=lessMotion();
+    try{ if(!still && window.PICS && typeof PICS.highFive==="function"){ const g=PICS.highFive({you:spec, wear:wearing(), marie:true});
+        if(g && g.outerHTML){ const c=+g.getAttribute("data-contact") || 900, d=+g.getAttribute("data-dur") || 2000, hand=String(g.getAttribute("data-hand")||"160 62").split(/[ ,]+/).map(Number);
+          return {html:`<svg class="rk-hf5" viewBox="0 0 320 200" aria-hidden="true">${g.outerHTML}</svg>`, contact:c, dur:d, hand, own:true}; } } }catch(e){}
+    const crop=s=>s.replace(/viewBox="0 0 160 190"/, 'viewBox="28 26 104 160"');
+    let you="", marie="";
+    try{ you = spec ? AV.svg(spec, still ? {view:"standing", wear:wearing()} : {view:"doing", doing:"jump", wear:wearing()}, "rk-f rk-y") : `<svg class="rk-f rk-y" viewBox="0 0 160 190" aria-hidden="true">${PICS.action(still?"stop":"jump", "you", still?{after:"jump"}:{}).outerHTML}</svg>`; }catch(e){}
+    try{ marie = `<svg class="rk-f rk-m" viewBox="0 0 160 190" aria-hidden="true">${PICS.action(still?"stop":"jump", "marie", still?{after:"jump"}:{}).outerHTML}</svg>`; }catch(e){}
+    if(!you || !marie) return null;
+    return {html:crop(marie)+crop(you), contact:760, dur:0, own:false}; }
+  const FIVE = (()=>{ let C=null, lastO=null; const HOLD=1300;
+    // until the tally has shown the points, the screen's foot (the rank bar, already at its new value, and Continue) waits (after())
+    function run(o, then){ stop(); const F=(()=>{ try{ return pairFigs(); }catch(e){ return null; } })();
+      if(o){ lastO=o; o.classList.add("hfpre"); }
+      if(!o || o.hidden || !F){ if(then) then(); return; }
+      const calm=lessMotion(), nm=String(S.learnerName||"").trim();
+      const root=el(`<div class="rkc hfc${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="Bravo" tabindex="-1"><div class="hf-veil"></div>
+        <div class="rk-hf" aria-hidden="true"><div class="rk-pair${F.own?" own":""}"><div class="hf-at"></div><div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&nbsp;!</div></div></div>
+        <button class="rk-skip" id="hfSkip" hidden>Skip</button><div class="rk-live" aria-live="polite"></div></div>`);
+      const c = C = {o, root, then, timers:new Set(), done:false};
+      const at=(ms,f)=>{ const t=setTimeout(()=>{ c.timers.delete(t); if(C!==c) return; try{ f(); }catch(e){ try{ trace("FAULT high five: "+e.message); }catch(_){} } }, Math.max(0, ms)); c.timers.add(t); };
+      // the summary stays in view (its heading is what the high five is for) but out of reach until it is over
+      c.inert=[...o.children]; c.inert.forEach(x=>{ x.inert=true; }); c.ov=o.style.overflow; o.style.overflow="hidden"; o.scrollTop=0;
+      o.appendChild(root); try{ root.focus({preventScroll:true}); }catch(e){}
+      root.addEventListener("click", e=>{ if(e.target.closest("button") && e.target.id!=="hfSkip") return; if(c.skippable) end(c, "skip"); });
+      root.addEventListener("keydown", e=>{ if(e.key==="Escape"){ e.preventDefault(); end(c, "skip"); } });
+      at(600, ()=>{ c.skippable=true; });
+      try{ trace("the high five: after the heading, before the tally"); }catch(e){}
+      at(calm ? 900 : HOLD, ()=>{ const hd=o.querySelector(".sub") || o.querySelector("h1"), vh=innerHeight, pr=root.querySelector(".rk-pair");
+        // under the heading: the stage starts just below it (never so low that the two would not fit)
+        let top=hd ? hd.getBoundingClientRect().bottom+14 : vh*0.3; top=Math.max(vh*0.2, Math.min(top, vh-330)); root.style.setProperty("--top", Math.round(top)+"px");
+        const k=Math.min(1, (vh-top-24)/(330+56), (innerWidth-16)/350); if(k<1) pr.style.setProperty("--k", k.toFixed(3));
+        root.querySelector(".hf-at").outerHTML=F.html;      // put in now: the film's clock starts here
+        root.classList.add("in","sA"); const sk=root.querySelector("#hfSkip"); if(sk){ sk.hidden=false; sk.onclick=()=>end(c, "skip"); }
+        const lv=root.querySelector(".rk-live"); if(lv) lv.textContent="Marie: Bravo"+(nm?", "+nm:"")+"!";
+        if(calm){ root.classList.add("hit"); at(1500, ()=>end(c, "go")); return; }
+        const sv=root.querySelector(".rk-hf5"); let lag=0; try{ if(sv && sv.getCurrentTime) lag=sv.getCurrentTime()*1000; }catch(e){}
+        const hit=()=>{ const h=root.querySelector(".rk-hit");
+            // where the hands meet (the picture says so): the burst goes there
+            if(F.own && F.hand && sv){ try{ const pt=sv.createSVGPoint(); pt.x=F.hand[0]; pt.y=F.hand[1]; const q=pt.matrixTransform(sv.getScreenCTM()), b=pr.getBoundingClientRect(); h.style.left=(q.x-b.left)/(k<1?k:1)+"px"; h.style.top=(q.y-b.top)/(k<1?k:1)+"px"; }catch(e){} }
+            c.hitAt=(()=>{ try{ return sv ? sv.getCurrentTime()*1000 : null; }catch(e){ return null; } })();
+            root.classList.add("hit"); SFX.clap(); sparkAt(pr, h.offsetLeft, h.offsetTop, 16, {r0:40, r1:120, t0:700, t1:1100, fall:40});
+            try{ if(UI.pref.haptics!==false && navigator.vibrate) navigator.vibrate(18); }catch(e){} };
+        at(F.contact-lag, hit);
+        const D = F.own ? F.dur : 1800;
+        at(D-lag+200, ()=>end(c, "go")); }); }
+    function release(c){ c.timers.forEach(clearTimeout); c.timers.clear(); if(c.inert) c.inert.forEach(x=>{ x.inert=false; }); c.o.style.overflow=c.ov||""; }
+    // over: the tally is put in under it (or the summary is simply there), and it fades out over that, so the screen never goes back to the
+    // summary in between (with less movement: a cut)
+    function end(c, how){ if(C!==c || c.done) return; c.done=true; C=null; release(c); const r=c.root; if(how==="skip") SFX.hush();
+      try{ trace("the high five closed ("+how+")"+(c.hitAt!=null ? ", the clap at "+Math.round(c.hitAt)+" ms of the film" : "")); }catch(e){}
+      if(c.then) try{ c.then(); }catch(e){}
+      if(lessMotion()){ r.remove(); return; } r.style.pointerEvents="none"; const w=how==="skip" ? 0 : 240;      // (the tally's own fade-in: 240 ms)
+      setTimeout(()=>r.classList.add("gone"), w); setTimeout(()=>r.remove(), w+340); }
+    // the screen is left another way (Continue by the back button): it goes at once and nothing follows
+    function stop(){ after(); const c=C; if(!c) return; C=null; release(c); c.root.remove(); }
+    function after(){ if(lastO){ lastO.classList.remove("hfpre"); lastO=null; } }
+    return {run, stop, after, get on(){ return !!C; }}; })();
   /* (game feel) the other big moments of the lesson-complete screen, briefly and in the same spirit: a perfect lesson's seal stamps on with a
      ring of stars; a new badge drops into place with a chime when it comes into view; a ring closed glows once with its words. Never with less
      movement (the screen is then as it was). */
@@ -970,7 +1019,7 @@ const SHELL = (()=>{
           <small>Lesson ${R0.li+1}: all perfect</small>` : ""}</div>`
       + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b></div></div>` : "")
       + `<div class="spacer"></div><div class="donefoot">${rankBar(G.points, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
-    longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); home(); };
+    longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); home(); };
     TY.run(o, how=>{ if(how!=="none") summaryIn(o); fete(o, (res.perfect || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:res.p>0 || !!bonus}); }); }
   /* (.71) the end of "Go for perfect": one praise for the whole run (the owner, 16 Nov: "they get praised for it afterwards. They get told the
      point total that was added at the end of that repair sequence and the extra … that was added to the overall progress indicator") */
@@ -1003,9 +1052,10 @@ const SHELL = (()=>{
       + `<div class="spacer"></div><div class="donefoot">${rankBar(G.points, G.points)}${unlock && G.next>R0.li ? `<button class="btn" id="doneBtn">${ic("play")} Next lesson</button><button class="btn quiet" id="doneLater">Later</button>` : waits && left ? `<button class="btn" id="doneBtn">${ic("star")} Go for perfect: ${left}</button><button class="btn quiet" id="doneLater">Later</button>` : `<button class="btn" id="doneBtn">Continue</button>`}</div>`;
     longName(o); o.hidden=false; o.scrollTop=0; wireCards(o);
     const after = ()=>{ if(lvUp) levelParty(lvUp, ()=>home()); else home(); };
-    $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); if(unlock && G.next>R0.li){ if(lvUp) levelParty(lvUp, ()=>home()); else { home(); setTimeout(()=>{ const b=$("playBtn"); if(b) b.click(); }, 60); } } else if(waits && left){ home(); goPerfect(R0.li); } else after(); };
-    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); after(); }; }
-    TY.run(o, how=>{ if(how!=="none") summaryIn(o); fete(o, (made>0 || unlock || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:made>0 || !!bonus}); }); }
+    $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); if(unlock && G.next>R0.li){ if(lvUp) levelParty(lvUp, ()=>home()); else { home(); setTimeout(()=>{ const b=$("playBtn"); if(b) b.click(); }, 60); } } else if(waits && left){ home(); goPerfect(R0.li); } else after(); };
+    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); FIVE.stop(); o.hidden=true; stopFete(); after(); }; }
+    const tally=()=>TY.run(o, how=>{ FIVE.after(); if(how!=="none") summaryIn(o); fete(o, (made>0 || unlock || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:made>0 || !!bonus}); });
+    if(unlock) FIVE.run(o, tally); else tally(); }      // (hf2) the lesson completed by this run: its high five, as at a lesson's end
   const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
   function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
   /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
