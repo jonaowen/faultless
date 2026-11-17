@@ -408,6 +408,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson11.js"></script>
 <script src="course/lesson12.js"></script>
 <script src="course/lesson13.js"></script>
+<script src="course/lesson14.js"></script>
 <script src="people.js"></script>
 <script src="things.js"></script>
 <script>
@@ -415,7 +416,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-17.77";      // must equal version.json
+const APP_VERSION="2026-11-17.78";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -577,6 +578,7 @@ const VOCAB = {
   mer: {name:"mer", kind:"object", art:"UNE", say:["Une","mer."], accept:["mer","mers","mère","mères","maire","maires"]},      // (.72, R-157) Lesson 10: the name "Mer." (what sounds the same is the same answer)
   cheval: {name:"cheval", kind:"object", art:"UN", say:["Un","cheval."], accept:["cheval","chevaux","chval"]},      // (.72, R-157) Lesson 13: the name "Cheval."
   montagne: {name:"montagne", kind:"object", art:"UNE", say:["Une","montagne."], accept:["montagne","montagnes"]},      // (.72, R-157) Lesson 13: the name "Montagne."
+  magasin: {name:"magasin", kind:"object", art:"UN", say:["Un","magasin."], accept:["magasin","magasins"]},      // (.77) Lesson 14: the name "Magasin."
   parle: {name:"parle", kind:"word", verb:true, tu:"parles", say:[], accept:["parle","parles","parlent"]},
   arrive: {name:"arrive", kind:"word", verb:true, tu:"arrives", say:[], accept:["arrive","arrives","arrivent"]},
   jarrive: {name:"j'arrive", kind:"word", say:[], accept:["j'arrive","jarrive","j arrive"]},              // one unit, like "j'apprends"
@@ -602,6 +604,8 @@ const VOCAB = {
   moi: {name:"moi", kind:"word", say:[], accept:["moi","mois"]},
   jusqua: {name:"jusqu'à", kind:"word", say:[], accept:["jusqu'à","jusqu'a","jusqua"]},
   comment: {name:"comment", kind:"word", say:[], accept:["comment"]},
+  quoi: {name:"quoi", kind:"word", say:[], accept:["quoi"]},      // (.77, Lesson 14, F-Q-10: the learner asks "C'est quoi ?")
+  qui: {name:"qui", kind:"word", say:[], accept:["qui"]},      // (.77, Lesson 14, F-Q-10: the learner asks "C'est qui ?")
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
 // function-word slots in an expected answer, with the spellings Chrome may give them
@@ -2854,7 +2858,7 @@ const CARD = (w, h, r=16) => { const f=n=>(+n).toFixed(1); return `<rect class="
 const cardGroupOf = side => side==="L" ? fL : side==="R" ? fR : side==="pL" ? document.getElementById("badge_paul") : side==="pR" ? document.getElementById("badge_julie") : /^s\d+$/.test(side||"") ? frameRow.querySelector('[data-slot="'+side+'"]') : null;
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", sleeping:"sleep", singing:"sing", reading:"read", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
   working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen",      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
-  writing:"write", running:"run", falling:"fall"};      // (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
+  writing:"write", running:"run", falling:"fall", swimming:"swim"};      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -4409,7 +4413,7 @@ const ACT_HALF = 0.5;
 /* (figures 12; Jon, 16 Nov: "all the animations should be brought down to the speed of something like jumping, standing up, or sitting
    down ... the smiling one is too long") the smile's own floors go: one whole loop of it (1.6 s in people.js) is shown, as for every action */
 const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200};
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400};      // (figures 15) swim: one loop (1.2 s)
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
@@ -4521,7 +4525,7 @@ function actBox(who, act, opt){
      the scene changes, through the item's lines, the learner's answer and Marie's reply (her "Merci." keeps the scene: actBox's key). Name tags on the figures (the learner's own name on theirs); no label above the box. */
   if(who==="handed"){ const h=act||{}, W=w=>w==="teacher"?"marie":w, key="handed|"+JSON.stringify(h)+"|"+S.learnerGender+"|"+learnerTagName(); if(key===ACTBOX.key) return; ACTBOX.key=key; ACTBOX.sex=S.learnerGender;
     g.innerHTML=`<g transform="translate(30,24)">${CARD(340,190,16)}<g id="actPic"></g></g>`;
-    try{ document.getElementById("actPic").appendChild(window.PICS && PICS.handOver ? PICS.handOver({from:W(h.from), to:W(h.to), thing:h.thing, sex:S.learnerGender==="f"?"f":"m", names:{you:learnerTagName()}, once:true}) : placeholder("voilà")); }catch(e){ trace("FAULT hand-over picture: "+e.message); }
+    try{ document.getElementById("actPic").appendChild(window.PICS && PICS.handOver ? PICS.handOver({from:W(h.from), to:W(h.to), thing:h.thing, sex:S.learnerGender==="f"?"f":"m", names:{you:learnerTagName()}, once:true, mirror:!!h.mirror}) : placeholder("voilà"));      /* (.77, Lesson 14 row 38) mirror: the giver on the right (PICS.handOver's option, when people.js has it) */ }catch(e){ trace("FAULT hand-over picture: "+e.message); }
     g.setAttribute("opacity",1); return; }
   /* ===== end of the hand-over hook ===== */
   if(who==="pair"){      // (.25) two boxes side by side: "Marie:" doing act, "You:" doing opt.you (with the learner's name tag)
