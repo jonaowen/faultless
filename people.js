@@ -628,28 +628,41 @@ const HANDS = {
   fist:    { f: [[1.36, 1.6], [1.4, 1.62], [1.44, 1.64], [1.46, 1.66]], sp: 0, th: [0.3, 0.95, 0.75] }      // (figures 16) closed round a pole, the thumb over the fingers
 };
 const handFlat = H => [H.f[0][0], H.f[0][1], H.f[1][0], H.f[1][1], H.f[2][0], H.f[2][1], H.f[3][0], H.f[3][1], H.sp, H.th[0], H.th[1], H.th[2]];
-function fingers(wr, hd, pn, left, hp, B, P, S, SK, id){
+/* the fingers' knuckles (along the hand, across it), lengths and radii, index to little finger */
+const FING = { KN: [0.5, 0.52, 0.495, 0.445], OFF: [0.74, 0.25, -0.24, -0.71], LEN: [0.405, 0.45, 0.42, 0.33], RF: [0.265, 0.27, 0.255, 0.225] };
+/* (grip82) occ: a hand that grips a thing (the book's cover, the microphone's handle) is drawn bone by bone, each bone at its own depth
+   against the thing: occ(the bone's middle in 3D, its own depth) gives the depth it is drawn at (in front of the thing on the viewer's side
+   of it, behind on the other); rec: a list that is given the bones in 3D (for the pixel mask's checks) */
+const occBones = (parts, id, p3d, rs, dz, Q, occ, layers) => { for (let j = 0; j + 1 < p3d.length; j++) for (let h = 0; h < 2; h++){      // each bone in two halves, each at its own depth
+  const a = add(p3d[j], mul(sub(p3d[j + 1], p3d[j]), h / 2)), b = add(p3d[j], mul(sub(p3d[j + 1], p3d[j]), (h + 1) / 2)), qa = Q(a, rs[j] + (rs[j + 1] - rs[j]) * h / 2), qb = Q(b, rs[j] + (rs[j + 1] - rs[j]) * (h + 1) / 2);
+  parts.push({ id: id + "s" + (2 * j + h), z: occ(mul(add(a, b), 0.5), (qa[3] + qb[3]) / 2 + dz), mat: id, layers: layers([qa, qb]) }); } };
+function fingers(wr, hd, pn, left, hp, B, P, S, SK, id, occ, rec){
   const HL = B.hand * (hp[12] || 1), PW = HL * (B.pwk || 0.235), th = left ? cross(pn, hd) : cross(hd, pn), parts = [], LX = LIGHT[0], LY = LIGHT[1];
   const bend = (d, n, a) => { const c = Math.cos(a), s = Math.sin(a); return [add(mul(d, c), mul(n, s)), sub(mul(n, c), mul(d, s))]; };
   const Q = (p, r) => { const q = P(p); return [q[0], q[1], r * S, q[2]]; };
   const tube = pts => (g, dx, dy) => { let d = ""; for (let i = 0; i + 1 < pts.length; i++) d += capsule(pts[i][0] + dx, pts[i][1] + dy, Math.max(0.3, pts[i][2] + g), pts[i + 1][0] + dx, pts[i + 1][1] + dy, Math.max(0.3, pts[i + 1][2] + g)); return d; };
   const lay = (fn, e) => [[fn(0, 0, 0), SK[1]], [fn(-e, LX * e, LY * e), SK[0]]];
-  const KN = [0.5, 0.52, 0.495, 0.445], OFF = [0.74, 0.25, -0.24, -0.71], LEN = [0.405, 0.45, 0.42, 0.33], RF = [0.265, 0.27, 0.255, 0.225], knuckles = [];
+  const { KN, OFF, LEN, RF } = FING, knuckles = [];
   const zw = P(wr)[2], view = dot(pn, [0, 0, 1]);
   for (let i = 0; i < 4; i++){
     const a = (1.2 - i) * hp[8], d0 = nrm(add(mul(hd, Math.cos(a)), mul(th, Math.sin(a)))), n0 = nrm(sub(pn, mul(d0, dot(pn, d0)))), p0 = add(add(wr, mul(hd, KN[i] * HL)), mul(th, OFF[i] * PW)), L = LEN[i] * HL, r = RF[i] * PW;
     const [d1, n1] = bend(d0, n0, hp[i * 2]), p1 = add(p0, mul(d1, L * 0.48)), [d2, n2] = bend(d1, n1, hp[i * 2 + 1]), p2 = add(p1, mul(d2, L * 0.29)), [d3] = bend(d2, n2, hp[i * 2 + 1] * 0.66), p3 = add(p2, mul(d3, L * 0.23));
     const pts = [Q(p0, r), Q(p1, r * 0.97), Q(p2, r * 0.91), Q(p3, r * 0.82)]; knuckles.push(pts[0]);
-    parts.push({ id: id + "f" + i, z: (pts[1][3] + pts[2][3] + pts[3][3]) / 3 + 0.0004 * i, mat: id + "f" + i, layers: lay(tube(pts), Math.max(0.5, r * S * 0.3)) });
+    if (rec) rec.push({ k: "f" + i, p: [p0, p1, p2, p3], r: [r, r * 0.97, r * 0.91, r * 0.82] });
+    if (occ) occBones(parts, id + "f" + i, [p0, p1, p2, p3], [r, r * 0.97, r * 0.91, r * 0.82], 0.0004 * i, Q, occ, q => lay(tube(q), Math.max(0.5, r * S * 0.3)));
+    else parts.push({ id: id + "f" + i, z: (pts[1][3] + pts[2][3] + pts[3][3]) / 3 + 0.0004 * i, mat: id + "f" + i, layers: lay(tube(pts), Math.max(0.5, r * S * 0.3)) });
   }
   /* the thumb: from the heel of the hand on the thumb's side */
   { const A = hp[9], O = hp[10], b0 = add(add(wr, mul(hd, 0.15 * HL)), mul(th, 0.78 * PW)), dA = nrm(add(mul(hd, Math.cos(A)), mul(th, Math.sin(A)))), d1 = nrm(add(mul(dA, Math.cos(O)), mul(pn, Math.sin(O))));
     const nb = nrm(sub(add(add(mul(pn, 0.6), mul(hd, 0.45)), mul(th, -0.65)), mul(d1, dot(add(add(mul(pn, 0.6), mul(hd, 0.45)), mul(th, -0.65)), d1)))), [d2] = bend(d1, nb, hp[11]);
     const p1 = add(b0, mul(d1, 0.27 * HL)), p2 = add(p1, mul(d2, 0.17 * HL)), pts = [Q(b0, 0.36 * PW), Q(p1, 0.3 * PW), Q(p2, 0.26 * PW)];
-    parts.push({ id: id + "t", z: (pts[0][3] + pts[1][3] * 2 + pts[2][3]) / 4 + (O > 0.6 ? 0.004 : 0), mat: id + "t", layers: lay(tube(pts), Math.max(0.5, 0.09 * PW * S)) }); }
+    if (rec) rec.push({ k: "t", p: [b0, p1, p2], r: [0.36 * PW, 0.3 * PW, 0.26 * PW] });
+    if (occ) occBones(parts, id + "t", [b0, p1, p2], [0.36 * PW, 0.3 * PW, 0.26 * PW], 0, Q, occ, q => lay(tube(q), Math.max(0.5, 0.09 * PW * S)));
+    else parts.push({ id: id + "t", z: (pts[0][3] + pts[1][3] * 2 + pts[2][3]) / 4 + (O > 0.6 ? 0.004 : 0), mat: id + "t", layers: lay(tube(pts), Math.max(0.5, 0.09 * PW * S)) }); }
   /* the palm: from the wrist to the knuckles, the heel of the thumb and the heel of the hand */
   const D = [Q(add(wr, mul(th, 0.5 * PW)), 0.5 * PW), Q(add(wr, mul(th, -0.52 * PW)), 0.46 * PW), Q(add(add(wr, mul(hd, 0.2 * HL)), mul(th, 0.62 * PW)), 0.52 * PW), Q(add(add(wr, mul(hd, 0.24 * HL)), mul(th, -0.66 * PW)), 0.42 * PW)].concat(knuckles.map(k => [k[0], k[1], k[2] * 1.06, k[3]]));
-  const Es = D.map(q => { const E = disc([q[0], q[1]], q[2]); E.n = 10; return E; }), palm = (g, dx, dy) => hullOf(Es, g, dx, dy), zp = P(add(wr, mul(hd, 0.28 * HL)))[2];
+  const Es = D.map(q => { const E = disc([q[0], q[1]], q[2]); E.n = 10; return E; }), palm = (g, dx, dy) => hullOf(Es, g, dx, dy), pc3 = add(wr, mul(hd, 0.28 * HL)), zp = occ ? occ(pc3, P(pc3)[2]) : P(pc3)[2];
+  if (rec) rec.push({ k: "p", p: [wr, add(wr, mul(hd, 0.5 * HL)), add(add(wr, mul(hd, 0.2 * HL)), mul(th, 0.62 * PW)), add(add(wr, mul(hd, 0.24 * HL)), mul(th, -0.66 * PW))], r: [0.5 * PW], th, hd, pn });
   parts.push({ id: id + "p", z: zp, mat: id + "p", layers: lay(palm, Math.max(0.6, 0.1 * PW * S)) });
   /* the palm's side, when it is the side seen: a lighter hollow and its two lines */
   if (dot(pn, [0, Math.sin(7 * Math.PI / 180), Math.cos(7 * Math.PI / 180)]) > 0.35){ const c0 = P(add(add(wr, mul(hd, 0.27 * HL)), mul(th, -0.04 * PW))), U = sub(P(add(add(wr, mul(hd, 0.27 * HL)), mul(th, 0.6 * PW))), c0), V = sub(P(add(wr, mul(hd, 0.44 * HL))), P(add(wr, mul(hd, 0.1 * HL)))), r3 = v => Math.round(v * 1000) / 1000;
@@ -773,7 +786,7 @@ function frame(k, B, cam, c, floor, o){
     if (WD && WD.armParts) for (const p of WD.armParts({ s, Q, sweep, form, P, S, zu, zf, far, farU, T, sk, e, J, B, slv, cam })) parts.push(p);
     if (slv == null || WD.gloves){ const a0 = add(wr, mul(J["fd" + s], -0.026)), A = P(a0), Z = P(wr); const GL = WD && WD.gloves; parts.push({ id: "cf" + s, z: zf + 0.0005, mat: "cuff" + s, layers: [[capsule(A[0], A[1], B.rWr * (GL && GL.cuff || 1.2) * S, Z[0], Z[1], B.rWr * (GL && GL.cuff || 1.2) * S), GL ? (far ? GL.M.f[1] : GL.M.n[1]) : far ? T.f[1] : T.rib]] }); }
     if (o && o.hands){                                         // a hand with fingers (at the size of the teacher): see fingers()
-      const HP = fingers(wr, hd, pn, s === "L", o.hands[s], B, P, S, WD && WD.gloves ? (far ? WD.gloves.M.f : WD.gloves.M.n) : far ? sk.f : sk.n, "hn" + s);
+      const HP = fingers(wr, hd, pn, s === "L", o.hands[s], B, P, S, WD && WD.gloves ? (far ? WD.gloves.M.f : WD.gloves.M.n) : far ? sk.f : sk.n, "hn" + s, o.grip && o.grip[s], o.handPts ? (o.handPts[s] = []) : null);      // (grip82: a hand round a thing, bone by bone)
       for (const x of HP.parts) parts.push(x);
       if (HP.z > zt){ const k2 = kz(HP.z); cast.push((g, dx, dy) => HP.cast(g, dx * k2, dy * k2)); }
       return; }
@@ -1653,6 +1666,30 @@ const wristBand = (side, cols, face) => A => { if (A.s !== side) return []; cons
     out.push({ id: "wb" + s + i, z: Math.max(A.zu, A.zf) + 0.0006 + i * 1e-6, mat: "wb" + s + i, layers: [[capsule(a[0] + n[0] * w, a[1] + n[1] * w, 0.0085 * S, a[0] - n[0] * w, a[1] - n[1] * w, 0.0085 * S), col]] }); });
   if (face){ const q = P(add(wr, mul(d, -0.014))); out.push({ id: "wbF" + s, z: Math.max(A.zu, A.zf) + 0.00065, mat: "wbF" + s, layers: [[ellPath(disc(q, 0.012 * S), 0, 0, 0), "#c99a2c"], [ellPath(disc(q, 0.009 * S), 0, 0, 0), "#fbfaf6"]] }); }
   return out; };
+/* ---------- (figures 17, tier 13: instruments) the guitar across the body (its body at the right hip, against the belly, the neck up to the
+   left; the left hand round the neck, the right hand over the sound hole) and the accordion before the chest (a hand on each end, the
+   bellows stretched between the hands where the arms put them) ---------- */
+const GUITAR = { c: [-0.06, -0.21, 0.17], ax: [0.86, 0.46, 0.18], nrm0: [-0.12, 0.05, 1] };
+const guitarFrame = J => { const Bc = J.Bc, a = nrm(at0(Bc, GUITAR.ax)), n0 = at0(Bc, GUITAR.nrm0), n = nrm(sub(n0, mul(a, dot(n0, a)))), sd = nrm(cross(n, a)), c0 = at(J.chest, Bc, GUITAR.c), lift = Math.max(0, kneeTop(J) + 0.2 - c0[1]); return { c: add(c0, add([0, lift, 0], mul(Bc.z, lift * 0.8))), a, n, sd }; };      // (lifted, in the world, and held out from the bent body when the body sinks: the jump's crouch would bring the thighs and the chest through it)
+const toChest = (J, p) => { const d = sub(p, J.chest); return [dot(d, J.Bc.x), dot(d, J.Bc.y), dot(d, J.Bc.z)]; };
+const guitarKey = (J, B, side, t, o, hd) => { const G = guitarFrame(J), h = nrm(at0(J.Bc, hd)), p = add(G.c, add(mul(G.a, t), add(mul(G.n, o[0]), mul(G.sd, o[1])))), w = toChest(J, sub(p, mul(h, B.hand * 0.42))); return side === "L" ? w : [-w[0], w[1], w[2]]; };      // (a point of the guitar less the hand's reach, in the chest's frame (x turned for the right arm))
+const guitarP = X => { const { J, B, P, S, cam } = X, G = guitarFrame(J), m = planeM(P, cam, G.c, G.a, G.sd), up = dot(G.n, cam.view) > 0, zc = P(G.c)[2];
+  const body = `M-.13 0C-.13 -.075 -.09 -.09 -.05 -.08C-.02 -.07 0 -.05 .02 -.05C.05 -.05 .07 -.065 .09 -.06C.12 -.05 .13 -.03 .13 0C.13 .03 .12 .05 .09 .06C.07 .065 .05 .05 .02 .05C0 .05 -.02 .07 -.05 .08C-.09 .09 -.13 .075 -.13 0Z`;
+  const top = up ? `<path d="${body}" fill="#d9944a"/><path d="${body}" transform="scale(.92)" fill="#e8aa5e" opacity=".55"/><circle cx=".02" cy="0" r=".028" fill="#3a2414"/><circle cx=".02" cy="0" r=".034" fill="none" stroke="#7a4a26" stroke-width=".005"/><rect x="-.1" y="-.014" width=".02" height=".028" fill="#5a3418"/><rect x=".1" y="-.012" width=".27" height=".024" rx=".004" fill="#4a2a14"/><path d="M.37 -.016h.06l.01 .032h-.07z" fill="#3a2010"/><path d="M-.09 -.008H.4M-.09 -.003H.4M-.09 .002H.4M-.09 .007H.4" stroke="#efe6cc" stroke-width=".0016"/>`
+    : `<path d="${body}" fill="#8a5a2c"/><rect x=".1" y="-.012" width=".27" height=".024" rx=".004" fill="#4a2a14"/><path d="M.37 -.016h.06l.01 .032h-.07z" fill="#3a2010"/>`;
+  const rib = add(G.c, mul(G.n, -0.04)), mr = planeM(P, cam, rib, G.a, G.sd);
+  /*probe:{ J, segs: [[add(G.c, mul(G.a, -0.17)), add(G.c, mul(G.a, 0.56)), 0.06, 0.4]], hands: ["L", "R"], floor: lowestY(J) }*/
+  return [{ id: "wsGr", z: zc - 0.0003, tag: "g", m: mr, inner: `<g transform="scale(1.3)"><path d="${body}" fill="#7a4a26"/></g>` }, { id: "wsGt", z: zc, tag: "g", m, inner: `<g transform="scale(1.3)">${top}</g>` }]; };      // (drawn 1.3 times its first size: a guitar is about 0.57 of a body's height long)
+const accordionP = X => { const { J, B, P, S } = X, Bc = J.Bc, hL = handAt(J, B, "L"), hR = handAt(J, B, "R"), mid = mul(add(hL, hR), 0.5), x = nrm(sub(hL, hR)), y = Bc.y, z = nrm(cross(x, y)), half = Math.max(0.05, Math.hypot(...sub(hL, hR)) / 2 - 0.02), zh = Math.min(P(hL)[2], P(hR)[2]) - 0.0006, out = [];
+  const endW = 0.03, bel = half - endW;
+  for (const sg of [1, -1]){ const c = add(mid, mul(x, sg * (half - endW / 2))); out.push(boxPart(X, "wsAe" + (sg > 0 ? "L" : "R"), zh + 0.00001, c, mul(x, endW / 2), mul(y, 0.1), mul(z, 0.06), ["#c8323c", "#c8323c", "#e04a54", "#9a222a", "#d63b3b", "#9a222a"])); }
+  out.push(boxPart(X, "wsAb", zh, mid, mul(x, bel), mul(y, 0.092), mul(z, 0.055), ["#2a2a30", "#2a2a30", "#3a3a42", "#1c1c22", "#2e2e36", "#1c1c22"]));
+  let pl = ""; for (let i = -4; i <= 4; i++){ const a = P(add(mid, add(mul(x, i / 4.6 * bel), add(mul(y, 0.09), mul(z, 0.056))))), b = P(add(mid, add(mul(x, i / 4.6 * bel), add(mul(y, -0.09), mul(z, 0.056))))); pl += `M${f1(a[0])} ${f1(a[1])}L${f1(b[0])} ${f1(b[1])}`; }
+  out.push({ id: "wsAp", z: zh + 0.000005, mat: "wsAp", stroke: [pl, "#8e8e98", f2(Math.max(0.4, 0.004 * S))] });
+  const k0 = P(add(mid, add(mul(x, -(half - endW * 0.2)), add(mul(y, 0.08), mul(z, 0.062))))), k1 = P(add(mid, add(mul(x, -(half - endW * 0.2)), add(mul(y, -0.08), mul(z, 0.062)))));
+  out.push({ id: "wsAk", z: zh + 0.00002, mat: "wsAk", stroke: [`M${f1(k0[0])} ${f1(k0[1])}L${f1(k1[0])} ${f1(k1[1])}`, "#fbfaf6", f2(Math.max(0.6, 0.012 * S))] });
+  /*probe:{ J, segs: [[add(mid, mul(x, -half)), add(mid, mul(x, half)), 0.06]], hands: ["L", "R"], floor: lowestY(J) }*/
+  return out; };
 /* a box in the world (a book, a canvas's stretcher): its centre c, its three half-axes U V W (vectors); the faces turned to us drawn, each in
    its own colour (cols: [+U, -U, +V, -V, +W, -W], a colour or null), as one part */
 const boxPart = (X, id, z, c, U, V, W, cols) => { const { P, cam } = X, cn = (a, b, d) => P(add(c, add(mul(U, a), add(mul(V, b), mul(W, d))))), L = [];
@@ -1795,7 +1832,7 @@ const habitEmb = X => onTrunk(X, "hbE", t => { const nb = X.B.nb; return oliveAr
 /* (figures 17) the HELD parts: drawn only where the learner stands with the arms free; dressUp(c, wear, {noHold}) leaves them out, and the
    arm keys that hold them, where the hands are busy (an action card, a hand-over, a high five, a close-up): never a thing floating, never a
    hand moved for it (CATEGORIES.md) */
-for (const f of [acadSword, caneP, quillP, whiteQuill, inkwellP, booksP, theatreMask, violinP, bowP, batonP, canvasP, brush, palette, lyreP, torchP, tabletP, monaFrame, bouquet, baguette]) f.held = true;
+for (const f of [guitarP, accordionP, acadSword, caneP, quillP, whiteQuill, inkwellP, booksP, theatreMask, violinP, bowP, batonP, canvasP, brush, palette, lyreP, torchP, tabletP, monaFrame, bouquet, baguette]) f.held = true;
 /* ---------- (figures 17) BACKGROUNDS (the slot "bg", a very high tier): a whole card behind the learner wherever the learner is seen alone
    (Home, You, the shop, the learner's card, the action cards of the learner alone; not in a picture shared with somebody else). The 160 x 190
    box, the ground line at y 172 (GY) under the figure's feet; the house style (flat tones, the light from the upper left, no outlines),
@@ -1902,6 +1939,12 @@ const WARD = {
   fairisle: { slot: "top", tier: "everyday", on: (c, w) => { c.top = ["#ecdcb8", "#c9b48c"]; w.noCollar = 1;
     w.parts.push(X => onTrunk(X, "fiY", t => { const nb = X.B.nb, y0 = -nb + 0.03; let zz = "", dd = ""; for (let x = -0.3; x < 0.3; x += 0.03){ zz += `M${R3(x)} ${R3(y0 + 0.03)}l.015 -.02l.015 .02`; dd += `<circle cx="${R3(x + 0.015)}" cy="${R3(y0 + 0.06)}" r=".006" fill="${t ? "#2b5bb5" : "#1f4692"}"/>`; }
       return `<path d="M-.3 ${R3(y0)}h.6v.012h-.6zM-.3 ${R3(y0 + 0.08)}h.6v.012h-.6z" fill="${t ? "#c8323c" : "#9a222a"}"/><path d="${zz}" stroke="${t ? "#c8323c" : "#9a222a"}" stroke-width=".008" fill="none"/>${dd}`; })); } },
+  /* (figures 17) tier 13, instruments: two more (held: put away where the hands are busy) */
+  guitar: { slot: "hand", tier: "everyday", thumb: "whole", on: (c, w) => {
+    w.keyFix.push(keyArm("L", (J, B) => ({ wr: guitarKey(J, B, "L", 0.39, [-0.01, 0.02], [0.3, 0.35, 0.88]), hd: [0.3, 0.35, 0.88], pn: [-0.8, -0.2, 0.3], pole: [0.4, -1, 0] })),
+      keyArm("R", (J, B) => ({ wr: guitarKey(J, B, "R", 0.026, [0.04, 0], [0.45, -0.75, 0.3]), hd: [-0.45, -0.75, 0.3], pn: [0, 0, -1], pole: [0.8, -0.8, -0.2] })));      // (the right hand's way given in the world's x; keyArm turns its frame)
+    w.curlL = 0.75; w.curlR = 0.35; w.parts.push(guitarP); } },
+  accordion: { slot: "hand", tier: "everyday", thumb: "whole", on: (c, w) => { for (const s of ["L", "R"]) w.keyFix.push(keyArm(s, () => ({ wr: [0.17, -0.1, 0.15], hd: [-0.05, 0.1, 1], pn: [-1, 0, 0.1], pole: [0.5, -1, -0.2] }))); w.curlL = 0.6; w.curlR = 0.6; w.parts.push(accordionP); } },      // (a hand on each end, the palms in: the bellows between them)
   /* (figures 17) tier 14, hats of honour: three more */
   crown: { slot: "head", tier: "everyday", on: (c, w) => { w.hat = { kind: "crown", M: material("#f3cd62", "#c99a2c"), stone: "#d63b3b" }; w.tall = 0.75; } },
   tiara: { slot: "head", tier: "everyday", on: (c, w) => { w.hat = { kind: "tiara", M: material("#eef0f4", "#b8bec8"), stone: "#7fc8f0" }; w.tall = 0.4; } },
@@ -2458,6 +2501,13 @@ HANDS.grip = { f: [[1.0, 1.2], [1.05, 1.25], [1.1, 1.25], [1.15, 1.25]], sp: 0, 
 HANDS.ball = { f: [[0.55, 0.62], [0.6, 0.66], [0.66, 0.7], [0.72, 0.76]], sp: 0.05, th: [0.8, 0.45, 0.25] };       // round an apple
 HANDS.pen = { f: [[0.55, 0.5], [0.95, 1.05], [1.2, 1.3], [1.3, 1.4]], sp: 0, th: [0.5, 0.75, 0.3] };               // a pen between the thumb and the first two fingers
 HANDS.book = { f: [[0.12, 0.18], [0.14, 0.2], [0.16, 0.22], [0.2, 0.26]], sp: 0.01, th: [0.7, -0.1, 0.1] };        // the fingers on the cover, the thumb round its edge
+HANDS.bookgrip = { f: [[0.0, 0.08], [-0.02, 0.08], [0.0, 0.1], [0.04, 0.12]], sp: 0.035, th: [0.3, 0.72, 0.4] };     // (grip82) the fingers flat on the back of the cover, the thumb round its edge onto the pages
+/* (grip82) a hand closed round a rod of radius rr (the microphone's handle): each finger wraps the rod, its three bones chords of a circle
+   round the rod's axis (the knuckle on it, leaving it along the hand), that circle just large enough that the longest bone's middle lies
+   on the rod (a bone is straight: drawn on the rod's own circle its middle would sink into it); wrapR(i): that circle's radius */
+const wrapR = (HL, PW, rr, i) => { const R = rr + FING.RF[i] * PW, l = 0.48 * FING.LEN[i] * HL; return Math.sqrt(R * R + l * l / 4); };
+const wrapHand = (HL, PW, rr) => ({ f: FING.LEN.map((L, i) => { const Re = wrapR(HL, PW, rr, i), ang = l => 2 * Math.asin(Math.min(1, l / (2 * Re))), a1 = ang(0.48 * L * HL), a2 = ang(0.29 * L * HL);
+  return [a1 / 2, (a1 + a2) / 2]; }), sp: 0, th: [1.0, 0.75, 0.25] });
 /* a mouth shape drawn once (the teacher's drawing, rig.mouth.draw, as a still picture): v = [open, width, protrusion, closed, teeth, fv,
    tongue], smile 0 .. 1.3; in the teacher's units (a head height of 50.5), scaled to the head's own */
 function mouthSVG(v, smile, u, lipC, dimC, grin){
@@ -2646,14 +2696,23 @@ function closeUp(name, c, o){
         return [{ id: "pillow", z: P(J2.head)[2] - 0.25, tag: "g", m: [Math.cos(a * Math.PI / 180), Math.sin(a * Math.PI / 180), -Math.sin(a * Math.PI / 180), Math.cos(a * Math.PI / 180), cx, cy].map(R3),
           inner: `<path d="${rect(0)}" fill="#a9c2e6"/><path d="${rect(-w * 0.04)}" transform="translate(${F1(-w * 0.03)} ${F1(-h * 0.05)})" fill="#d4e3f7"/><path d="M${F1(-w * 0.38)} ${F1(-h * 0.3)}Q0 ${F1(-h * 0.2)} ${F1(w * 0.38)} ${F1(-h * 0.3)}" stroke="#eef4fc" stroke-width="${F1(h * 0.04)}" fill="none" stroke-linecap="round" opacity=".8"/>` }]; }); }
     else if (name === "sing"){
-      /* the microphone held up before the mouth, the mouth wide open on the notes */
-      const op = card ? 1 : 0.55 + 0.45 * Math.abs(Math.sin(tw * 3)); headTo(k, -0.1, 0.06, -0.05); J = skeleton(k, B); const M = mouthAt(J), rb = 0.3 * hh;
-      const G = add(add(M, mul(J.Bh.z, 0.075)), [-0.02, -0.025, 0]), hax = nrm([0.12, 1, 0.45]), h0 = sub(G, mul(hax, rb + 0.01)), h1 = sub(G, mul(hax, 0.13));
-      const wr = sub(add(mul(add(h0, h1), 0.5), mul(nrm([-0.6, 0, 0.3]), 0.012)), mul(hax, 0.05));
-      arm(k, J, "R", wr, nrm([0.9, 0.15, 0.3]), nrm([0.1, -0.2, -1]), [-0.25, -1, 0.3]); E.hands.R = hand("grip");
+      /* (grip82; Jon, 17 Nov: "the mic appears in front of the hand, hovering") the microphone held as the singer in his picture holds it:
+         the right hand closed round the handle, which runs through the fist along its knuckle line (the fingers wrapped round it on the
+         viewer's side, the palm behind it), the head of the microphone above the fist and before the mouth, the handle going down and out
+         to the side (about 28 degrees under the level in the picture, as in his). The hand is put there by the arm's two bones; the
+         microphone is then placed from the hand where they put it; each bone of the hand drawn in front of the handle or behind it */
+      const op = card ? 1 : 0.55 + 0.45 * Math.abs(Math.sin(tw * 3)); headTo(k, -0.1, 0.06, -0.05); J = skeleton(k, B); const M = mouthAt(J), HL = B.hand, hm = HL * 0.857, rb = 0.27 * hm;      // (the microphone sized by the hand that holds it: a child's is smaller)
+      const PW = HL * (B.pwk || 0.235), rr = 0.085 * hm, dT = nrm([-0.72, -0.42, 0.3]), th0 = mul(dT, -1), v0 = [0.05, 0.3, 1], pn1 = nrm(sub(v0, mul(th0, dot(v0, th0)))), hd1 = cross(pn1, th0), pn0 = rot(pn1, th0, 0.95), hd0 = rot(hd1, th0, 0.95);      // (the fist turned 55 degrees about the handle: its knuckles toward the viewer, the fingers' middle bones over the handle's front)
+      const gripOf = (w, hd, pn, th) => { const C = i => add(add(add(w, mul(hd, FING.KN[i] * HL)), mul(th, FING.OFF[i] * PW)), mul(pn, wrapR(HL, PW, rr, i))), c0 = C(0), c3 = C(3); return { c0, c3, ax: nrm(sub(c0, c3)) }; };
+      const gap = rb * 0.95 + FING.RF[0] * PW + 0.006, gl = gripOf([0, 0, 0], hd0, pn0, th0), G0 = add(add(M, mul(J.Bh.z, 1.2 * rb)), [-0.4 * rb, -0.88 * rb, 0]);      // (just under the lower lip, before it)
+      arm(k, J, "R", sub(sub(G0, mul(gl.ax, gap)), gl.c0), hd0, pn0, [-0.75, -1, -0.15]); E.hands.R = handFlat(wrapHand(HL, PW, rr)).concat([1]);
+      J = skeleton(k, B); const g2 = gripOf(J.wrR, J.hdR, J.pnR, cross(J.hdR, J.pnR)), ax = g2.ax, G = add(g2.c0, mul(ax, gap)), h0 = sub(G, mul(ax, rb * 0.8)), h1 = sub(g2.c3, mul(ax, 0.95 * HL));
+      const Pz = p => cam.pt([p[0], p[1] - floor, p[2]])[2], zh = (Pz(h0) + Pz(h1)) / 2, Lh = Math.hypot(...sub(h0, h1));
+      E.grip = { R: (p, z0) => { const t = Math.max(0, Math.min(Lh, dot(sub(p, h1), ax))), X = add(h1, mul(ax, t)); return Pz(p) >= Pz(X) ? Math.max(z0, zh + 0.0012) : Math.min(z0, zh - 0.0012); } };
+      /*gprobe:E.probe = { kind: "mic", G, rb, h0, h1, rr, ax, M, want: G0, head: J.head, hh, hm }*/
       E.mouth = [0.5 * op, 0.4, 0.15, 0, 0.7, 0, 0.3]; E.smile = 0.2; E.eyes = { lid: 0.03 };
-      E.extra.push((J2, P, S2) => { const a = P(h0), b = P(h1), g = P(G), z = g[2] - 0.004, r = rb * S2;
-        return [{ id: "micH", z: (a[2] + b[2]) / 2, mat: "micH", layers: [[capsule(a[0], a[1], 0.085 * hh * S2, b[0], b[1], 0.13 * hh * S2), "#2c2f36"], [capsule(a[0] - 0.4, a[1] - 0.2, 0.05 * hh * S2, b[0] - 0.4, b[1] - 0.3, 0.08 * hh * S2), "#4a4e58"]] },
+      E.extra.push((J2, P, S2) => { const a = P(h0), b = P(h1), g = P(G), z = g[2], r = rb * S2, t1 = P(sub(h1, mul(ax, -0.012)));
+        return [{ id: "micH", z: zh, mat: "micH", layers: [[capsule(a[0], a[1], 0.115 * hm * S2, b[0], b[1], 0.075 * hm * S2) + capsule(b[0], b[1], 0.085 * hm * S2, t1[0], t1[1], 0.085 * hm * S2), "#2c2f36"], [capsule(a[0] - 0.4, a[1] - 0.3, 0.06 * hm * S2, b[0] - 0.4, b[1] - 0.3, 0.035 * hm * S2), "#4a4e58"]] },
           { id: "micG", z, mat: "micG", layers: [[ellPath(disc(g, r), 0, 0, 0), "#7e848f"], [ellPath(disc(g, r), -r * 0.16, LIGHT[0] * r * 0.16, LIGHT[1] * r * 0.16), "#b9bec7"]] },
           { id: "micM", z: z + 0.0001, tag: "g", m: [r, 0, 0, r, g[0], g[1]].map(R3), inner: `<path d="M-.7 -.35H.7M-.85 0H.85M-.7 .35H.7M-.35 -.7V.7M0 -.85V.85M.35 -.7V.7" stroke="#6a707b" stroke-width=".07" opacity=".7"/>` }]; }); }
     else if (name === "read"){
@@ -2662,8 +2721,18 @@ function closeUp(name, c, o){
       const what = o.reading === "newspaper" || o.reading === "letter" ? o.reading : "book", news = what === "newspaper", letter = what === "letter";
       const sp0 = add(J.chest, [0, -0.03, 0.2]), Wb = 0.95 * hh * (news ? 2.1 : letter ? 0.95 : 1.6), Hb = 1.6 * hh * (news ? 1.45 : 1.25), open = letter ? 0.06 : news ? 0.4 : 0.5;
       const cov = sg => [sp0, add(sp0, [sg * Wb * Math.cos(open), 0, -Wb * Math.sin(open)])];
-      for (const [side, sg] of [["L", 1], ["R", -1]]){ const e = cov(sg)[1], wr = add(e, [sg * 0.03, -Hb * 0.12, -0.01]);
-        arm(k, J, side, wr, nrm([-sg * 0.85, 0.2, 0.35]), nrm([sg * 0.3, 0, -1]), [sg * 0.8, -1, -0.2]); E.hands[side] = hand("book"); }
+      /* (grip82; Jon, 17 Nov: "the reading card doesn't have the fingers appearing around the other side of the book") held as the readers
+         in his photographs hold it: each hand at the lower part of its cover's outer edge, the four fingers across the back of the cover on
+         the viewer's side (their backs seen, pointing in and a little up), the thumb round the edge onto the pages (hidden by the cover), the
+         wrist below and outside. The hands put there by the arms' two bones; each bone of the hand drawn in front of its cover or behind it
+         by its side of the cover's plane, per frame */
+      const HL = B.hand, PW = HL * (B.pwk || 0.235), tilt = 0.36, cs = Math.cos(open), sn = Math.sin(open), Pz = p => cam.pt([p[0], p[1] - floor, p[2]])[2];
+      const fr = sg => { const u = [sg * cs, 0, -sn], n = [sg * sn, 0, cs]; return { u, n, zc: Math.max(Pz(add(sp0, [0, -Hb / 2, 0])), Pz(add(cov(sg)[1], [0, -Hb / 2, 0]))) + 0.002 }; };
+      for (const [side, sg] of [["L", 1], ["R", -1]]){ const { u, n } = fr(sg), e = cov(sg)[1], hd = nrm(add(mul(u, -Math.cos(tilt)), [0, Math.sin(tilt), 0])), pn = mul(n, -1), th = side === "L" ? cross(pn, hd) : cross(hd, pn);
+        const K = add(add(add(e, [0, -Hb * 0.2, 0]), mul(u, -0.16 * HL)), mul(n, FING.RF[1] * PW));      // the middle finger's knuckle: just inside the edge, the finger's radius off the cover
+        arm(k, J, side, sub(sub(K, mul(hd, FING.KN[1] * HL)), mul(th, FING.OFF[1] * PW)), hd, pn, [sg * 0.85, -1, -0.1]); E.hands[side] = hand("bookgrip"); }
+      E.grip = {}; for (const [side, sg] of [["L", 1], ["R", -1]]){ const { n, zc } = fr(sg); E.grip[side] = (p, z0) => dot(sub(p, sp0), n) >= 0 ? Math.max(z0, zc + 0.0012) : Math.min(z0, zc - 0.0012); }
+      /*gprobe:E.probe = { kind: "book", sp0, Hb, Wb, covers: [1, -1].map(sg => ({ sg, e: cov(sg)[1], n: fr(sg).n, u: fr(sg).u })) }*/
       E.extra.push((J2, P, S2) => { const out = [], c0 = P(add(sp0, [0, -Hb / 2, 0])), c1 = P(add(sp0, [0, Hb / 2, 0]));
         for (const sg of [1, -1]){ const e = cov(sg)[1], q = [P(add(sp0, [0, -Hb / 2, 0])), P(add(e, [0, -Hb / 2, 0])), P(add(e, [0, Hb / 2, 0])), P(add(sp0, [0, Hb / 2, 0]))];
           const pg = [P(add(sp0, [0, Hb / 2 - 0.004, -0.004])), P(add(add(e, mul(sub(sp0, e), 0.04)), [0, Hb / 2 - 0.004, -0.01])), P(add(add(e, mul(sub(sp0, e), 0.04)), [0, Hb / 2 + 0.008, -0.03])), P(add(sp0, [0, Hb / 2 + 0.01, -0.03]))];
@@ -2750,7 +2819,9 @@ function closeUp(name, c, o){
     if (E.featK) W.featK = E.featK;
     if (E.cheek){ W.defs += `<radialGradient id="${u}bm"><stop offset="0" stop-color="${E.cheek[0]}" stop-opacity="${E.cheek[1]}"/><stop offset="1" stop-color="${E.cheek[0]}" stop-opacity="0"/></radialGradient>`; W.cheekG = `url(#${u}bm)`; }
     if (E.marks && E.marks.length) W.faceMarks = E.marks;
-    const list = frame(k, B, cam, W, floor, { hands: E.hands, noLegs: 1, extra: (J, P, S2) => [].concat(...E.extra.map(f => f(J, P, S2))) });
+    /*gprobe:E.handPts = {}*/
+    const list = frame(k, B, cam, W, floor, { hands: E.hands, grip: E.grip, handPts: E.handPts, noLegs: 1, extra: (J, P, S2) => [].concat(...E.extra.map(f => f(J, P, S2))) });
+    /*gprobe:if (E.probe) window.__GSK = JSON.parse(JSON.stringify({ probe: E.probe, hands: E.handPts, J: skeleton(k, B), cam: [yaw, pitch, S, D.at[0] - q0[0], D.at[1] - q0[1], floor], hand: B.hand, pw: B.pwk || 0.235 }))*/
     return { list, defs: W.defs }; };
   /* round the picture: the z z z of sleep, the notes of a song (as the earlier drawings had them) */
   let front = "";

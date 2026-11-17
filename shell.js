@@ -305,6 +305,9 @@ const SHELL = (()=>{
   const rankName = k=>TITLES[rankAt(k)][fem()?1:0];
   const rankEn = k=>TITLES[rankAt(k)][2];
   const rankIn = k=>rankName(k);
+  /* (owner, 17 Nov: "The ranks should be completely unknown so you have to work to know what the higher ranks are. It spoils it to be able
+     to see the names of the ranks from this view") a rank above the learner's is never named: "the next rank", "in 3 ranks" */
+  const ranksAway = r=>{ const d=r-(G.rank||0); return d<=1 ? "the next rank" : `in ${d} ranks`; };
   const rankLabel = k=>rankName(k)+" ("+rankEn(k)+")";      // for a screen reader
   // the name, the English beneath it in brackets (wherever a rank is shown)
   const rankHtml = k=>`${esc(rankName(k))}<small class="ren">(${esc(rankEn(k))})</small>`;
@@ -441,7 +444,7 @@ const SHELL = (()=>{
   // the bar along the bottom of the lesson-complete screen: points toward the next rank (from where the lesson began to where it ended)
   function rankBar(p0, p1){ const k=rankOf(p1), last=k>=RULES.RANKS.length, lo=k ? RULES.RANKS[k-1] : 0, hi=last ? lo : RULES.RANKS[k], f=x=>last ? 1 : Math.max(0, Math.min(1, (x-lo)/(hi-lo)));
     const from = rankOf(p0)<k ? 0 : f(p0);
-    return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" "+pl(hi-p1, "point")+" to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${rankHtml(k)}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
+    return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" "+pl(hi-p1, "point")+" to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${rankHtml(k)}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to the next rank`}</span></span>
       <span class="rb-track"><i style="--a:${from.toFixed(3)};--b:${Math.max(0.02, f(p1)).toFixed(3)}"></i></span></span></div>`; }
 
   /* ---- (17 Nov; the owner: "Wardrobe items should come in tiers. Tier 1, tier 2, etc. ... lower tiers are more boring items, higher tiers are
@@ -483,7 +486,7 @@ const SHELL = (()=>{
     ["hairblue","des cheveux bleus","blue hair",10,"hairc",2], ["hairpink","des cheveux roses","pink hair",10,"hairc",3], ["hairgreen","des cheveux verts","green hair",10,"hairc",4], ["hairsilver","des cheveux argentés","silver hair",10,"hairc",4], ["hairrainbow","des cheveux arc-en-ciel","rainbow hair",10,"hairc",42], ["hairflame","des cheveux de feu","flame-coloured hair",10,"hairc",42],
     ["coat","un beau manteau","a smart coat",11,"top",1], ["trench","un imperméable","a raincoat",11,"top",2], ["tweed","une veste en tweed","a tweed jacket with elbow patches",11,"top",2], ["denim","une veste en jean","a denim jacket",11,"top",3], ["puffer","une doudoune","a puffer jacket",11,"top",3], ["blazer","un blazer","a blazer with a pocket square",11,"top",3], ["cape","la cape du poète","a poet's cape",11,"top",47], ["leather","un blouson en cuir","a leather jacket",11,"top",47],
     ["flowers","des fleurs","a bunch of flowers",12,"hand",3], ["baguette","une baguette","a baguette under the arm",12,"hand",5], ["books","une pile de livres","a pile of books",12,"hand",7], ["quill","une plume et un encrier","a quill and an inkwell",12,"hand",52],
-    ["mask","un masque de théâtre","a theatre mask",13,"hand",3], ["easel","une toile et un pinceau","a canvas and a brush",13,"hand",4], ["violin","un violon","a violin and bow",13,"hand",58], ["lyre","une lyre","a lyre",13,"hand",58],
+    ["mask","un masque de théâtre","a theatre mask",13,"hand",3], ["easel","une toile et un pinceau","a canvas and a brush",13,"hand",4], ["violin","un violon","a violin and bow",13,"hand",58], ["lyre","une lyre","a lyre",13,"hand",58], ["guitar","une guitare","a guitar",13,"hand",4], ["accordion","un accordéon","an accordion",13,"hand",5],
     ["tophat","un haut-de-forme","a top hat",14,"head",3], ["bicorne","un bicorne","a bicorne hat",14,"head",5], ["tiara","un diadème","a tiara",14,"head",6], ["featherhat","un chapeau à plume","a feathered hat",14,"head",8], ["laurel","une couronne de laurier","a laurel wreath",14,"head",72], ["crown","une couronne","a crown",14,"head",72],
     ["sash","l'écharpe du diplomate","a diplomat's sash",15,"neck",4], ["cane","une canne à pommeau d'or","a gold-topped cane",15,"hand",5], ["sword","l'épée d'académicien","an academician's sword",15,"hand",82], ["goldquill","la plume d'or","a golden quill",15,"hand",82],
     ["beret","un béret et une marinière","a beret and a striped top",16,"outfit",6], ["artbs","le béret et l'écharpe de l'artiste","the artist's beret and long scarf",16,"outfit",11], ["dots","une robe à pois","a polka-dot dress",16,"outfit",15], ["gown","la toge et la toque","a scholar's gown and cap",16,"outfit",110],
@@ -522,7 +525,7 @@ const SHELL = (()=>{
     return `<svg viewBox="0 0 160 190" aria-hidden="true"><rect x="9" y="9" width="142" height="172" rx="16" class="ph-box"/><g class="ph-g" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" transform="translate(80 92) scale(.84) translate(-80 -100)">${glyph}</g><text x="80" y="170" text-anchor="middle" class="ph-t">PLACEHOLDER</text></svg>`; }
   // a locked thing: grey, question marks where the thing would be, a lock over it (the owner: "very clear that items are locked")
   const lockTile = (cls="")=>`<span class="wthumb wq${cls}" aria-hidden="true"><span class="wqm">?</span><span class="wlk">${ic("lock")}</span></span>`;
-  const opensAt = n=>`${esc(rankName(tierRank(n)))} <span class="ren-i">(${esc(rankEn(tierRank(n)))})</span>`;
+  const opensAt = n=>{ const w=ranksAway(tierRank(n)); return w==="the next rank" ? "at the next rank" : w; };
   function wardrobe(back){ wardrobe.back=back; const o=$("ward"), w=W(), k=G.rank||0, tok=G.tokens||0;
     const nextTok = k<RULES.RANKS.length ? tokensFor(k+1) : 0, nextTs=TIERS.filter(t=>t.rank===k+1);      // what the next rank opens
     const goal=goalIt();
@@ -537,13 +540,13 @@ const SHELL = (()=>{
       if(open) return `<section class="wtr">${head}${items.length ? `<div class="wgrid2">${items.map(card).join("")}</div>` : `<p class="wsoon">Its things are on their way.</p>`}</section>`;
       // locked: the category and the rank that opens it said plainly; question marks where its things are (anything bought before stays shown, in colour)
       const next = t.rank===k+1, lockN = Math.min(next ? 3 : 5, items.length ? items.length-mine.length : t.soon);      // the next tier full size; the ones after it small
-      return `<section class="wtr locked">${head}${mine.length ? `<div class="wgrid2">${mine.map(card).join("")}</div>` : ""}<button class="wlockb" data-tier="${t.n}" aria-label="Tier ${t.n}: ${esc(t.cat)}. Locked. It opens when you become ${esc(rankLabel(t.rank))}.">
-        <span class="wopen">${ic("lock")}<span>Opens at ${opensAt(t.n)}</span></span></button>
+      return `<section class="wtr locked">${head}${mine.length ? `<div class="wgrid2">${mine.map(card).join("")}</div>` : ""}<button class="wlockb" data-tier="${t.n}" aria-label="Tier ${t.n}: ${esc(t.cat)}. Locked. It opens ${opensAt(t.n)}.">
+        <span class="wopen">${ic("lock")}<span>Opens ${opensAt(t.n)}</span></span></button>
         ${lockN>0 ? `<button class="wlockb wq-btn" data-tier="${t.n}" tabindex="-1" aria-hidden="true"><span class="wgrid2 wq-grid${next ? "" : " sm"}">${Array.from({length:lockN}, lockCard).join("")}</span></button>` : ""}</section>`; };
     o.innerHTML=`<div class="mk-bar" style="padding:0"><button class="rb plain" id="wdBack" aria-label="Back">${ic("chev")}</button><h2>Your wardrobe</h2></div>
       <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${rankHtml(k)}</b>${matHtml(k)}
         <div class="wtok">${tokenIcon()}${MV.num("tokW", tok)}<span>token${tok===1?"":"s"}</span></div>
-        <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} ${pl(RULES.RANKS[k]-G.points, "point")} to ${esc(rankIn(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b> ${nextTs.map(t=>` and <b>Tier ${t.n}: ${esc(t.cat)}</b>`).join("")}` : "The highest rank"}</small></div></div>
+        <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} ${pl(RULES.RANKS[k]-G.points, "point")} to the next rank: <b>+${nextTok} token${nextTok===1?"":"s"}</b> ${nextTs.map(t=>` and <b>Tier ${t.n}: ${esc(t.cat)}</b>`).join("")}` : "The highest rank"}</small></div></div>
       ${goal ? `<button class="card wgoal" data-it="${goal.id}" aria-label="Saving for ${esc(goal.fr)}: ${Math.min(tok, goal.price)} of ${goal.price} tokens"><span class="wg-th" data-lz="w|${goal.id}"></span><span class="wg-t"><small>Saving for</small><b lang="fr">${esc(goal.fr)}</b>
         <span class="wg-bar"><i style="--f:${Math.min(1, tok/goal.price).toFixed(3)}"></i></span><span class="wg-n">${tokenIcon()}<b class="num">${Math.min(tok, goal.price)}</b> / ${goal.price}${tok>=goal.price ? ` <em>Ready to buy</em>` : ""}</span></span></button>` : ""}
       ${lookCard(back)}${freezeCard()}<h3 class="hsec">Things to wear</h3>
@@ -556,7 +559,7 @@ const SHELL = (()=>{
   // a locked tier, tapped: what it is, and the rank that opens it
   function tierLocked(n){ const t=TIERS[n-1], pts=Math.max(0, RULES.RANKS[t.rank-1]-(G.points||0)), cnt=WARDROBE.filter(it=>it.tier===n).length || t.soon;
     info(`Tier ${n}: ${t.cat}`, `<div class="wbig wlockbig">${lockTile(" big")}</div><p class="wsub"><b>Locked.</b> ${cnt} ${pl(cnt, "thing")} to wear${tierFrom(n) ? `, from ${tierFrom(n)} ${pl(tierFrom(n), "token")}` : ""}.</p>
-      <p>It opens when you become <b>${opensAt(n)}</b>: ${pts.toLocaleString("en-GB")} ${pl(pts, "point")} to go.</p>`, "Close"); }
+      <p>It opens <b>${opensAt(n)}</b>: ${pts.toLocaleString("en-GB")} ${pl(pts, "point")} to go.</p>`, "Close"); }
   function tokenIcon(){ return `<svg class="tokn" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#E3A417"/><circle cx="10" cy="10" r="6.2" fill="none" stroke="#A66F00" stroke-width="1.3"/><path d="M10 5.6l1.3 2.8 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4z" fill="#FFF6DA"/></svg>`; }
   function wardItem(it, back){ if(itemState(it)==="lock") return tierLocked(it.tier); const w=W(), own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, tok=G.tokens||0, short=it.price-tok;
     const again=()=>{ wardrobe.keep=true; wardrobe(back); };
@@ -715,7 +718,7 @@ const SHELL = (()=>{
       const name = rankName(k1);
       // (ward2) the tier this rank opens: its cards, dark, under a padlock
       const more = P && P.tiers.length>1 ? ` and ${P.tiers.length-1} more` : "", from = P ? tierFrom(P.tier.n) : 0;
-      const cap = !P ? "" : `<b>Tier ${P.tier.n}: ${esc(P.tier.cat)}${more}, unlocked</b><small>${P.n ? `${P.n} ${pl(P.n, "thing")} to wear, from ${from} ${pl(from, "token")}` : "Its things are on their way"}</small>`;
+      const cap = !P ? "" : `<b>Tier ${P.tier.n}: ${esc(P.tier.cat)}${more}, unlocked</b>`;      // (owner, 17 Nov: "The subtitle about '7 things to wear' etc should be removed")
       const say = `${lab}: ${rankLabel(k1)}, ${matName(k1).toLowerCase()}. Plus ${add} token${add>1?"s":""}: you have ${tok1}. `+(!P ? "" : `Tier ${P.tier.n} is unlocked: ${P.tier.cat}.`);
       const root=el(`<div class="rkc k-${kind}${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="${esc(lab)}" tabindex="-1">
         <div class="rk-bg"></div><div class="rk-bg2"></div>
@@ -1001,7 +1004,7 @@ const SHELL = (()=>{
     ];
     // the help in You: the whole app in a few short lines
     const HOW = ["The rings: today's lesson, this week's goal, your next level.", "Your two moments: a lesson after each.",
-      "A lesson opens when the one before is all green.", "Perfect exercise: 1 point.", "Points earn ranks, from Débutant (Beginner) to Immortel (Immortal); ranks earn tokens.",
+      "A lesson opens when the one before is all green.", "Perfect exercise: 1 point.", "Points earn ranks; ranks earn tokens.",
       "Tokens buy things in your wardrobe.", "A done lesson: tap it to redo any exercise.", "Go for perfect: its yellow exercises, one after another."];
     const seenIt = id=>!!tips()["c:"+id];
     const learned = id=>{ if(!seenIt(id)){ tips()["c:"+id]=new Date().toISOString().slice(0,10); store(); } };
@@ -1085,7 +1088,7 @@ const SHELL = (()=>{
     function commit(){ G.tally={base:G.points||0, items:[]}; store(); }
     const span = k=>{ const lo=k ? RULES.RANKS[k-1] : 0, last=k>=RULES.RANKS.length; return {lo, hi:last ? lo+1 : RULES.RANKS[k], last}; };
     const fillOf = p=>{ const k=rankOf(p), s=span(k); return s.last ? 1 : Math.max(0, Math.min(1, (p-s.lo)/(s.hi-s.lo))); };
-    const toNext = p=>{ const k=rankOf(p), s=span(k), n=Math.max(0, Math.ceil(s.hi-p-1e-6)); return s.last ? "" : n ? `<b class="num">${n.toLocaleString("en-GB")}</b> to ${esc(rankIn(k+1))}` : `<b>${esc(rankIn(k+1))}</b>`; };
+    const toNext = p=>{ const k=rankOf(p), s=span(k), n=Math.max(0, Math.ceil(s.hi-p-1e-6)); return s.last ? "" : n ? `<b class="num">${n.toLocaleString("en-GB")}</b> to the next rank` : `<b>A new rank</b>`; };
     function run(host, done){ stop(); const src=sources(), from=T().base, to=G.points||0;
       if(!host || to<=from || !src.length){ commit(); if(done) done("none"); return; }
       const calm=lessMotion(), total=src.reduce((a,x)=>a+x.p,0), k0=rankOf(from);
@@ -1563,14 +1566,14 @@ const SHELL = (()=>{
     const R=ringsNow(now), k=G.rank||0, own=ownedCards().length, pc=perfectCount(), bs=RULES.BADGES.filter(b=>G.badges[b]), nextB=RULES.BADGES.find(b=>!G.badges[b]);
     const lastR=k>=RULES.RANKS.length, lo=k ? RULES.RANKS[k-1] : 0, hi=lastR ? lo : RULES.RANKS[k], rf=lastR ? 1 : Math.max(0.02, Math.min(1, (G.points-lo)/(hi-lo))), sN=(G.seenN||(G.seenN={})), rf0=sN.rankF!=null && sN.rankK===k ? sN.rankF : rf; sN.rankF=rf; sN.rankK=k;
     h.innerHTML=`${streakBand(now)}
-      <section class="card hero"><div class="headrow"><div>${eyebrow}<h1>Lesson ${n}</h1></div><div class="minis">${newPics(HI).slice(0,3).map(mini).join("")}</div></div>
+      <section class="card hero"><div class="headrow"><div>${eyebrow}<h1>Lesson ${n}</h1></div><div class="minis">${HI<(G.furthest||0) ? newPics(HI).slice(0,3).map(mini).join("") : ""}</div></div>
         ${A==null && G.why==="perfect" && !started ? `<div class="exdots hdots" aria-label="${L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length} of ${nEx} perfect">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div>` : started ? `<div class="place" role="img" aria-label="Exercise ${S.ex+1} of ${nEx}"><div class="meta"><b>Exercise ${S.ex+1}</b> of ${nEx}</div><span class="pl-track"><i style="--f:${Math.max(0.03, fin/nEx).toFixed(3)}"></i></span></div>` : `<div class="meta">${A!=null ? `Your place stays at Lesson ${T+1}.` : nEx+" exercises · about "+mins+" minutes"}</div>`}${A==null && G.why==="once" ? `<div class="meta m2">A bit more practice, then Lesson ${n+1}.</div>` : A==null && G.why==="back" ? `<div class="meta m2">A warm-up, then Lesson ${n+1}.</div>` : A==null && G.why==="warm" && G.warmTo!=null ? `<div class="meta m2">Warming up, then on to Lesson ${G.warmTo+1}.</div>` : ""}
         ${!S.learnerName ? `<label class="hname" for="hNameIn"><span>Your first name</span><input id="hNameIn" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done"></label>` : ""}<div id="heroSlot"></div>${A!=null ? `<button class="btn quiet" id="notAgain">Back to Lesson ${T+1}</button>` : ""}</section>
       <section class="card rhythm" aria-label="Today, this week, your French"><div class="rbody">${ringsSvg(R)}${ringRows(R)}</div>
         ${G.anchors.set ? `<div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>` : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
       <h2 class="hsec">What you have earned</h2>
       <button class="card rankh" id="hRank" aria-label="${esc(rankLabel(k))}. ${lastR ? "The highest rank" : (hi-G.points)+" "+pl(hi-G.points, "point")+" to the next rank"}. ${G.tokens||0} token${G.tokens===1?"":"s"}: your wardrobe, in You">${rankEmblem(k, "emb m")}
-        <span class="rh-t"><small>Your rank</small><b>${rankHtml(k)}</b><span class="rb-track"><i style="--a:${rf0.toFixed(3)};--b:${rf.toFixed(3)}"></i></span><span class="rh-n">${lastR ? "The highest rank" : `<b class="num">${(hi-G.points).toLocaleString("en-GB")}</b> point${hi-G.points===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
+        <span class="rh-t"><small>Your rank</small><b>${rankHtml(k)}</b><span class="rb-track"><i style="--a:${rf0.toFixed(3)};--b:${rf.toFixed(3)}"></i></span><span class="rh-n">${lastR ? "The highest rank" : `<b class="num">${(hi-G.points).toLocaleString("en-GB")}</b> point${hi-G.points===1?"":"s"} to the next rank`}</span></span>
         <span class="wtok">${tokenIcon()}${MV.num("tokH", G.tokens||0)}<small>token${G.tokens===1?"":"s"}</small></span></button>
       <div class="tiles t3"><div class="tile">${ic("star")}${MV.num("points", G.points)}<small>${pl(G.points, "point")}</small></div><div class="tile">${badgeSvg(Math.max(1, pc), "badge t")}${MV.num("perfect", pc)}<small>${pl(pc, "lesson")}</small></div>
         <button class="tile go" id="hWords" data-coach="words" aria-label="${own} French ${pl(own, "word")}: see them in Lessons">${ic("words")}${MV.num("words", own)}<small>French ${pl(own, "word")} ${ic("chev")}</small></button></div>
@@ -1614,7 +1617,7 @@ const SHELL = (()=>{
       const perf = now && G.why==="perfect" && !at;
       const state = perf ? `<span class="chip">${ic("star")} Go for perfect: ${toPerfect(i).length}${ic("chev")}</span>` : now ? `<span class="chip">${G.why==="once"?"Once more":G.why?"A warm-up":"Next"}${at ? ` · ${at}` : ""}${ic("chev")}</span>`
         : G.lp[Lk.id] ? `<span class="st pf">${ic("star")} Perfect${ic("chev")}</span>` : k ? `<span class="st">${g} of ${n} perfect${ic("chev")}<i class="pb"><b style="--f:${(g/n).toFixed(3)}"></b></i></span>` : `<span class="st">Exercises${ic("chev")}</span>`;
-      const w=wordsLine(i);
+      const w = i<(G.furthest||0) ? wordsLine(i) : "";      // (owner, 17 Nov: "The words I'll learn should be hidden until I complete the lesson")
       out+=`<div class="step ${cls}"><div class="node">${pass && !now ? ic("check") : i+1}</div><button class="lrow card lcard"${open || perf ? ` data-lv="${i}"` : ` data-home="1"`} aria-label="Lesson ${i+1}${open || perf ? ": its exercises and its words" : ": it is on Home"}"><span class="t">Lesson ${i+1}</span>${state}${w ? `<small class="lw" lang="fr">${esc(w)}</small>` : ""}</button></div>`; }
     return out; }
 
@@ -1634,11 +1637,12 @@ const SHELL = (()=>{
   function lessons(){ const o=$("lessonsL"), T=G.next, done=Math.min(G.furthest, LESSONS.length), pc=perfectCount();
     const st=(CW.stages||[]).filter(s=>s.first<=LESSONS.length), groups = st.length ? st.map(s=>({s, from:s.first-1, upto:Math.min(s.last, LESSONS.length)})) : [{s:null, from:0, upto:LESSONS.length}];
     o.innerHTML=`<div class="tabhead"><h1>Your lessons</h1>${done ? `<p class="tsub"><b>${done}</b> done · <b>${ownedCards().length}</b> French ${pl(ownedCards().length, "word")}</p>` : ""}</div>
-      ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${Math.max(0, Math.min(g.s.last, G.furthest)-g.s.first+1)} of ${g.s.last-g.s.first+1} done</span></div><button class="stq" data-stage="${g.s.id}">${ic("info")}What do I learn in Stage ${g.s.id}?</button>` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
+      ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${Math.max(0, Math.min(g.s.last, G.furthest)-g.s.first+1)} of ${g.s.last-g.s.first+1} done</span></div>${(G.furthest||0)>=g.s.first-1 ? `<button class="stq" data-stage="${g.s.id}">${ic("info")}What do I learn in Stage ${g.s.id}?</button>` : `<div class="stq stlock" data-stlock="${g.s.id}" role="note">${ic("lock")}Reach Stage ${g.s.id} to find out what you learn</div>`}` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
     o.hidden=false;
     o.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
     o.querySelectorAll("[data-home]").forEach(b=>{ b.onclick=()=>tab("today"); });
     o.querySelectorAll("[data-stage]").forEach(b=>{ b.onclick=()=>{ tick(); stageCard(+b.dataset.stage); }; });
+    o.querySelectorAll("[data-stlock]").forEach(b=>{ b.onclick=()=>{ tick(); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); }; });   // (owner, 17 Nov: "Future stages should be locked until you reach them … You get to the end of the stage to find out what you'll learn next")
     // the first time it is opened, the lesson now is in view (the scroll is the learner's after that)
     if(o._first==null){ const c=o.querySelector(".step.now, .step.once"); const r = c && c.getBoundingClientRect(); o._first = r && r.bottom > innerHeight-120 ? Math.max(0, Math.round(r.top - o.getBoundingClientRect().top + o.scrollTop - innerHeight*0.3)) : 0; } }
 

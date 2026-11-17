@@ -416,7 +416,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-17.81";      // must equal version.json
+const APP_VERSION="2026-11-17.82";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -579,6 +579,7 @@ const VOCAB = {
   cheval: {name:"cheval", kind:"object", art:"UN", say:["Un","cheval."], accept:["cheval","chevaux","chval"]},      // (.72, R-157) Lesson 13: the name "Cheval."
   montagne: {name:"montagne", kind:"object", art:"UNE", say:["Une","montagne."], accept:["montagne","montagnes"]},      // (.72, R-157) Lesson 13: the name "Montagne."
   magasin: {name:"magasin", kind:"object", art:"UN", say:["Un","magasin."], accept:["magasin","magasins"]},      // (.77) Lesson 14: the name "Magasin."
+  plage: {name:"plage", kind:"object", art:"UNE", say:["Une","plage."], accept:["plage","plages"]},      // (.82, R-158: natural French) Lessons 8-14: une plage, where "une mer" was (the sea is la mer: one of a kind)
   parle: {name:"parle", kind:"word", verb:true, tu:"parles", say:[], accept:["parle","parles","parlent"]},
   arrive: {name:"arrive", kind:"word", verb:true, tu:"arrives", say:[], accept:["arrive","arrives","arrivent"]},
   jarrive: {name:"j'arrive", kind:"word", say:[], accept:["j'arrive","jarrive","j arrive"]},              // one unit, like "j'apprends"
@@ -960,7 +961,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:72, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:82, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -994,7 +995,30 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=64)) migrate64();      // (.64) a state saved before Lessons 6-10 were rebuilt (Pierre and Sylvie ask too, on with them, sur / sous on chairs)
   if(!(s.courseRev>=67)) migrate67();      // (.67) a state saved before Lessons 11 and 12 came (Lessons 1-10 unchanged)
   if(!(s.courseRev>=72)) migrate72();      // (.72) a state saved before Lessons 1-12 were rebuilt for near-twins by ear (R-157) and Lesson 13 came
+  if(!(s.courseRev>=82)) migrate82();      // (.82) a state saved before Lessons 1-14 said natural French (R-158): Lesson 14's E22-E24 and E26 / E28 change places
   } }catch(e){} }
+/* (.82) Lessons 1-14 in natural French (rules.md R-158). Every exercise keeps its id and every lesson its number of exercises, but one: in
+   Lesson 14 the names fille / magasin and their taps now come before the either/or "Une montagne ou un cheval ?" (with the noun said with
+   its un / une, the two made twelve answers of one form running: R-125), so L14E22 (the either/or) is L14E24, L14E23 (the names) is
+   L14E22 and L14E24 (their taps) is L14E23; and their returns late in the lesson change places too: L14E26 (the either/or again) is
+   L14E28, L14E28 (the taps again) is L14E26. Their records go with them (done, an error, first-time-correct, delayed tests, the shell's
+   green dots); a learner inside one of the three starts it again at the first of them that is not done. A delayed test of any other
+   changed task is taken out when it runs (runDelayed, since .43). */
+const MOVED_82 = {L14E22:"L14E24", L14E23:"L14E22", L14E24:"L14E23", L14E26:"L14E28", L14E28:"L14E26"};
+function migrate82(){
+  const re = k => { const m=/^(L14E2[2-8])(\b.*)?$/.exec(String(k)); return m && MOVED_82[m[1]] ? MOVED_82[m[1]]+(m[2]||"") : k; };
+  const mapKeys = o => Object.fromEntries(Object.entries(o||{}).map(([k,v])=>[re(k),v]));
+  const had = Object.keys(Object.assign({}, S.finished, S.exHadError, S.ftc)).some(k=>MOVED_82[String(k).replace(/^(L14E\d+).*$/,"$1")]) || (S.delayed||[]).some(d=>MOVED_82[String(d.ex||"").replace(/^(L14E\d+).*$/,"$1")]);
+  S.finished=mapKeys(S.finished); S.exHadError=mapKeys(S.exHadError); S.ftc=mapKeys(S.ftc);
+  for(const d of S.delayed||[]){ d.ex=re(d.ex); d.key=re(d.key); if(d.dueAfterEx) d.dueAfterEx=re(d.dueAfterEx);
+    if(d.tasks) d.tasks=d.tasks.map(re); if(d.sig) d.sig=mapKeys(d.sig); }
+  let moved=false;
+  if(S.lesson===13 && S.ex>=21 && S.ex<=27 && S.ex!==24){ const was=S.ex; S.ex={21:21, 22:21, 23:22, 25:25, 26:25, 27:25}[was]; moved=S.ex!==was; }
+  try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
+    if(raw){ const G=JSON.parse(raw); if(G.ex){ G.ex=mapKeys(G.ex); localStorage.setItem(gk, JSON.stringify(G)); } } }catch(e){}
+  if(had || moved) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-14 in natural French; Lesson 14's E22-E24 and E26 / E28 change places (their records go with them)"+(moved?"; this learner goes on at exercise "+(S.ex+1)+" of Lesson 14":""), heard:[]});
+  S.courseRev=82;
+}
 const CHANGED_43 = ["L1E1","L1E2","L3E5","L8E3","L10E1"];      // the exercises whose parts or tasks .43 renumbered
 /* (.44) Lessons 3, 4 and 5 got more, shorter exercises (design log 55), so their exercises are numbered anew: what was L3E5
    "C'est un livre" is L3E7, and L3E5 is a new exercise. The saved state names exercises by these ids (finished, exHadError, ftc,
@@ -1424,7 +1448,10 @@ function currentVoice(){ return voices.find(v=>v.name===S.settings.voice) || voi
 function groupVoice(){ const cv=currentVoice(); return voices.find(v=>v!==cv && /fr[-_]FR/i.test(v.lang)) || cv; }
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 let captionTimer=null;
-function caption(text){ const c=document.getElementById("caption"); if(!S.settings.caption){c.hidden=true;return;} c.textContent=text; c.hidden=false; clearTimeout(captionTimer); captionTimer=setTimeout(()=>c.hidden=true, 2600); }
+// (.82, R-158 8) a caption is French on the screen: a narrow no-break space before ? ! ;, a no-break space before : (the course's
+// strings keep plain spaces: they are what the clips are found by)
+const frTypo = t => String(t).replace(/[ \u00a0\u202f]*([?!;])/g, "\u202f$1").replace(/[ \u00a0\u202f]*:(?!\d)/g, "\u00a0:");
+function caption(text){ const c=document.getElementById("caption"); if(!S.settings.caption){c.hidden=true;return;} c.textContent=frTypo(text); c.hidden=false; clearTimeout(captionTimer); captionTimer=setTimeout(()=>c.hidden=true, 2600); }
 /* ============================================================
    MOUTH — the teacher's mouth, driven sound by sound (ruling P16)
    Each unit the teacher says has an IPA transcription. Each French sound has a mouth shape (viseme):
@@ -4159,6 +4186,11 @@ const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that
   touche_tap: {t: "Your turn to touch", parts: [
     {pic: () => XPIC.phone({turn: "tap", row: [{person: "paul"}, {person: "julie"}], tapAll: [0, 1], crop: [0, 470], label: "The frame is blue: touch a picture"}),
      h: `<p>Blue frame: don't speak. Touch the picture Marie names.</p>`}]},
+  /* (.82, R-124 and R-158: natural French) "Touche un." is not French; Marie says "Touches-en un." / "Touches-en une." (touch one of
+     them) with two or more of each kind on the screen. The card quotes her words, as touche_model quotes "Touche.", once, before the
+     first item that says it */
+  touches_en: {t: "Touch one of them", parts: [
+    {h: `<p>${XSAY("Touches-en un.", "Touches-en un")} ${XSAY("Touches-en une.", "Touches-en une")} = touch one of them. There are two of each: either one is right.</p>`}]},
   you_do: {t: "This is you", parts: [
     {pic: () => XPIC.box("you", "dance", {}),
      h: `<p>Tap a picture, and you do it. Answer as if it were really you.</p>`}]},
@@ -4211,7 +4243,7 @@ const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that
 };
 const PHONE_H = 908;
 /* the cards that say how lessons work, for the You tab ("How lessons work"): every card a lesson can show, in the order they come */
-const XCARDS_ALL = ["intro", "q", "touche_model", "touche_tap", "you_do", "count", "words", "blue", "underline", "wavy", "lis", "asker", "dis_intro", "doing_intro", "mirror_intro3", "ask_intro", "futur_intro", "futur_q_intro", "dis_moi_de_intro"];
+const XCARDS_ALL = ["intro", "q", "touche_model", "touche_tap", "touches_en", "you_do", "count", "words", "blue", "underline", "wavy", "lis", "asker", "dis_intro", "doing_intro", "mirror_intro3", "ask_intro", "futur_intro", "futur_q_intro", "dis_moi_de_intro"];
 const XCARD = {open: false, done: null, el: null, saying: false};
 function xcardEl(){
   if (XCARD.el) return XCARD.el;
@@ -4315,6 +4347,7 @@ async function convIntro0(it){
   if(it.read) await convOnce("lis");
   if(it.type==="tapshow") await convOnce("touche_model");
   if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
+  if(isTouchesEn(it)) await convOnce("touches_en");      // (.82, R-158) the first "Touches-en un." / "Touches-en une."
   /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
      before the FIRST task that uses its convention, models included: the two counting lines together before the first count of
      any kind ("À toi." is first said to Pierre in a model); "asker" before the first item in which Pierre or Sylvie asks */
@@ -4330,11 +4363,12 @@ async function convIntro0(it){
 // the conventions an item uses (what convIntro must have introduced before it), defined apart from the triggers above
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
-  if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap");
+  if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap"); if(isTouchesEn(it)) u.push("touches_en");
   if(typeof it.intro==="string") u.push(it.intro);
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
   return u; }
+const isTouchesEn = it => !!it && (it.tapTask || it.type==="tapshow") && /^touches-en\b/i.test(String((it.teacherUnits||[])[0]||""));      // (.82)
 // a command answered by a tap ("Danse." with picture cards of actions): the learner's figure then does it
 const isCommandTap = t => !!(t.scene && t.scene.row && t.targets.some(s=>{ const m=/^s(\d+)$/.exec(s), x=m && t.scene.row[+m[1]]; return x && x.is==="picture card"; }));
 /* (.27; Jon's run of 12 Nov 10:59: "in the model [the hand] doesn't [move]") The counting hand of a model was moved by the written
@@ -5055,7 +5089,7 @@ const isCountBefore = (it, next) => it && it.type==="say" && it.touch && it.touc
    the learner's own figure then does it) the figure after a SPOKEN "Dis." test goes with that test, as the figure after a tap does: on a
    correction that asks the test again, its figure comes again after it. (Not after a model: a model is not asked again, and its figure
    with it.) */
-const isNaming = t => t && t.type==="task" && t.kind==="test" && !t.tapTask && (t.questionUnits||[]).length===1 && /^dis\.$/i.test(String(t.questionUnits[0]).trim());
+const isNaming = t => t && t.type==="task" && t.kind==="test" && !t.tapTask && (t.questionUnits||[]).length===1 && /^dis(-le)?\.$/i.test(String(t.questionUnits[0]).trim());      // (.82, R-158) "Dis-le." (natural French) where "Dis." was
 const isFigureAfterNaming = (it, prev) => it && it.type==="act" && it.kind==="figure" && isNaming(prev);
 /* (.59) what goes with the task AFTER it (taken when that task is asked again, walking back from it), and what goes with the task BEFORE
    it (walking on). Until .58 both walks asked goesWith, so step 5 and step 3 also took, before a task, the figure of the tap before it
