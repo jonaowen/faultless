@@ -17,9 +17,9 @@ const SHELL = (()=>{
     SPACING_GAP_HOURS: 6,             // (work) the second lesson of a day starts at least this long after the first ended
     POINTS_PERFECT_FIRST: 1,          // (owner, 15 Nov late: "It should just be 1 point for a perfect exercise whether that is by the first time or by repair") an exercise perfect the first time it is done
     POINTS_PERFECT_REPAIR: 1,         // (owner) an exercise that had an error, done again perfectly (once: it is then perfect)
-    POINTS_PERFECT_LESSON: 5,         // (owner, 15 Nov late) a lesson that becomes perfect, first time through OR by repairs, once per lesson; (superseded: "first time only") (it still counts for the badges)
+    POINTS_PERFECT_LESSON: 0,      // (owner, 17 Nov: no points for a perfect lesson under mastery: every lesson passed is perfect) was 5;         // (owner, 15 Nov late) a lesson that becomes perfect, first time through OR by repairs, once per lesson; (superseded: "first time only") (it still counts for the badges)
     // (owner) nothing else earns points: not finishing a lesson, not the second lesson of the day, not coming back
-    BADGES: [5,10,20,50,100,200,500,1000,2000],      // (owner) perfect lessons; never a badge for lessons merely finished
+    BADGES: [5,10,20,50,100,200,500,1000,2000],      // (17 Nov) lessons completed: under mastery a lesson is completed only when it is all perfect (the owner's earlier rule: never a badge for lessons merely finished)
     BEAD_SOUND: "D",                  // (owner, 15 Nov: "Sound A is the best since it's higher pitched. Higher pitch suggests 'correct' more") (owner: a trial) the soft sound on a right answer: A, B or C (dev/design/review/sound_*.wav); a setting turns it off
     REST_DAYS_MAX: 2, REST_DAY_EARNED_EVERY: 5,      // (work)
     RETURN_AFTER_DAYS: 2,             // (work) whole days with no lesson before the welcome back and its bonus
@@ -43,8 +43,8 @@ const SHELL = (()=>{
                                       // day (as Duolingo's 2026 streak revival), or tokens by its length (5 under 30 days, 10 under 100, then 15)
     STREAK_LATE_HOUR: 20,             // (work) from this hour a day with no lesson yet says "still time today" (sun-coloured, never red)
     GOAL_EASY_BY: 2, GOAL_RISE: 1,    // (work) a week's goal met with 2 or more to spare rises by 1 next week; missed, it falls to where it will be met
-    RANKS: [8,28,65,135,225,380,610,870,1240,1740,2280,2920,3800,4700,5500,6300,7400,8700,10400,12700,15400,18800,23100,27200,31500,35500,39500,44000,49000,53000,57500,61500,65500,68000],      // (work: simulation, dev/design/RANKS.md) points for ranks 1..34
-    RANK_TOKENS: [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,4,4,4,6,6,6,8,8,8,10,10,10,20,20,20,25,25,25,60],      // (work: simulation) tokens each rank gives: more at the higher ranks (the owner: "way more tokens")
+    RANKS: [8,28,45,100,140,230,330,430,600,770,930,1100,1400,1740,2020,2290,2610,3000,3500,4000,4400,4900,5300,5700,6100,6500,7100,7600,8300,9100,9900,10900,12000,13200,14600,16200,18000,20000,22100,24400,27000,29800,33000,36500,40500,45000,50500,56000,62500],      // (17 Nov) points for ranks 2..50 (rank 1, Débutant, is the start): the 50 of Halo: Reach's shape, under mastery (1 point an exercise); dev/design/tools/rankup/tally/ranks50.py
+    RANK_TOKENS: [1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,6,6,6,6,6,6,6,6,10,10,10,10,10,10,12,12,12,12,12,12,12,12,12,12,12,12,12,12,60],      // (17 Nov) tokens each rank gives, never fewer than the rank before: something new in the wardrobe about every rank or two, all the way up
     LEARNER_FIGURE_ON: !/[?&]learner=off/.test(location.search),      // the course's "you" drawn from the learner's own figure (PICS.setLearner; the close-ups keep the default learner, by the picture library's own guard); ?learner=off for the default everywhere      // the tester's door: ?gate=off runs the lessons straight through (for scripted runs with errors)
   };
   const uid = USERS.current, GK="frDIn.g."+uid, AK=id=>"frDIn.a."+id;
@@ -193,8 +193,8 @@ const SHELL = (()=>{
         if(!rec){ p = res.perfect ? RULES.POINTS_PERFECT_FIRST : 0; G.ex[X.id]={g:res.perfect, f:res.perfect?"p":"e", n:1, d:dayOf()}; }
         else { rec.n++; if(!rec.g && res.perfect){ p=RULES.POINTS_PERFECT_REPAIR; rec.g=true; rec.r=dayOf(); } }
         if(!G.replay && !(G.again && !RULES.AGAIN_FILLS_RINGS)){ const dd=G.days[dayOf()]||(G.days[dayOf()]={n:0, firstEnd:"", full:false}); if(dd.xl!==L.id) dd.xp=0; dd.xl=L.id; dd.xp=(dd.xp||0)+1; }      // the inner ring fills as today's lesson goes on
-        G.points+=p; G.lpts[L.id]=(G.lpts[L.id]||0)+p; RUN.ex.push({id:X.id, i:S.ex, perfect:res.perfect, p}); exT0=new Date().toISOString(); store();
-        if(res.perfect) barCheer(p);
+        TY.bank("ex", p); G.points+=p; G.lpts[L.id]=(G.lpts[L.id]||0)+p; RUN.ex.push({id:X.id, i:S.ex, perfect:res.perfect, p}); exT0=new Date().toISOString(); store();
+        if(res.perfect) barCheer(0);      // (the tally) the points are shown at the lesson's end
         try{ trace("exercise "+X.id+": "+(res.perfect?"perfect":res.errs+" error(s)")+"; points +"+p); }catch(e){} }catch(e){}
       return r; }; }
   // a perfect exercise, at its end: the bar shines and the points it earned rise from it, over the first moment of the next exercise (adds no time)
@@ -208,9 +208,9 @@ const SHELL = (()=>{
 
   /* ---- badges: for PERFECT lessons only (the owner): a lesson counts once all its exercises are perfect, however it got there ---- */
   const completions = ()=>Object.values(G.lessons).reduce((a,b)=>a+b.length,0);
-  const perfectCount = ()=>Object.keys(G.lp).length;
+  const perfectCount = ()=>Math.max(Math.min(G.furthest||0, LESSONS.length), Object.keys(G.lp).length);      // (17 Nov) lessons completed: under mastery each is all perfect
   function newBadge(today){ let got=null; for(const n of RULES.BADGES) if(perfectCount()>=n && !G.badges[n]){ G.badges[n]=today; got=n; } return got; }
-  const badgeName = n=>`${n.toLocaleString("en-GB")} perfect lessons`;
+  const badgeName = n=>`${n.toLocaleString("en-GB")} lessons`;
   function badgeSvg(n, cls="badge"){ return `<svg class="${cls}" viewBox="0 0 56 70" aria-hidden="true"><use href="#i-rosette"/><text x="28" y="${n>=1000?30.5:31.5}" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>=1000?8.5:n>=100?11:14}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n>=1000?(n/1000)+"k":n}</text></svg>`; }
 
   /* ---- the goal of the whole course: the CEFR levels A1 to C2, in speaking and listening (COURSE_WORDS.levels, from the plan: the lesson at
@@ -218,7 +218,7 @@ const SHELL = (()=>{
      passed since the last level over the lessons between the two; inside it, brighter, the share of those lessons that are perfect (it never
      holds a level back). ---- */
   const LEVELS = (CW.levels||[]).map(x=>({id:x.id, lesson:x.lesson, canDo:[].concat(x.canDo||[])}));
-  const perfectIn = (a,b)=>LESSONS.filter((L,i)=>i>=a && i<b && G.lp[L.id]).length;      // lesson indexes a..b-1; a lesson made all green by repairs counts (the gold share grows with repairs)
+  const perfectIn = (a,b)=>0;      // (17 Nov) no gold share in the level ring under mastery (every lesson passed is perfect); was the perfect lessons in a..b-1      // lesson indexes a..b-1; a lesson made all green by repairs counts (the gold share grows with repairs)
   function levelNow(){ if(!LEVELS.length) return null; let from=0; const passed=G.furthest;
     for(let k=0;k<LEVELS.length;k++){ const Lv=LEVELS[k], span=Lv.lesson-from;
       if(passed<Lv.lesson){ const done=Math.max(0, passed-from); return {k, Lv, from, span, done, pct:Math.max(0, Math.min(100, Math.floor(100*done/span))), perf:Math.floor(100*perfectIn(from, passed)/span)}; }
@@ -286,43 +286,106 @@ const SHELL = (()=>{
   /* ---- ranks from points (the owner's Halo Reach model, brief 13 and 15): stated thresholds that rise, the first inside Lesson 1; each rank
      earns tokens, more at higher ranks; tokens buy things in the wardrobe. Points are never spent and never fall; ranks are never lost.
      The numbers come from a simulation over the whole course (dev/design/RANKS.md in the private bundle). ---- */
-  const TITLES = [["Débutant","Débutante"],["Visiteur","Visiteuse"],["Promeneur","Promeneuse"],["Voyageur","Voyageuse"],["Flâneur","Flâneuse"],["Habitué","Habituée"],
-    ["Connaisseur","Connaisseuse"],["Raconteur","Raconteuse"],["Causeur","Causeuse"],["Ambassadeur","Ambassadrice"],["Virtuose","Virtuose"],["Maître","Maître"],["Immortel","Immortelle"]];
-  const rankOf = p=>{ let k=0; RULES.RANKS.forEach((t,i)=>{ if(p>=t) k=i+1; }); return k; };      // 0: the start (Débutant); 1..34
-  const rankTitle = k=>k===0 ? 0 : k===RULES.RANKS.length ? TITLES.length-1 : Math.floor((k-1)/3)+1;
-  const rankGrade = k=>k===0 || k===RULES.RANKS.length ? 0 : (k-1)%3+1;
+  // (17 Nov; the owner: "rather than having the grades, it'd be better to have all unique ranks ... put the English in brackets beneath the
+  // ranks ... each rank is a logical progression") fifty ranks, each its own title: his form, her form, the English; ten tiers of five
+  // (first steps, the road, settling in, talk, the written word, knowledge, the arts, teaching, honour, the highest), each tier its metal
+  const TITLES = [["Débutant","Débutante","Beginner"],["Curieux","Curieuse","Curious one"],["Visiteur","Visiteuse","Visitor"],["Touriste","Touriste","Tourist"],["Promeneur","Promeneuse","Stroller"],
+    ["Voyageur","Voyageuse","Traveller"],["Flâneur","Flâneuse","Wanderer"],["Explorateur","Exploratrice","Explorer"],["Aventurier","Aventurière","Adventurer"],["Globe-trotteur","Globe-trotteuse","Globetrotter"],
+    ["Invité","Invitée","Guest"],["Voisin","Voisine","Neighbour"],["Habitué","Habituée","Regular"],["Résident","Résidente","Resident"],["Initié","Initiée","Insider"],
+    ["Interlocuteur","Interlocutrice","Conversation partner"],["Causeur","Causeuse","Conversationalist"],["Raconteur","Raconteuse","Storyteller"],["Débatteur","Débatteuse","Debater"],["Orateur","Oratrice","Orator"],
+    ["Lecteur","Lectrice","Reader"],["Chroniqueur","Chroniqueuse","Columnist"],["Écrivain","Écrivaine","Writer"],["Poète","Poète","Poet"],["Dramaturge","Dramaturge","Playwright"],
+    ["Connaisseur","Connaisseuse","Connoisseur"],["Lettré","Lettrée","Well-read"],["Érudit","Érudite","Scholar"],["Savant","Savante","Learned one"],["Philosophe","Philosophe","Philosopher"],
+    ["Artiste","Artiste","Artist"],["Esthète","Esthète","Aesthete"],["Mécène","Mécène","Patron of the arts"],["Virtuose","Virtuose","Virtuoso"],["Prodige","Prodige","Prodigy"],
+    ["Guide","Guide","Guide"],["Professeur","Professeure","Teacher"],["Mentor","Mentore","Mentor"],["Expert","Experte","Expert"],["Maître","Maître","Master"],
+    ["Diplomate","Diplomate","Diplomat"],["Ambassadeur","Ambassadrice","Ambassador"],["Sage","Sage","Sage"],["Éminence","Éminence","Eminence"],["Lauréat","Lauréate","Laureate"],
+    ["Académicien","Académicienne","Academician"],["Icône","Icône","Icon"],["Légende","Légende","Legend"],["Mythe","Mythe","Myth"],["Immortel","Immortelle","Immortal"]];
+  const rankOf = p=>{ let k=0; RULES.RANKS.forEach((t,i)=>{ if(p>=t) k=i+1; }); return k; };      // 0: the start (Débutant); 1..49
+  const rankAt = k=>Math.max(0, Math.min(TITLES.length-1, k|0));
+  const rankTitle = k=>rankAt(k);      // every rank is its own title
+  const rankGrade = k=>0;              // no grades (the owner, 17 Nov)
   const fem = ()=>{ try{ return AV.has() && AV.own() ? PICS.avatarParse(AV.own()).body==="f" : S.learnerGender==="f"; }catch(e){ return false; } };
-  const rankName = (k, stars=true)=>{ const t=TITLES[rankTitle(k)][fem()?1:0], g=rankGrade(k); return t+(stars && g ? " "+"★".repeat(g) : ""); };
-  const rankIn = k=>rankName(k).replace(" ★", "\u00a0★");      // (QA .67) inside a sentence ("8 points to Visiteur ★") the stars never drop to a line of their own
-  const rankLabel = k=>{ const g=rankGrade(k); return TITLES[rankTitle(k)][fem()?1:0]+(g ? ", grade "+g : ""); };      // for a screen reader
+  const rankName = k=>TITLES[rankAt(k)][fem()?1:0];
+  const rankEn = k=>TITLES[rankAt(k)][2];
+  const rankIn = k=>rankName(k);
+  const rankLabel = k=>rankName(k)+" ("+rankEn(k)+")";      // for a screen reader
+  // the name, the English beneath it in brackets (wherever a rank is shown)
+  const rankHtml = k=>`${esc(rankName(k))}<small class="ren">(${esc(rankEn(k))})</small>`;
   const tokensFor = k=>k>=1 ? RULES.RANK_TOKENS[k-1] : 0;
-  // the emblem: a shield whose metal and sign grow with the title (bronze, silver, gold, enamel; the last, the Académie's green and a laurel),
-  // and one to three stars for the grade. Nothing like the rosette of the badges, nothing like the levels' letters.
-  const GLYPH = [
-    `<path d="M10 18V10M10 12c0-4-3-6-7-6 0 4 3 6 7 6M10 10c0-4 3-6 7-6 0 4-3 6-7 6"/>`,                                             // a sprout
-    `<path d="M5 18V3h10v15M2.5 18h15"/><circle cx="12.2" cy="11" r=".9" fill="currentColor" stroke="none"/>`,                    // an open door
-    `<path d="M10 18.5V2.5M10 4h6.2l2 2.2-2 2.2H10M10 10.5H3.8l-2 2.2 2 2.2H10"/>`,                                                // a signpost
-    `<rect x="3" y="7" width="14" height="10" rx="2"/><path d="M7.5 7V4.5h5V7M3 11.5h14"/>`,                                         // a suitcase
-    `<path d="M1.5 14.5h17M5 14.5V8c0-2.6 10-2.6 10 0v6.5M5 11.5h10"/>`,                                                            // a hat
-    `<path d="M3.5 7h11v4.5c0 3.8-11 3.8-11 0zM14.5 8.5c3 0 3 4 0 4M3 17.5h12M7 2.5c-1 1 1 2 0 3M11 2.5c-1 1 1 2 0 3"/>`,             // a cup
-    `<circle cx="8.5" cy="8.5" r="5.2"/><path d="M12.4 12.4l5 5"/>`,                                                                 // a glass to look closely
-    `<path d="M3 3.5h14v9.5H9.5L5 17v-4H3z"/>`,                                                                                       // a word
-    `<path d="M2 3h10v7H6.5L3.5 13v-3H2zM9 13.2h2.5l3.5 3.3v-3.3H18V6.5h-3.5"/>`,                                                    // a conversation
-    `<path d="M10 2.2l2.3 5 5.4.6-4 3.7 1.1 5.3L10 14.1l-4.8 2.7 1.1-5.3-4-3.7 5.4-.6z"/>`,                                          // the star of an order
-    `<path d="M7 16.5V4.5l10-2.2v11.6"/><ellipse cx="5" cy="16.5" rx="2.6" ry="2" fill="currentColor"/><ellipse cx="15" cy="14" rx="2.6" ry="2" fill="currentColor"/>`,  // music
-    `<path d="M3 15.5L2 6l5 4 3-6 3 6 5-4-1 9.5z"/><path d="M3.5 18h13"/>`,                                                          // a crown
-    `<path d="M10 17.5C4 16 2.5 10 4 4.5M10 17.5c6-1.5 7.5-7.5 6-13"/><path d="M4 8.5c-2-.3-3-1.7-2.5-3.4 1.8.3 2.6 1.8 2.5 3.4zM5 12.5c-2.2.3-3.6-.8-3.6-2.6 2-.2 3.2 1 3.6 2.6zM16 8.5c2-.3 3-1.7 2.5-3.4-1.8.3-2.6 1.8-2.5 3.4zM15 12.5c2.2.3 3.6-.8 3.6-2.6-2-.2-3.2 1-3.6 2.6z" fill="currentColor" stroke="none"/>`,  // a laurel
-  ];
+  // (17 Nov) a record from before the 50 ranks: its points kept; its rank now from them on the new ladder (never lower: tools/rankup/tally/ranks50.py
+  // checks every points value); the tokens the new ranks give beyond what the old ones gave are added, none ever taken away
+  const OLD_TOKENS=[1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,4,4,4,6,6,6,8,8,8,10,10,10,20,20,20,25,25,25,60];
+  function ranks50(){ if(G.rv===50) return; if(G.rank==null){ G.rv=50; return; } const k=rankOf(G.points||0), oldT=OLD_TOKENS.slice(0, Math.max(0, Math.min(34, G.rank))).reduce((a,x)=>a+x,0), newT=RULES.RANK_TOKENS.slice(0, k).reduce((a,x)=>a+x,0), add=Math.max(0, newT-oldT);
+    try{ trace("the 50 ranks: old rank "+G.rank+" of 34 at "+G.points+" points becomes "+rankName(k)+" ("+(k+1)+" of 50); tokens +"+add); }catch(e){}
+    G.rank=k; G.tokens=(G.tokens||0)+add; G.tokEarned=(G.tokEarned||0)+add; G.rv=50; }
+  // the emblem: a shield in its tier's metal, with its own rank's sign (fifty shields, no two alike)
+  const SIGN = {
+    sprout:`<path d="M10 18V10M10 12c0-4-3-6-7-6 0 4 3 6 7 6M10 10c0-4 3-6 7-6 0 4-3 6-7 6"/>`,
+    lens:`<circle cx="8.5" cy="8.5" r="5.2"/><path d="M12.4 12.4l5 5"/>`,
+    door:`<path d="M5 18V3h10v15M2.5 18h15"/><circle cx="12.2" cy="11" r=".9" fill="currentColor" stroke="none"/>`,
+    camera:`<rect x="2.5" y="6" width="15" height="10.5" rx="2"/><circle cx="10" cy="11.2" r="3"/><path d="M7 6l1.2-2h3.6L13 6"/>`,
+    signpost:`<path d="M10 18.5V2.5M10 4h6.2l2 2.2-2 2.2H10M10 10.5H3.8l-2 2.2 2 2.2H10"/>`,
+    suitcase:`<rect x="3" y="7" width="14" height="10" rx="2"/><path d="M7.5 7V4.5h5V7M3 11.5h14"/>`,
+    hat:`<path d="M1.5 14.5h17M5 14.5V8c0-2.6 10-2.6 10 0v6.5M5 11.5h10"/>`,
+    compass:`<circle cx="10" cy="10" r="7.5"/><path d="M13 7l-1.8 4.2L7 13l1.8-4.2z" fill="currentColor"/>`,
+    mountain:`<path d="M1.5 17L7.5 7l3.5 5.5 2.5-3.5L18.5 17z"/>`,
+    globe:`<circle cx="10" cy="10" r="7.5"/><path d="M2.5 10h15M10 2.5c2.5 2.5 2.5 12.5 0 15M10 2.5c-2.5 2.5-2.5 12.5 0 15"/>`,
+    letter:`<rect x="2.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 5.5l7.5 6 7.5-6"/>`,
+    house:`<path d="M3 9.5L10 3.5l7 6V17H3zM8 17v-4.5h4V17"/>`,
+    cup:`<path d="M3.5 7h11v4.5c0 3.8-11 3.8-11 0zM14.5 8.5c3 0 3 4 0 4M3 17.5h12M7 2.5c-1 1 1 2 0 3M11 2.5c-1 1 1 2 0 3"/>`,
+    key:`<circle cx="6" cy="10" r="3.5"/><path d="M9.5 10h8M15 10v3M17.5 10v2.5"/>`,
+    heart:`<path d="M10 16.5S3 12 3 7.5A3.5 3.5 0 0 1 10 5.8a3.5 3.5 0 0 1 7 1.7C17 12 10 16.5 10 16.5z"/>`,
+    word:`<path d="M3 3.5h14v9.5H9.5L5 17v-4H3z"/>`,
+    talk:`<path d="M2 3h10v7H6.5L3.5 13v-3H2zM9 13.2h2.5l3.5 3.3v-3.3H18V6.5h-3.5"/>`,
+    story:`<path d="M3 3.5h14v9.5H9.5L5 17v-4H3z"/><circle cx="7" cy="8.2" r=".9" fill="currentColor"/><circle cx="10" cy="8.2" r=".9" fill="currentColor"/><circle cx="13" cy="8.2" r=".9" fill="currentColor"/>`,
+    scales:`<path d="M10 3v14M5 17h10M4 6h12M4 6l-2.5 5.5h5zM16 6l-2.5 5.5h5z"/>`,
+    voice:`<path d="M3 7.5h4l5.5-4v13l-5.5-4H3z"/><path d="M15 7a4 4 0 0 1 0 6M17.2 5a7 7 0 0 1 0 10"/>`,
+    book:`<path d="M10 5.5C8 4 5 3.8 2.5 4.5v11c2.5-.7 5.5-.5 7.5 1 2-1.5 5-1.7 7.5-1v-11C15 3.8 12 4 10 5.5zM10 5.5v11"/>`,
+    paper:`<rect x="3" y="3.5" width="14" height="13" rx="1.5"/><path d="M6 7h8M6 10h8M6 13h5"/>`,
+    nib:`<path d="M10 2.5L15 9l-5 9-5-9zM10 9v3"/><circle cx="10" cy="12.5" r=".9" fill="currentColor"/>`,
+    quill:`<path d="M17 2.5C10 3.5 5.5 8.5 4.5 15.5L3 18M4.5 15.5c4.5-.3 8.5-3.5 10.5-8M8.5 12h4.5"/>`,
+    masks:`<path d="M2.5 4h7v5a3.5 3.5 0 0 1-7 0zM10.5 8h7v5a3.5 3.5 0 0 1-7 0z"/>`,
+    wine:`<path d="M6 2.5h8c0 4.5-1.5 7-4 7s-4-2.5-4-7zM10 9.5v6M6.5 17.5h7"/>`,
+    scroll:`<path d="M6 3.5h9.5a2 2 0 0 1 0 4H15v8.5a2 2 0 0 1-2 2H4.5a2 2 0 0 1 0-4H5V5.5a2 2 0 0 1 1-2zM8 8h4M8 11h4"/>`,
+    books:`<rect x="3" y="13" width="14" height="3.5" rx="1"/><rect x="4.5" y="8.5" width="11" height="3.5" rx="1"/><rect x="3.5" y="4" width="12" height="3.5" rx="1"/>`,
+    lamp:`<path d="M2.5 13.5h9.5c3 0 5.5-2 5.5-4.5H8c-3 0-5.5 2-5.5 4.5zM6 17h8M14.5 8.5c0-1.5.8-2.5 2-3M15.5 2.5c-.8 1 .5 1.8 0 2.8"/>`,
+    column:`<path d="M5 3.5h10M5.5 16.5h9M7 3.5v13M10 3.5v13M13 3.5v13M4 18h12"/>`,
+    palette:`<path d="M10 3c-4.5 0-7.5 3-7.5 7 0 3.5 2.5 6.5 6 6.5 1.5 0 1.5-1.5.8-2.5-.8-1.2.2-2.5 1.7-2.5h2.5c2 0 3.5-1.5 3.5-3.5C17 5.5 14 3 10 3z"/><circle cx="7" cy="8" r="1" fill="currentColor"/><circle cx="11" cy="6.5" r="1" fill="currentColor"/>`,
+    flower:`<circle cx="10" cy="7" r="3.2"/><path d="M10 10.2V18M10 14c-2.5 0-4-1.5-4.5-3.5 2.5 0 4 1.5 4.5 3.5zM10 13c2.5 0 4-1.5 4.5-3.5-2.5 0-4 1.5-4.5 3.5z"/>`,
+    gem:`<path d="M5 3.5h10l3 4.5-8 9.5L2 8zM2 8h16M7.5 3.5L10 8l2.5-4.5M10 8v9.5"/>`,
+    music:`<path d="M7 16.5V4.5l10-2.2v11.6"/><ellipse cx="5" cy="16.5" rx="2.6" ry="2" fill="currentColor"/><ellipse cx="15" cy="14" rx="2.6" ry="2" fill="currentColor"/>`,
+    spark:`<path d="M10 2l1.9 6.1L18 10l-6.1 1.9L10 18l-1.9-6.1L2 10l6.1-1.9z" fill="currentColor"/>`,
+    flag:`<path d="M4 18V2.5M4 3.5h11l-2.5 3.5L15 10.5H4"/>`,
+    board:`<rect x="2.5" y="3.5" width="15" height="10" rx="1"/><path d="M6 17.5l2-4M14 17.5l-2-4M5.5 7.5h5M5.5 10h8"/>`,
+    torch:`<path d="M7 9h6l-1.5 9h-3zM10 2.5c-2 2-2.5 3.5-1 5.5h2c1.5-2 1-3.5-1-5.5z"/>`,
+    target:`<circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="4"/><circle cx="10" cy="10" r="1" fill="currentColor"/>`,
+    crown:`<path d="M3 15.5L2 6l5 4 3-6 3 6 5-4-1 9.5z"/><path d="M3.5 18h13"/>`,
+    olive:`<path d="M10 18V8M10 8c0-3 2-4.5 4.5-4.5 0 2.5-1.5 4.5-4.5 4.5M10 12c0-2.5-2-3.5-4.5-3.5 0 2 1.7 3.5 4.5 3.5M6 18h8"/>`,
+    order:`<path d="M10 2.2l2.3 5 5.4.6-4 3.7 1.1 5.3L10 14.1l-4.8 2.7 1.1-5.3-4-3.7 5.4-.6z"/>`,
+    eye:`<path d="M1.5 10S5 4.5 10 4.5 18.5 10 18.5 10 15 15.5 10 15.5 1.5 10 1.5 10z"/><circle cx="10" cy="10" r="2.7"/>`,
+    sun:`<circle cx="10" cy="10" r="3.8"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M4.3 15.7l1.8-1.8M13.9 6.1l1.8-1.8"/>`,
+    medal:`<circle cx="10" cy="12.5" r="4.8"/><path d="M7 8.5L5 2.5M13 8.5l2-6M5 2.5h10"/>`,
+    academy:`<path d="M2.5 17.5h15M3.5 15.5h13M5 15.5V8.5M8.3 15.5V8.5M11.7 15.5V8.5M15 15.5V8.5M2.5 8.5h15L10 3z"/>`,
+    star:`<path d="M10 2.2l2.3 5 5.4.6-4 3.7 1.1 5.3L10 14.1l-4.8 2.7 1.1-5.3-4-3.7 5.4-.6z" fill="currentColor"/>`,
+    comet:`<circle cx="13.5" cy="6.5" r="3" fill="currentColor"/><path d="M11.2 8.8L3 17M10.5 6.2L4.5 12.2M13.8 9.5L7.8 15.5"/>`,
+    moon:`<path d="M13.5 16.5A7 7 0 0 1 8.5 3.5a7 7 0 1 0 5 13z"/><path d="M15 4.5l.7 1.6 1.7.2-1.3 1.1.4 1.7-1.5-.9-1.5.9.4-1.7-1.3-1.1 1.7-.2z" fill="currentColor"/>`,
+    laurel:`<path d="M10 17.5C4 16 2.5 10 4 4.5M10 17.5c6-1.5 7.5-7.5 6-13"/><path d="M4 8.5c-2-.3-3-1.7-2.5-3.4 1.8.3 2.6 1.8 2.5 3.4zM5 12.5c-2.2.3-3.6-.8-3.6-2.6 2-.2 3.2 1 3.6 2.6zM16 8.5c2-.3 3-1.7 2.5-3.4-1.8.3-2.6 1.8-2.5 3.4zM15 12.5c2.2.3 3.6-.8 3.6-2.6-2-.2-3.2 1-3.6 2.6z" fill="currentColor" stroke="none"/>` };
+  const RSIGN = ["sprout","lens","door","camera","signpost", "suitcase","hat","compass","mountain","globe", "letter","house","cup","key","heart", "word","talk","story","scales","voice",
+    "book","paper","nib","quill","masks", "wine","scroll","books","lamp","column", "palette","flower","gem","music","spark", "flag","board","torch","target","crown",
+    "olive","order","eye","sun","medal", "academy","star","comet","moon","laurel"];
+  const GLYPH = RSIGN.map(n=>SIGN[n]);
   const METAL = { plain:["#FFFDF8","#E3D9C6","#9A8C72","#5C6577"], bronze:["#E2A56A","#A8652E","#7A4519","#FFF6EA"], silver:["#EEF1F5","#A7B1BE","#6E7A8A","#2D3747"],
-    gold:["#FAD978","#D9A21E","#946500","#4A3000"], enamel:["#3E62B8","#22397A","#C79A2B","#FFE9A8"], laurel:["#2F7A57","#1B4D36","#D6A62C","#FFE9A8"] };
-  function rankEmblem(k, cls="emb"){ const t=rankTitle(k), g=rankGrade(k), m = k===0 ? "plain" : t<=3 ? "bronze" : t<=6 ? "silver" : t<=9 ? "gold" : t<=11 ? "enamel" : "laurel";
+    gold:["#FAD978","#D9A21E","#946500","#4A3000"], enamel:["#3E62B8","#22397A","#C79A2B","#FFE9A8"], ruby:["#D25668","#86202F","#C79A2B","#FFE9A8"], amethyst:["#9A6BD0","#4F2E86","#C79A2B","#FFE9A8"],
+    teal:["#2BA3A8","#155E66","#D6A62C","#FFF3C4"], night:["#3A4A7A","#141B38","#D6A62C","#FFE9A8"], laurel:["#2F7A57","#1B4D36","#D6A62C","#FFE9A8"] };
+  const TIER = ["plain","bronze","silver","gold","enamel","ruby","amethyst","teal","night","laurel"];      // ten tiers of five ranks
+  const tierOf = k=>Math.min(9, Math.floor(rankAt(k)/5));
+  const gradeMarks = ()=>"";
+  function rankEmblem(k, cls="emb"){ const t=rankAt(k), m=TIER[tierOf(k)];
     const [hi, lo, rim, ink]=METAL[m], u="em"+k+cls.replace(/\W/g,"");
-    const stars = g ? Array.from({length:g},(_,i)=>{ const x=28+(i-(g-1)/2)*9.5; return `<path transform="translate(${x.toFixed(1)} 47.5) scale(.32)" d="M0-11l3.2 6.6 7.3.9-5.3 5 1.4 7.2L0 5.1l-6.6 3.6 1.4-7.2-5.3-5 7.3-.9z" fill="${ink}"/>`; }).join("") : "";
     return `<svg class="${cls}" viewBox="0 0 56 64" role="img" aria-label="${esc(rankLabel(k))}"><defs><linearGradient id="${u}" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient></defs>
       <path d="M28 3.5l20.5 6v20.5c0 14.5-9 22.5-20.5 28.5C16.5 52.5 7.5 44.5 7.5 30V9.5z" fill="url(#${u})" stroke="${rim}" stroke-width="2.2" stroke-linejoin="round"/>
       <path d="M28 8.3l16.2 4.8V30c0 11.4-6.9 18-16.2 23.2C18.7 48 11.8 41.4 11.8 30V13.1z" fill="none" stroke="${ink}" stroke-opacity=".28" stroke-width="1.1"/>
       <path d="M11 11.5L28 6.5l17 5" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/>
-      <g transform="translate(18 ${g?14.5:18.5})" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g>${stars}</svg>`; }
+      <g transform="translate(18 18.5)" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g></svg>`; }
   // a new rank (or several) since the last time: each gives its tokens, once; the first time a record meets this rule its ranks are given quietly
   function rankSync(){ const k=rankOf(G.points); if(G.rank==null){ G.rank=k; G.tokens=0; for(let j=1;j<=k;j++) G.tokens+=tokensFor(j); G.tokEarned=G.tokens; return null; }
     if(k<=G.rank) return null; const got=[]; for(let j=G.rank+1;j<=k;j++){ G.tokens=(G.tokens||0)+tokensFor(j); G.tokEarned=(G.tokEarned||0)+tokensFor(j); got.push(j); }
@@ -330,7 +393,7 @@ const SHELL = (()=>{
   // the bar along the bottom of the lesson-complete screen: points toward the next rank (from where the lesson began to where it ended)
   function rankBar(p0, p1){ const k=rankOf(p1), last=k>=RULES.RANKS.length, lo=k ? RULES.RANKS[k-1] : 0, hi=last ? lo : RULES.RANKS[k], f=x=>last ? 1 : Math.max(0, Math.min(1, (x-lo)/(hi-lo)));
     const from = rankOf(p0)<k ? 0 : f(p0);
-    return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" "+pl(hi-p1, "point")+" to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${esc(rankName(k))}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
+    return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" "+pl(hi-p1, "point")+" to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${rankHtml(k)}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
       <span class="rb-track"><i style="--a:${from.toFixed(3)};--b:${Math.max(0.02, f(p1)).toFixed(3)}"></i></span></span></div>`; }
 
   /* ---- the wardrobe (design B with price tiers, brief 15): things for the learner's figure, bought with tokens, worn on home, on You and on
@@ -370,7 +433,7 @@ const SHELL = (()=>{
         <span class="wthumb" data-lz="w|${it.id}">${on?`<span class="won">${ic("check")}</span>`:""}</span><span class="wfr" lang="fr">${esc(it.fr)}</span><span class="wen">${esc(it.en)}</span>
         <span class="wprice">${own ? (on ? "Wearing" : "Yours") : `${tokenIcon()}<b class="num">${it.price}</b>`}</span></button>`; };
     o.innerHTML=`<div class="mk-bar" style="padding:0"><button class="rb plain" id="wdBack" aria-label="Back">${ic("chev")}</button><h2>Your wardrobe</h2></div>
-      <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${esc(rankName(k))}</b>
+      <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${rankHtml(k)}</b>
         <div class="wtok">${tokenIcon()}${MV.num("tokW", tok)}<span>token${tok===1?"":"s"}</span></div>
         <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} ${pl(RULES.RANKS[k]-G.points, "point")} to ${esc(rankIn(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b>` : "The highest rank"}</small></div></div>
       ${lookCard(back)}${freezeCard()}<h3 class="hsec">Things to wear</h3>
@@ -422,7 +485,7 @@ const SHELL = (()=>{
     streakLesson(today, firstToday);      // (streak) the run of days, the catch-up, the badges and their tokens
     if(!firstToday && !practice && d.n===1 && !d.full){ d.soon=true; }
     if(practice){ d.a=(d.a||0)+1; try{ trace("a passed lesson done again by choice: practice, the rings stand as they were"); }catch(e){} } else { d.n++; d.xp=0; }
-    G.points+=pts;
+    TY.bank("lesson", pts); G.points+=pts;
     // the pace: only a lesson done from its start in one sitting (under an hour and a half)
     if(cur.fromStart && cur.t0){ const secs=(now-new Date(cur.t0))/1000, t=tasksOf(L); if(t>0 && secs>60 && secs<5400){ G.pace.push(+(secs/t).toFixed(2)); G.pace=G.pace.slice(-9); } }
     const owned = firstPass ? cardsOf(L.id) : []; if(firstPass && !G.wordsAt[L.id]) G.wordsAt[L.id]=today;
@@ -442,24 +505,23 @@ const SHELL = (()=>{
       + (r.why==="perfect" ? `<div class="card nextc lockc"><div class="orb">${ic("lock")}</div><div><b>Lesson ${Math.min(n+1, LESSONS.length)}</b><p>Opens when all are green</p></div></div>` : "")
       + (r.why==="once" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>Lesson ${n} once more</b><p>You just need a bit more practice before moving on.</p></div></div>`
         : r.why==="back" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>A warm-up first</b><p>You are nearly there. Lesson ${G.next+1} first, then back to Lesson ${n}.</p></div></div>` : "")
-      + `<div class="card exstrip"><div class="row"><b>${nPerf} of ${L.exercises.length} exercises perfect</b>${r.pts>0 ? `<span class="pts">${ic("star")} +<span data-n="${r.pts}">${r.pts}</span></span>` : ""}</div><div class="exdots">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div>${r.perfectNow ? `
-          <small>+${RULES.POINTS_PERFECT_LESSON} for the perfect lesson.</small>` : ""}</div>`
+      + `<div class="card exstrip"><div class="row"><b>${nPerf} of ${L.exercises.length} exercises perfect</b>${r.pts>0 ? `<span class="pts">${ic("star")} +${r.pts}</span>` : ""}</div><div class="exdots">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div></div>`
       + (r.bonus ? `<div class="tile two"><div class="orb">${ic("moon")}</div><div><b>A full day</b><small>Two lessons, well apart.</small></div></div>` : r.back ? `<div class="tile two back"><div class="orb">${ic("sun")}</div><div><b>Welcome back</b></div></div>` : "")
       + (r.soon ? `<div class="line">Done. Your next lesson will stick better after a break.</div>` : "")
       + (r.badge ? `<div class="card badgec">${badgeSvg(r.badge, "badge big")}<div><small>A new badge</small><b>${badgeName(r.badge)}</b></div></div>` : "")
       + (r.owned.length ? `<div class="card nowyours"><div class="row"><b>Now yours</b></div><div class="wrow">${r.owned.map((c,i)=>wcard(c, " turn").replace("<button", `<button style="--i:${i}"`)).join("")}</div></div>` : "")
-      + rankUpCard(r.ranks)
       + (r.R1 ? ringsCard(r.R1, r.R0) : "")
       + (r.stageDone && r.stageDone.canDo ? `<div class="card cando"><b>Stage ${r.stageDone.id} is done.</b><p>${esc(r.stageDone.canDo)}</p></div>` : "")
-      + `<div class="spacer"></div><div class="donefoot">${rankBar(r.p0, G.points)}${r.why==="perfect" ? `<button class="btn" id="doneBtn">${ic("star")} Go for perfect: ${toPerfect(r.li).length}</button><button class="btn quiet" id="doneLater">Later</button>` : `<button class="btn" id="doneBtn">Continue</button>`}</div>`;
+      + `<div class="spacer"></div><div class="donefoot">${rankBar(G.points, G.points)}${r.why==="perfect" ? `<button class="btn" id="doneBtn">${ic("star")} Go for perfect: ${toPerfect(r.li).length}</button><button class="btn quiet" id="doneLater">Later</button>` : `<button class="btn" id="doneBtn">Continue</button>`}</div>`;
     if((r.passed || r.runPerfect) && W().worn.dance && AV.has() && !lessMotion()){ try{ const c=document.createElementNS("http://www.w3.org/2000/svg","svg"); c.setAttribute("viewBox","0 0 160 190"); c.setAttribute("class","celebfig"); c.setAttribute("aria-hidden","true");
         c.appendChild(PICS.avatar(PICS.avatarParse(AV.get()), {view:"celebrate", wear:wearing()})); o.insertBefore(c, o.firstChild); }catch(e){} }  // (figures7) the dance the learner wears, at the celebration
     longName(o); store(); o.hidden=false; o.scrollTop=0; wireCards(o);
-    $("doneBtn").onclick=()=>{ tick(); RK.stop(); o.hidden=true; stopFete(); if(r.why==="perfect"){ home(); goPerfect(r.li); return; } if(r.level) levelParty(r.level, ()=>home()); else home(); };
-    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); o.hidden=true; stopFete(); home(); }; }
+    $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); if(r.why==="perfect"){ home(); goPerfect(r.li); return; } if(r.level) levelParty(r.level, ()=>home()); else home(); };
+    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); home(); }; }
     const big = r.passed || r.runPerfect || !!(r.ranks && r.ranks.length) || !!(r.R1 && r.R1.week.closed && !r.R0.week.closed);
     // (game feel) a new rank: its ceremony first, then the summary (its numbers count, its rings fill, its moments play once it is in view)
-    RK.run(o, r.ranks, how=>{ if(how!=="none") summaryIn(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1); fete(o, big && how!=="ward"); moments(o, r); }); }
+    // (the tally) the points of this lesson (and any left waiting) fill the rank bar first, its rank-ups inside it; then the summary
+    TY.run(o, how=>{ if(how!=="none") summaryIn(o); if(r.R1) ringsAnimate(o.querySelector(".ringc"), r.R0, r.R1); fete(o, big && how!=="ward"); moments(o, r); }); }
   // a ring closed by this lesson is said in words, once, at its end; a ring still open is just shown (never as missed)
   function ringsCard(R, R0){ const day = !R0.day.closed && R.day.closed, two = R0.day.n<2 && R.day.n>=2, week = !R0.week.closed && R.week.closed;
     const head = week ? `This week's goal is met: ${R.week.n} lesson${R.week.n===1?"":"s"}!` : two ? "Two lessons today: the gold ring." : day ? "Today's goal is met." : "";
@@ -475,7 +537,7 @@ const SHELL = (()=>{
      end after the first second; with less movement a calm still version; the words are said to a screen reader. dev/design/RANKUP.md. ---- */
   const tips = ()=>G.seen || (G.seen={});      // what the learner has been shown once (the ceremony's rule; the coach marks)
   const RK = (()=>{ let C=null;
-    const kindOf = (k0, k1)=>k1>=RULES.RANKS.length ? "top" : rankTitle(k1)!==rankTitle(k0) ? "title" : "grade";
+    const kindOf = (k0, k1)=>k1>=RULES.RANKS.length ? "top" : tierOf(k1)!==tierOf(k0) ? "title" : "grade";      // (17 Nov) a new tier (a new metal): the full ceremony; a rank within it: the short one
     // the thing to show: one the learner can buy now and could not before (the cheapest), else the cheapest they can buy, else the nearest
     function pick(tok0, tok1){ const w=W(), free=WARDROBE.filter(it=>!w.owned[it.id]); if(!free.length) return null;
       const s=free.slice().sort((a,b)=>a.price-b.price || WARDROBE.indexOf(a)-WARDROBE.indexOf(b));
@@ -485,9 +547,8 @@ const SHELL = (()=>{
     const rnd=(a,b)=>a+Math.random()*(b-a);
     // the emblem as a shape of light (the anticipation shows the old sign and the new one in turn, in this light)
     function ghostEmblem(k){ const t=rankTitle(k), g=rankGrade(k), ink="#B88A1E";
-      const stars = g ? Array.from({length:g},(_,i)=>`<path transform="translate(${(28+(i-(g-1)/2)*9.5).toFixed(1)} 47.5) scale(.32)" d="M0-11l3.2 6.6 7.3.9-5.3 5 1.4 7.2L0 5.1l-6.6 3.6 1.4-7.2-5.3-5 7.3-.9z" fill="${ink}"/>`).join("") : "";
       return `<svg class="emb" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 3.5l20.5 6v20.5c0 14.5-9 22.5-20.5 28.5C16.5 52.5 7.5 44.5 7.5 30V9.5z" fill="#FFFBEF" stroke="#FFE9A8" stroke-width="2.2" stroke-linejoin="round"/>
-        <g transform="translate(18 ${g?14.5:18.5})" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g>${stars}</svg>`; }
+        <g transform="translate(18 18.5)" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g></svg>`; }
     function figs(){ const spec = AV.has() && AV.get() ? PICS.avatarParse(AV.get()) : null, still=lessMotion();
       try{ if(!still && window.PICS && typeof PICS.highFive==="function"){ const g=PICS.highFive({you:spec, wear:wearing(), marie:true});
           if(g && g.outerHTML){ const c=+g.getAttribute("data-contact") || 900, d=+g.getAttribute("data-dur") || 2000, hand=String(g.getAttribute("data-hand")||"160 62").split(/[ ,]+/).map(Number);
@@ -499,12 +560,12 @@ const SHELL = (()=>{
       if(!you || !marie) return null;
       return {html:crop(marie)+crop(you), contact:760, dur:0, own:false}; }
     function itemCard(it, own, tgt){ return `<div class="rk-it${own?" own":""}${tgt?" tgt":""}" data-id="${it.id}"><span class="th"></span><span class="pr">${own ? ic("check")+"Yours" : tokenIcon()+`<b>${it.price}</b>`}</span></div>`; }
-    function run(o, got, done){ stop(); if(!got || !got.length || !o || o.hidden===undefined){ if(done) done("none"); return; }
-      const k1=got[got.length-1], k0=got[0]-1, kind=kindOf(k0, k1), calm=lessMotion(), add=got.reduce((a,j)=>a+tokensFor(j),0), tok1=G.tokens||0, tok0=Math.max(0, tok1-add);
+    function run(o, got, done, tokNow){ stop(); if(!got || !got.length || !o || o.hidden===undefined){ if(done) done("none"); return; }
+      const k1=got[got.length-1], k0=got[0]-1, kind=kindOf(k0, k1), calm=lessMotion(), add=got.reduce((a,j)=>a+tokensFor(j),0), tok1=tokNow!=null ? tokNow : G.tokens||0, tok0=Math.max(0, tok1-add);
       const P=pick(tok0, tok1), nm=String(S.learnerName||"").trim(), F=figs();
-      const D = calm ? {A:F?1500:0, B:1500, D:900} : kind==="grade" ? {A:1600, B:2300, D:2900} : kind==="title" ? {A:1800, B:4400, D:3000} : {A:1900, B:5000, D:3100};
+      const D = calm ? {A:F?1500:0, B:1700, D:900} : kind==="grade" ? {A:1600, B:3200, D:2900} : kind==="title" ? {A:1800, B:3500, D:3000} : {A:1900, B:3900, D:3100};      // (17 Nov) B: the hold, the fall, the strike, the name
       if(!F) D.A=0; else if(F.own) D.A=Math.max(D.A, Math.min(2600, F.dur+200));
-      const lab = kind==="top" ? "The highest rank" : got.length>1 ? got.length+" new ranks" : kind==="grade" ? "A new star" : "A new rank";
+      const lab = kind==="top" ? "The highest rank" : got.length>1 ? got.length+" new ranks" : "A new rank";
       const name = rankName(k1);
       // the strip: the wardrobe's things in its own order, around the one to show (from six before it, round the end if need be)
       let strip=[], ti=0; if(P){ const N=WARDROBE.length, t=WARDROBE.indexOf(P.it); for(let j=-6;j<=2;j++) strip.push(WARDROBE[((t+j)%N+N)%N]); ti=6; }
@@ -514,8 +575,8 @@ const SHELL = (()=>{
       const root=el(`<div class="rkc k-${kind}${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="${esc(lab)}" tabindex="-1">
         <div class="rk-bg"></div><div class="rk-bg2"></div>
         ${F ? `<div class="rk-hf" aria-hidden="true"><div class="rk-pair${F.own?" own":""}">${F.html}<div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&nbsp;!</div></div></div>` : ""}
-        <div class="rk-ev"><div class="rk-lab">${esc(lab)}</div><div class="rk-em"><div class="rk-rays"></div><div class="rk-glow"></div><div class="rk-old">${rankEmblem(k0, "emb rk0")}</div><div class="rk-gold">${ghostEmblem(k0)}</div><div class="rk-gnew">${ghostEmblem(k1)}</div><div class="rk-new">${rankEmblem(k1, "emb rk1")}</div>${kind==="grade" ? `<div class="rk-star" style="--sx:${((28+((rankGrade(k1)-1)/2)*9.5)/56*100).toFixed(1)}%;--sy:${(47.5/64*100).toFixed(1)}%"><svg viewBox="0 0 28 28"><use href="#i-star"/></svg></div>` : ""}</div>
-          <div class="rk-name">${esc(name).replace(/ (★+)$/, ' <span class="st">$1</span>')}</div></div>
+        <div class="rk-ev"><div class="rk-lab">${esc(lab)}</div><div class="rk-em"><div class="rk-rays"></div><div class="rk-glow"></div><div class="rk-sh"></div><div class="rk-hot"></div><div class="rk-old">${rankEmblem(k0, "emb rk0")}</div><div class="rk-gold">${ghostEmblem(k0)}</div><div class="rk-gnew">${ghostEmblem(k1)}</div><div class="rk-new">${rankEmblem(k1, "emb rk1")}</div>${kind==="grade" ? `<div class="rk-star" style="--sx:50%;--sy:44%"><svg viewBox="0 0 28 28"><use href="#i-star"/></svg></div>` : ""}</div>
+          <div class="rk-names"><div class="rk-oname">${rankHtml(k0)}</div><div class="rk-name">${rankHtml(k1)}</div></div></div>
         <div class="rk-gift">
           <div class="rk-tok"><span class="rk-tk">${tokenIcon()}</span><span class="rk-tt"><b>+${add} token${add>1?"s":""}</b><span>You have <b class="num rk-n">${tok0}</b></span></span></div>
           ${P ? `<div class="rk-ward"><div class="rk-wh"><b>Your wardrobe</b></div><div class="rk-strip"><div class="rk-track">${strip.map((it,j)=>itemCard(it, !!w.owned[it.id], j===ti)).join("")}</div><div class="rk-stamp${P.can?"":" soon"}">${P.fresh ? "Unlocked" : P.can ? "In reach" : "Next"}</div></div><div class="rk-cap">${cap}</div></div>` : `<div class="rk-ward none">${cap}</div>`}
@@ -549,27 +610,35 @@ const SHELL = (()=>{
       at(t, ()=>stageB(c, D)); t+=D.B;
       // (D) what it gives
       at(t, ()=>stageD(c, D)); }
-    function stageB(c, D){ const r=c.root, at=(ms,f)=>c.at(ms,f); r.classList.remove("sA","aOut"); r.classList.add("sB");
-      if(c.calm){ at(500, ()=>{ r.classList.add("rev"); SFX.chord(c.kind, true); }); return; }
-      if(c.kind==="grade"){ at(150, ()=>{ r.classList.add("pulse"); SFX.rise(0.95); });
-        at(1100, ()=>r.classList.add("rev"));
-        at(1520, ()=>{ SFX.chord("grade"); const em=r.querySelector(".rk-em"), st=r.querySelector(".rk-star"); sparkAt(em, em.offsetWidth*parseFloat(st ? st.style.getPropertyValue("--sx") : 50)/100, em.offsetHeight*0.742, 18, {r0:40, r1:120}); });
-        return; }
-      r.classList.add("night"); const ant=D.B-1900, em=r.querySelector(".rk-em"), glow=r.querySelector(".rk-glow");
-      SFX.swell(ant/1000+0.35, c.kind==="top");
-      at(400, ()=>{ r.classList.add("ghost");
-        // the glow pulses faster and faster; the emblem grows a little and trembles at the end
-        const kf=[]; let p=520, x=0; while(x<ant){ kf.push({offset:Math.min(1, x/ant), opacity:.35, transform:"scale(.92)"}); x+=p/2; kf.push({offset:Math.min(1, x/ant), opacity:1, transform:"scale(1.12)"}); x+=p/2; p=Math.max(110, p*0.82); }
-        kf.push({offset:1, opacity:1, transform:"scale(1.3)"}); try{ glow.animate(kf, {duration:ant, fill:"forwards"}); }catch(e){}
-        try{ em.animate([{transform:"scale(1)"},{transform:"scale(1.08)", offset:.8},{transform:"translateX(-2px) scale(1.12)", offset:.86},{transform:"translateX(2px) scale(1.12)", offset:.9},{transform:"translateX(-2px) scale(1.13)", offset:.94},{transform:"translateX(2px) scale(1.14)", offset:.97},{transform:"scale(1.15)"}], {duration:ant, fill:"forwards", easing:"ease-in"}); }catch(e){}
-        // the old shape and the new one, in turn, quicker and quicker
-        let q=340, y=200, n=0; while(y<ant-80){ const k=n++; at(400+y, ()=>r.classList.toggle("alt", k%2===0)); y+=q; q=Math.max(60, q*0.8); } });
-      at(400+ant, ()=>{ r.classList.remove("ghost","alt","night"); r.classList.add("rev","warm"); try{ em.getAnimations().forEach(a=>a.cancel()); glow.getAnimations().forEach(a=>a.cancel()); }catch(e){}
-        const f=r.querySelector(".rk-flash"); try{ f.animate([{opacity:0},{opacity:1, offset:.1},{opacity:1, offset:.22},{opacity:0}], {duration:c.kind==="top"?900:650, easing:"ease-out"}); }catch(e){}
-        SFX.chord(c.kind); const ex=em.offsetLeft+em.offsetWidth/2, ey=em.offsetTop+em.offsetHeight/2, ev=r.querySelector(".rk-ev");
-        sparkAt(ev, ex, ey, c.kind==="top"?44:30, {r0:80, r1:c.kind==="top"?260:190, t0:1200, t1:2000, fall:140});
-        if(c.kind==="top") at(420, ()=>sparkAt(ev, ex, ey, 30, {r0:60, r1:220, t0:1100, t1:1900, fall:160, cols:["#FFE9A8","#D6A62C","#FFFFFF","#2F7A57"]})); });
-      at(400+ant+520, ()=>SFX.fanfare(c.kind==="top")); }
+    /* (the owner, 17 Nov: "show the current rank for a few seconds, then the new rank flies in and stamps over the current one like a blacksmith
+       stamping a brand into an item, with a satisfying clang sound") the hold, the fall (accelerating, like a hammer), the impact (the screen
+       shakes and settles, both shields squash and recover, a white-hot flash, sparks, an ember ring, an anvil's clang, a strong pulse in the
+       hand), the old rank gone under the new; then its name and English settle with a soft chord. The same for every rank; a new tier (a new
+       metal) strikes harder; the last rank the hardest. Calm: a cut, the clang only. */
+    function stageB(c, D){ const r=c.root, at=(ms,f)=>c.at(ms,f), big=c.kind!=="grade", top=c.kind==="top"; r.classList.remove("sA","aOut"); r.classList.add("sB","st");
+      const em=r.querySelector(".rk-em"), nw=r.querySelector(".rk-new"), old=r.querySelector(".rk-old"), ev=r.querySelector(".rk-ev");
+      if(c.calm){ at(900, ()=>{ r.classList.add("rev"); SFX.clang(false); }); return; }
+      const HOLD=1500, UP=320, FALL=300, T=HOLD+UP+FALL, sh=r.querySelector(".rk-sh");
+      // the wind-up: the new shield rises into view above, large, and hangs a moment (the eye goes to it), then drops like a hammer
+      at(HOLD, ()=>{ r.classList.add("falling"); try{ nw.animate([{transform:"translateY(-46vh) scale(1.5) rotate(-7deg)", opacity:0},{transform:"translateY(-24vh) scale(1.5) rotate(-7deg)", opacity:1, offset:.55},{transform:"translateY(-26vh) scale(1.52) rotate(-9deg)", opacity:1}], {duration:UP, easing:"cubic-bezier(.2,.8,.3,1)", fill:"forwards"}); }catch(e){} });
+      at(HOLD+UP-60, ()=>SFX.whoosh());
+      at(HOLD+UP, ()=>{ try{ nw.animate([{transform:"translateY(-26vh) scale(1.52) rotate(-9deg)", opacity:1},{transform:"translateY(0) scale(1) rotate(0)", opacity:1}], {duration:FALL, easing:"cubic-bezier(.6,0,1,.5)", fill:"forwards"}); }catch(e){}
+        try{ sh.animate([{opacity:0, transform:"scale(1.6)"},{opacity:1, transform:"scale(1)"}], {duration:FALL, easing:"cubic-bezier(.6,0,1,.5)", fill:"forwards"}); }catch(e){} });
+      at(T, ()=>{ r.classList.remove("falling"); r.classList.add("rev","branded"); if(big) r.classList.add("warm");
+        const A=top?12:big?9:6, k=[[0,0],[A,-A*.7],[-A*.8,A*.55],[A*.5,-A*.35],[-A*.25,A*.2],[0,0]];
+        try{ r.animate(k.map(([x,y])=>({transform:`translate(${x}px,${y}px)`})), {duration:top?220:big?180:140, easing:"linear"}); }catch(e){}
+        try{ nw.getAnimations().forEach(a=>a.cancel()); nw.animate([{transform:"scale(1.2,.8)"},{transform:"scale(.93,1.08)", offset:.4},{transform:"scale(1.03,.98)", offset:.72},{transform:"none"}], {duration:420, easing:"cubic-bezier(.2,.8,.3,1)"}); }catch(e){}
+        try{ old.animate([{transform:"scale(1)", opacity:1},{transform:"scale(1.14,.82)", opacity:0}], {duration:90, fill:"forwards"}); }catch(e){}
+        try{ sh.getAnimations().forEach(a=>a.cancel()); }catch(e){}
+        const hot=r.querySelector(".rk-hot"); try{ hot.animate([{opacity:0, transform:"scale(.4)"},{opacity:1, transform:"scale(1)", offset:.18},{opacity:0, transform:"scale(1.3)"}], {duration:big?260:200, easing:"ease-out"}); }catch(e){}
+        const f=r.querySelector(".rk-flash"); try{ f.animate([{opacity:0},{opacity:big?.32:.2, offset:.2},{opacity:0}], {duration:180, easing:"ease-out"}); }catch(e){}
+        const ex=em.offsetLeft+em.offsetWidth/2, ey=em.offsetTop+em.offsetHeight*.55, fire=["#FFFFFF","#FFF4C2","#FFD36B","#FFB02E","#FF8A1F"];
+        sparkAt(ev, ex, ey, top?46:big?36:26, {r0:50, r1:top?240:big?200:150, t0:500, t1:900, fall:70, cols:fire});
+        const ring=document.createElement("i"); ring.className="rk-ring"+(big?" big":""); ring.style.left=ex+"px"; ring.style.top=ey+"px"; ev.appendChild(ring); setTimeout(()=>ring.remove(), 900);
+        if(top){ const ring2=document.createElement("i"); ring2.className="rk-ring big late"; ring2.style.left=ex+"px"; ring2.style.top=ey+"px"; ev.appendChild(ring2); setTimeout(()=>ring2.remove(), 1200); }
+        SFX.clang(big); try{ if(UI.pref.haptics!==false && navigator.vibrate) navigator.vibrate(top?[60,40,40]:big?55:40); }catch(e){} });
+      at(T+380, ()=>SFX.chord(c.kind, true));
+      if(top) at(T+900, ()=>SFX.fanfare(true)); }
     function stageD(c, D){ const r=c.root, at=(ms,f)=>c.at(ms,f); r.classList.remove("sA","aOut","pulse"); r.classList.add("sB","rev","sD"); if(!r.classList.contains("night")) r.classList.add("warm"); r.classList.remove("night");
       const n=r.querySelector(".rk-n"), tk=r.querySelector(".rk-tk"), add=c.tok1-c.tok0;
       if(c.calm){ n.textContent=c.tok1; stripAt(c, false); r.classList.add("lit"); at(D.D, ()=>settle(c)); return; }
@@ -726,7 +795,7 @@ const SHELL = (()=>{
     ];
     // the help in You: the whole app in a few short lines
     const HOW = ["The rings: today's lesson, this week's goal, your next level.", "Your two moments: a lesson after each.",
-      "A lesson opens when the one before is all green.", "Perfect exercise: 1 point. Perfect lesson: 5.", "Points earn ranks; ranks earn tokens.",
+      "A lesson opens when the one before is all green.", "Perfect exercise: 1 point.", "Points earn ranks, from Débutant (Beginner) to Immortel (Immortal); ranks earn tokens.",
       "Tokens buy things in your wardrobe.", "A done lesson: tap it to redo any exercise.", "Go for perfect: its yellow exercises, one after another."];
     const seenIt = id=>!!tips()["c:"+id];
     const learned = id=>{ if(!seenIt(id)){ tips()["c:"+id]=new Date().toISOString().slice(0,10); store(); } };
@@ -741,7 +810,7 @@ const SHELL = (()=>{
     // welcome back, the microphone, the maker, the two moments, who is learning)
     const BUSY = ["done","lvl","back","mic","maker","anch","whoL"];
     const free = ()=>{ try{ if(document.body.classList.contains("inLesson") || (typeof running!=="undefined" && running)) return false; const pl=$("play"), sh=$("sheet");
-      if(!pl || pl.hidden || pl.classList.contains("afterDemo") || (sh && !sh.hidden) || $("splash") || document.querySelector(".rkc, .wcer, #confetti") || ($("upd") && !$("upd").hidden)) return false;
+      if(!pl || pl.hidden || pl.classList.contains("afterDemo") || (sh && !sh.hidden) || $("splash") || document.querySelector(".rkc, .wcer, .tly, #confetti") || ($("upd") && !$("upd").hidden)) return false;
       return !BUSY.some(id=>{ const o=$(id); return o && !o.hidden; }); }catch(e){ return false; } };
     // a screen has arrived (any screen: the shell's own say so, and any other layer's showing or going is noticed): the first tip it needs,
     // a moment after it has settled
@@ -787,24 +856,122 @@ const SHELL = (()=>{
       info("How the app works", `<div class="co-how">${HOW.map(t=>`<p>${esc(t)}</p>`).join("")}</div><button class="btn quiet" id="coAgain">Show the tips again</button>`);
       $("coAgain").onclick=()=>{ tick(); for(const k of Object.keys(tips())) if(k.indexOf("c:")===0) delete tips()[k]; store(); sheetClose($("sheet")); try{ trace("the tips will show again"); }catch(e){} setTimeout(()=>tab("today"), 260); }; }
     return {arrive, learned, help, get on(){ return !!cur; }, MARKS}; })();
+  /* ---- (game feel, 17 Nov; the owner: "at the end of the whole lesson, the user should see the progress bar increasing as points are added. The
+     progress bar goes a long way if there are a lot of points relative to the amount the user currently has, or it does not go a very long way,
+     just like it does in [Halo] Reach. There should be a satisfying increasing sound as the points are added, and then when the user ranks up,
+     there should be a very satisfying animation ... Once that animation is done, it then shows the normal end-of-lesson card ... even if the user
+     exits a lesson halfway through.") THE TALLY. Points earned in a lesson go into the record at once, as always, but are not shown there: they
+     are banked in G.tally (the points the bar last showed, and where the new ones came from) and shown here, at the end: the rank's emblem and
+     bar at their old fill; each source in turn with its label; the bar filling at one steady speed (a big gain travels far, a small one a little,
+     against the rank's own span) under a rising tone, a soft tick for each point; at the rank's end the rank-up ceremony, then the bar goes on
+     into the next rank. Then lesson complete. Left half-way, the points wait in the record and their tally plays the next time Home shows (or at
+     the next lesson's end), once. A tap skips to the end (a rank-up still plays, with its own skip); with less movement a calm still version. ---- */
+  const TY = (()=>{ let C=null;
+    const T = ()=>{ if(!G.tally || typeof G.tally.base!=="number") G.tally={base:G.points||0, items:[]}; return G.tally; };
+    // a source of points, as it lands in the record: "ex" a perfect exercise, "fix" one made perfect, "lesson" a perfect lesson
+    function bank(kind, p){ if(!(p>0)) return; const t=T(), last=t.items[t.items.length-1]; if(last && last.k===kind){ last.p+=p; last.n=(last.n||1)+1; } else t.items.push({k:kind, p, n:1}); }
+    const pending = ()=>Math.max(0, (G.points||0)-T().base);
+    const LAB = {ex:n=>n>1 ? "Perfect exercises" : "Perfect exercise", fix:n=>"Made perfect", lesson:()=>"Perfect lesson"};
+    function sources(){ const out=T().items.filter(x=>x.p>0).map(x=>({l:(LAB[x.k]||(()=>"Points"))(x.n||1), p:x.p})), d=pending()-out.reduce((a,x)=>a+x.p,0);
+      if(d>0) out.push({l:"Points", p:d}); else for(let i=out.length-1, r=-d; i>=0 && r>0; i--){ const c=Math.min(out[i].p, r); out[i].p-=c; r-=c; }
+      return out.filter(x=>x.p>0); }
+    // shown: the bar now stands at the record's points
+    function commit(){ G.tally={base:G.points||0, items:[]}; store(); }
+    const span = k=>{ const lo=k ? RULES.RANKS[k-1] : 0, last=k>=RULES.RANKS.length; return {lo, hi:last ? lo+1 : RULES.RANKS[k], last}; };
+    const fillOf = p=>{ const k=rankOf(p), s=span(k); return s.last ? 1 : Math.max(0, Math.min(1, (p-s.lo)/(s.hi-s.lo))); };
+    const toNext = p=>{ const k=rankOf(p), s=span(k), n=Math.max(0, Math.ceil(s.hi-p-1e-6)); return s.last ? "" : n ? `<b class="num">${n.toLocaleString("en-GB")}</b> to ${esc(rankIn(k+1))}` : `<b>${esc(rankIn(k+1))}</b>`; };
+    function run(host, done){ stop(); const src=sources(), from=T().base, to=G.points||0;
+      if(!host || to<=from || !src.length){ commit(); if(done) done("none"); return; }
+      const calm=lessMotion(), total=src.reduce((a,x)=>a+x.p,0), k0=rankOf(from);
+      const root=el(`<div class="tly${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="Points" tabindex="-1">
+        <div class="ty-bg"></div>
+        <div class="ty-top"><div class="ty-em">${rankEmblem(k0, "emb ty-e")}</div><div class="ty-name">${rankHtml(k0)}</div></div>
+        <div class="ty-gain"><b class="num ty-n">+0</b></div>
+        <div class="ty-bar"><div class="ty-track"><i class="ty-fill" style="--f:${fillOf(from).toFixed(4)}"></i></div><div class="ty-next">${toNext(from)}</div></div>
+        <div class="ty-list">${src.map((s,i)=>`<div class="ty-row" data-i="${i}"><span>${esc(s.l)}</span><b class="num">+${s.p}</b></div>`).join("")}</div>
+        <button class="rk-skip" id="tySkip" hidden>Skip</button><div class="rk-live" aria-live="polite"></div></div>`);
+      const c = C = {host, root, done, src, from, to, cur:from, k:k0, timers:new Set(), raf:0, tone:null, ended:false, shownRanks:new Set()};
+      const at=(ms,f)=>{ const t=setTimeout(()=>{ c.timers.delete(t); if(C!==c) return; try{ f(); }catch(e){ try{ trace("FAULT tally: "+e.message); }catch(_){} } }, Math.max(0, ms)); c.timers.add(t); };
+      c.at=at; c.inert=[...host.children]; c.inert.forEach(x=>{ x.inert=true; }); c.ov=host.style.overflow; host.style.overflow="hidden"; host.scrollTop=0;
+      host.appendChild(root); try{ root.focus({preventScroll:true}); }catch(e){}
+      try{ dispatchEvent(new Event("resize")); }catch(e){}      // a tip still showing goes (it is never over a celebration), not counted as seen
+      try{ trace("the tally: "+from+" to "+to+" points ("+src.map(s=>s.l+" +"+s.p).join(", ")+")"+(rankOf(to)>k0 ? "; rank "+rankName(k0)+" to "+rankName(rankOf(to)) : "")); }catch(e){}
+      setTimeout(()=>{ const lv=root.querySelector(".rk-live"); if(lv) lv.textContent=src.map(s=>s.l+" plus "+s.p).join(". ")+". "+rankLabel(rankOf(to))+"."; }, 250);
+      root.addEventListener("click", e=>{ if(e.target.closest("button") && e.target.id!=="tySkip") return; if(c.skippable && !c.ended) skip(); });
+      root.addEventListener("keydown", e=>{ if(e.key==="Escape" && !c.ended){ e.preventDefault(); skip(); } });
+      at(700, ()=>{ c.skippable=true; const s=root.querySelector("#tySkip"); if(s) s.hidden=false; });
+      if(calm){ root.classList.add("in"); root.querySelectorAll(".ty-row").forEach(r=>r.classList.add("on","done")); at(250, ()=>{ setBar(c, to); root.classList.add("total"); root.querySelector(".ty-n").textContent="+"+total; SFX.chord("grade", true); });
+        at(1500, ()=>{ const got=[]; for(let j=k0+1;j<=rankOf(to);j++) got.push(j); if(got.length) RK.run(host, got, how=>{ if(how==="ward") end(c, "ward"); else at(300, ()=>end(c, "go")); }); else end(c, "go"); }); return; }
+      root.classList.add("in"); at(520, ()=>next(c, 0)); }
+    // the bar at p (its rank's emblem and name follow it)
+    function setBar(c, p){ const r=c.root, k=rankOf(p); c.cur=p;
+      if(k!==c.k){ c.k=k; r.querySelector(".ty-em").innerHTML=rankEmblem(k, "emb ty-e"); r.querySelector(".ty-name").innerHTML=rankHtml(k); }
+      r.querySelector(".ty-fill").style.setProperty("--f", fillOf(p).toFixed(4)); r.querySelector(".ty-next").innerHTML=toNext(p); }
+    // one source: its row lights, then its points flow into the bar
+    function next(c, i){ const r=c.root; if(i>=c.src.length){ finish(c); return; } const row=r.querySelector(`.ty-row[data-i="${i}"]`); row.classList.add("on"); c.row=row; SFX.ting(Math.min(i*2, 6));
+      c.at(380, ()=>flow(c, c.cur+c.src[i].p, ()=>{ row.classList.add("done"); c.at(260, ()=>next(c, i+1)); })); }
+    // the points flow at one steady speed against the rank's span; at a rank's end the ceremony, then on with what is left
+    const SPEED=0.5, MIN=420, MAXSEG=2600;      // bars a second; ms
+    function flow(c, target, then){ const k=rankOf(c.cur), s=span(k), stop = !s.last && target>=s.hi ? s.hi : target, p0=c.cur;
+      const frac = s.last ? 0 : (stop-p0)/(s.hi-s.lo), dur=Math.max(MIN, Math.min(MAXSEG, 1000*frac/SPEED)), t0=performance.now(), gain0=c.from, nEl=c.root.querySelector(".ty-n");
+      c.root.classList.add("flowing"); if(!c.tone) c.tone=SFX.fill(fillOf(p0)); let lastTick=Math.floor(p0), lastTickAt=0;
+      const step=now=>{ if(C!==c) return; const x=Math.min(1, (now-t0)/dur), p=p0+(stop-p0)*x; setBar(c, Math.min(p, stop-(x<1 ? 1e-6 : 0)));
+        nEl.textContent="+"+Math.floor(p-gain0+1e-9); if(c.tone) c.tone.set(fillOf(Math.min(p, stop-1e-6)) + (rankOf(p0)-rankOf(c.from))*0.08);
+        if(Math.floor(p)>lastTick && now-lastTickAt>38){ lastTick=Math.floor(p); lastTickAt=now; SFX.tick(fillOf(Math.min(p, stop-1e-6))); flyPoint(c, fillOf(Math.min(p+1, stop-1e-6))); }
+        if(x<1){ c.raf=requestAnimationFrame(step); return; }
+        if(stop<target || (!s.last && stop>=s.hi)){ // the rank's end: the bar full, then the ceremony
+          if(c.tone){ c.tone.stop(); c.tone=null; } c.root.classList.remove("flowing"); c.root.classList.add("full"); setBar(c, s.hi-1e-6); c.root.querySelector(".ty-fill").style.setProperty("--f", "1"); SFX.stamp(true);
+          const kNew=rankOf(stop); c.at(650, ()=>{ c.shownRanks.add(kNew); const later=laterTokens(c, kNew);
+            RK.run(c.host, [kNew], how=>{ if(C!==c) return; c.root.classList.remove("full"); setBar(c, stop); if(how==="ward"){ end(c, "ward"); return; } if(stop>=target) c.at(300, then); else c.at(420, ()=>flow(c, target, then)); }, (G.tokens||0)-later); });
+          return; }
+        if(c.tone){ c.tone.stop(); c.tone=null; } c.root.classList.remove("flowing"); then(); };
+      c.raf=requestAnimationFrame(step); }
+    // a point leaves its source and lands in the head of the bar (the bar grows where it lands)
+    function flyPoint(c, f){ if(!c.row) return; try{ const a=c.row.querySelector("b").getBoundingClientRect(), tr=c.root.querySelector(".ty-track").getBoundingClientRect(), x1=tr.left+tr.width*f, y1=tr.top+tr.height/2, x0=a.left+a.width/2, y0=a.top+a.height/2;
+        const d=document.createElement("i"); d.className="ty-pt"; c.root.appendChild(d);
+        d.animate([{transform:`translate(${x0}px,${y0}px) scale(.8)`, opacity:1},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-26}px) scale(1.1)`, opacity:1, offset:.5},{transform:`translate(${x1}px,${y1}px) scale(.5)`, opacity:.9}], {duration:300, easing:"cubic-bezier(.5,0,.9,.6)", fill:"forwards"}).onfinish=()=>d.remove(); }catch(e){} }
+    // the tokens of the ranks still to come in this tally (the ceremony shows the count as it is at its own rank)
+    function laterTokens(c, k){ let t=0; for(let j=k+1;j<=rankOf(c.to);j++) t+=tokensFor(j); return t; }
+    function finish(c){ const r=c.root; r.classList.add("total"); r.querySelector(".ty-n").textContent="+"+(c.to-c.from); SFX.chord("grade"); c.at(calmMs(1300), ()=>end(c, "go")); }
+    const calmMs = ms=>lessMotion() ? Math.min(ms, 600) : ms;
+    // a tap: straight to the end (a rank crossed and not yet celebrated still has its ceremony, which has a skip of its own)
+    function skip(){ const c=C; if(!c || c.ended) return; c.timers.forEach(clearTimeout); c.timers.clear(); cancelAnimationFrame(c.raf); if(c.tone){ c.tone.stop(); c.tone=null; }
+      const r=c.root; r.classList.remove("flowing","full"); r.querySelectorAll(".ty-row").forEach(x=>x.classList.add("on","done")); setBar(c, c.to); r.querySelector(".ty-n").textContent="+"+(c.to-c.from); r.classList.add("total","skipped");
+      const got=[]; for(let j=rankOf(c.from)+1;j<=rankOf(c.to);j++) if(!c.shownRanks.has(j)) got.push(j);
+      if(got.length && !RK.on){ c.ended=true; RK.run(c.host, got, how=>{ if(C!==c) return; c.ended=false; end(c, how==="ward" ? "ward" : "go"); }); return; }
+      if(!RK.on) c.at(500, ()=>end(c, "go")); }
+    function release(c){ c.timers.forEach(clearTimeout); c.timers.clear(); cancelAnimationFrame(c.raf); if(c.tone){ c.tone.stop(); c.tone=null; } if(c.inert) c.inert.forEach(x=>{ x.inert=false; }); c.host.style.overflow=c.ov||""; commit(); }
+    function end(c, how){ if(C!==c || c.ended) return; c.ended=true; C=null; release(c); const r=c.root;
+      if(lessMotion()) r.remove(); else { r.classList.add("out"); setTimeout(()=>r.remove(), 320); }
+      try{ trace("the tally closed ("+how+")"); }catch(e){}
+      if(c.done) try{ c.done(how); }catch(e){} }
+    // the screen is left another way (Continue under it by the back button, a new lesson): it goes at once, the points counted as shown
+    function stop(){ const c=C; if(!c) return; C=null; release(c); c.root.remove(); }
+    // Home: points left waiting (a lesson left half-way) are tallied once, over Home, when nothing else is in the way
+    let homeT=0;
+    function home(){ clearTimeout(homeT); if(!(pending()>0)) return; homeT=setTimeout(()=>{ if(C || RK.on || !(pending()>0)) return;
+        try{ if(document.body.classList.contains("inLesson") || (typeof running!=="undefined" && running) || $("splash") || !$("play") || $("play").hidden || ($("sheet") && !$("sheet").hidden)) return;
+          if(document.querySelector(".over:not([hidden]):not(.tabbed), .rkc, .wcer, #coach")) return; }catch(e){ return; }
+        let h=$("tlyHost"); if(!h){ h=el(`<div id="tlyHost" lang="en"></div>`); document.body.appendChild(h); } h.hidden=false;
+        run(h, ()=>{ h.hidden=true; }); }, 650); }
+    return {bank, pending, run, stop, home, sources, get on(){ return !!C; }}; })();
   /* ---- one exercise done again (from the lesson's view): it ran exactly as in its lesson; the learner's place, finished exercises and
      delayed tests are as they were before it (kept in G.replay, so that leaving half-way or closing the app puts them back too) ---- */
   function replayDone(){ if(G.replay && (G.replay.run || (RULES.MASTERY && G.why==="perfect" && G.next===G.replay.li))) return perfectRunDone();      // (MASTERY) one yellow exercise done again in the lesson that waits on it: its end says what it opened
     const R0=G.replay, L=LESSONS[R0.li], X=L.exercises[R0.ei], res=RUN.ex.filter(x=>x.id===X.id).pop() || {perfect:false, p:0}; RUN.ex=[];
     restorePlace(); let bonus=0, badge=null; const today=dayOf(), p0=G.points-(res.p||0);
-    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; G.points+=bonus; G.lpts[L.id]=(G.lpts[L.id]||0)+bonus; badge=newBadge(today); }      // perfect now, by repair: +5 and it counts for the badges (the owner, 15 Nov late)
+    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; TY.bank("lesson", bonus); G.points+=bonus; G.lpts[L.id]=(G.lpts[L.id]||0)+bonus; badge=newBadge(today); }      // perfect now, by repair: +5 and it counts for the badges (the owner, 15 Nov late)
     delete G.lpts[L.id]; G.cur=null; const ranks=rankSync(); store(); look();
     try{ trace("exercise done again: Lesson "+(R0.li+1)+", exercise "+(R0.ei+1)+": "+(res.perfect?"perfect":"not perfect")+"; points +"+res.p+(bonus?"; the lesson is perfect now: +"+bonus:"")+"; the place is as it was"); }catch(e){}
     const o=$("done"), name=esc(S.learnerName||"");
     o.innerHTML = (res.perfect ? `<div class="okmark star">${ic("star")}</div><h1>Perfect${name?", "+name:""}!</h1><div class="sub">Lesson ${R0.li+1}, exercise ${R0.ei+1}: every answer right, first time.</div>`
         : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">Lesson ${R0.li+1}, exercise ${R0.ei+1} again.</div>`)
       + `<div class="card exstrip"><div class="row"><b>Lesson ${R0.li+1}</b>${res.p ? `<span class="pts">${ic("star")} +${res.p}</span>` : ""}</div><div class="exdots">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}${k===R0.ei?" me":""}"></i>`; }).join("")}</div>${bonus ? `
-          <small>Every exercise of Lesson ${R0.li+1} is perfect now: +${bonus} for the lesson.</small>` : ""}</div>`
+          <small>Lesson ${R0.li+1}: all perfect</small>` : ""}</div>`
       + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b></div></div>` : "")
-      + rankUpCard(ranks)
-      + `<div class="spacer"></div><div class="donefoot">${rankBar(p0, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
-    longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); RK.stop(); o.hidden=true; stopFete(); home(); };
-    RK.run(o, ranks, how=>{ if(how!=="none") summaryIn(o); fete(o, (res.perfect || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:res.p>0 || !!bonus}); }); }
+      + `<div class="spacer"></div><div class="donefoot">${rankBar(G.points, G.points)}<button class="btn" id="doneBtn">Continue</button></div>`;
+    longName(o); o.hidden=false; o.scrollTop=0; $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); home(); };
+    TY.run(o, how=>{ if(how!=="none") summaryIn(o); fete(o, (res.perfect || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:res.p>0 || !!bonus}); }); }
   /* (.71) the end of "Go for perfect": one praise for the whole run (the owner, 16 Nov: "they get praised for it afterwards. They get told the
      point total that was added at the end of that repair sequence and the extra … that was added to the overall progress indicator") */
   // (MASTERY) "Go for perfect" for a lesson's yellow exercises: the run that already exists, started at once
@@ -812,34 +979,33 @@ const SHELL = (()=>{
   function perfectRunDone(){ const R0=G.replay, L=LESSONS[R0.li], eis=R0.eis||[R0.ei], runs=RUN.ex.slice(); RUN.ex=[];
     const res=eis.map(k=>{ const id=L.exercises[k].id; return runs.filter(x=>x.id===id).pop() || {id, perfect:false, p:0}; });
     restorePlace(); let bonus=0, badge=null; const today=dayOf();
-    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; G.points+=bonus; badge=newBadge(today); }
+    if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; TY.bank("lesson", bonus); G.points+=bonus; badge=newBadge(today); }
     // (MASTERY) the lesson waiting on its yellows is all green now: it is passed, its words are the learner's, the next lesson opens
     const waits = RULES.MASTERY && G.why==="perfect" && G.next===R0.li, unlock = waits && lessonPerfect(L); let owned=[], lvUp=null;
     if(unlock){ G.why=""; G.next=Math.min(R0.li+1, last); G.furthest=Math.max(G.furthest, R0.li+1); (G.lessons[L.id]=G.lessons[L.id]||[]).push({date:today, x:null, y:null, passed:true, perfect:true, via:"go for perfect"});
-      owned=cardsOf(L.id); if(!G.wordsAt[L.id]) G.wordsAt[L.id]=today; lvUp=newLevel(today); try{ trace("mastery: Lesson "+(R0.li+1)+" all green: Lesson "+(G.next+1)+" opens"); }catch(e){} }
+      owned=cardsOf(L.id); if(!G.wordsAt[L.id]) G.wordsAt[L.id]=today; lvUp=newLevel(today); if(!badge) badge=newBadge(today); try{ trace("mastery: Lesson "+(R0.li+1)+" all green: Lesson "+(G.next+1)+" opens"); }catch(e){} }
     delete G.lpts[L.id]; G.cur=null; const ranks=rankSync(); store(); look();
     const made=res.filter(r=>r.p>0).length, already=res.filter(r=>r.perfect && !(r.p>0)).length, left=L.exercises.filter(x=>!(G.ex[x.id] && G.ex[x.id].g)).length;
     const added=G.points-(R0.p0!=null ? R0.p0 : G.points), lv=(()=>{ try{ return levelNow(); }catch(e){ return null; } })(), lpNow=Object.keys(G.lp).length;
     try{ trace("go for perfect: Lesson "+(R0.li+1)+": "+made+" of "+eis.length+" made perfect; points +"+added+(bonus?" (with +"+bonus+" for the perfect lesson)":"")+"; "+left+" left; the place is as it was"); }catch(e){}
     const o=$("done"), name=esc(S.learnerName||""), all=!left;
     const level = lv && lv.Lv ? `<div class="card prog"><div class="row"><b>Your French</b><span class="lvl">${esc(lv.Lv.id)}</span></div>
-        <p>${bonus ? `Lesson ${R0.li+1} is now one of your <b>${lpNow}</b> perfect lesson${lpNow>1?"s":""}.` : `Perfect lessons: <b>${lpNow}</b>.`} The gold in your ring toward ${esc(lv.Lv.id)} is <b>${lv.perf}%</b>${R0.lv0!=null && lv.perf>R0.lv0 ? `, up from ${R0.lv0}%` : ""}.</p></div>` : "";
+        <p><b>${lv.pct}%</b> to ${esc(lv.Lv.id)}</p></div>` : "";
     o.innerHTML = (unlock ? `<div class="okmark star">${ic("star")}</div><div class="perfect-tag">${ic("star")} Lesson ${R0.li+1}: all green</div><h1>Lesson ${G.next+1} is open${name?", "+name:""}!</h1>`
           : all ? `<div class="okmark star">${ic("star")}</div><h1>Lesson ${R0.li+1} is perfect${name?", "+name:""}!</h1>`
           : made ? `<div class="okmark star">${ic("star")}</div><h1>${made} more perfect${name?", "+name:""}!</h1><div class="sub">Lesson ${R0.li+1}: ${made} of the ${eis.length} exercise${eis.length>1?"s":""} you went for ${made>1?"are":"is"} perfect now.</div>`
           : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">Lesson ${R0.li+1}: ${eis.length} exercise${eis.length>1?"s":""} practised.</div>`)
       + `<div class="card exstrip"><div class="row"><b>Lesson ${R0.li+1}</b>${added>0 ? `<span class="pts">${ic("star")} +<span data-n="${added}">${added}</span></span>` : ""}</div><div class="exdots">${L.exercises.map((x,k)=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}${eis.includes(k)?" me":""}"></i>`; }).join("")}</div>
-          <small>${added>0 ? `+${added} point${added>1?"s":""}: ${made ? `${made} for the exercise${made>1?"s":""} made perfect` : ""}${bonus ? `${made?", ":""}${bonus} for the whole lesson perfect` : ""}.` : ""} ${all ? "Every exercise is green." : left ? `${left} still to make perfect.` : ""}</small></div>`
+          ${left && !all ? `<small>${left} still to make perfect</small>` : ""}</div>`
       + level
       + (badge ? `<div class="card badgec">${badgeSvg(badge, "badge big")}<div><small>A new badge</small><b>${badgeName(badge)}</b></div></div>` : "")
       + (owned.length ? `<div class="card nowyours"><div class="row"><b>Now yours</b></div><div class="wrow">${owned.map((c,i)=>wcard(c, " turn").replace("<button", `<button style="--i:${i}"`)).join("")}</div></div>` : "")
-      + rankUpCard(ranks)
-      + `<div class="spacer"></div><div class="donefoot">${rankBar(R0.p0!=null?R0.p0:G.points, G.points)}${unlock && G.next>R0.li ? `<button class="btn" id="doneBtn">${ic("play")} Next lesson</button><button class="btn quiet" id="doneLater">Later</button>` : waits && left ? `<button class="btn" id="doneBtn">${ic("star")} Go for perfect: ${left}</button><button class="btn quiet" id="doneLater">Later</button>` : `<button class="btn" id="doneBtn">Continue</button>`}</div>`;
+      + `<div class="spacer"></div><div class="donefoot">${rankBar(G.points, G.points)}${unlock && G.next>R0.li ? `<button class="btn" id="doneBtn">${ic("play")} Next lesson</button><button class="btn quiet" id="doneLater">Later</button>` : waits && left ? `<button class="btn" id="doneBtn">${ic("star")} Go for perfect: ${left}</button><button class="btn quiet" id="doneLater">Later</button>` : `<button class="btn" id="doneBtn">Continue</button>`}</div>`;
     longName(o); o.hidden=false; o.scrollTop=0; wireCards(o);
     const after = ()=>{ if(lvUp) levelParty(lvUp, ()=>home()); else home(); };
-    $("doneBtn").onclick=()=>{ tick(); RK.stop(); o.hidden=true; stopFete(); if(unlock && G.next>R0.li){ if(lvUp) levelParty(lvUp, ()=>home()); else { home(); setTimeout(()=>{ const b=$("playBtn"); if(b) b.click(); }, 60); } } else if(waits && left){ home(); goPerfect(R0.li); } else after(); };
-    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); o.hidden=true; stopFete(); after(); }; }
-    RK.run(o, ranks, how=>{ if(how!=="none") summaryIn(o); fete(o, (made>0 || unlock || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:made>0 || !!bonus}); }); }
+    $("doneBtn").onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); if(unlock && G.next>R0.li){ if(lvUp) levelParty(lvUp, ()=>home()); else { home(); setTimeout(()=>{ const b=$("playBtn"); if(b) b.click(); }, 60); } } else if(waits && left){ home(); goPerfect(R0.li); } else after(); };
+    { const dl=$("doneLater"); if(dl) dl.onclick=()=>{ tick(); RK.stop(); TY.stop(); o.hidden=true; stopFete(); after(); }; }
+    TY.run(o, how=>{ if(how!=="none") summaryIn(o); fete(o, (made>0 || unlock || !!(ranks && ranks.length)) && how!=="ward"); moments(o, {star:made>0 || !!bonus}); }); }
   const PLACE_KEYS=["lesson","ex","finished","delayed","exHadError","ftc","doneDay"];
   function restoreAgain(){ const A=G.again; if(!A) return; const sn=A.snap; for(const k of PLACE_KEYS) if(k in sn) S[k]=sn[k]; else delete S[k]; G.again=null; save(); store(); }
   /* a phone already caught by the fault (release .65: "The whole lesson again", then the lesson left): the page's place is inside a passed
@@ -932,11 +1098,14 @@ const SHELL = (()=>{
      Never inside a lesson (Marie's voice and the right-answer note are the only sounds there). The setting "Sounds when you press" turns both off. */
   const UISND = {
     tap:(ac,t)=>{ tone(ac, t, 392, 0.05, 0.03, 0.003, 1.35); },
+    pick:(ac,t)=>{ tone(ac, t, 587.33, 0.075, 0.04, 0.002, 0.62); tone(ac, t+0.012, 880, 0.05, 0.012, 0.002); },      // (the figure maker) a choice made: a soft rising pop
     go:(ac,t)=>{ tone(ac, t, 659.25, 0.12, 0.06, 0.005); tone(ac, t, 659.25*3, 0.03, 0.006, 0.004); tone(ac, t+0.09, 987.77, 0.17, 0.065, 0.005); tone(ac, t+0.09, 987.77*3, 0.035, 0.006, 0.004); },
   };
   let uiSoundAt=0;
+  let uiLastKind="";
   function uiSound(kind){ try{ if(!UI.pref.sound || document.body.classList.contains("inLesson")) return; beadCtx(); if(!beadAC) return;
-      uiSoundAt=performance.now(); (UISND[kind]||UISND.tap)(beadAC, beadAC.currentTime+0.004); }catch(e){} }
+      if(kind===uiLastKind && performance.now()-uiSoundAt<450) return;      // (17 Nov) a press already answered on touch-down is not answered again on release
+      uiSoundAt=performance.now(); uiLastKind=kind; (UISND[kind]||UISND.tap)(beadAC, beadAC.currentTime+0.004); }catch(e){} }
   window.UISOUND=uiSound;
   /* ---- (game feel) the music of the big moments: made here with Web Audio like every other sound of the app (nothing fetched), of the same
      family (soft sines and bells in C major, the right-answer note's register), through one bus that can be hushed at once (a skip). Only
@@ -988,11 +1157,33 @@ const SHELL = (()=>{
       whoosh:()=>go((a,t)=>{ noise(a, t, 0.42, 0.10, 2600, 0.9, "bandpass", true); }),
       putOn:()=>go((a,t)=>{ v(a, t, N.G5, 0.18, 0.08, {from:0.5, glide:0.09, type:"triangle", cut:3000}); v(a, t+0.06, N.C6, 0.5, 0.07, {bell:true}); noise(a, t, 0.05, 0.18, 4200, 1); }),
       cheer:soft=>go((a,t)=>{ const g=soft?0.5:1; [N.C6, N.E6, N.G6].forEach((f,i)=>v(a, t+i*0.07, f, 0.35, 0.05*g, {bell:true})); [N.C5, N.E5, N.G5, N.C6].forEach(f=>v(a, t+0.24, f, 1.2, 0.045*g, {bell:true})); v(a, t+0.24, N.C4, 1.2, 0.06*g, {type:"triangle", cut:1400, att:0.02}); }),
+      // (the tally) a rising tone under the filling bar (x: how full, 0 to 1 and a little more for each rank passed), and a soft tick for each point
+      fill:()=>{ const a=ac(), none={set(){}, stop(){}}; if(!a) return none; try{ const t=a.currentTime, o1=a.createOscillator(), o2=a.createOscillator(), g=a.createGain(), lp=a.createBiquadFilter(), f=x=>200*Math.pow(4, Math.max(0, Math.min(1.4, x)));
+          o1.type="triangle"; o2.type="sine"; lp.type="lowpass"; lp.frequency.value=2600; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t+0.09);
+          o1.frequency.setValueAtTime(f(0), t); o2.frequency.setValueAtTime(f(0)*2, t); o1.connect(lp); o2.connect(lp); lp.connect(g).connect(out(a)); o1.start(t); o2.start(t);
+          return {set(x){ try{ const n=a.currentTime; o1.frequency.setTargetAtTime(f(x), n, 0.03); o2.frequency.setTargetAtTime(f(x)*2, n, 0.03); }catch(e){} },
+            stop(){ try{ const n=a.currentTime; g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), n); g.gain.exponentialRampToValueAtTime(0.0001, n+0.12); o1.stop(n+0.16); o2.stop(n+0.16); }catch(e){} }}; }catch(e){ return none; } },
+      tick:x=>go((a,t)=>{ v(a, t, 1046.5*Math.pow(2, Math.max(0, Math.min(1.4, x||0))), 0.07, 0.03, {att:0.002, cut:8000}); }),
+      // (the brand) an anvil's clang: a sharp strike (air and a click), a low thump, and the ring of a metal bar (inharmonic partials, the low
+      // ones longest, each a pair a few cents apart that beat), in a little room
+      clang:big=>go((a,t)=>{ const g=big?1:0.8, room=a.createConvolver(), n=Math.floor(a.sampleRate*1.4), ir=a.createBuffer(2, n, a.sampleRate);
+        for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n, 3.2); }
+        room.buffer=ir; const wet=a.createGain(); wet.gain.value=0.22; room.connect(wet).connect(out(a));
+        const ring=(f, dur, gain, det)=>{ for(const d of [0, det]){ const o=a.createOscillator(), e=a.createGain(); o.type="sine"; o.frequency.value=f; o.detune.value=d;
+            e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(gain*g, t+0.003); e.gain.exponentialRampToValueAtTime(0.0001, t+dur); o.connect(e); e.connect(out(a)); e.connect(room); o.start(t); o.stop(t+dur+0.05); } };
+        const f0=big?560:640; [[1,2.2,0.09,6],[2.76,1.5,0.06,9],[5.4,0.9,0.04,12],[8.93,0.5,0.025,15],[13.3,0.25,0.015,20]].forEach(([r,d,gn,dt])=>ring(f0*r, d, gn, dt));
+        noise(a, t, 0.025, 0.7*g, 6500, 0.7, "highpass"); noise(a, t, 0.06, 0.35*g, 2500, 1.2);
+        v(a, t, 95, 0.22, 0.35*g, {from:1.8, glide:0.05, cut:700}); }),
       // the briefer moments: a perfect lesson, a new badge, a ring closed, a level
       moment:(k, delay=0)=>setTimeout(()=>go((a,t)=>{ const R={perfect:[N.C6, N.E6, N.G6, N.C7], badge:[N.G5, N.C6, N.E6], ring:[N.E5, N.G5, N.C6], level:[N.C5, N.E5, N.G5, N.C6, N.E6, N.G6]}[k]||[N.C6];
         R.forEach((f,i)=>v(a, t+i*0.085, f, 0.6+i*0.05, 0.05, {bell:true})); if(k==="level" || k==="perfect") [N.C5, N.G5].forEach(f=>v(a, t+R.length*0.085, f, 1.2, 0.04, {bell:true})); }), delay) }; })();      // the page's own first screens (the name typed, a start asked while the listener loads) use it
   // every press of a control that made no sound of its own gets the quiet one (after the control's own handler has run)
-  function uiTaps(){ document.addEventListener("click", e=>{ try{ if(e.isTrusted===false || performance.now()-uiSoundAt<120) return;
+  const UI_SEL="button, [role=button], [data-lv], [data-u], label, select, summary, a[href]", UI_GO="#playBtn, #exGo, #lvPerfect, #mkDone, #anOk, #micGo, [data-u]";
+  function uiTaps(){
+    // (17 Nov) the sound of a press on touch-down, within the frame (a step toward learning: the brighter one), as the control goes down
+    document.addEventListener("pointerdown", e=>{ try{ if(e.isTrusted===false || (e.button && e.button!==0)) return; const b=e.target && e.target.closest && e.target.closest(UI_SEL); if(!b || b.disabled) return;
+      b._pd=performance.now(); uiSound(b.matches(UI_GO) ? "go" : "tap"); }catch(_){} }, {passive:true, capture:true});
+    document.addEventListener("click", e=>{ try{ if(e.isTrusted===false || performance.now()-uiSoundAt<120) return; { const b0=e.target && e.target.closest && e.target.closest(UI_SEL); if(b0 && b0._pd && performance.now()-b0._pd<1500) return; }
       const b=e.target && e.target.closest && e.target.closest("button, [role=button], [data-lv], [data-u], label, select, summary, a[href]"); if(!b || b.disabled) return; uiSound("tap"); }catch(_){} }); }
   let beadAC=null, beadK=0;
   function beadCtx(){ try{ if(!beadAC){ const A=window.AudioContext||window.webkitAudioContext; beadAC=new A(); } if(beadAC.state!=="running") beadAC.resume(); }catch(e){} }
@@ -1160,11 +1351,11 @@ const SHELL = (()=>{
         ${G.anchors.set ? `<div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>` : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
       <h2 class="hsec">What you have earned</h2>
       <button class="card rankh" id="hRank" aria-label="${esc(rankLabel(k))}. ${lastR ? "The highest rank" : (hi-G.points)+" "+pl(hi-G.points, "point")+" to the next rank"}. ${G.tokens||0} token${G.tokens===1?"":"s"}: your wardrobe, in You">${rankEmblem(k, "emb m")}
-        <span class="rh-t"><small>Your rank</small><b>${esc(rankName(k))}</b><span class="rb-track"><i style="--a:${rf0.toFixed(3)};--b:${rf.toFixed(3)}"></i></span><span class="rh-n">${lastR ? "The highest rank" : `<b class="num">${(hi-G.points).toLocaleString("en-GB")}</b> point${hi-G.points===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
+        <span class="rh-t"><small>Your rank</small><b>${rankHtml(k)}</b><span class="rb-track"><i style="--a:${rf0.toFixed(3)};--b:${rf.toFixed(3)}"></i></span><span class="rh-n">${lastR ? "The highest rank" : `<b class="num">${(hi-G.points).toLocaleString("en-GB")}</b> point${hi-G.points===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
         <span class="wtok">${tokenIcon()}${MV.num("tokH", G.tokens||0)}<small>token${G.tokens===1?"":"s"}</small></span></button>
-      <div class="tiles t3"><div class="tile">${ic("star")}${MV.num("points", G.points)}<small>${pl(G.points, "point")}</small></div><div class="tile">${badgeSvg(Math.max(1, pc), "badge t")}${MV.num("perfect", pc)}<small>perfect lesson${pc===1?"":"s"}</small></div>
+      <div class="tiles t3"><div class="tile">${ic("star")}${MV.num("points", G.points)}<small>${pl(G.points, "point")}</small></div><div class="tile">${badgeSvg(Math.max(1, pc), "badge t")}${MV.num("perfect", pc)}<small>${pl(pc, "lesson")}</small></div>
         <button class="tile go" id="hWords" data-coach="words" aria-label="${own} French ${pl(own, "word")}: see them in Lessons">${ic("words")}${MV.num("words", own)}<small>French ${pl(own, "word")} ${ic("chev")}</small></button></div>
-      <div class="card badgesh"><div class="row"><b>Badges</b></div><div class="miles">${streakBadges()}${bs.slice().reverse().map(b=>`<div class="ms">${badgeSvg(b)}<span>${badgeName(b)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${pc} of ${nextB} perfect lessons</span></div>` : ""}</div></div>
+      <div class="card badgesh"><div class="row"><b>Badges</b></div><div class="miles">${streakBadges()}${bs.slice().reverse().map(b=>`<div class="ms">${badgeSvg(b)}<span>${badgeName(b)}</span></div>`).join("")}${nextB ? `<div class="ms next">${badgeSvg(nextB)}<span>${pc} of ${nextB} lessons</span></div>` : ""}</div></div>
       ${levelCard(true)}`;
     { const ni=$("hNameIn"); if(ni) ni.onkeydown=ev=>{ if(ev.key!=="Enter") return; ev.preventDefault(); const v=cleanName(ni.value); if(v && nameSet(v)){ tick(); ni.blur(); home(); } }; }
     const slot=$("heroSlot"), how=$("howtoBox"), btn=$("playBtn"); slot.appendChild(how); slot.appendChild(btn); slot.style.display="grid"; slot.style.gap="11px";
@@ -1178,7 +1369,7 @@ const SHELL = (()=>{
     ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); MV.count(h); store();
     h.classList.toggle("perf", A==null && G.why==="perfect");      // (MASTERY) "Go for perfect" is the day's one main button, green, whatever was done today
     h.classList.toggle("due2", two && d.n===1 && !sl.twoTomorrow && sl.two==="Now");      // (QA .67) the second lesson's moment has come: the start button is the green one again (shell.css)
-    LZ.watch(h); freezeMinis(h); fitHome(); COACH.arrive(); }
+    LZ.watch(h); freezeMinis(h); fitHome(); COACH.arrive(); TY.home(); }
   /* (QA .67; the fault: the start button slipped under the tab bar) The start button stands straight after the lesson's title (shell.css), and here it is
      the order of home is settled by the SCREEN, not by the day: on a short screen (under 780 px at the text size in use) the lesson's card leads and the
      rings follow it; on a taller one the rings lead, as designed. A measurement stands behind it: wherever the button would still not be wholly above the
@@ -1223,13 +1414,36 @@ const SHELL = (()=>{
      (it is started on Home), the ones to come (face down). The words a lesson gave are its cards' pictures on its card, and its view plays them. ---- */
   function lessons(){ const o=$("lessonsL"), T=G.next, done=Math.min(G.furthest, LESSONS.length), pc=perfectCount();
     const st=(CW.stages||[]).filter(s=>s.first<=LESSONS.length), groups = st.length ? st.map(s=>({s, from:s.first-1, upto:Math.min(s.last, LESSONS.length)})) : [{s:null, from:0, upto:LESSONS.length}];
-    o.innerHTML=`<div class="tabhead"><h1>Your lessons</h1>${done ? `<p class="tsub"><b>${done}</b> done · <b>${pc}</b> perfect · <b>${ownedCards().length}</b> French ${pl(ownedCards().length, "word")}</p>` : ""}</div>
-      ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${Math.max(0, Math.min(g.s.last, G.furthest)-g.s.first+1)} of ${g.s.last-g.s.first+1} done</span></div>` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
+    o.innerHTML=`<div class="tabhead"><h1>Your lessons</h1>${done ? `<p class="tsub"><b>${done}</b> done · <b>${ownedCards().length}</b> French ${pl(ownedCards().length, "word")}</p>` : ""}</div>
+      ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${Math.max(0, Math.min(g.s.last, G.furthest)-g.s.first+1)} of ${g.s.last-g.s.first+1} done</span></div><button class="stq" data-stage="${g.s.id}">${ic("info")}What do I learn in Stage ${g.s.id}?</button>` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
     o.hidden=false;
     o.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
     o.querySelectorAll("[data-home]").forEach(b=>{ b.onclick=()=>tab("today"); });
+    o.querySelectorAll("[data-stage]").forEach(b=>{ b.onclick=()=>{ tick(); stageCard(+b.dataset.stage); }; });
     // the first time it is opened, the lesson now is in view (the scroll is the learner's after that)
     if(o._first==null){ const c=o.querySelector(".step.now, .step.once"); const r = c && c.getBoundingClientRect(); o._first = r && r.bottom > innerHeight-120 ? Math.max(0, Math.round(r.top - o.getBoundingClientRect().top + o.scrollTop - innerHeight*0.3)) : 0; } }
+
+  /* ---- (.78, Jon 17 Nov: "a 'what do I learn in stage 1?' bubble which, if you tap it, opens a card which explains what you'll learn") what a
+     stage teaches: what you will be able to say, each with an example from the stage's own lessons (Marie says it on a tap), the words it
+     brings (face down until their lesson is passed), and how far the learner is. Made from the lessons served (words.js's canDo was
+     written before the rebuild: it left out "c'est / c'est pas" and yes and no, and Stage 2's said things no lesson yet brings). A line
+     whose lesson is not served yet is "coming"; `at` is the lesson in which the example is first said. ---- */
+  const STAGE_SAYS = {
+    1: [["Say your name and someone else's", "Tu t'appelles Marie.", 4], ["Say hello and how you are", "Ça va bien.", 7], ["Say what something is, and what it is not", "C'est pas une maison.", 10],
+        ["Count to ten and say how many", "Il y en a trois.", 9], ["Say what someone is doing", "Elle chante.", 8], ["Say what you are going to do", "Je vais chanter.", 10], ["Answer yes or no", "Oui, il parle.", 10]],
+    2: [["Say what there is", "Il y a une maison.", 13], ["Say what someone is not doing", "Il danse pas.", 13], ["Say thank you and goodbye", "Au revoir, Sylvie.", 13],
+        ["Ask what something is and what someone is called", "", 0], ["Name colours", "", 0], ["Say what someone has, and where they are going", "", 0], ["Count to twelve", "", 0]] };
+  const keyFr = t=>String(t).toLowerCase().replace(/œ/g,"oe").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"").replace(/[^a-z ]/g," ").trim().split(/\s+/).join("_");      // as the page names Marie's clips
+  function stageCard(id){ const st=(CW.stages||[]).find(x=>x.id===id); if(!st) return; const served=LESSONS.length;
+    const says=(STAGE_SAYS[id]||[]).map(([can, fr, at])=>{ const coming = !at || at>served, got = !coming && at<=G.furthest;
+      return `<li class="${coming?"coming":got?"got":""}"><span class="mk">${coming ? "" : got ? ic("check") : ""}</span><span class="cw"><b>${esc(can)}</b>${coming ? `<small class="soon">Coming</small>` : `<button class="ex" data-clip="${keyFr(fr)}" lang="fr" aria-label="${esc(fr)}: play">${esc(fr)}${ic("speaker")}</button>`}</span></li>`; }).join("");
+    const words=[]; for(let n=st.first; n<=Math.min(st.last, served); n++){ const L=LESSONS[n-1]; if(!L) continue; cardsOf(L.id).forEach(c=>words.push({c, open:n-1<G.furthest})); }
+    const chips=words.map(({c, open})=>open ? `<button class="wchip" data-clip="${esc(c.clip||"")}" lang="fr" aria-label="${esc(c.fr)}: play">${esc(c.fr)}</button>` : `<span class="wchip down" aria-hidden="true" style="--w:${Math.max(3, Math.min(9, c.fr.length))}"></span>`).join("");
+    const nOpen=words.filter(w=>w.open).length;
+    const of=st.last-st.first+1, done=Math.max(0, Math.min(st.last, G.furthest)-st.first+1);
+    const prog=`<div class="stprog"><span><b>${done}</b> of ${of} ${pl(of, "lesson")} done</span><div class="segs" aria-hidden="true">${Array.from({length:of},(_,k)=>`<i class="${k<done?"on":""}"></i>`).join("")}</div></div>`;
+    info(`Stage ${id} · Lessons ${st.first}–${st.last}`, `${prog}<h3 class="stsec">You will be able to</h3><ul class="stsay">${says}</ul>${words.length ? `<h3 class="stsec">Its words<span>${nOpen} of ${words.length}</span></h3><div class="wchips">${chips}</div>` : ""}`);
+    const sh=$("sheet"); sh.querySelectorAll("[data-clip]").forEach(b=>{ if(!b.dataset.clip) return; b.onclick=()=>{ tick(); playClip(b.dataset.clip, b); }; }); }
 
   /* ---- who is learning? (more than one learner on this phone) ---- */
   function who(force){ const o=$("whoL"); if(!o) return; let chosen=false; try{ chosen=sessionStorage.getItem("frDIn.chosen")==="1"; }catch(e){}
@@ -1273,9 +1487,40 @@ const SHELL = (()=>{
   function maker(firstRun, done, at){ const o=$("maker"); if(!o || !AV.has()){ if(done) done(); return; }      // at: the group to open on (the wardrobe's "How you look")
     let spec; try{ spec=PICS.avatarParse(AV.get() || PICS.avatarString({})); }catch(e){ spec={}; } const hist=[]; let cat = at>=0 && at<CATS.length ? at : 3, step = firstRun ? 1 : 0;
     const starters=[["A man",{body:"m",age:"a"}],["A woman",{body:"f",age:"a",hair:6}],["A boy",{body:"m",age:"c"}],["A girl",{body:"f",age:"c",hair:4}]];
-    const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if(["c","t"].includes(typeof f==="object" ? f.age : f==="age" && v) || spec.body==="n") spec.beard=0; draw(); tick(); };
+    let picked=null;      // the option just chosen: it pops, and the figure with it
+    const set=(f,v)=>{ hist.push(Object.assign({}, spec)); spec=Object.assign({}, spec, typeof f==="object" ? f : {[f]:v}); if(["c","t"].includes(typeof f==="object" ? f.age : f==="age" && v) || spec.body==="n") spec.beard=0; picked = typeof f==="object" ? {f:"*"} : {f, v:String(v)}; draw(); tick(); uiSound("pick"); };
     const finish=()=>{ AV.set(PICS.avatarString(spec)); S.learnerGender = spec.body==="f" ? "f" : spec.body==="n" ? "n" : "m"; save(); G.makerOffer=false; store(); o.hidden=true; try{ trace("the learner's figure made"); }catch(e){} if(done) done(); else home(); };
     let drawn=null;      // (QA .67) what was drawn last: a new step's cards come in one after another, a new group of choices comes in softly
+    /* (.78, Jon 17 Nov: "My friend found this confusing") ONE preview, framed on what is being chosen: the head and shoulders for Skin, Face,
+       Hair and Glasses; the whole figure for You and Clothes; it moves smoothly from one frame to the other. Every option shows its own
+       effect, framed on its part (a jumper on the torso, trousers on the legs). A choice changes the preview at once: a pop and a soft sound.
+       The whole figure is the standing one; the head and shoulders are the portrait (only it draws the eyes, the freckles, the face): the
+       standing figure zooms in on its head as the portrait fades in over it, and back. */
+    const HEAD_CATS=[1,2,3,4];
+    const BAND={ top:[0.16,0.6], legs:[0.5,1.03] };      // clothes: a band of the standing figure's height
+    const PFRAME={ skin:[8,8,144,166], head:[8,8,144,166], scarf:[8,30,144,166], face:[38,34,84,97], eyes:[44,52,72,83], freckles:[38,40,84,97], glasses:[38,40,84,97],
+      beard:[34,52,92,106], hair:[22,4,116,134], hairc:[22,4,116,134] };      // the head's options: a frame of the portrait (160 x 190)
+    const boxes=new Map();
+    function figBox(sp){ const k=JSON.stringify(sp); if(boxes.has(k)) return boxes.get(k); let bb={x:55, y:30, width:50, height:148};
+      try{ const t=document.createElementNS("http://www.w3.org/2000/svg","svg"); t.setAttribute("viewBox","0 0 160 190"); t.style.cssText="position:fixed;left:-999px;top:0;width:160px;height:190px;visibility:hidden";
+        const g=PICS.avatar(sp, {view:"standing"}); t.appendChild(g); document.body.appendChild(t); const r=g.getBBox(); t.remove(); if(r && r.height>20) bb={x:r.x, y:r.y, width:r.width, height:r.height}; }catch(e){}
+      boxes.set(k, bb); return bb; }
+    const f2=n=>Math.round(n*100)/100;
+    // a frame on the band [a, z] of the figure's height, as wide as the box's shape asks
+    const frame=(bb, a, z, aspect)=>{ const h=(z-a)*bb.height, w=h*aspect; return [bb.x+bb.width/2-w/2, bb.y+a*bb.height, w, h].map(f2); };
+    const WHOLE_VB=[34, 22, 92, 162];      // the options of You (body, age, build): one frame for all, so a child is smaller than an adult
+    function tileSvg(sp, f){ const pt=!!PFRAME[f], vb = pt ? PFRAME[f] : BAND[f] ? frame(figBox(spec), BAND[f][0], BAND[f][1], 0.9) : WHOLE_VB;
+      try{ return `<svg class="t" viewBox="${vb.join(" ")}" preserveAspectRatio="xMidYMid ${pt?"slice":"meet"}" aria-hidden="true">${PICS.avatar(sp, {view: pt ? "portrait" : "standing"}).outerHTML}</svg>`; }catch(e){ return AV.svg(sp, "standing", "t"); } }
+    let modeNow=null;      // "h" (the head) or "w" (the whole figure), as last shown
+    let vbNow=null, vbAnim=0;
+    function stageTarget(svg){ const bb=figBox(spec), r=svg.getBoundingClientRect(), aspect = r.width>10 && r.height>10 ? r.width/r.height : 1.2;
+      return HEAD_CATS.includes(cat) ? frame(bb, -0.04, 0.4, aspect) : frame(bb, -0.05, 1.05, aspect); }
+    function stageMove(svg){ const to=stageTarget(svg), from=vbNow || to; cancelAnimationFrame(vbAnim);
+      const put=v=>{ vbNow=v; svg.setAttribute("viewBox", v.map(f2).join(" ")); };
+      if(lessMotion() || from.every((x,i)=>Math.abs(x-to[i])<0.5)){ put(to); return; }
+      const t0=performance.now(), D=420, ease=x=>1-Math.pow(1-x, 3);
+      const step=now=>{ const k=Math.min(1, (now-t0)/D), e=ease(k); put(from.map((x,i)=>x+(to[i]-x)*e)); if(k<1) vbAnim=requestAnimationFrame(step); };
+      put(from); vbAnim=requestAnimationFrame(step); }
     function draw(){ draw0(); if(drawn){ if(drawn.step!==step) MV.stagger(o); else if(drawn.cat!==cat) MV.play(o.querySelector(".mk-tray"), "mv-soft", 300); } drawn={step, cat}; }
     function draw0(){
       if(step===1){ o.innerHTML=`<div class="mk-step">Step 1 of 3</div><h1>Who will you be?</h1><div class="lede">Pick the one nearest to you.</div><div class="big4">${starters.map(([lab,sp],i)=>`<button class="pcard" data-s="${i}">${AV.svg(Object.assign({}, spec, sp), "standing")}<span>${lab}</span></button>`).join("")}</div>`;
@@ -1289,17 +1534,31 @@ const SHELL = (()=>{
       if(step===3){ o.innerHTML=`<div class="mk-step">Step 3 of 3</div><h1>Your skin</h1><div class="big4" style="grid-template-columns:repeat(3,1fr)">${valsOf("skin").map(v=>`<button class="pcard" style="height:150px" data-v="${v}" aria-label="Skin ${v}">${AV.svg(Object.assign({}, spec, {skin:v}), "portrait")}</button>`).join("")}</div>`;
         o.querySelectorAll("[data-v]").forEach(b=>{ b.onclick=()=>{ spec=Object.assign({}, spec, {skin:+b.dataset.v}); step=0; cat=3; draw(); }; }); return; }
       const [, fields]=CATS[cat];
+      const tb0=o.querySelector(".mk-tabs"), tr0=o.querySelector(".mk-tray"), keep={tabs: tb0 ? tb0.scrollLeft : 0, tray: tr0 && drawn && drawn.cat===cat && drawn.step===step ? tr0.scrollTop : 0};
       o.innerHTML=`<div class="mk-bar">${firstRun?"":`<button class="rb plain" id="mkBack" aria-label="Back">${ic("chev")}</button>`}<h2>${firstRun ? "This is you" : "How you look"}</h2><button class="rb" id="mkUndo" aria-label="Undo">${ic("undo")}</button><button class="rb" id="mkRnd" aria-label="Surprise me">${ic("shuffle")}</button></div>
-        <div class="mk-stage">${AV.svg(spec, "portrait", "big")}<div class="mk-small"><div class="mini">${AV.svg(spec, {view:"doing", doing:"walk", still:true}, "s")}</div><div class="lab">You, in<br>the lessons</div><div class="mini">${AV.svg(spec, "standing", "s")}</div></div></div>
+        <div class="mk-stage ${modeNow || (HEAD_CATS.includes(cat) ? "h" : "w")}"><svg class="st" viewBox="0 0 160 190" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g class="mk-fig">${PICS.avatar(spec, {view:"standing"}).outerHTML}</g></svg><svg class="pt" viewBox="-4 4 168 186" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g class="mk-fig">${PICS.avatar(spec, {view:"portrait"}).outerHTML}</g></svg></div>
         <div class="mk-tabs">${CATS.map(([lab],i)=>`<button class="${i===cat?"on":""}" data-c="${i}" aria-pressed="${i===cat}">${lab}</button>`).join("")}</div>
-        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.body==="n" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-pressed="${String(spec[f])===String(v)}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : f==="body" ? (v==="f" ? "a woman's" : v==="n" ? "a neutral" : "a man's") : typeof v==="number" ? v+1 : v}">${AV.svg(Object.assign({}, spec, {[f]:v}), f==="body"||f==="girth"||f==="legs"||f==="age" ? "standing" : "portrait", "t")}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
+        <div class="mk-tray">${fields.filter(f=>!(f==="beard" && (spec.body==="f" || spec.body==="n" || spec.age==="c" || spec.age==="t")) && !(f==="scarf" && !spec.head) && !(f==="hairc" && spec.hair===3)).map(f=>`<div class="mk-lab">${FIELDS[f].label}</div><div class="opts">${valsOf(f).map(v=>`<button class="opt${f==="body"||f==="girth"||f==="legs"||f==="age"?" whole":""}${String(spec[f])===String(v)?" on":""}" data-f="${f}" data-v="${v}" aria-pressed="${String(spec[f])===String(v)}" aria-label="${FIELDS[f].label} ${FIELDS[f].names ? FIELDS[f].names[v] : f==="body" ? (v==="f" ? "a woman's" : v==="n" ? "a neutral" : "a man's") : typeof v==="number" ? v+1 : v}">${tileSvg(Object.assign({}, spec, {[f]:v}), f)}${FIELDS[f].names ? `<span class="ol">${FIELDS[f].names[v]}</span>` : ""}</button>`).join("")}</div>`).join("")}</div>
         <div class="mk-foot"><button class="btn" id="mkDone">That's me</button></div>`;
+      { const sv=o.querySelector(".mk-stage svg.st"), stg=o.querySelector(".mk-stage"), mode = HEAD_CATS.includes(cat) ? "h" : "w";
+        if(sv) stageMove(sv);
+        if(stg && modeNow && modeNow!==mode && !lessMotion()){ stg.classList.add("go"); requestAnimationFrame(()=>requestAnimationFrame(()=>{ stg.classList.remove("h","w"); stg.classList.add(mode); })); }
+        else if(stg){ stg.classList.remove("h","w"); stg.classList.add(mode); }
+        modeNow=mode;
+        if(picked){ const pk=picked; picked=null; const b = pk.f==="*" ? null : o.querySelector(`.opt[data-f="${pk.f}"][data-v="${pk.v}"]`);
+          if(!lessMotion()){ if(b) b.classList.add("pop"); const g=o.querySelector(".mk-fig"); if(g) g.classList.add("bump"); } }
+        const tb=o.querySelector(".mk-tabs"), tr=o.querySelector(".mk-tray");
+        if(tr) tr.scrollTop=keep.tray;
+        if(tb){ tb.scrollLeft=keep.tabs; const edge=()=>{ tb.classList.toggle("ml", tb.scrollLeft>2); tb.classList.toggle("mr", tb.scrollLeft+tb.clientWidth<tb.scrollWidth-2); };
+          const on=tb.querySelector("button.on"); if(on){ const l=on.offsetLeft-tb.offsetLeft, r=l+on.offsetWidth, pad=48;
+            if(l-pad<tb.scrollLeft || r+pad>tb.scrollLeft+tb.clientWidth){ const to=Math.max(0, Math.min(tb.scrollWidth-tb.clientWidth, l-(tb.clientWidth-on.offsetWidth)/2)); try{ tb.scrollTo({left:to, behavior: lessMotion() ? "auto" : "smooth"}); }catch(e){ tb.scrollLeft=to; } } }
+          edge(); tb.addEventListener("scroll", edge, {passive:true}); } }
       o.querySelectorAll("[data-c]").forEach(b=>{ b.onclick=()=>{ cat=+b.dataset.c; draw(); }; });
       o.querySelectorAll("[data-f]").forEach(b=>{ b.onclick=()=>{ const f=b.dataset.f, raw=b.dataset.v; set(f, FIELDS[f].vals ? raw : +raw); }; });
-      $("mkUndo").onclick=()=>{ if(hist.length){ spec=hist.pop(); draw(); } };
+      $("mkUndo").onclick=()=>{ if(hist.length){ spec=hist.pop(); picked={f:"*"}; draw(); } };
       $("mkRnd").onclick=()=>{ const r={}; for(const f of ["skin","face","eyes","hair","hairc","top","legs","girth"]){ const vs=valsOf(f); r[f]=vs[Math.floor(Math.random()*vs.length)]; } set(r); };
       $("mkDone").onclick=()=>{ tick("go"); finish(); }; const bk=$("mkBack"); if(bk) bk.onclick=()=>{ o.hidden=true; if(done) done(); }; }
-    o.hidden=false; draw(); }
+    vbNow=null; modeNow=null; o.hidden=false; draw(); }
 
   /* ---- the two moments of the day: "After ___ I do my first lesson." Never rewarded or penalised for the time. ---- */
   const ROUTINE = { first:["waking up","breakfast","my morning coffee","the school run","walking the dog","getting to work"], second:["lunch","getting home","supper","my evening walk","the evening news","the washing-up"] };
@@ -1546,7 +1805,7 @@ const SHELL = (()=>{
   function nameSet(v){ const wn=$("whoName"), wf=$("whoForm"); if(wn && wf && wf.requestSubmit){ wn.value=v; wf.requestSubmit(); } else { S.learnerName=v; save(); }
     const w=$("who"); if(w) w.hidden=true; return !!S.learnerName; }
   function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); uiTaps(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
-    if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); mastery0(); seed(); rankSync(); syncNext(); store(); home(); MIC.init();
+    if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); mastery0(); seed(); ranks50(); rankSync(); if(!G.tally) G.tally={base:G.points||0, items:[]}; syncNext(); store(); home(); MIC.init();
     // (the owner, 16 Nov 17:50: "the first time the user uses the app ... it shouldn't go straight to the customization screen. It should take the user
     // straight into the main app, and then they can customise if they want to. The learner should be gender-neutral if the person chooses to do this.")
     // A new learner goes straight to Home: no name screen, no pictograms, no maker, no moments first. The figure starts neutral (changed in the
@@ -1560,7 +1819,7 @@ const SHELL = (()=>{
     // let go): what the page kept back for this moment (the listener, the clips ahead, the stage under home) starts now, under the fade
     const first=()=>{ const go=()=>{ try{ dispatchEvent(new Event("ff-first-screen")); }catch(e){} }; try{ requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(go, 0))); }catch(e){ go(); } };
     try{ UI.fonts().then(()=>{ try{ window.SPLASH && SPLASH.done(); }finally{ first(); } }); }catch(e){ try{ SPLASH.done(); }catch(x){} first(); } }
-  return {RULES, coach:COACH, get G(){ return G; }, rankOf, rankName, ringsNow, weekGoal, wardrobe, WARDROBE, TIERS, home, lessonDone, who, maker, you, lessons, tab, anchors, score, init, AV, MIC, welcome, offerUpdate};
+  return {RULES, coach:COACH, rankEmblem, rankEn, get G(){ return G; }, rankOf, rankName, ringsNow, weekGoal, wardrobe, WARDROBE, TIERS, home, lessonDone, who, maker, you, lessons, tab, anchors, score, init, AV, MIC, welcome, offerUpdate};
 })();
 window.SHELL = SHELL;      // the page's hooks look for it there
 SHELL.init();

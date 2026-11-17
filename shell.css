@@ -90,16 +90,27 @@
 .mk-bar{display:flex;align-items:center;gap:4px;padding:8px 12px 6px} .mk-bar h2{flex:1;margin:0;font:var(--t-title-s);font-variation-settings:"SOFT" 100}
 .rb{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);box-shadow:var(--e0);color:var(--ink);margin-left:8px;cursor:pointer;flex:none} .rb.plain{background:none;border:0;box-shadow:none;margin:0} .rb.plain .icon{transform:rotate(180deg);stroke-width:2.8}
 .mk-stage{position:relative;height:292px;margin:4px 16px 0;width:calc(100% - 32px)!important;max-width:428px;border-radius:var(--r4);background:radial-gradient(90% 80% at 40% 30%, #FFFDF8 0%, var(--paper-2) 100%);border:1px solid var(--line);overflow:hidden}
-.mk-stage > svg{position:absolute;left:8px;top:6px;width:250px;height:297px}
-.mk-small{position:absolute;right:14px;top:16px;display:grid;gap:8px;justify-items:center} .mk-small .lab{font:700 13px/1.2 var(--font-ui);color:var(--ink-2);text-align:center}
-.mk-small .mini{width:84px;height:100px;border-radius:12px;box-shadow:var(--e1)}
-.mk-tabs{display:flex;gap:8px;padding:14px 16px 10px;overflow-x:auto;scrollbar-width:none}
+.mk-stage > svg{position:absolute;inset:0;width:100%;height:100%}
+/* (.78) the whole figure (st) and the head and shoulders (pt): one shows; between them the standing figure zooms and the portrait fades */
+.mk-stage > svg.pt{opacity:0} .mk-stage.h > svg.pt{opacity:1} .mk-stage.h > svg.st{opacity:0}
+.mk-stage.go > svg{transition:opacity 200ms var(--ease-out)} .mk-stage.go.h > svg{transition-delay:230ms}
+/* (.78) the figure pops when a choice is made; the option chosen pops with it */
+.mk-fig{transform-box:fill-box;transform-origin:50% 100%} .mk-fig.bump{animation:mkBump 300ms var(--spring)} @keyframes mkBump{40%{transform:scale(1.035,.975)} 70%{transform:scale(.99,1.015)}}
+.opt.pop{animation:mkPop 280ms var(--spring)} @keyframes mkPop{0%{transform:scale(.9)} 60%{transform:scale(1.06)} 100%{transform:scale(1)}}
+.opt:active{transform:scale(.95);transition:transform 80ms}
+@media (prefers-reduced-motion:reduce){ .mk-fig.bump,.opt.pop{animation:none} .opt:active{transform:none} } html[data-motion="less"] :is(.mk-fig.bump,.opt.pop){animation:none}
+.mk-tabs{display:flex;gap:8px;padding:14px 16px 10px;overflow-x:auto;scrollbar-width:none;scroll-padding:0 16px}
+.mk-tabs::-webkit-scrollbar{display:none}
+/* (.78) more tabs off to one side: that edge fades, and the half-shown tab says there is more */
+.mk-tabs.mr{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent)}
+.mk-tabs.ml{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 56px),transparent)}
+.mk-tabs.ml.mr{-webkit-mask-image:linear-gradient(to right,transparent,#000 56px,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to right,transparent,#000 56px,#000 calc(100% - 56px),transparent)}
 .mk-tabs button{flex:none;height:48px;padding:0 18px;border-radius:24px;font:700 17px/1 var(--font-ui);color:var(--ink-2);background:var(--paper-2);border:1px solid var(--line);cursor:pointer} .mk-tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .mk-tray{padding:2px 16px 0;display:grid;gap:14px;align-content:start}
 .mk-lab{font:var(--t-label);color:var(--ink-2);margin-bottom:-6px}
 .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .opt{position:relative;height:92px;border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:var(--e0);overflow:hidden;cursor:pointer;padding:0}
-.opt svg{position:absolute;left:50%;top:-22px;width:150px;height:178px;transform:translateX(-50%)} .opt.whole svg{top:-6px;width:100px;height:119px}
+.opt svg{position:absolute;inset:0;width:100%;height:100%}
 .opt.on{border:3px solid var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
 .mk-foot{padding:14px 16px 0;margin-top:auto} .mk-foot .btn{width:100%}
 .big4{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 18px}
@@ -173,6 +184,21 @@
 .badgesh .row b{font:var(--t-head)} .badgesh .row small{font:700 14px/1 var(--font-ui);color:var(--ink-2)} .badgesh .ms{box-shadow:none;background:var(--paper)}
 #lessonsL .tabhead h1{margin-bottom:6px} .tsub{margin:0 4px 4px;font:500 17px/1.35 var(--font-ui);color:var(--ink-2)} .tsub b{font-weight:700;color:var(--ink)}
 #lessonsL .pathhead{margin-top:18px} #lessonsL .foot{margin-top:18px}
+/* (.78) what a stage teaches: the bubble under its header, and its card */
+#lessonsL .pathhead{margin-bottom:8px} .stq{display:inline-flex;align-items:center;gap:6px;height:36px;margin:0 0 14px 2px;padding:0 14px 0 10px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--e0);font:700 15px/1 var(--font-ui);color:var(--ink-2);cursor:pointer;transition:transform 80ms}
+.stq .icon{width:18px;height:18px;color:var(--accent)} .stq:active{transform:scale(.96)}
+.stprog{display:grid;gap:8px;margin-bottom:6px} .stprog span{font:600 16px/1.2 var(--font-ui);color:var(--ink-2)} .stprog b{color:var(--ink)}
+.stsec{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 8px;font:var(--t-label);color:var(--ink-2)} .stsec span{font-weight:600}
+.stsay{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.stsay li{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:start} .stsay .mk{width:22px;height:22px;margin-top:1px;border-radius:50%;border:2px solid var(--line-strong);display:grid;place-items:center}
+.stsay li.got .mk{background:var(--speak);border-color:var(--speak);color:#fff} .stsay .mk .icon{width:14px;height:14px;stroke-width:3}
+.stsay .cw b{display:block;font:600 17px/1.3 var(--font-ui);color:var(--ink)}
+.stsay .ex{display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:5px 10px;border-radius:12px;background:var(--paper-2);border:0;font:600 16px/1.2 var(--font-ui);color:var(--ink);cursor:pointer;transition:transform 80ms} .stsay .ex .icon{width:16px;height:16px;color:var(--accent)}
+.stsay .ex:active{transform:scale(.96)} .stsay .ex.playing{background:var(--accent-tint)}
+.stsay li.coming{opacity:.6} .stsay li.coming .mk{border-style:dashed} .stsay .soon{display:inline-block;margin-top:4px;padding:3px 9px;border-radius:10px;background:var(--paper-2);font:700 13px/1.2 var(--font-ui);color:var(--ink-3)}
+.wchips{display:flex;flex-wrap:wrap;gap:7px}
+.wchip{height:32px;padding:0 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--e0);font:600 16px/1 var(--font-ui);color:var(--ink);cursor:pointer;transition:transform 80ms} .wchip:active{transform:scale(.95)} .wchip.playing{background:var(--accent-tint)}
+.wchip.down{display:inline-block;width:calc(var(--w) * 9px + 24px);background:repeating-linear-gradient(135deg,var(--paper-2) 0 6px,var(--paper) 6px 12px);box-shadow:none;cursor:default}
 #lessonsL .path{gap:6px} #lessonsL .path:before{left:17px;top:18px;bottom:18px} #lessonsL .step{grid-template-columns:36px 1fr;gap:10px}
 #lessonsL .node{width:36px;height:36px;font-size:17px;border-width:2px} #lessonsL .node .icon{width:18px;height:18px} #lessonsL .step.now .node,#lessonsL .step.once .node{border-width:3px}
 #lessonsL .lrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 8px;min-height:58px;padding:9px 10px 9px 14px;border-radius:var(--r3);text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer}
@@ -491,7 +517,7 @@ html[data-motion="less"] :is(.mv-rise,.mv-push,.mv-fade,.mv-settle,.mv-tab-l,.mv
   .wb-art{width:124px;height:124px;margin-top:10px} .wb-art svg{left:-17px;top:-5px;width:158px;height:187px}
   .lvbig{width:132px;height:132px;margin-top:22px} .lvbig span{font-size:58px}
   /* the maker: more room for the choices */
-  .mk-stage{height:218px} .mk-stage > svg{left:6px;top:2px;width:188px;height:223px} .mk-small{top:10px;right:10px;gap:5px} .mk-small .mini{width:62px;height:74px} .mk-tabs{padding:10px 16px 8px}
+  .mk-stage{height:218px} .mk-tabs{padding:10px 16px 8px}
   /* lesson complete: the sentence is on the first screen, above the bar and the button */
   #done .seal{width:88px;height:110px;margin-top:0} #done .sunmark{width:76px;height:76px;margin-top:8px;box-shadow:0 0 0 8px var(--sun-tint)} #done .sunmark .icon{width:44px;height:44px}
   #done .celebfig{width:96px;height:114px} #done .celebfig + .seal{width:64px;height:80px;margin-top:-8px}
@@ -518,7 +544,7 @@ html[data-motion="less"] .mv-soft{animation:none!important} @media (prefers-redu
 @media (max-height:520px){
   #nav{height:calc(62px + var(--sab));padding:3px 20px calc(4px + var(--sab))} .tab{gap:1px} .pillbg{height:30px}
   #home{padding-bottom:84px} .over.tabbed{padding-bottom:calc(80px + var(--sab))}
-  #maker{overflow:auto} #maker .mk-tray{flex:none;overflow:visible} #maker .big4{flex:none;overflow:visible} .mk-stage{height:170px;flex:none} .mk-stage > svg{width:150px;height:178px}
+  #maker{overflow:auto} #maker .mk-tray{flex:none;overflow:visible} #maker .big4{flex:none;overflow:visible} .mk-stage{height:170px;flex:none}
   .donefoot{position:static;margin-top:16px;box-shadow:none}
   #mic > .btn:not(.quiet), #anch > .btn:not(.quiet), #back > .btn:not(.quiet), #lvl > .btn:not(.quiet){position:static;box-shadow:0 4px 0 var(--accent-press)}
 }
@@ -764,3 +790,63 @@ html[data-motion="less"] #xcard, html[data-motion="less"] #xcard .xc, html[data-
 html[data-motion="less"] #xcheck{animation:none} @media (prefers-reduced-motion:reduce){ #xcheck{animation:none} }
 
 .wcer.film .wc-f1{opacity:1;transform:none;transition:none} .wcer.film .wc-f0{opacity:0;transition:none}      /* (figures 13) PICS.putOn's film: shown from the flight on */
+/* (game feel, 17 Nov) the tally: the rank bar filling at a lesson's end (shell.js TY) */
+#done > .tly,#tlyHost > .tly{position:fixed;inset:0;z-index:9;width:auto!important;max-width:none!important;zoom:1;overflow:hidden;outline:none;color:var(--ink);display:flex;flex-direction:column;align-items:center;padding:calc(var(--sat,0px) + 9vh) 22px calc(var(--sab,0px) + 24px);-webkit-tap-highlight-color:transparent;animation:rkcIn 240ms var(--ease-out) both}
+#tlyHost{position:fixed;inset:0;z-index:47} #tlyHost[hidden]{display:none}
+.tly.out{animation:rkcOut 320ms var(--ease-in-out) forwards!important;pointer-events:none}
+.ty-bg{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 26%, #FFFBF0 0%, var(--sun-tint) 50%, #F2D48E 100%)}
+.tly > *:not(.ty-bg):not(.rk-skip):not(.rk-live){position:relative;width:100%;max-width:440px}
+.ty-top{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ty-em .emb{width:112px;height:128px;display:block;filter:drop-shadow(0 10px 12px rgba(var(--shade),.28))}
+.tly.full .ty-em .emb{animation:tyPulse 650ms ease-in-out infinite} @keyframes tyPulse{50%{transform:scale(1.07);filter:drop-shadow(0 0 18px rgba(243,179,61,.95))}}
+.ty-name{font:600 30px/1.1 var(--font-display);font-variation-settings:"SOFT" 100;text-align:center} .ty-name .st{color:var(--ring-gold);-webkit-text-stroke:.5px #8F5600}
+.ty-gain{margin-top:18px;text-align:center} .ty-n{font:600 64px/1 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--sun-deep)}
+.tly.total .ty-n{animation:tyTot 520ms cubic-bezier(.3,1.6,.5,1)} @keyframes tyTot{0%{transform:scale(1.35)}100%{transform:none}}
+.ty-bar{margin-top:14px;display:grid;gap:8px}
+.ty-track{position:relative;height:26px;border-radius:13px;background:rgba(var(--shade),.12);box-shadow:inset 0 2px 4px rgba(var(--shade),.18);overflow:hidden}
+.ty-fill{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:13px;background:linear-gradient(90deg,var(--sun),var(--ring-gold));transform-origin:0 50%;transform:scaleX(var(--f,0))}
+.ty-fill:after{content:"";position:absolute;inset:0;border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 60%)}
+.tly.flowing .ty-track{box-shadow:inset 0 2px 4px rgba(var(--shade),.18), 0 0 0 3px rgba(243,179,61,.35), 0 0 18px 2px rgba(243,179,61,.5)}
+.tly.full .ty-track{box-shadow:0 0 0 4px #fff, 0 0 26px 6px rgba(243,179,61,.85)}
+.ty-next{text-align:right;font:600 16px/1.2 var(--font-ui);color:var(--ink-2)} .ty-next .num{font-size:19px;color:var(--ink)}
+.ty-list{margin-top:22px;display:grid;gap:8px}
+.ty-row{display:flex;justify-content:space-between;align-items:baseline;padding:12px 16px;border-radius:var(--r3);background:var(--card);border:1px solid #EBD7A6;box-shadow:var(--e1);font:700 18px/1.2 var(--font-ui);opacity:0;transform:translateY(10px)}
+.ty-row b{font-size:24px;color:var(--sun-deep)}
+.ty-row.on{opacity:1;transform:none;transition:opacity 260ms, transform 420ms var(--spring)}
+.ty-row.on:not(.done){box-shadow:0 0 0 3px var(--sun), var(--e1)}
+.ty-row.done{opacity:.8}
+.tly .rk-skip{top:calc(var(--sat,0px) + 10px)}
+@media (max-height:760px){ #done > .tly,#tlyHost > .tly{padding-top:calc(var(--sat,0px) + 5vh)} .ty-em .emb{width:92px;height:105px} .ty-n{font-size:54px} .ty-list{margin-top:16px} }
+.tly.calm,.tly.calm *{animation:none!important;transition:none!important}
+html[data-motion="less"] .tly{animation:none!important}
+.ty-name .gr,.rk-name .gr{font:700 .62em/1 var(--font-ui);color:var(--sun-deep);white-space:nowrap}
+/* the rank-up ceremony over Home's tally (its host is #tlyHost, not lesson complete) */
+#tlyHost > .rkc{position:fixed;inset:0;z-index:10;width:auto!important;max-width:none!important;zoom:1;overflow:hidden;color:var(--ink);font-family:var(--font-ui);outline:none;-webkit-tap-highlight-color:transparent;animation:rkcIn 240ms var(--ease-out) both}
+#tlyHost > .rkc.out{animation:rkcOut 320ms var(--ease-in-out) forwards;pointer-events:none}
+html[data-motion="less"] #tlyHost > .rkc,html[data-motion="less"] #tlyHost > .rkc.out{animation:none}
+/* (17 Nov) every rank's English, in brackets beneath its name */
+.ren{display:block;font:600 .5em/1.25 var(--font-ui);color:var(--ink-2);letter-spacing:0;margin-top:2px}
+.ty-name .ren{font-size:16px;margin-top:4px} .rk-name .ren{font-size:17px;margin-top:6px}
+.rh-t b .ren,.wme b .ren{font-size:13px;font-weight:600;margin-top:1px}
+.rb-l b .ren{display:inline;font-size:13px;margin-left:4px}
+.ty-pt{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle,#FFF6D0 0%,#F3B33D 60%,#E3A417 100%);box-shadow:0 0 8px 2px rgba(243,179,61,.75);z-index:5;pointer-events:none}
+.rk-oname .ren{font-size:17px;margin-top:6px}
+.rkc.st .rk-star{display:none}
+/* (17 Nov) the brand: the new rank strikes the old */
+.rkc.st .rk-new{opacity:0} .rkc.st.falling .rk-new{opacity:1} .rkc.st.branded .rk-new{opacity:1}
+.rkc.st.rev .rk-new{animation:none!important} .rkc.st .rk-gold,.rkc.st .rk-gnew{display:none}
+.rkc.st.rev .rk-old{opacity:0}
+.rk-oname{position:absolute;left:0;right:0;font:600 44px/1.05 var(--font-display);font-variation-settings:"SOFT" 100;color:var(--ink);text-align:center;transition:opacity 160ms, transform 300ms var(--ease-out)}
+.rk-names{position:relative;min-height:96px;width:100%;display:grid;justify-items:center}
+.rk-names .rk-name{grid-area:1/1} .rk-names .rk-oname{grid-area:1/1;position:relative}
+.rev .rk-oname{opacity:0;transform:translateY(10px) scale(.96)}
+.rk-ring{position:absolute;width:0;height:0;z-index:4;pointer-events:none}
+.rk-ring:before{content:"";position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;border:6px solid #FFB443;box-shadow:0 0 18px 4px rgba(255,170,60,.7);animation:rkRing 700ms cubic-bezier(.15,.7,.3,1) forwards}
+.rk-ring.big:before{border-width:8px} .rk-ring.late:before{animation-delay:160ms;opacity:0}
+@keyframes rkRing{0%{opacity:1;transform:scale(.35)}100%{opacity:0;transform:scale(2.8)}}
+.rkc.st .rk-glow{opacity:0} .rkc.st.rev .rk-glow{opacity:.75}
+.rkc.calm .rk-ring{display:none}
+.rk-em .rk-sh{inset:auto 6% -7% 6%;height:16%;border-radius:50%;background:radial-gradient(closest-side, rgba(27,36,51,.42), rgba(27,36,51,0));opacity:0}
+.rk-em .rk-hot{inset:-34%;border-radius:50%;background:radial-gradient(circle, #FFFFFF 0%, rgba(255,246,214,.95) 22%, rgba(255,196,90,.55) 42%, rgba(255,196,90,0) 66%);opacity:0;z-index:3;pointer-events:none}
+.sD .rk-names{min-height:0} .rkc .rk-gift{top:calc(var(--sat,0px) + 200px)}
+@media (max-height:760px){ .rkc .rk-gift{top:calc(var(--sat,0px) + 174px)} }
