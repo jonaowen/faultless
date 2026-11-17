@@ -1704,11 +1704,18 @@ function momFilm(figs, dur){
   return out; }
 
 /* ---------- FIG.highFive(cM, cY, o): Marie (cM, on the left, facing right) and the learner (cY, dressed, on the right, facing left) meet
-   in the middle of a 320 x 200 box and give each other a high five. o: {legsM, legsY, tagM}. The timing of RANKUP.md 5: a step each toward
-   the other (0-350 ms), the wind-up (350-620: the arm nearest the other raised up and back, the palm open, leaning in), CONTACT at 620 ms
-   (the palms meet above the heads at the middle, a slight squash), the follow-through (620-900: the arms swing down and out, the learner
-   hops), settled by 1600 ms (Marie's other hand open, "bravo"), the last frame held. ---------- */
-const HF = { dur: 1600, contact: 620, gy: 188, yaw: 80, h: 122, half: 32, step: 16, lean: 3, stretch: 1.24 };      // (stretch: the arms at the contact, a cartoon's stretch on the snap)
+   in the middle of a 320 x 200 box and give each other a high five. o: {legsM, legsY, tagM}. (hf2, 17 Nov; the owner: "too quick. Should
+   take about twice as long so the user can actually see it happen") 3.2 s, twice the first 1.6 s, its timing from the reference, CMU
+   20_11 + 21_11 "high-five, walk" (two people captured together) and 141_22 "High Five" (dev/design/tools/hf2/hfref.js): the hand starts up
+   600-775 ms before the hands meet, the hands stay together about 100 ms and still rise to about 150 ms after, then fall and are back at
+   rest about 430-600 ms after. So: a step each toward the other (0-720 ms), the wind-up (620-1240: the far arm half up, then up and back,
+   leaning in), CONTACT at 1240 ms (the palms meet above the heads at the middle; the snap kept short: a stretch at 1210, a squash at 1253,
+   recovered by 1340), the follow-through (1390-1900: the arms swing down and out, the learner hops, 1340-1960), settled by 3200 ms
+   (Marie's other hand open, "bravo"), the last frame held. Every hand placed by the arm's IK (keyArm / armTo, with its reach limit). At
+   the contact the palms stand side by side, flat together, fingers up: each palm's middle 3.4 units to its own side of the middle (it was
+   2.2, with the fingers tipped toward the other: the two hands were drawn crossed over each other, seen once the contact was slowed down;
+   the pixel-mask check tools/hf2/hf_mask_check.py). ---------- */
+const HF = { dur: 3200, contact: 1240, gy: 188, yaw: 80, h: 122, half: 32, step: 16, lean: 3, stretch: 1.24 };      // (stretch: the arms at the contact, a cartoon's stretch on the snap)
 const fwd = T => T;      // (targets are in the chest's frame, z forward: the way the face looks)
 function highFive(cM, sp, wear, o){ o = o || {}; wear = (wear || []).filter(id => WARD[id] && WARD[id].slot !== "pose" && WARD[id].slot !== "dance");
   const cY0 = person(sp), cY = wear.length ? dressUp(cY0, wear) : cY0; o.legsY = o.legsY || cY.legs || cY0.legs;
@@ -1726,7 +1733,7 @@ function highFive(cM, sp, wear, o){ o = o || {}; wear = (wear || []).filter(id =
       const inv = v => [v[0] - ch[0], v[1] - ch[1], v[2] - ch[2]], dl = inv(sh), sC = [dl[0] * Bc.x[0] + dl[1] * Bc.x[1] + dl[2] * Bc.x[2], dl[0] * Bc.y[0] + dl[1] * Bc.y[1] + dl[2] * Bc.y[2], dl[0] * Bc.z[0] + dl[1] * Bc.z[1] + dl[2] * Bc.z[2]];
       const hand = B.hand * 0.42 * B.H * F.o.k;      // the palm's middle above the wrist (the hand up)
       /* the meeting point in the figure's own picture before its lean (the figure leans toward the other about its feet) */
-      const a = -F.dir * HF.lean * Math.PI / 180, X0 = 160 + F.dir * 2.2 - F.x, Y0 = yC + hand - HF.gy, ca = Math.cos(-a), sa = Math.sin(-a), Xl = F.x + X0 * ca - Y0 * sa, Yl = HF.gy + X0 * sa + Y0 * ca;
+      const a = -F.dir * HF.lean * Math.PI / 180, X0 = 160 + F.dir * 3.4 - F.x, Y0 = yC + hand - HF.gy, ca = Math.cos(-a), sa = Math.sin(-a), Xl = F.x + X0 * ca - Y0 * sa, Yl = HF.gy + X0 * sa + Y0 * ca;
       const w = momRay(p, Xl, Yl, sC), d = Math.hypot(w[0] - sC[0], w[1] - sC[1], w[2] - sC[2]);
       return { w, ok: d <= armLen(F) }; });
     if (r[0].ok && r[1].ok){ sol = r; break; } }
@@ -1735,22 +1742,29 @@ function highFive(cM, sp, wear, o){ o = o || {}; wear = (wear || []).filter(id =
      own frame, so its x is turned to the arm's side */
   const A = (F, name) => { const s = F.sg, W = F.wr;
     return ({ rest: null,
-      wind1: { wr: [0.16, 0.1, 0.0], hd: [0.1, 1, -0.1], pn: [0, 0, 1], pole: [1, -0.6, -0.2] },
+      wind1: { wr: [0.12, 0.24, -0.14], hd: [0.1, 1, -0.2], pn: [0, 0.1, 1], pole: [0.8, -0.5, -0.6] },
       wind2: { wr: [0.06, 0.37, -0.1], hd: [0, 1, -0.3], pn: [0, 0.2, 1], pole: [0.6, -0.3, -0.8] },
-      hit: { wr: [W[0] * s, W[1], W[2]], hd: [0, 1, 0.3], pn: [0, -0.25, 1], pole: [0.5, -1, -0.4] },
+      hit: { wr: [W[0] * s, W[1], W[2]], hd: [0, 1, 0], pn: [0, -0.25, 1], pole: [0.5, -1, -0.4] },
+      swing: { wr: [0.3, 0.1, 0.02], hd: [0.55, 0.75, 0.05], pn: [0.5, -0.2, 0.8], pole: [0.4, -1, -0.3] },
       after: { wr: [0.27, -0.2, -0.03], hd: [0.35, -0.9, -0.15], pn: [0.9, 0, 0.2], pole: [0.3, -1, 0.2] },
       settle: { wr: [0.17, -0.27, 0.05], hd: [0.15, -0.95, 0.2], pn: [-0.9, 0, 0.2], pole: [0.4, -1, -0.2] } })[name]; };
   const bravo = { wr: [0.1, -0.03, 0.15], hd: [-0.15, 0.85, 0.5], pn: [0.3, 0.2, 1], pole: [0.7, -1, -0.1] };      // Marie's other (right, near) hand: open, up, "bravo"
   const pose = (F, name, c, extra) => { const T = A(F, name), fix = T ? [momArm(F.side, T)] : []; if (extra) fix.push(extra); return momPose(c || F.c, Object.assign({}, F.o, { x: F.x, fix }, name === "hit" ? { armK: HF.stretch } : null), K0); };
   const cMb = withWd(M.c, w => { w.curlR = 0.05; });
-  const PM = [[0, pose(M, "rest")], [400, pose(M, "wind2")], [620, pose(M, "hit")], [720, pose(M, "after")], [950, pose(M, "settle", cMb, keyArm("R", () => bravo))]];
-  const PY = [[0, pose(Y, "rest")], [400, pose(Y, "wind2")], [620, pose(Y, "hit")], [720, pose(Y, "after")], [950, pose(Y, "rest")]];      // (the learner settles as at rest: drawn once, used twice)
+  /* the drawings (ms from which each shows; C the contact): rest, the arm half up (C - 620), up and back (C - 340), the hands together (C, held
+     150 ms as in the reference), on their way down (C + 150), down and out (C + 360), at rest (C + 660) */
+  const C = HF.contact;
+  const PM = [[0, pose(M, "rest")], [C - 620, pose(M, "wind1")], [C - 340, pose(M, "wind2")], [C, pose(M, "hit")], [C + 150, pose(M, "swing")], [C + 360, pose(M, "after")], [C + 660, pose(M, "settle", cMb, keyArm("R", () => bravo))]];
+  const PY = [[0, pose(Y, "rest")], [C - 620, pose(Y, "wind1")], [C - 340, pose(Y, "wind2")], [C, pose(Y, "hit")], [C + 150, pose(Y, "swing")], [C + 360, pose(Y, "after")], [C + 660, pose(Y, "rest")]];      // (the learner settles as at rest: drawn once, used twice)
+  /* the moves between the drawings (ms): the step 0-720 with a bob at 360; the lean in 720-1150, held through the contact (the hands together 100 ms, as in the reference), out by 1800; the
+     snap: a stretch at C - 30, a squash at C + 13, recovered at C + 100 (crisp: not slowed with the rest); the learner's hop after it (a crouch
+     at C + 100, up at C + 284, down at C + 514: about 0.36 s in the air, a hop's own time), a little bounce and a drift */
   const st = HF.step, lean = HF.lean;
   const figM = { u: uM, defs: PM[0][1].defs, poses: PM.map(([t, p]) => ({ t, list: p.list, u: uM })), move: { cx: M.x, cy: HF.gy,
-    tr: [[0, -st, 0], [175, -st / 2, -2.5], [350, 0, 0], [900, 0, 0], [1200, -3, 0]], rot: [[0, 0], [350, 0], [560, lean], [660, lean], [760, lean * 0.4], [900, 0]], sq: [[0, 1, 1], [450, 1, 1], [600, 0.99, 1.03], [630, 1.03, 0.965], [700, 1, 1]] } };
+    tr: [[0, -st, 0], [360, -st / 2, -2.5], [720, 0, 0], [1800, 0, 0], [2360, -3, 0]], rot: [[0, 0], [720, 0], [1150, lean], [C + 100, lean], [C + 240, lean * 0.4], [1800, 0]], sq: [[0, 1, 1], [920, 1, 1], [C - 30, 0.99, 1.03], [C + 13, 1.03, 0.965], [C + 100, 1, 1]] } };
   const figY = { u: uY, defs: PY[0][1].defs, poses: PY.map(([t, p]) => ({ t, list: p.list, u: uY })), move: { cx: Y.x, cy: HF.gy,
-    tr: [[0, st, 0], [175, st / 2, -2.5], [350, 0, 0], [700, 0, 0], [780, 1, -11], [880, 2, 0], [940, 3, -2.5], [1000, 3, 0], [1200, 4, 0]], rot: [[0, 0], [350, 0], [560, -lean], [660, -lean], [760, -lean * 0.4], [900, 0]],
-    sq: [[0, 1, 1], [450, 1, 1], [600, 0.99, 1.03], [630, 1.03, 0.965], [700, 1.04, 0.94], [760, 0.97, 1.05], [880, 1.04, 0.95], [960, 1, 1]] } };
+    tr: [[0, st, 0], [360, st / 2, -2.5], [720, 0, 0], [C + 100, 0, 0], [C + 284, 1, -11], [C + 514, 2, 0], [1880, 3, -2.5], [1960, 3, 0], [2360, 4, 0]], rot: [[0, 0], [720, 0], [1150, -lean], [C + 100, -lean], [C + 240, -lean * 0.4], [1800, 0]],
+    sq: [[0, 1, 1], [920, 1, 1], [C - 30, 0.99, 1.03], [C + 13, 1.03, 0.965], [C + 100, 1.04, 0.94], [C + 160, 0.97, 1.05], [C + 514, 1.04, 0.95], [1920, 1, 1]] } };
   const g = mk(momFilm([figM, figY], HF.dur));
   g.setAttribute("data-contact", String(HF.contact)); g.setAttribute("data-dur", String(HF.dur)); g.setAttribute("data-hand", `160 ${f1(yC)}`);
   return g; }
