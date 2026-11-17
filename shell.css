@@ -860,3 +860,82 @@ html[data-motion="less"] #tlyHost > .rkc,html[data-motion="less"] #tlyHost > .rk
 .rk-em .rk-hot{inset:-34%;border-radius:50%;background:radial-gradient(circle, #FFFFFF 0%, rgba(255,246,214,.95) 22%, rgba(255,196,90,.55) 42%, rgba(255,196,90,0) 66%);opacity:0;z-index:3;pointer-events:none}
 .sD .rk-names{min-height:0} .rkc .rk-gift{top:calc(var(--sat,0px) + 200px)}
 @media (max-height:760px){ .rkc .rk-gift{top:calc(var(--sat,0px) + 174px)} }
+/* (ward2, 17 Nov) the emblem's material, small under the rank's name: the anniversary order, rising */
+.rmat{display:inline-flex;align-items:center;gap:5px;margin-top:3px;padding:2px 8px 2px 6px;border-radius:999px;background:var(--paper-2);font:700 12px/1.25 var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.rmat::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--mat,#ccc);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.m-paper{--mat:#F3ECDA} .m-cotton{--mat:#F4F6F9} .m-leather{--mat:#9E5F33} .m-linen{--mat:#DED2B6} .m-wood{--mat:#AD7944} .m-iron{--mat:#767C84} .m-wool{--mat:#B4463E}
+.m-bronze{--mat:#C5844A} .m-pottery{--mat:#C46D46} .m-tin{--mat:#BEC4CB} .m-steel{--mat:#94A2B0} .m-silk{--mat:#E098AA} .m-lace{--mat:#F8F4F8} .m-ivory{--mat:#F4EDD4}
+.m-crystal{--mat:#C9E8F8} .m-china{--mat:#2A4E9B} .m-silver{--mat:#CDD3DB} .m-pearl{--mat:#F1E7EF} .m-coral{--mat:#EE7D63} .m-ruby{--mat:#B33A4C} .m-sapphire{--mat:#4362B5}
+.m-gold{--mat:#E8BD49} .m-emerald{--mat:#2D9767} .m-diamond{--mat:#E5F3FB} .m-bluesapphire{--mat:#253FA5} .m-platinum{--mat:#D6DCE3}
+.wme .rmat{margin-top:0}
+.rk-name .rmat,.rk-oname .rmat{margin-top:8px;font-size:13px;background:rgba(255,255,255,.75)}
+.k-jubilee .rk-name .rmat{background:#FFF3C4;color:#6B4A00}
+.k-jubilee.warm .rk-rays{opacity:1}
+/* the wardrobe's tiers: a header "Tier 3: Scarves and ties", and the price, or "Locked" */
+.wtr{margin-top:4px} .wtn{color:var(--ink-2);font-weight:700}
+.wtr.locked .gh.wh{color:var(--ink-3)} .wtr.locked .wtn{color:var(--ink-3)}
+.wtier.wl{gap:5px;padding:4px 9px 4px 7px;border-radius:999px;background:var(--paper-2);color:var(--ink-2)} .wtier.wl .icon{width:15px;height:15px;stroke-width:2.8}
+.wlockb{display:flex;width:100%;margin:0 0 8px;padding:0;border:0;background:none;font:600 15px/1.3 var(--font-ui);color:var(--ink-2);text-align:left;cursor:pointer}
+.wopen{display:flex;align-items:center;gap:6px} .wopen .icon{flex:none;width:16px;height:16px;stroke-width:2.8;color:var(--ink-3)} .wopen b,.wopen{font-weight:600}
+.ren-i{color:var(--ink-3)}
+.wsoon{margin:0 0 8px;font:600 15px/1.3 var(--font-ui);color:var(--ink-3)}
+/* the four states, unmistakable: LOCKED grey with question marks and a lock; UNLOCKED in colour with the price and Buy; BOUGHT "Yours", "Wear it"; WORN a tick, "Wearing" */
+.witem.lock{cursor:pointer;background:var(--paper-2);border-color:var(--line);box-shadow:none;filter:grayscale(1)}
+.witem.lock .wfr{color:var(--ink-3);letter-spacing:.2em} .witem.lock .wen{color:var(--ink-3);font-weight:700}
+.wq-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wthumb.wq{display:grid;place-items:center;background:repeating-linear-gradient(135deg,#E6E8EB 0 10px,#DDE0E4 10px 20px);overflow:hidden}
+.wqm{font:800 54px/1 var(--font-display);color:#B4BAC2}
+.wlk{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;background:#6B7480;color:#fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.25)} .wlk .icon{width:20px;height:20px;stroke-width:2.8}
+.wthumb.wq.big .wqm{font-size:84px} .wthumb.wq.big .wlk{width:46px;height:46px;right:12px;bottom:12px} .wthumb.wq.big .wlk .icon{width:26px;height:26px}
+#sheet .wlockbig .wthumb{display:grid;aspect-ratio:160/190;border-radius:16px;position:relative}
+.witem.open .wprice{gap:5px} .wbuy{margin-left:4px;padding:4px 10px;border-radius:999px;background:var(--ink);color:#fff;font:800 14px/1 var(--font-ui)}
+.witem.open:not(.can) .wbuy{background:var(--paper-3);color:var(--ink-2)}
+.wown{position:absolute;top:6px;left:6px;padding:4px 8px;border-radius:999px;background:var(--speak-tint,#E3F3E6);color:var(--speak-deep);font:800 12px/1 var(--font-ui);letter-spacing:.04em}
+.witem.own .wprice{color:var(--speak-deep);font-weight:800}
+.witem.on{border:3px solid var(--speak);background:var(--speak-tint,#F1FAF2)} .witem.on .wprice{color:var(--speak-deep);font-weight:800}
+.won{width:32px;height:32px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+/* the rank-up's strip: locked things as in the wardrobe; the new tier's things start locked and open when the stamp lands */
+.rk-it.lock{background:#E6E8EB;filter:grayscale(1)} .rk-it.lock .pr{color:var(--ink-3)} .rk-it.lock .pr .icon{color:var(--ink-3)}
+.rk-it .th{position:relative} .rq{display:grid;place-items:center;height:100%;font:800 46px/1 var(--font-display);color:#B4BAC2}
+.rk-it.lock .th{background:repeating-linear-gradient(135deg,#E6E8EB 0 10px,#DDE0E4 10px 20px)}
+.rk-it{position:relative} .rk-q{position:absolute;inset:0 0 26px;display:grid;place-items:center;background:repeating-linear-gradient(135deg,#E6E8EB 0 10px,#DDE0E4 10px 20px);transition:opacity 260ms 120ms, transform 260ms 120ms}
+.rk-q .icon{position:absolute;right:6px;bottom:6px;width:26px;height:26px;padding:4px;border-radius:50%;background:#6B7480;color:#fff;stroke-width:2.8}
+.lit .rk-it.lk .rk-q{opacity:0;transform:scale(1.15)}
+.rk-it.lk .th{filter:grayscale(1)} .lit .rk-it.lk .th{filter:none;transition:filter 300ms 120ms}
+.wq-btn{margin:0}.wq-btn .wq-grid{width:100%}
+/* the locked tiers after the next one: small tiles, so all 49 categories can be seen down the page */
+.wq-grid.sm{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px} .wq-grid.sm .witem{padding:4px;border-radius:12px} .wq-grid.sm .wthumb{aspect-ratio:1;border-radius:9px}
+.wq-grid.sm .wfr,.wq-grid.sm .wen{display:none} .wq-grid.sm .wqm{font-size:30px} .wq-grid.sm .wlk{width:22px;height:22px;right:3px;bottom:3px} .wq-grid.sm .wlk .icon{width:13px;height:13px;stroke-width:3}
+.wtr.locked .wlockb{margin-bottom:6px} .wtr.locked + .wtr.locked .gh.wh{margin-top:14px}
+/* (ward2) the tier unlock in the rank-up: the tier's cards, dark with "?", a padlock over them; the shackle springs; the cards turn over */
+.rk-unl{position:relative;padding:12px 0 14px}
+.rk-unl .rk-wh small.rk-ust{font:800 13px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)} .lit .rk-unl .rk-ust{color:var(--speak-deep)}
+.rk-ust .u{display:none} .lit .rk-ust .l{display:none} .lit .rk-ust .u{display:inline}
+.rk-cards{position:relative;display:flex;justify-content:center;gap:8px;padding:10px 12px 4px;perspective:600px;min-height:132px}
+.rk-c{position:relative;flex:1 1 0;max-width:74px;aspect-ratio:160/226;border-radius:12px;background:var(--paper);border:2px solid var(--line);display:grid;grid-template-rows:1fr auto;overflow:hidden;transform-style:preserve-3d}
+.rk-c .th{display:block;min-height:0;overflow:hidden} .rk-c .th svg{width:100%;height:100%;display:block}
+.rk-c .pr{display:flex;align-items:center;justify-content:center;gap:3px;padding:3px 0 5px;background:var(--card);font:700 13px/1 var(--font-ui);color:var(--ink)} .rk-c .pr .tokn{width:14px;height:14px}
+.rk-c .rk-q{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(160deg,#4A5262,#2E3440);border-radius:10px}
+.rk-c .rq{font:800 34px/1 var(--font-display);color:#8E97A6}
+.rk-c.rev .rk-q{display:none} .rk-c.show.rev{border-color:var(--ring-gold);box-shadow:0 0 0 2px rgba(243,179,61,.35)}
+.rk-lock{position:absolute;left:calc(50% - 34px);top:22px;width:68px;height:84px;z-index:3;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));transform-origin:50% 60%}
+.rk-lock svg{width:100%;height:100%;display:block;overflow:visible} .rk-shk{transform-box:view-box;transform-origin:43px 34px}
+.rk-lock.gone{display:none}
+.rk-unl .rk-cap{opacity:0;transition:opacity 300ms} .lit .rk-unl .rk-cap{opacity:1}
+/* (ward2) saving for one thing: a card at the top of the wardrobe, its progress in tokens; showpieces marked; "Save up" on what is not affordable */
+.card.wgoal{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center;width:100%;margin-top:12px;padding:10px 14px;text-align:left;cursor:pointer;border:2px solid var(--ring-gold);background:linear-gradient(180deg,#FFF8E6,var(--card))}
+.wg-th{display:block;width:64px;aspect-ratio:160/190;border-radius:10px;overflow:hidden;background:var(--paper)} .wg-th svg{width:100%;height:100%;display:block}
+.wg-t{display:grid;gap:4px;min-width:0} .wg-t small{font:800 12px/1 var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:#8F5600} .wg-t b{font:700 17px/1.2 var(--font-ui);color:var(--ink)}
+.wg-bar{display:block;height:10px;border-radius:6px;background:var(--paper-3);overflow:hidden} .wg-bar i{display:block;height:100%;width:calc(var(--f)*100%);background:linear-gradient(90deg,#F3B33D,#E3A417);border-radius:6px}
+.wg-n{display:flex;align-items:center;gap:5px;font:700 15px/1 var(--font-ui);color:var(--ink-2)} .wg-n .tokn{width:18px;height:18px} .wg-n b{color:var(--ink);font-size:17px} .wg-n em{font-style:normal;color:var(--speak-deep);font-weight:800;margin-left:6px}
+.wshow{position:absolute;top:6px;left:6px;display:inline-flex;align-items:center;gap:3px;padding:3px 7px 3px 5px;border-radius:999px;background:#FFF3C4;color:#7A5000;font:800 11px/1 var(--font-ui);letter-spacing:.03em;box-shadow:0 1px 3px rgba(0,0,0,.15)} .wshow .icon{width:12px;height:12px;color:#E3A417}
+.witem.show{border-color:#EBCB7A} .witem.goal{border:2.5px solid var(--ring-gold);box-shadow:var(--e1),0 0 0 3px rgba(243,179,61,.25)}
+.wbuy.save{background:#FFF3C4;color:#7A5000} .witem.goal .wbuy.save{background:var(--ring-gold);color:#fff}
+.witem .wbuy{white-space:nowrap} .witem .wbuy.save{background:#FFF3C4;color:#7A5000;padding:4px 8px;font-size:13px} .witem.goal .wbuy.save{background:var(--ring-gold);color:#fff} .wprice .tokn{flex:none}
+.rk-unl{overflow:hidden;min-width:0} .rk-unl .rk-wh{min-width:0} .rk-unl .rk-wh b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .rk-unl .rk-wh small{flex:none}
+.rk-c{min-width:0} .rk-unl .rk-cap b{font-size:17px}
+.sD .rk-gift > .rk-btns{animation-delay:3500ms}      /* the buttons after the tier has opened */
+/* (ward2) the tally's token line: a perfect lesson's tokens, flying into the counter */
+.ty-tok{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:12px auto 0;width:min(340px,100%);padding:9px 14px;border-radius:14px;background:#FFF6DA;border:1px solid #EBD7A6;opacity:0;transform:translateY(8px);transition:opacity 260ms, transform 360ms var(--spring)}
+.ty-tok.in{opacity:1;transform:none} .ty-tl{display:flex;align-items:center;gap:7px;font:700 16px/1.2 var(--font-ui);color:var(--ink)} .ty-tl b{color:#8F5600;font-size:19px}
+.ty-tok .tokn{width:22px;height:22px;flex:none} .ty-tc{display:flex;align-items:center;gap:5px;font:700 19px/1 var(--font-ui);color:var(--ink)} .ty-tc.bump{animation:tcBump 260ms var(--spring)} @keyframes tcBump{40%{transform:scale(1.18)}}

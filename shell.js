@@ -43,8 +43,9 @@ const SHELL = (()=>{
                                       // day (as Duolingo's 2026 streak revival), or tokens by its length (5 under 30 days, 10 under 100, then 15)
     STREAK_LATE_HOUR: 20,             // (work) from this hour a day with no lesson yet says "still time today" (sun-coloured, never red)
     GOAL_EASY_BY: 2, GOAL_RISE: 1,    // (work) a week's goal met with 2 or more to spare rises by 1 next week; missed, it falls to where it will be met
-    RANKS: [8,28,45,100,140,230,330,430,600,770,930,1100,1400,1740,2020,2290,2610,3000,3500,4000,4400,4900,5300,5700,6100,6500,7100,7600,8300,9100,9900,10900,12000,13200,14600,16200,18000,20000,22100,24400,27000,29800,33000,36500,40500,45000,50500,56000,62500],      // (17 Nov) points for ranks 2..50 (rank 1, Débutant, is the start): the 50 of Halo: Reach's shape, under mastery (1 point an exercise); dev/design/tools/rankup/tally/ranks50.py
-    RANK_TOKENS: [1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,6,6,6,6,6,6,6,6,10,10,10,10,10,10,12,12,12,12,12,12,12,12,12,12,12,12,12,12,60],      // (17 Nov) tokens each rank gives, never fewer than the rank before: something new in the wardrobe about every rank or two, all the way up
+    RANKS: [8,28,75,140,230,430,660,930,1400,1910,2500,3300,4200,5100,5900,6800,8000,9500,11500,14100,17400,21500,24400,29800,40000,50500,62500],      // (17 Nov, Jon: "option c") points for ranks 1..27 (rank 0, Débutant, is the start): gaps in lessons growing by a quarter a rank, the first inside Lesson 1, the last at 62,500; never a smaller share of the ladder than the 50 ranks gave (dev/design/tools/ward2/sim.py)
+    RANK_TOKENS: [6,6,6,6,6,7,7,8,8,9,9,10,10,12,14,18,20,30,35,45,55,55,80,155,155,185,370],      // (17 Nov, Jon: "the big token tranch for rank up and also the trickle") the tranche of each rank-up: about half of what the perfect lessons bring until the next one, never fewer than the rank before; the tier it opens prices its cheap things at about 60 % of that income and its showpieces at about two of it (sim.py: a spender and a saver)
+    TOKENS_PER_PERFECT_LESSON: 2,     // (Jon, 17 Nov: "it's per perfect lesson") tokens when a lesson becomes perfect on a full run (every answer right first time: the rosette's rule), once a lesson; not for one exercise or Go for perfect
     LEARNER_FIGURE_ON: !/[?&]learner=off/.test(location.search),      // the course's "you" drawn from the learner's own figure (PICS.setLearner; the close-ups keep the default learner, by the picture library's own guard); ?learner=off for the default everywhere      // the tester's door: ?gate=off runs the lessons straight through (for scripted runs with errors)
   };
   const uid = USERS.current, GK="frDIn.g."+uid, AK=id=>"frDIn.a."+id;
@@ -286,23 +287,20 @@ const SHELL = (()=>{
   /* ---- ranks from points (the owner's Halo Reach model, brief 13 and 15): stated thresholds that rise, the first inside Lesson 1; each rank
      earns tokens, more at higher ranks; tokens buy things in the wardrobe. Points are never spent and never fall; ranks are never lost.
      The numbers come from a simulation over the whole course (dev/design/RANKS.md in the private bundle). ---- */
-  // (17 Nov; the owner: "rather than having the grades, it'd be better to have all unique ranks ... put the English in brackets beneath the
-  // ranks ... each rank is a logical progression") fifty ranks, each its own title: his form, her form, the English; ten tiers of five
-  // (first steps, the road, settling in, talk, the written word, knowledge, the arts, teaching, honour, the highest), each tier its metal
-  const TITLES = [["Débutant","Débutante","Beginner"],["Curieux","Curieuse","Curious one"],["Visiteur","Visiteuse","Visitor"],["Touriste","Touriste","Tourist"],["Promeneur","Promeneuse","Stroller"],
-    ["Voyageur","Voyageuse","Traveller"],["Flâneur","Flâneuse","Wanderer"],["Explorateur","Exploratrice","Explorer"],["Aventurier","Aventurière","Adventurer"],["Globe-trotteur","Globe-trotteuse","Globetrotter"],
-    ["Invité","Invitée","Guest"],["Voisin","Voisine","Neighbour"],["Habitué","Habituée","Regular"],["Résident","Résidente","Resident"],["Initié","Initiée","Insider"],
-    ["Interlocuteur","Interlocutrice","Conversation partner"],["Causeur","Causeuse","Conversationalist"],["Raconteur","Raconteuse","Storyteller"],["Débatteur","Débatteuse","Debater"],["Orateur","Oratrice","Orator"],
-    ["Lecteur","Lectrice","Reader"],["Chroniqueur","Chroniqueuse","Columnist"],["Écrivain","Écrivaine","Writer"],["Poète","Poète","Poet"],["Dramaturge","Dramaturge","Playwright"],
-    ["Connaisseur","Connaisseuse","Connoisseur"],["Lettré","Lettrée","Well-read"],["Érudit","Érudite","Scholar"],["Savant","Savante","Learned one"],["Philosophe","Philosophe","Philosopher"],
-    ["Artiste","Artiste","Artist"],["Esthète","Esthète","Aesthete"],["Mécène","Mécène","Patron of the arts"],["Virtuose","Virtuose","Virtuoso"],["Prodige","Prodige","Prodigy"],
-    ["Guide","Guide","Guide"],["Professeur","Professeure","Teacher"],["Mentor","Mentore","Mentor"],["Expert","Experte","Expert"],["Maître","Maître","Master"],
-    ["Diplomate","Diplomate","Diplomat"],["Ambassadeur","Ambassadrice","Ambassador"],["Sage","Sage","Sage"],["Éminence","Éminence","Eminence"],["Lauréat","Lauréate","Laureate"],
-    ["Académicien","Académicienne","Academician"],["Icône","Icône","Icon"],["Légende","Légende","Legend"],["Mythe","Mythe","Myth"],["Immortel","Immortelle","Immortal"]];
+  // (17 Nov; Jon: "the user needs to feel that each rank is higher than the one before"; then, of the three ways in
+  // dev/design/ranks/LADDER_PROPOSAL.md: "option c"; Causeur left out: "causeuse" is first a small sofa, and no other word steps cleanly between Interlocuteur and Raconteur) twenty-eight ranks on one line, every step from one to the next judged CLEAR: from the
+  // first steps (learning, reading, talking) to the press, the page and the hall, the university, mastery and honour. His form, her form, the
+  // English beneath. No tiers of ranks: each emblem's material climbs the wedding anniversaries instead.
+  const TITLES = [["Débutant","Débutante","Beginner"],["Apprenti","Apprentie","Apprentice"],["Lecteur","Lectrice","Reader"],["Interlocuteur","Interlocutrice","Conversation partner"],
+    ["Raconteur","Raconteuse","Storyteller"],["Reporter","Reporter","Reporter"],["Chroniqueur","Chroniqueuse","Columnist"],
+    ["Éditorialiste","Éditorialiste","Leader writer"],["Rédacteur en chef","Rédactrice en chef","Editor-in-chief"],["Écrivain","Écrivaine","Writer"],["Orateur","Oratrice","Orator"],
+    ["Lettré","Lettrée","Well-read"],["Expert","Experte","Expert"],["Docteur","Docteure","Doctor of letters"],["Maître de conférences","Maître de conférences","Senior lecturer"],
+    ["Professeur","Professeure","Professor"],["Mentor","Mentor","Mentor"],["Érudit","Érudite","Scholar"],["Virtuose","Virtuose","Virtuoso"],["Maître","Maître","Master"],
+    ["Grand maître","Grand maître","Grand master"],["Ambassadeur","Ambassadrice","Ambassador"],["Sage","Sage","Sage"],["Lauréat","Lauréate","Laureate"],
+    ["Académicien","Académicienne","Academician"],["Icône","Icône","Icon"],["Légende","Légende","Legend"],["Immortel","Immortelle","Immortal"]];
   const rankOf = p=>{ let k=0; RULES.RANKS.forEach((t,i)=>{ if(p>=t) k=i+1; }); return k; };      // 0: the start (Débutant); 1..49
   const rankAt = k=>Math.max(0, Math.min(TITLES.length-1, k|0));
   const rankTitle = k=>rankAt(k);      // every rank is its own title
-  const rankGrade = k=>0;              // no grades (the owner, 17 Nov)
   const fem = ()=>{ try{ return AV.has() && AV.own() ? PICS.avatarParse(AV.own()).body==="f" : S.learnerGender==="f"; }catch(e){ return false; } };
   const rankName = k=>TITLES[rankAt(k)][fem()?1:0];
   const rankEn = k=>TITLES[rankAt(k)][2];
@@ -311,12 +309,19 @@ const SHELL = (()=>{
   // the name, the English beneath it in brackets (wherever a rank is shown)
   const rankHtml = k=>`${esc(rankName(k))}<small class="ren">(${esc(rankEn(k))})</small>`;
   const tokensFor = k=>k>=1 ? RULES.RANK_TOKENS[k-1] : 0;
-  // (17 Nov) a record from before the 50 ranks: its points kept; its rank now from them on the new ladder (never lower: tools/rankup/tally/ranks50.py
-  // checks every points value); the tokens the new ranks give beyond what the old ones gave are added, none ever taken away
+  /* (ward2) THE SOURCES OF TOKENS, all through earn(): a rank-up (RULES.RANK_TOKENS, rankSync), a streak's milestone (RULES.STREAK_MILESTONES,
+     streakLesson), a ladder's migration (ranksNow), and the trickle: a perfect lesson (RULES.TOKENS_PER_PERFECT_LESSON, once a lesson, shown in the
+     lesson's tally). Spending: the wardrobe, the streak's freezes and repairs. */
+  const earn = n=>{ n=Math.max(0, Math.round(n)||0); G.tokens=(G.tokens||0)+n; G.tokEarned=(G.tokEarned||0)+n; return n; };
+  // (17 Nov, Jon: option c) a record from before the 28 ranks (the 34 of .70-.77, or the 50 of .78-.79) keeps its points and its tokens; its
+  // rank is now from its points on this ladder (a smaller number, never a smaller share of the ladder: sim.py checks every points value below
+  // 36,500, which nobody has passed); the tokens this ladder gives up to that rank, beyond those the old ranks gave, are added; none are taken
   const OLD_TOKENS=[1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,4,4,4,6,6,6,8,8,8,10,10,10,20,20,20,25,25,25,60];
-  function ranks50(){ if(G.rv===50) return; if(G.rank==null){ G.rv=50; return; } const k=rankOf(G.points||0), oldT=OLD_TOKENS.slice(0, Math.max(0, Math.min(34, G.rank))).reduce((a,x)=>a+x,0), newT=RULES.RANK_TOKENS.slice(0, k).reduce((a,x)=>a+x,0), add=Math.max(0, newT-oldT);
-    try{ trace("the 50 ranks: old rank "+G.rank+" of 34 at "+G.points+" points becomes "+rankName(k)+" ("+(k+1)+" of 50); tokens +"+add); }catch(e){}
-    G.rank=k; G.tokens=(G.tokens||0)+add; G.tokEarned=(G.tokEarned||0)+add; G.rv=50; }
+  const OLD50_TOKENS=[1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,6,6,6,6,6,6,6,6,10,10,10,10,10,10,12,12,12,12,12,12,12,12,12,12,12,12,12,12,60];
+  function ranksNow(){ if(G.rv===28) return; if(G.rank==null){ G.rv=28; return; } const old = G.rv===50 ? OLD50_TOKENS : OLD_TOKENS, k=rankOf(G.points||0),
+      oldT=old.slice(0, Math.max(0, Math.min(old.length, G.rank))).reduce((a,x)=>a+x,0), newT=RULES.RANK_TOKENS.slice(0, k).reduce((a,x)=>a+x,0), add=Math.max(0, newT-oldT);
+    try{ trace("the 28 ranks: rank "+G.rank+" of "+(G.rv===50 ? 50 : 34)+" at "+G.points+" points becomes "+rankName(k)+" ("+k+" of 27); tokens +"+add); }catch(e){}
+    G.rank=k; earn(add); G.rv=28; }
   // the emblem: a shield in its tier's metal, with its own rank's sign (fifty shields, no two alike)
   const SIGN = {
     sprout:`<path d="M10 18V10M10 12c0-4-3-6-7-6 0 4 3 6 7 6M10 10c0-4 3-6 7-6 0 4-3 6-7 6"/>`,
@@ -368,27 +373,70 @@ const SHELL = (()=>{
     star:`<path d="M10 2.2l2.3 5 5.4.6-4 3.7 1.1 5.3L10 14.1l-4.8 2.7 1.1-5.3-4-3.7 5.4-.6z" fill="currentColor"/>`,
     comet:`<circle cx="13.5" cy="6.5" r="3" fill="currentColor"/><path d="M11.2 8.8L3 17M10.5 6.2L4.5 12.2M13.8 9.5L7.8 15.5"/>`,
     moon:`<path d="M13.5 16.5A7 7 0 0 1 8.5 3.5a7 7 0 1 0 5 13z"/><path d="M15 4.5l.7 1.6 1.7.2-1.3 1.1.4 1.7-1.5-.9-1.5.9.4-1.7-1.3-1.1 1.7-.2z" fill="currentColor"/>`,
+    lectern:`<path d="M4 5.5h12l-2.2 4.5H6.2zM10 10v7M6 17.5h8"/>`,
+    sash:`<path d="M4.5 2.5L15 15M3 2.5h3.5M13.5 15H17"/><circle cx="12" cy="12" r="3" fill="currentColor"/>`,
     laurel:`<path d="M10 17.5C4 16 2.5 10 4 4.5M10 17.5c6-1.5 7.5-7.5 6-13"/><path d="M4 8.5c-2-.3-3-1.7-2.5-3.4 1.8.3 2.6 1.8 2.5 3.4zM5 12.5c-2.2.3-3.6-.8-3.6-2.6 2-.2 3.2 1 3.6 2.6zM16 8.5c2-.3 3-1.7 2.5-3.4-1.8.3-2.6 1.8-2.5 3.4zM15 12.5c2.2.3 3.6-.8 3.6-2.6-2-.2-3.2 1-3.6 2.6z" fill="currentColor" stroke="none"/>` };
-  const RSIGN = ["sprout","lens","door","camera","signpost", "suitcase","hat","compass","mountain","globe", "letter","house","cup","key","heart", "word","talk","story","scales","voice",
-    "book","paper","nib","quill","masks", "wine","scroll","books","lamp","column", "palette","flower","gem","music","spark", "flag","board","torch","target","crown",
-    "olive","order","eye","sun","medal", "academy","star","comet","moon","laurel"];
+  const RSIGN = ["sprout","lens","book","talk","story","nib","paper","scales","column","quill","lectern","scroll","target","lamp","board","torch",
+    "heart","eye","music","crown","order","sash","sun","medal","academy","star","comet","laurel"];      // one sign a rank, no two alike
   const GLYPH = RSIGN.map(n=>SIGN[n]);
-  const METAL = { plain:["#FFFDF8","#E3D9C6","#9A8C72","#5C6577"], bronze:["#E2A56A","#A8652E","#7A4519","#FFF6EA"], silver:["#EEF1F5","#A7B1BE","#6E7A8A","#2D3747"],
-    gold:["#FAD978","#D9A21E","#946500","#4A3000"], enamel:["#3E62B8","#22397A","#C79A2B","#FFE9A8"], ruby:["#D25668","#86202F","#C79A2B","#FFE9A8"], amethyst:["#9A6BD0","#4F2E86","#C79A2B","#FFE9A8"],
-    teal:["#2BA3A8","#155E66","#D6A62C","#FFF3C4"], night:["#3A4A7A","#141B38","#D6A62C","#FFE9A8"], laurel:["#2F7A57","#1B4D36","#D6A62C","#FFE9A8"] };
-  const TIER = ["plain","bronze","silver","gold","enamel","ruby","amethyst","teal","night","laurel"];      // ten tiers of five ranks
-  const tierOf = k=>Math.min(9, Math.floor(rankAt(k)/5));
-  const gradeMarks = ()=>"";
-  function rankEmblem(k, cls="emb"){ const t=rankAt(k), m=TIER[tierOf(k)];
-    const [hi, lo, rim, ink]=METAL[m], u="em"+k+cls.replace(/\W/g,"");
-    return `<svg class="${cls}" viewBox="0 0 56 64" role="img" aria-label="${esc(rankLabel(k))}"><defs><linearGradient id="${u}" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient></defs>
-      <path d="M28 3.5l20.5 6v20.5c0 14.5-9 22.5-20.5 28.5C16.5 52.5 7.5 44.5 7.5 30V9.5z" fill="url(#${u})" stroke="${rim}" stroke-width="2.2" stroke-linejoin="round"/>
+  /* (17 Nov; the owner: "The metals don't make sense currently. Better would be copying the marriage metals / jubilee UK royal metals") each
+     emblem's material climbs the wedding anniversaries: the first fifteen years one a rank (paper, cotton, leather ... crystal), then china,
+     silver, pearl, coral, ruby, sapphire, gold, emerald, diamond, blue sapphire, one or two ranks each, and platinum for the Immortel alone.
+     The material only rises. The royal jubilees (Silver, Ruby, Golden, Diamond, Sapphire, Platinum) are the milestones: the first rank in
+     each is the biggest ceremony. [id, name, years, light, dark, rim, ink, texture, jubilee] */
+  const MATERIALS = [
+    ["paper","Paper",1,"#FFFDF6","#E9E1CD","#B4A887","#5C5446","ruled"], ["cotton","Cotton",2,"#FFFFFF","#E4E9F0","#A7B2C0","#4A5568","hatch"],
+    ["leather","Leather",3,"#C4834B","#7E4722","#4F2A12","#FFEBD2","stitch"], ["linen","Linen",4,"#F1E9D6","#CDBE9C","#988763","#4D4330","weave"],
+    ["wood","Wood",5,"#CF9C60","#8C5B2C","#5A3818","#FFF1DC","grain"], ["iron","Iron",6,"#99A0A8","#565C64","#33373D","#F3F5F8","rivets"],
+    ["wool","Wool",7,"#D35E54","#93312A","#5E1E19","#FFF4EC","knit"], ["bronze","Bronze",8,"#E2A56A","#A8652E","#7A4519","#FFF6EA","sheen"],
+    ["pottery","Pottery",9,"#DE8A62","#A5502E","#6E3018","#FFF1E6","bands"], ["tin","Tin",10,"#DCE0E5","#A2AAB3","#6F7781","#2D3747","sheen"],
+    ["steel","Steel",11,"#BCC8D4","#6C7C8D","#44505E","#F4F8FB","sheen"], ["silk","Silk",12,"#F5C1CD","#C9718A","#8C3F56","#FFF6F8","sheen"],
+    ["lace","Lace",13,"#FFFFFF","#F1ECF1","#C2B3C1","#6B5A6A","scallop"], ["ivory","Ivory",14,"#FFFCEC","#EADFBE","#B9A97E","#5E5233",""],
+    ["crystal","Crystal",15,"#EEF9FF","#A6D6EF","#5E9CC0","#1F4E6B","facets"], ["china","China",20,"#FFFFFF","#DCE5F4","#2A4E9B","#2A4E9B","willow"],
+    ["silver","Silver",25,"#F2F4F7","#A7B1BE","#6E7A8A","#2D3747","sheen","Silver"], ["pearl","Pearl",30,"#FFF9F3","#E5D6E5","#B6A1B6","#5B4A5A","pearl"],
+    ["coral","Coral",35,"#FFA287","#DE5C47","#A2382A","#FFF4EF",""], ["ruby","Ruby",40,"#E0566A","#8A1E2F","#C79A2B","#FFE9A8","facets","Ruby"],
+    ["sapphire","Sapphire",45,"#6182DA","#25418F","#C79A2B","#FFE9A8","facets"], ["gold","Gold",50,"#FAD978","#D9A21E","#946500","#4A3000","sheen","Golden"],
+    ["emerald","Emerald",55,"#46C48B","#14694A","#D6A62C","#FFF3C4","facets"], ["diamond","Diamond",60,"#FFFFFF","#CBE6F6","#86BEDF","#285877","facets","Diamond"],
+    ["bluesapphire","Blue sapphire",65,"#3D5EDB","#0F2270","#D6A62C","#FFE9A8","facets","Sapphire"], ["platinum","Platinum",70,"#F6F8FA","#B6BFCA","#7A8591","#1F2A36","sheen","Platinum"]];
+  // the material of each rank (an index into MATERIALS): ranks 0-14 one each, then one or two a material, platinum for the last. The table is
+  // for twenty-eight ranks; for any other number (the owner may choose fewer) the same rule is computed: the first ranks one material each, the rest
+  // spread evenly over china to blue sapphire, platinum for the last alone. Nothing here assumes fifty.
+  const MAT_OF = TITLES.length===28 ? [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14, 15,15, 16,16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+    : TITLES.map((_, k, a)=>{ const N=a.length, first=Math.min(15, Math.max(1, Math.round((N-1)*0.3))), last=MATERIALS.length-1; if(k===N-1) return last; if(k<first) return Math.round(k*14/Math.max(1, first-1));
+      return 15+Math.min(9, Math.floor((k-first)*10/Math.max(1, N-1-first))); });
+  const matOf = k=>MATERIALS[MAT_OF[rankAt(k)]];
+  const matName = k=>matOf(k)[1];
+  const jubileeOf = k=>{ const m=MAT_OF[rankAt(k)]; return MATERIALS[m][8] && MAT_OF.indexOf(m)===rankAt(k) ? MATERIALS[m][8] : ""; };      // "Silver" on the first rank in silver
+  const matHtml = k=>`<small class="rmat m-${matOf(k)[0]}">${esc(matName(k))}</small>`;      // the material's name, small, under the emblem's rank
+  // a texture for the material, inside the shield (a few strokes: lines of paper, stitches of leather, grain of wood, a sheen of metal, facets of a stone)
+  const TEXTURE = {
+    ruled:i=>`<path d="M8 20h40M8 26h40M8 32h40M8 38h40M8 44h40" stroke="${i}" stroke-opacity=".12" stroke-width=".8"/>`,
+    hatch:i=>`<path d="M4 14l40 40M14 8l40 40M4 26l30 30M24 4l30 30" stroke="${i}" stroke-opacity=".07" stroke-width="1"/>`,
+    stitch:i=>`<path d="M28 6.4l18 5.3v18.3c0 12.9-8 20-18 25.4-10-5.4-18-12.5-18-25.4V11.7z" fill="none" stroke="#FFE0B8" stroke-opacity=".55" stroke-width="1" stroke-dasharray="2 1.6"/>`,
+    weave:i=>`<path d="M6 16h44M6 22h44M6 28h44M6 34h44M6 40h44M14 6v52M20 6v52M26 6v52M32 6v52M38 6v52M44 6v52" stroke="${i}" stroke-opacity=".06" stroke-width=".9"/>`,
+    grain:i=>`<path d="M10 12c8 4 4 12 12 16s6 14 12 18M22 8c6 6 2 12 8 18s4 12 10 16M36 8c4 6 2 10 6 16" fill="none" stroke="#4A2C10" stroke-opacity=".22" stroke-width="1"/>`,
+    rivets:i=>`<g fill="#2A2E33" fill-opacity=".45"><circle cx="13" cy="14" r="1.3"/><circle cx="43" cy="14" r="1.3"/><circle cx="13" cy="34" r="1.3"/><circle cx="43" cy="34" r="1.3"/><circle cx="28" cy="52" r="1.3"/></g>`,
+    knit:i=>`<path d="M10 18l4 3 4-3 4 3 4-3 4 3 4-3 4 3 4-3 4 3M10 26l4 3 4-3 4 3 4-3 4 3 4-3 4 3 4-3 4 3M10 34l4 3 4-3 4 3 4-3 4 3 4-3 4 3 4-3 4 3M12 42l4 3 4-3 4 3 4-3 4 3 4-3 4 3 4-3" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1"/>`,
+    sheen:i=>`<path d="M4 34L34 4h8L4 42z" fill="#fff" fill-opacity=".28"/><path d="M4 46L46 4h3L4 49z" fill="#fff" fill-opacity=".2"/>`,
+    bands:i=>`<path d="M6 20h44M6 23h44M6 44h44M6 47h44" stroke="#5A2410" stroke-opacity=".3" stroke-width="1.4"/>`,
+    scallop:i=>`<path d="M28 7.6l17 5v17.4c0 12.2-7.6 19-17 24.2-9.4-5.2-17-12-17-24.2V12.6z" fill="none" stroke="#B9A5B8" stroke-width="1.6" stroke-dasharray=".1 3" stroke-linecap="round"/>`,
+    facets:i=>`<path d="M28 4L28 58M8 10L48 50M48 10L8 50M8 30h40" stroke="#fff" stroke-opacity=".22" stroke-width=".9"/><path d="M28 4l12 18-12 10-12-10z" fill="#fff" fill-opacity=".14"/>`,
+    willow:i=>`<path d="M28 8.3l16.2 4.8V30c0 11.4-6.9 18-16.2 23.2C18.7 48 11.8 41.4 11.8 30V13.1z" fill="none" stroke="${i}" stroke-opacity=".5" stroke-width="1.2"/><path d="M14 46c4-3 8 0 12-3s8 0 12-3" fill="none" stroke="${i}" stroke-opacity=".35" stroke-width="1"/>`,
+    pearl:i=>`<ellipse cx="22" cy="20" rx="12" ry="8" fill="#fff" fill-opacity=".45"/><ellipse cx="34" cy="40" rx="10" ry="7" fill="#F7D9EA" fill-opacity=".35"/>` };
+  // the Immortel's emblem alone: a gold laurel wreath round the platinum shield (the Académie's own laurel)
+  const WREATH = `<g fill="#D6A62C" stroke="#8C6400" stroke-width=".5"><path d="M28 61.5C14 58 4 46 3.2 20" fill="none" stroke="#B8891A" stroke-width="1.4"/><path d="M28 61.5C42 58 52 46 52.8 20" fill="none" stroke="#B8891A" stroke-width="1.4"/>`
+    +[[3.4,24,-20],[4.2,32,-30],[6.2,40,-40],[9.6,47.5,-52],[14.5,53.5,-64],[20.5,58,-76]].map(([x,y,r])=>`<ellipse cx="${x}" cy="${y}" rx="1.9" ry="4" transform="rotate(${r} ${x} ${y})"/><ellipse cx="${56-x}" cy="${y}" rx="1.9" ry="4" transform="rotate(${-r} ${56-x} ${y})"/>`).join("")+`</g>`;
+  const SHIELD = "M28 3.5l20.5 6v20.5c0 14.5-9 22.5-20.5 28.5C16.5 52.5 7.5 44.5 7.5 30V9.5z";
+  function rankEmblem(k, cls="emb"){ const t=rankAt(k), M=matOf(k), [, , , hi, lo, rim, ink, tex]=M, u="em"+k+cls.replace(/\W/g,"");
+    return `<svg class="${cls}" viewBox="0 0 56 64" role="img" aria-label="${esc(rankLabel(k))}, ${esc(M[1].toLowerCase())}"><defs><linearGradient id="${u}" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient><clipPath id="${u}c"><path d="${SHIELD}"/></clipPath></defs>
+      ${t===TITLES.length-1 ? WREATH : ""}<path d="${SHIELD}" fill="url(#${u})" stroke="${rim}" stroke-width="2.2" stroke-linejoin="round"/>
+      ${tex && TEXTURE[tex] ? `<g clip-path="url(#${u}c)">${TEXTURE[tex](ink)}</g>` : ""}
       <path d="M28 8.3l16.2 4.8V30c0 11.4-6.9 18-16.2 23.2C18.7 48 11.8 41.4 11.8 30V13.1z" fill="none" stroke="${ink}" stroke-opacity=".28" stroke-width="1.1"/>
       <path d="M11 11.5L28 6.5l17 5" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/>
       <g transform="translate(18 18.5)" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g></svg>`; }
   // a new rank (or several) since the last time: each gives its tokens, once; the first time a record meets this rule its ranks are given quietly
   function rankSync(){ const k=rankOf(G.points); if(G.rank==null){ G.rank=k; G.tokens=0; for(let j=1;j<=k;j++) G.tokens+=tokensFor(j); G.tokEarned=G.tokens; return null; }
-    if(k<=G.rank) return null; const got=[]; for(let j=G.rank+1;j<=k;j++){ G.tokens=(G.tokens||0)+tokensFor(j); G.tokEarned=(G.tokEarned||0)+tokensFor(j); got.push(j); }
+    if(k<=G.rank) return null; const got=[]; for(let j=G.rank+1;j<=k;j++){ earn(tokensFor(j)); got.push(j); }
     G.rank=k; try{ trace("a new rank: "+rankName(k)+" ("+G.points+" points); tokens +"+got.reduce((a,j)=>a+tokensFor(j),0)); }catch(e){} return got; }
   // the bar along the bottom of the lesson-complete screen: points toward the next rank (from where the lesson began to where it ended)
   function rankBar(p0, p1){ const k=rankOf(p1), last=k>=RULES.RANKS.length, lo=k ? RULES.RANKS[k-1] : 0, hi=last ? lo : RULES.RANKS[k], f=x=>last ? 1 : Math.max(0, Math.min(1, (x-lo)/(hi-lo)));
@@ -396,28 +444,72 @@ const SHELL = (()=>{
     return `<div class="rankbar" role="group" aria-label="${esc(rankLabel(k))}: ${last ? "the highest rank" : (hi-p1)+" "+pl(hi-p1, "point")+" to the next rank"}">${rankEmblem(k, "emb s")}<span class="rb-t"><span class="rb-l"><b>${rankHtml(k)}</b><span>${last ? "The highest rank" : `<b class="num">${(hi-p1).toLocaleString("en-GB")}</b> point${hi-p1===1?"":"s"} to ${esc(rankIn(k+1))}`}</span></span>
       <span class="rb-track"><i style="--a:${from.toFixed(3)};--b:${Math.max(0.02, f(p1)).toFixed(3)}"></i></span></span></div>`; }
 
-  /* ---- the wardrobe (design B with price tiers, brief 15): things for the learner's figure, bought with tokens, worn on home, on You and on
-     the celebrations, NEVER in a lesson's pictures; nothing of likeness is sold (that is all free in the maker). Each item is a stub: its name,
-     its tier and its price; the figures agent draws them (PICS.wardrobeThumb(id) and PICS.avatar(spec, {wear}) when it can; until then a
-     thumbnail marked as a placeholder). ---- */
-  const TIERS = [{id:"everyday", label:"Everyday", price:1}, {id:"nicer", label:"Something nicer", price:3}, {id:"costume", label:"Costumes", price:8},
-    {id:"wild", label:"Something wild", price:20}, {id:"move", label:"Poses and dances", price:40}];
-  const WARDROBE = [      // slot: what it is worn as (one of each slot at a time; an outfit is the whole figure)
-    ["cap","une casquette","a cap","everyday","head"], ["woolly","un bonnet","a woolly hat","everyday","head"], ["scarf","une écharpe","a scarf","everyday","neck"],
-    ["tshirt","un T-shirt","a T-shirt","everyday","top"], ["checked","une chemise à carreaux","a checked shirt","everyday","top"], ["hoodie","un sweat à capuche","a hoodie","everyday","top"],
-    ["cardigan","un gilet","a cardigan","everyday","top"], ["shades","des lunettes de soleil","sunglasses","everyday","face"], ["backpack","un sac à dos","a backpack","everyday","hand"],
-    ["flowers","des fleurs","a bunch of flowers","everyday","hand"],
-    ["beret","un béret et une marinière","a beret and a striped top","nicer","outfit"], ["coat","un beau manteau","a smart coat","nicer","top"], ["trench","un imperméable","a raincoat","nicer","top"],
-    ["dots","une robe à pois","a polka-dot dress","nicer","outfit"], ["bowtie","un nœud papillon","a bow tie","nicer","neck"], ["straw","un chapeau de paille","a straw hat","nicer","head"],
-    ["silk","un foulard en soie","a silk scarf","nicer","neck"], ["baguette","une baguette","a baguette under the arm","nicer","hand"],
-    ["chef","le chef","a chef: tall hat and apron","costume","outfit"], ["painter","le peintre","a painter: smock and palette","costume","outfit"], ["mime","le mime","a mime: white gloves, striped top","costume","outfit"],
-    ["cyclist","le cycliste","a racing cyclist in yellow","costume","outfit"], ["musketeer","le mousquetaire","a musketeer: hat, cape and boots","costume","outfit"], ["astronaut","l'astronaute","an astronaut","costume","outfit"],
-    ["croissant","le croissant géant","dressed as a giant croissant","wild","outfit"], ["eiffel","la tour Eiffel","dressed as the Eiffel Tower","wild","outfit"], ["versailles","la cour de Versailles","court dress: wig, lace and a cape","wild","outfit"],
-    ["thinker","la pose du penseur","the thinker's pose, on Home","move","pose"], ["bow","la révérence","a grand bow, at every celebration","move","dance"],
-    ["jig","la gigue","a jig, at every celebration","move","dance"], ["cancan","le cancan","the can-can, at every celebration","move","dance"],
-  ].map(([id, fr, en, tier, slot])=>({id, fr, en, tier, slot, price:TIERS.find(t=>t.id===tier).price}));
+  /* ---- (17 Nov; the owner: "Wardrobe items should come in tiers. Tier 1, tier 2, etc. ... lower tiers are more boring items, higher tiers are
+     the more extravagant ... Initially, all items are locked. As soon as the player ranks up once, they unlock tier 1 items, all of them. They
+     still have to spend tokens to actually buy them ... buying items and equipping them changes how you always look in lessons ... So, we have
+     locked, unlocked, bought, equipped ... Be imaginative with extra categories ... even when items are locked, you can see the category they're
+     in") THE WARDROBE IN TIERS. Each tier is one category; each rank-up unlocks the next tier (rank N opens Tier N: 27 of each), so
+     every rank-up ends on a padlock opening. Inside a tier, cheap things and a showpiece or two, so that there is a choice: spend now or save. The four states: locked (grey, question marks, a lock; the category and the rank that opens it), unlocked (in colour, the
+     price, Buy), bought (yours: Wear it), worn (a tick: Wearing; one a slot). What is worn shows on the learner's figure everywhere, lessons
+     included (PICS.setWear). A thing bought before the tiers stays the learner's, and wearable, even in a tier not yet open (only that thing:
+     the rest of its tier stays locked). dev/design/tools/ward2/WARD2.md. The pictures: the figures agent's (PICS.wardrobeThumb, PICS.avatar). ---- */
+  // [tier, category, how many things the locked tier shows while its things are still being drawn]. (Jon, 17 Nov: "make sure the pacing of the
+  // unlocks is good ... not overwhelmed with choice ... not stuck"; "the user needing to choose between saving up tokens Vs using them to buy
+  // everything that's cheap") 27 tiers for the 27 rank-ups, one category each, plain to extravagant. The prices inside a tier: the cheap things
+  // (about one rank-up's tokens in all, so they are bought on the day the tier opens) and one or two showpieces (about two and a half rank-ups:
+  // they need saving across unlocks). Set with the ranks' points and tokens by dev/design/tools/ward2/sim.py (a spender and a saver).
+  const TIERS = [[1,"Hats"],[2,"Eyewear"],[3,"Scarves and neckwear"],[4,"Tops"],[5,"Shoes"],[6,"Bags"],[7,"Gloves"],[8,"Badges and pins"],
+    [9,"Jewellery",5],[10,"Hair colours",6],[11,"Jackets and coats"],[12,"Things to carry"],[13,"Instruments and art"],[14,"Hats of honour"],[15,"Sashes and honours"],
+    [16,"Outfits"],[17,"On stage"],[18,"Costumes"],[19,"Grand costumes"],[20,"Something wild"],[21,"Poses"],[22,"Dances"],[23,"Emotes",6],[24,"Companions",4],
+    [25,"Auras and frames",4],[26,"Backgrounds"],[27,"The Immortal's coat"]]
+    .map(([n, cat, soon], i, a)=>({n, cat, soon:soon||3, rank:Math.max(1, Math.ceil(n*RULES.RANKS.length/a.length))}));
+  // the rank that opens a tier: with 28 rank-ups and 28 tiers, rank N opens Tier N; with any other count, in order, the last tier at the last rank
+  const tierRank = n=>TIERS[n-1].rank;
+  const tierOpen = n=>tierRank(n)<=(G.rank||0);
+  const WARDROBE = [      // [id, French, English, tier, slot, price]; slot: what it is worn as (one of each slot at a time; an outfit is the whole figure). The
+    // ids and slots are the picture library's (people.js WARD; dev/design/tools/fig17/CATEGORIES.md); cheap things first, the showpieces last
+    ["cap","une casquette","a cap",1,"head",1], ["woolly","un bonnet","a woolly hat",1,"head",1], ["bucket","un bob","a bucket hat",1,"head",1], ["flatcap","une casquette plate","a flat cap",1,"head",1],
+    ["visor","une visière","a sun visor",1,"head",1], ["headband","un bandeau","a sports headband",1,"head",1], ["earbeanie","un bonnet à oreilles","a beanie with ears",1,"head",14], ["straw","un chapeau de paille","a straw boater",1,"head",14],
+    ["shades","des lunettes de soleil","sunglasses",2,"face",1], ["specs","des lunettes rondes","round reading glasses",2,"face",1], ["aviators","des lunettes d'aviateur","aviator sunglasses",2,"face",1], ["heartspecs","des lunettes cœur","heart glasses",2,"face",2],
+    ["starspecs","des lunettes étoiles","star glasses",2,"face",17], ["monocle","un monocle","a monocle",2,"face",17],
+    ["scarf","une écharpe","a scarf",3,"neck",1], ["bandana","un bandana","a bandana",3,"neck",1], ["tie","une cravate","a tie and shirt collar",3,"neck",1], ["snood","un snood","a chunky knit snood",3,"neck",1], ["lei","un collier de fleurs","a lei of flowers",3,"neck",2],
+    ["bowtie","un nœud papillon","a bow tie",3,"neck",19], ["silk","un foulard en soie","a silk scarf",3,"neck",19],
+    ["tshirt","un T-shirt","a T-shirt",4,"top",1], ["checked","une chemise à carreaux","a checked shirt",4,"top",1], ["hoodie","un sweat à capuche","a hoodie",4,"top",1], ["cardigan","un gilet","a cardigan",4,"top",1],
+    ["trainers","des baskets","white trainers",5,"feet",1], ["redsneakers","des baskets rouges","red sneakers",5,"feet",2], ["wellies","des bottes de pluie","wellies",5,"feet",2], ["cowboyboots","des santiags","cowboy boots",5,"feet",2], ["goldshoes","des souliers dorés","gold shoes",5,"feet",24],
+    ["backpack","un sac à dos","a backpack",6,"back",1], ["tote","un tote bag","a tote bag",6,"back",2], ["bumbag","une banane","a bum bag",6,"back",2], ["satchel","une besace","a satchel",6,"back",3], ["rucksack","un sac à dos à badges","a rucksack with badges",6,"back",26],
+    ["woolgloves","des gants en laine","woollen gloves",7,"hands",2], ["gardengloves","des gants de jardin","gardening gloves",7,"hands",3], ["leathergloves","des gants en cuir","leather gloves",7,"hands",4], ["whitegloves","des gants blancs","white gloves",7,"hands",30],
+    ["rosette","la rosette","a rosette on the lapel",8,"neck",1], ["medal","la médaille du lauréat","a laureate's medal",8,"neck",33],
+    ["coat","un beau manteau","a smart coat",11,"top",1], ["trench","un imperméable","a raincoat",11,"top",2], ["tweed","une veste en tweed","a tweed jacket with elbow patches",11,"top",2], ["cape","la cape du poète","a poet's cape",11,"top",47],
+    ["flowers","des fleurs","a bunch of flowers",12,"hand",3], ["baguette","une baguette","a baguette under the arm",12,"hand",5], ["books","une pile de livres","a pile of books",12,"hand",7], ["quill","une plume et un encrier","a quill and an inkwell",12,"hand",52],
+    ["mask","un masque de théâtre","a theatre mask",13,"hand",3], ["easel","une toile et un pinceau","a canvas and a brush",13,"hand",4], ["violin","un violon","a violin and bow",13,"hand",58], ["lyre","une lyre","a lyre",13,"hand",58],
+    ["tophat","un haut-de-forme","a top hat",14,"head",3], ["bicorne","un bicorne","a bicorne hat",14,"head",5], ["laurel","une couronne de laurier","a laurel wreath",14,"head",72],
+    ["sash","l'écharpe du diplomate","a diplomat's sash",15,"neck",4], ["cane","une canne à pommeau d'or","a gold-topped cane",15,"hand",5], ["sword","l'épée d'académicien","an academician's sword",15,"hand",82], ["goldquill","la plume d'or","a golden quill",15,"hand",82],
+    ["beret","un béret et une marinière","a beret and a striped top",16,"outfit",6], ["artbs","le béret et l'écharpe de l'artiste","the artist's beret and long scarf",16,"outfit",11], ["dots","une robe à pois","a polka-dot dress",16,"outfit",15], ["gown","la toge et la toque","a scholar's gown and cap",16,"outfit",110],
+    ["tunic","le costume de danseur","a ballet tunic and tights",17,"outfit",12], ["tutu","le tutu","a tutu and pink tights",17,"outfit",27], ["baton","le chef d'orchestre","a conductor: tailcoat and baton",17,"outfit",130],
+    ["chef","le chef","a chef: tall hat and apron",18,"outfit",10], ["painter","le peintre","a painter: smock and palette",18,"outfit",17], ["mime","le mime","a mime: white gloves, striped top",18,"outfit",24], ["cyclist","le maillot jaune","a racing cyclist in yellow",18,"outfit",170],
+    ["musketeer","le mousquetaire","a musketeer: hat, cape and boots",19,"outfit",13], ["ambass","l'ambassadeur","an ambassador: tailcoat and sash",19,"outfit",22], ["marianne","Marianne","Marianne: Phrygian cap and tricolour",19,"outfit",30], ["astronaut","l'astronaute","an astronaut",19,"outfit",220],
+    ["croissant","le croissant géant","dressed as a giant croissant",20,"outfit",12], ["eiffel","la tour Eiffel","dressed as the Eiffel Tower",20,"outfit",18], ["versailles","le costume de cour","court dress: wig, lace and a cape",20,"outfit",23],
+    ["liberty","la statue de la Liberté","dressed as the Statue of Liberty",20,"outfit",270], ["monalisa","la Joconde","in the frame of the Mona Lisa",20,"outfit",270],
+    ["thinker","la pose du penseur","the thinker's pose, on Home",21,"pose",15], ["conductor","diriger l'orchestre","conducting, on Home",21,"pose",340],
+    ["bow","la révérence","a grand bow, at every celebration",22,"dance",11], ["jig","la gigue","a jig, at every celebration",22,"dance",14], ["cancan","le cancan","the can-can, at every celebration",22,"dance",17],
+    ["waltz","la valse","a waltz, at every celebration",22,"dance",380], ["curtain","le salut final","the curtain call, at every celebration",22,"dance",380],
+    ["bgParis","Paris","a Paris background",26,"bg",35], ["bgNight","la nuit étoilée","a starry night background",26,"bg",45], ["bgStage","la scène","a stage background",26,"bg",1170],
+    ["habit","l'habit vert","the Immortal's green coat, bicorne and sword",27,"outfit",370],
+  ].map(([id, fr, en, tier, slot, price])=>({id, fr, en, tier, slot, price, show:false}));
+  // a tier's showpieces: its things that cost more than one rank-up gives (they need saving)
+  WARDROBE.forEach(it=>{ it.show = it.price>tokensFor(tierRank(it.tier)); });
+  const tierFrom = n=>{ const p=WARDROBE.filter(it=>it.tier===n).map(it=>it.price); return p.length ? Math.min(...p) : 0; };
   const W = ()=>G.ward || (G.ward={owned:{}, worn:{}});
   const wearing = ()=>Object.values(W().worn).filter(Boolean);
+  // what is worn, given to the picture library: every picture of "you" reads it, the lessons' too (the owner: "buying items and equipping them
+  // changes how you always look in lessons"); ?learner=off keeps the plain default everywhere
+  const wornOf = id=>{ if(id===uid) return wearing(); try{ const g=JSON.parse(localStorage.getItem("frDIn.g."+id)||"null"); return g && g.ward && g.ward.worn ? Object.values(g.ward.worn).filter(Boolean) : []; }catch(e){ return []; } };
+  const wearSync = ()=>{ try{ if(window.PICS && typeof PICS.setWear==="function") PICS.setWear(RULES.LEARNER_FIGURE_ON ? wearing().filter(id=>WARDROBE.some(it=>it.id===id)) : []); }catch(e){} };
+  wearSync();
+  // what the learner is saving for (one thing, chosen on its sheet; dropped once bought): [it, tokens / price]
+  const goalIt = ()=>{ const g=W().goal, it=g && WARDROBE.find(x=>x.id===g); return it && !W().owned[it.id] ? it : null; };
+  // a learner's state of a thing: "on" (worn), "own" (bought), "open" (its tier unlocked: for sale), "lock"
+  const itemState = it=>{ const w=W(); return w.worn[it.slot]===it.id ? "on" : w.owned[it.id] ? "own" : tierOpen(it.tier) ? "open" : "lock"; };
   // the learner's figure outside lessons, wearing what he chose (the picture library ignores `wear` until it draws the items)
   const avOut = (view, cls)=>AV.svg(AV.get(), Object.assign(typeof view==="string" ? {view} : view, {wear:wearing()}), cls);
   function wardThumb(it){ try{ if(window.PICS && PICS.wardrobeThumb){ const g=PICS.wardrobeThumb(it.id, PICS.avatarParse(AV.get())); if(g) return `<svg viewBox="0 0 160 190" aria-hidden="true">${g.outerHTML}</svg>`; } }catch(e){}
@@ -426,34 +518,56 @@ const SHELL = (()=>{
       outfit:`<circle cx="80" cy="54" r="15"/><path d="M80 70v52M80 84l-24 22M80 84l24 22M80 122l-18 40M80 122l18 40"/>`, pose:`<circle cx="80" cy="54" r="15"/><path d="M80 70v52M80 84l-14 22 18 6M80 84l26-8M80 122l-18 40M80 122l18 40"/>`,
       dance:`<circle cx="74" cy="52" r="15"/><path d="M76 68l6 50M78 82l-30-10M78 82l30-22M82 118l-28 26M82 118l30 36"/><path d="M118 112c6-4 12-2 14 4M28 120c4-6 10-6 14-2" stroke-dasharray="3 6"/>`}[it.slot]||"";
     return `<svg viewBox="0 0 160 190" aria-hidden="true"><rect x="9" y="9" width="142" height="172" rx="16" class="ph-box"/><g class="ph-g" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" transform="translate(80 92) scale(.84) translate(-80 -100)">${glyph}</g><text x="80" y="170" text-anchor="middle" class="ph-t">PLACEHOLDER</text></svg>`; }
+  // a locked thing: grey, question marks where the thing would be, a lock over it (the owner: "very clear that items are locked")
+  const lockTile = (cls="")=>`<span class="wthumb wq${cls}" aria-hidden="true"><span class="wqm">?</span><span class="wlk">${ic("lock")}</span></span>`;
+  const opensAt = n=>`${esc(rankName(tierRank(n)))} <span class="ren-i">(${esc(rankEn(tierRank(n)))})</span>`;
   function wardrobe(back){ wardrobe.back=back; const o=$("ward"), w=W(), k=G.rank||0, tok=G.tokens||0;
-    const nextTok = k<RULES.RANKS.length ? tokensFor(k+1) : 0;
-    const card = it=>{ const own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, can=tok>=it.price;
-      return `<button class="witem${own?" own":can?" can":""}${on?" on":""}" data-it="${it.id}" aria-label="${esc(it.fr)}, ${esc(it.en)}: ${own ? (on?"worn":"yours") : it.price+" token"+(it.price>1?"s":"")}">
-        <span class="wthumb" data-lz="w|${it.id}">${on?`<span class="won">${ic("check")}</span>`:""}</span><span class="wfr" lang="fr">${esc(it.fr)}</span><span class="wen">${esc(it.en)}</span>
-        <span class="wprice">${own ? (on ? "Wearing" : "Yours") : `${tokenIcon()}<b class="num">${it.price}</b>`}</span></button>`; };
+    const nextTok = k<RULES.RANKS.length ? tokensFor(k+1) : 0, nextTs=TIERS.filter(t=>t.rank===k+1);      // what the next rank opens
+    const goal=goalIt();
+    const card = it=>{ const s=itemState(it), can=tok>=it.price, saving=goal===it, lbl = s==="on" ? "Wearing" : s==="own" ? "Wear it" : can ? `${tokenIcon()}<b class="num">${it.price}</b><span class="wbuy">Buy</span>`
+        : `${tokenIcon()}<b class="num">${it.price}</b><span class="wbuy save">${saving ? "Saving" : "Save up"}</span>`;
+      return `<button class="witem ${s}${s==="open" && can ? " can" : ""}${it.show && s==="open" ? " show" : ""}${saving ? " goal" : ""}" data-it="${it.id}" aria-label="${esc(it.fr)}, ${esc(it.en)}: ${s==="on" ? "wearing" : s==="own" ? "yours, wear it" : it.price+" "+pl(it.price,"token")+(can ? ", buy" : saving ? ", saving for it" : ", save up for it")}">
+        <span class="wthumb" data-lz="w|${it.id}">${s==="on" ? `<span class="won">${ic("check")}</span>` : s==="own" ? `<span class="wown">Yours</span>` : it.show ? `<span class="wshow">${ic("star")}Showpiece</span>` : ""}</span><span class="wfr" lang="fr">${esc(it.fr)}</span><span class="wen">${esc(it.en)}</span>
+        <span class="wprice">${lbl}</span></button>`; };
+    const lockCard = (n, i)=>`<span class="witem lock" aria-hidden="true">${lockTile()}<span class="wfr">? ? ?</span><span class="wen">Locked</span></span>`;
+    const tier = t=>{ const items=WARDROBE.filter(it=>it.tier===t.n), open=tierOpen(t.n), mine=items.filter(it=>w.owned[it.id]);
+      const head = `<h3 class="gh wh${open ? "" : " wlockh"}" id="wt${t.n}"><span><span class="wtn">Tier ${t.n}:</span> ${esc(t.cat)}</span>${open ? (items.length ? `<span class="wtier">${tokenIcon()}${items.length>1 ? "from " : ""}${tierFrom(t.n)}</span>` : "") : `<span class="wtier wl">${ic("lock")}Locked</span>`}</h3>`;
+      if(open) return `<section class="wtr">${head}${items.length ? `<div class="wgrid2">${items.map(card).join("")}</div>` : `<p class="wsoon">Its things are on their way.</p>`}</section>`;
+      // locked: the category and the rank that opens it said plainly; question marks where its things are (anything bought before stays shown, in colour)
+      const next = t.rank===k+1, lockN = Math.min(next ? 3 : 5, items.length ? items.length-mine.length : t.soon);      // the next tier full size; the ones after it small
+      return `<section class="wtr locked">${head}${mine.length ? `<div class="wgrid2">${mine.map(card).join("")}</div>` : ""}<button class="wlockb" data-tier="${t.n}" aria-label="Tier ${t.n}: ${esc(t.cat)}. Locked. It opens when you become ${esc(rankLabel(t.rank))}.">
+        <span class="wopen">${ic("lock")}<span>Opens at ${opensAt(t.n)}</span></span></button>
+        ${lockN>0 ? `<button class="wlockb wq-btn" data-tier="${t.n}" tabindex="-1" aria-hidden="true"><span class="wgrid2 wq-grid${next ? "" : " sm"}">${Array.from({length:lockN}, lockCard).join("")}</span></button>` : ""}</section>`; };
     o.innerHTML=`<div class="mk-bar" style="padding:0"><button class="rb plain" id="wdBack" aria-label="Back">${ic("chev")}</button><h2>Your wardrobe</h2></div>
-      <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${rankHtml(k)}</b>
+      <div class="card wtop"><div class="wfig">${avOut("standing", "w")}</div><div class="wme">${rankEmblem(k, "emb m")}<b>${rankHtml(k)}</b>${matHtml(k)}
         <div class="wtok">${tokenIcon()}${MV.num("tokW", tok)}<span>token${tok===1?"":"s"}</span></div>
-        <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} ${pl(RULES.RANKS[k]-G.points, "point")} to ${esc(rankIn(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b>` : "The highest rank"}</small></div></div>
+        <small>${k<RULES.RANKS.length ? `${(RULES.RANKS[k]-G.points).toLocaleString("en-GB")} ${pl(RULES.RANKS[k]-G.points, "point")} to ${esc(rankIn(k+1))}: <b>+${nextTok} token${nextTok===1?"":"s"}</b> ${nextTs.map(t=>` and <b>Tier ${t.n}: ${esc(t.cat)}</b>`).join("")}` : "The highest rank"}</small></div></div>
+      ${goal ? `<button class="card wgoal" data-it="${goal.id}" aria-label="Saving for ${esc(goal.fr)}: ${Math.min(tok, goal.price)} of ${goal.price} tokens"><span class="wg-th" data-lz="w|${goal.id}"></span><span class="wg-t"><small>Saving for</small><b lang="fr">${esc(goal.fr)}</b>
+        <span class="wg-bar"><i style="--f:${Math.min(1, tok/goal.price).toFixed(3)}"></i></span><span class="wg-n">${tokenIcon()}<b class="num">${Math.min(tok, goal.price)}</b> / ${goal.price}${tok>=goal.price ? ` <em>Ready to buy</em>` : ""}</span></span></button>` : ""}
       ${lookCard(back)}${freezeCard()}<h3 class="hsec">Things to wear</h3>
-      ${TIERS.map(t=>`<h3 class="gh wh"><span>${t.label}</span><span class="wtier">${tokenIcon()}${t.price} token${t.price>1?"s":""}${t.price>1?"":" each"}</span></h3><div class="wgrid2">${WARDROBE.filter(it=>it.tier===t.id).map(card).join("")}</div>`).join("")}
-      <p class="foot">What you wear shows on your figure and at your celebrations. In the lessons you are always your plain self.</p>`;
+      ${TIERS.map(tier).join("")}
+      <p class="foot">What you wear shows on your figure wherever you are: at home, in the lessons and at your celebrations.</p>`;
     o.hidden=false; if(!wardrobe.keep) o.scrollTop=0; wardrobe.keep=false; MV.count(o); LZ.watch(o); COACH.learned("rank"); COACH.arrive();
     $("wdBack").onclick=()=>{ tick(); WC.stop(); o.hidden=true; if(back) back(); else home(); };
-    o.querySelectorAll("[data-it]").forEach(b=>{ b.onclick=()=>{ tick(); const it=WARDROBE.find(x=>x.id===b.dataset.it); wardItem(it, back); MV.grow(b.querySelector(".wthumb svg"), document.querySelector("#sheet .wbig svg")); }; }); }
+    o.querySelectorAll("button[data-it]").forEach(b=>{ b.onclick=()=>{ tick(); const it=WARDROBE.find(x=>x.id===b.dataset.it); wardItem(it, back); MV.grow(b.querySelector(".wthumb svg"), document.querySelector("#sheet .wbig svg")); }; });
+    o.querySelectorAll("[data-tier]").forEach(b=>{ b.onclick=()=>{ tick(); tierLocked(+b.dataset.tier); }; }); }
+  // a locked tier, tapped: what it is, and the rank that opens it
+  function tierLocked(n){ const t=TIERS[n-1], pts=Math.max(0, RULES.RANKS[t.rank-1]-(G.points||0)), cnt=WARDROBE.filter(it=>it.tier===n).length || t.soon;
+    info(`Tier ${n}: ${t.cat}`, `<div class="wbig wlockbig">${lockTile(" big")}</div><p class="wsub"><b>Locked.</b> ${cnt} ${pl(cnt, "thing")} to wear${tierFrom(n) ? `, from ${tierFrom(n)} ${pl(tierFrom(n), "token")}` : ""}.</p>
+      <p>It opens when you become <b>${opensAt(n)}</b>: ${pts.toLocaleString("en-GB")} ${pl(pts, "point")} to go.</p>`, "Close"); }
   function tokenIcon(){ return `<svg class="tokn" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.6" fill="#E3A417"/><circle cx="10" cy="10" r="6.2" fill="none" stroke="#A66F00" stroke-width="1.3"/><path d="M10 5.6l1.3 2.8 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4z" fill="#FFF6DA"/></svg>`; }
-  function wardItem(it, back){ const w=W(), own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, tok=G.tokens||0, short=it.price-tok;
+  function wardItem(it, back){ if(itemState(it)==="lock") return tierLocked(it.tier); const w=W(), own=!!w.owned[it.id], on=w.worn[it.slot]===it.id, tok=G.tokens||0, short=it.price-tok;
     const again=()=>{ wardrobe.keep=true; wardrobe(back); };
     info(it.fr, `<div class="wbig">${wardThumb(it)}</div><p class="wsub">${esc(it.en)}</p>
       ${own ? `<button class="btn" id="wdWear">${on ? "Take it off" : "Wear it"}</button>`
         : short<=0 ? `<button class="btn" id="wdBuy">${tokenIcon()} Buy it for ${it.price} token${it.price>1?"s":""}</button>`
-        : `<p>${short} more token${short>1?"s":""} to go.</p>`}`, !own && short<=0 ? "Not now" : "Close");
+        : `<p>${short} more token${short>1?"s":""} to go.</p><button class="btn" id="wdSave">${w.goal===it.id ? "Stop saving for it" : "Save up for it"}</button>`}`, !own && short<=0 ? "Not now" : "Close");
+    { const sv=$("wdSave"); if(sv) sv.onclick=()=>{ tick(); if(w.goal===it.id) delete w.goal; else w.goal=it.id; store(); try{ trace("wardrobe: saving for "+(w.goal||"nothing")); }catch(e){} sheetClose($("sheet")); again(); }; }      // (ward2, Jon: "choose between saving up tokens Vs using them")
     if(it.slot==="dance" && !lessMotion()){ try{ const big=document.querySelector("#sheet .wbig svg"), g=PICS.wardrobeThumb(it.id, PICS.avatarParse(AV.get()), {live:true}); if(big && g){ big.innerHTML=""; big.appendChild(g); } }catch(e){} }  // (figures7) the dance plays on the item's own sheet
     const bb=$("wdBuy"); if(bb) bb.onclick=()=>{ if((G.tokens||0)<it.price) return; const before=wearing(), prevWorn=Object.assign({}, w.worn); G.tokens-=it.price; w.owned[it.id]=new Date().toISOString(); w.worn[it.slot]=it.id; if(it.slot==="outfit"){ for(const s of ["top","head"]) delete w.worn[s]; } else if(["top","head"].includes(it.slot)) delete w.worn.outfit;
-      store(); try{ trace("wardrobe: bought "+it.id+" for "+it.price+" token(s); "+G.tokens+" left"); }catch(e){} try{ UI.haptic("done"); }catch(e){} sheetClose($("sheet")); again(); WC.run(it, before, prevWorn); };      // (game feel) the purchase ceremony
+      if(w.goal===it.id) delete w.goal; store(); wearSync(); try{ trace("wardrobe: bought "+it.id+" for "+it.price+" token(s); "+G.tokens+" left"); }catch(e){} try{ UI.haptic("done"); }catch(e){} sheetClose($("sheet")); again(); WC.run(it, before, prevWorn); };      // (game feel) the purchase ceremony
     const bw=$("wdWear"); if(bw) bw.onclick=()=>{ if(on) delete w.worn[it.slot]; else { w.worn[it.slot]=it.id; if(it.slot==="outfit"){ for(const s of ["top","head"]) delete w.worn[s]; } else if(["top","head"].includes(it.slot)) delete w.worn.outfit; }
-      store(); sheetClose($("sheet")); again(); }; }
+      store(); wearSync(); sheetClose($("sheet")); again(); }; }
 
   /* ---- the end of a lesson: the record, the rules, the screen ---- */
   function lessonDone(){ const li=S.lesson, L=LESSONS[li], cur=G.cur && G.cur.lesson===L.id ? G.cur : {lesson:L.id, t0:"", kind:""};
@@ -489,6 +603,7 @@ const SHELL = (()=>{
     // the pace: only a lesson done from its start in one sitting (under an hour and a half)
     if(cur.fromStart && cur.t0){ const secs=(now-new Date(cur.t0))/1000, t=tasksOf(L); if(t>0 && secs>60 && secs<5400){ G.pace.push(+(secs/t).toFixed(2)); G.pace=G.pace.slice(-9); } }
     const owned = firstPass ? cardsOf(L.id) : []; if(firstPass && !G.wordsAt[L.id]) G.wordsAt[L.id]=today;
+    if(RULES.TOKENS_PER_PERFECT_LESSON && runPerfect && !(G.tp||(G.tp={}))[L.id]){ G.tp[L.id]=today; const n=earn(RULES.TOKENS_PER_PERFECT_LESSON); if(G.tally) G.tally.tok=(G.tally.tok||0)+n; try{ trace("tokens: +"+n+" for a perfect lesson ("+L.id+")"); }catch(e){} }      // (ward2) the trickle: a perfect lesson, once a lesson (no back-pay for lessons before it)
     const badge = newBadge(today), level = newLevel(today), ranks = rankSync(), R1 = ringsNow(now);
     (G.lessons[L.id]=G.lessons[L.id]||[]).push({date:today, x:sc.x, y:sc.y, passed, pts:exPts+pts, perfect:runPerfect});
     G.cur=null; store(); look();
@@ -497,8 +612,8 @@ const SHELL = (()=>{
   function summaryIn(o){ try{ o.getAnimations({subtree:true}).forEach(a=>{ const t=a.effect && a.effect.target; if(t && t.closest && !t.closest(".rkc")){ a.cancel(); a.play(); } }); }catch(e){} MV.stagger(o); }
   const longName = o=>{ try{ const h1=o.querySelector("h1"); if(h1 && String(S.learnerName||"").length>11) h1.classList.add("ln"); }catch(e){} };      // (QA .67)
   function showDone(r){ const name=esc(S.learnerName||""), n=r.li+1, o=$("done"), first=completions()<=1, L=LESSONS[r.li], nPerf=r.runEx.filter(x=>x.perfect).length;
-    const head = r.runPerfect ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><div class="perfect-tag">${ic("star")} A perfect lesson</div><h1>Magnifique${name?", "+name:""}!</h1><div class="sub">Every answer right, first time.</div>`
-      : r.passed ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><h1>Bravo${name?", "+name:""}!</h1><div class="sub">Lesson ${n} is done.</div>`
+    const head = r.runPerfect ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><div class="perfect-tag">${ic("star")} A perfect lesson</div><h1>Magnifique${name?", "+name:""} !</h1><div class="sub">Every answer right, first time.</div>`
+      : r.passed ? `<svg class="seal" viewBox="0 0 56 70"><use href="#i-rosette"/><text x="28" y="31.5" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>9?12:15}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n}</text></svg><h1>Bravo${name?", "+name:""} !</h1><div class="sub">Lesson ${n} is done.</div>`
       : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">You finished Lesson ${n}.</div>`;
     o.innerHTML = head
       + `<div class="card say">In this lesson you made <b class="first" data-n="${r.sc.x}">${r.sc.x}</b> correct ${pl(r.sc.x, "response")} and you were <b data-n="${r.sc.y}" data-pc="1">${r.sc.y}%</b> correct.${first?`<small>${r.sc.y}% of your answers were right the first time you were asked.</small>`:""}</div>`
@@ -529,6 +644,14 @@ const SHELL = (()=>{
     return `<div class="card ringc${week?" big":""}">${head ? `<div class="rhead${two&&!week?" gold":""}">${two&&!week?ic("star"):ic("check")}<span>${head}</span></div>` : ""}<div class="rbody">${ringsSvg(R)}${ringRows(R, true)}</div></div>`; }
   function rankUpCard(got){ if(!got || !got.length) return ""; const k=got[got.length-1], t=got.reduce((a,j)=>a+tokensFor(j),0);
     return `<div class="card rankup"><div class="rkem">${rankEmblem(k, "emb big")}</div><div><small>${got.length>1 ? got.length+" new ranks" : "A new rank"}</small><b>${esc(rankName(k))}</b><p>${tokenIcon()}<span><b class="num">+${t}</b> token${t===1?"":"s"}</span></p></div></div>`; }
+  // (ward2) every rank-up has the same ceremony, scaled by what changed: "grade" the same material, "title" a new material, "jubilee" the first
+  // rank in a jubilee's material (Silver, Ruby, Golden, Diamond, Sapphire, Platinum), "top" the last
+  function rkKind(k0, k1){ if(k1>=RULES.RANKS.length) return "top"; let jub=false; for(let j=k0+1;j<=k1;j++) if(jubileeOf(j)) jub=true;
+    return jub ? "jubilee" : MAT_OF[rankAt(k1)]!==MAT_OF[rankAt(k0)] ? "title" : "grade"; }
+  const rkJubilee = (k0, k1)=>{ let n=""; for(let j=k0+1;j<=k1;j++) n=jubileeOf(j)||n; return n; };
+  // (ward2) what a rank-up gives in the wardrobe: the tier it opens
+  function rkGift(k0, k1){ const ns=TIERS.filter(t=>t.rank>k0 && t.rank<=k1).map(t=>t.n); if(!ns.length) return null; const t=TIERS[ns[ns.length-1]-1];
+    return {tier:t, tiers:ns, n:WARDROBE.filter(it=>it.tier===t.n).length}; }
   /* ---- (game feel, 16 Nov) THE RANK-UP CEREMONY. The owner: "When I ranked up, this screen was the only indication that I'd ranked up. Much
      more needs to be made of this ... so it's clear that it's an absolutely massive deal! And it also needs to show very clearly what that new
      rank gives you." Over the lesson-complete screen, before its summary: (A, until hf2: now FIVE, before the tally) the learner and Marie meet and celebrate (PICS.highFive when the
@@ -538,50 +661,79 @@ const SHELL = (()=>{
      end after the first second; with less movement a calm still version; the words are said to a screen reader. dev/design/RANKUP.md. ---- */
   const tips = ()=>G.seen || (G.seen={});      // what the learner has been shown once (the ceremony's rule; the coach marks)
   const RK = (()=>{ let C=null;
-    const kindOf = (k0, k1)=>k1>=RULES.RANKS.length ? "top" : tierOf(k1)!==tierOf(k0) ? "title" : "grade";      // (17 Nov) a new tier (a new metal): the full ceremony; a rank within it: the short one
+    const kindOf = rkKind;      // (ward2) no tiers of ranks: the same ceremony, stronger for a new material, a jubilee and the last
     // the thing to show: one the learner can buy now and could not before (the cheapest), else the cheapest they can buy, else the nearest
-    function pick(tok0, tok1){ const w=W(), free=WARDROBE.filter(it=>!w.owned[it.id]); if(!free.length) return null;
-      const s=free.slice().sort((a,b)=>a.price-b.price || WARDROBE.indexOf(a)-WARDROBE.indexOf(b));
-      const now = s.find(it=>it.price>tok0 && it.price<=tok1); if(now) return {it:now, can:true, fresh:true};
-      const can = s.filter(it=>it.price<=tok1); if(can.length){ const top=can[can.length-1].price; return {it:can.find(it=>it.price===top), can:true}; }      // (plenty saved: the dearest in reach, not a cap every time)
-      return {it:s[0], can:false, short:s[0].price-tok1}; }
+    // (ward2, Jon: "instead of [an item in reach], a new tier of items is unlocked") what to show: the tier this rank opens
+    const pick = (k0, k1)=>rkGift(k0, k1);
     const rnd=(a,b)=>a+Math.random()*(b-a);
     // the emblem as a shape of light (the anticipation shows the old sign and the new one in turn, in this light)
-    function ghostEmblem(k){ const t=rankTitle(k), g=rankGrade(k), ink="#B88A1E";
+    function ghostEmblem(k){ const t=rankTitle(k), ink="#B88A1E";
       return `<svg class="emb" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 3.5l20.5 6v20.5c0 14.5-9 22.5-20.5 28.5C16.5 52.5 7.5 44.5 7.5 30V9.5z" fill="#FFFBEF" stroke="#FFE9A8" stroke-width="2.2" stroke-linejoin="round"/>
         <g transform="translate(18 18.5)" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" color="${ink}">${GLYPH[t]}</g></svg>`; }
-    function itemCard(it, own, tgt){ return `<div class="rk-it${own?" own":""}${tgt?" tgt":""}" data-id="${it.id}"><span class="th"></span><span class="pr">${own ? ic("check")+"Yours" : tokenIcon()+`<b>${it.price}</b>`}</span></div>`; }
+    /* (Jon, 17 Nov: "the part where a wardrobe item is 'in reach' needs to be changed because now, instead of that, a new tier of items is
+       unlocked. This will need a dedicated animation where the new tier is unlocked and the cards go from dark to revealed. Usually an animation
+       of a padlock being unlocked helps with this") THE TIER UNLOCK, after the brand's stamp: the tier's cards, dark, with "?"; a padlock over
+       them. Anticipation: the padlock shakes (two ticks). The key turns: the body gives, the shackle springs up and swings open with a click.
+       Follow-through: the padlock pops and falls away, sparks; then the cards turn over one after another, left to right, a rising note each,
+       dark to revealed; then "Tier 3: Scarves and ties, unlocked" and the way to the wardrobe. The same timing every time (RANKUP.md 10). */
+    const PADLOCK = `<svg viewBox="0 0 60 74" aria-hidden="true"><defs><linearGradient id="rkPl" x1="0" y1="0" x2=".5" y2="1"><stop offset="0" stop-color="#FCE08A"/><stop offset="1" stop-color="#D49A1C"/></linearGradient></defs>
+      <g class="rk-shk"><path d="M17 34V21a13 13 0 0 1 26 0v13" fill="none" stroke="#8A6A1E" stroke-width="7.5" stroke-linecap="round"/><path d="M17 34V21a13 13 0 0 1 26 0v13" fill="none" stroke="#E9C46A" stroke-width="3" stroke-linecap="round"/></g>
+      <rect x="7" y="32" width="46" height="38" rx="9" fill="url(#rkPl)" stroke="#8A6A1E" stroke-width="2.6"/><path d="M12 38h36" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="30" cy="48" r="5" fill="#5A4210"/><path d="M27.6 50h4.8l1.6 10h-8z" fill="#5A4210"/></svg>`;
+    const unlockCards = P=>{ const its=WARDROBE.filter(it=>it.tier===P.tier.n).slice(0, 4);
+      return (its.length ? its : [null, null, null]).map((it, i)=>`<div class="rk-c${it && it.show ? " show" : ""}" data-id="${it ? it.id : ""}" style="--i:${i}"><span class="th"></span><span class="rk-q" aria-hidden="true"><span class="rq">?</span></span><span class="pr">${it ? tokenIcon()+`<b>${it.price}</b>` : "…"}</span></div>`).join(""); };
+    function unlockThumbs(c){ const r=c.root; [...r.querySelectorAll(".rk-c")].forEach((cd, n)=>c.at(120+n*70, ()=>{ const th=cd.querySelector(".th"), it=WARDROBE.find(x=>x.id===cd.dataset.id); if(!it || th.firstChild) return; th.innerHTML=wardThumb(it); const v=th.querySelector("svg"); if(v){ try{ v.pauseAnimations(); v.setCurrentTime(0.9); }catch(e){} } })); }
+    // the end state (calm, skip): open, the padlock gone, every card revealed, the words
+    function unlockEnd(c){ const r=c.root; r.querySelectorAll(".rk-c").forEach(cd=>{ try{ cd.getAnimations().forEach(a=>a.cancel()); }catch(e){} cd.classList.add("rev"); const th=cd.querySelector(".th"), it=WARDROBE.find(x=>x.id===cd.dataset.id); if(it && !th.firstChild) th.innerHTML=wardThumb(it); });
+      const lk=r.querySelector(".rk-lock"); if(lk){ try{ lk.getAnimations({subtree:true}).forEach(a=>a.cancel()); }catch(e){} lk.classList.add("gone"); } r.classList.add("lit"); }
+    // the play, from the start of stage D (ms); returns when it ends
+    function unlockPlay(c){ const r=c.root, at=(ms,f)=>c.at(ms,f), lk=r.querySelector(".rk-lock"), shk=r.querySelector(".rk-shk"), cards=[...r.querySelectorAll(".rk-c")];
+      const T0=1350, TURN=T0+520, POP=TURN+260, FLIP=POP+260, STEP=170, END=FLIP+(cards.length-1)*STEP+290;
+      // anticipation: the padlock shakes, a tick at each turn
+      at(T0, ()=>{ try{ lk.animate([{transform:"rotate(0)"},{transform:"rotate(-9deg)"},{transform:"rotate(8deg)"},{transform:"rotate(-6deg)"},{transform:"rotate(4deg)"},{transform:"rotate(0)"}], {duration:440, easing:"ease-in-out"}); }catch(e){} SFX.tickS(); });
+      at(T0+220, ()=>SFX.tickS());
+      // the key turns: the body gives under it, the shackle springs up and swings open; the click is on the snap
+      at(TURN, ()=>{ try{ lk.animate([{transform:"scale(1)"},{transform:"scale(1.1,.9)"},{transform:"scale(.97,1.04)"},{transform:"scale(1)"}], {duration:240, easing:"cubic-bezier(.2,.8,.3,1)"}); }catch(e){}
+        try{ shk.animate([{transform:"translateY(0) rotate(0)"},{transform:"translateY(-9px) rotate(0)", offset:.3},{transform:"translateY(-9px) rotate(-44deg)", offset:.78},{transform:"translateY(-9px) rotate(-36deg)"}], {duration:300, easing:"cubic-bezier(.3,1.4,.5,1)", fill:"forwards"}); }catch(e){}
+        SFX.unlock(); try{ if(UI.pref.haptics!==false && navigator.vibrate) navigator.vibrate(28); }catch(e){} });
+      // follow-through: the padlock pops and falls away, sparks where it was
+      at(POP, ()=>{ try{ lk.animate([{transform:"translateY(0) scale(1)", opacity:1},{transform:"translateY(-16px) scale(1.08)", opacity:1, offset:.3},{transform:"translateY(70px) rotate(22deg) scale(.7)", opacity:0}], {duration:520, easing:"cubic-bezier(.5,0,.8,.6)", fill:"forwards"}); }catch(e){}
+        const box=r.querySelector(".rk-cards"); if(box) sparkAt(box, box.clientWidth/2, 40, 14, {r0:30, r1:90, t0:600, t1:900, fall:30}); });
+      // the cards turn over, one after another: dark to revealed, a rising note each
+      cards.forEach((cd, i)=>at(FLIP+i*STEP, ()=>{ try{ cd.animate([{transform:"rotateY(0)"},{transform:"rotateY(90deg)"}], {duration:110, easing:"ease-in"}).onfinish=()=>{ cd.classList.add("rev");
+          try{ cd.animate([{transform:"rotateY(-90deg) scale(1.04)"},{transform:"rotateY(8deg) scale(1.06)", offset:.7},{transform:"rotateY(0) scale(1)"}], {duration:190, easing:"ease-out"}); }catch(e){} }; }catch(e){ cd.classList.add("rev"); } SFX.ting(i+1); }));
+      // the words: unlocked; a chord
+      at(END, ()=>{ r.classList.add("lit"); SFX.stamp(true); });
+      return END; }
     function run(o, got, done, tokNow){ stop(); if(!got || !got.length || !o || o.hidden===undefined){ if(done) done("none"); return; }
       const k1=got[got.length-1], k0=got[0]-1, kind=kindOf(k0, k1), calm=lessMotion(), add=got.reduce((a,j)=>a+tokensFor(j),0), tok1=tokNow!=null ? tokNow : G.tokens||0, tok0=Math.max(0, tok1-add);
-      const P=pick(tok0, tok1);      // (hf2, 17 Nov) no stage A (the two of them) here now: the high five plays on the lesson-complete screen itself, after its heading and before the tally (FIVE)
+      const P=pick(k0, k1);      // (hf2, 17 Nov) no stage A (the two of them) here now: the high five plays on the lesson-complete screen itself, after its heading and before the tally (FIVE)
       const D = calm ? {A:0, B:1700, D:900} : kind==="grade" ? {A:0, B:3200, D:2900} : kind==="title" ? {A:0, B:3500, D:3000} : {A:0, B:3900, D:3100};      // (17 Nov) B: the hold, the fall, the strike, the name
-      const lab = kind==="top" ? "The highest rank" : got.length>1 ? got.length+" new ranks" : "A new rank";
+      const lab = kind==="top" ? "The highest rank" : kind==="jubilee" ? "The "+rkJubilee(k0, k1)+" Jubilee" : got.length>1 ? got.length+" new ranks" : "A new rank";
       const name = rankName(k1);
-      // the strip: the wardrobe's things in its own order, around the one to show (from six before it, round the end if need be)
-      let strip=[], ti=0; if(P){ const N=WARDROBE.length, t=WARDROBE.indexOf(P.it); for(let j=-6;j<=2;j++) strip.push(WARDROBE[((t+j)%N+N)%N]); ti=6; }
-      const w=W(), cap = !P ? `<b>Everything in the wardrobe is yours</b>` : P.can ? `<b lang="fr">${esc(P.it.fr)}</b><small>${esc(P.it.en)}</small>`
-        : `<b lang="fr">${esc(P.it.fr)}</b><small>${P.short} more token${P.short>1?"s":""}</small>`;
-      const say = `${lab}: ${rankLabel(k1)}. Plus ${add} token${add>1?"s":""}: you have ${tok1}. `+(!P ? "" : P.can ? `You can ${P.fresh?"now ":""}get ${P.it.fr}, ${P.it.en}.` : `${P.short} more for ${P.it.fr}, ${P.it.en}.`);
+      // (ward2) the tier this rank opens: its cards, dark, under a padlock
+      const more = P && P.tiers.length>1 ? ` and ${P.tiers.length-1} more` : "", from = P ? tierFrom(P.tier.n) : 0;
+      const cap = !P ? "" : `<b>Tier ${P.tier.n}: ${esc(P.tier.cat)}${more}, unlocked</b><small>${P.n ? `${P.n} ${pl(P.n, "thing")} to wear, from ${from} ${pl(from, "token")}` : "Its things are on their way"}</small>`;
+      const say = `${lab}: ${rankLabel(k1)}, ${matName(k1).toLowerCase()}. Plus ${add} token${add>1?"s":""}: you have ${tok1}. `+(!P ? "" : `Tier ${P.tier.n} is unlocked: ${P.tier.cat}.`);
       const root=el(`<div class="rkc k-${kind}${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="${esc(lab)}" tabindex="-1">
         <div class="rk-bg"></div><div class="rk-bg2"></div>
         <div class="rk-ev"><div class="rk-lab">${esc(lab)}</div><div class="rk-em"><div class="rk-rays"></div><div class="rk-glow"></div><div class="rk-sh"></div><div class="rk-hot"></div><div class="rk-old">${rankEmblem(k0, "emb rk0")}</div><div class="rk-gold">${ghostEmblem(k0)}</div><div class="rk-gnew">${ghostEmblem(k1)}</div><div class="rk-new">${rankEmblem(k1, "emb rk1")}</div>${kind==="grade" ? `<div class="rk-star" style="--sx:50%;--sy:44%"><svg viewBox="0 0 28 28"><use href="#i-star"/></svg></div>` : ""}</div>
-          <div class="rk-names"><div class="rk-oname">${rankHtml(k0)}</div><div class="rk-name">${rankHtml(k1)}</div></div></div>
+          <div class="rk-names"><div class="rk-oname">${rankHtml(k0)}${matHtml(k0)}</div><div class="rk-name">${rankHtml(k1)}${matHtml(k1)}</div></div></div>
         <div class="rk-gift">
           <div class="rk-tok"><span class="rk-tk">${tokenIcon()}</span><span class="rk-tt"><b>+${add} token${add>1?"s":""}</b><span>You have <b class="num rk-n">${tok0}</b></span></span></div>
-          ${P ? `<div class="rk-ward"><div class="rk-wh"><b>Your wardrobe</b></div><div class="rk-strip"><div class="rk-track">${strip.map((it,j)=>itemCard(it, !!w.owned[it.id], j===ti)).join("")}</div><div class="rk-stamp${P.can?"":" soon"}">${P.fresh ? "Unlocked" : P.can ? "In reach" : "Next"}</div></div><div class="rk-cap">${cap}</div></div>` : `<div class="rk-ward none">${cap}</div>`}
-          <div class="rk-btns"><button class="btn" id="rkGo">Continue</button>${P ? `<button class="btn quiet" id="rkWard">See the wardrobe</button>` : ""}</div></div>
+          ${P ? `<div class="rk-ward rk-unl"><div class="rk-wh"><b>Tier ${P.tier.n}: ${esc(P.tier.cat)}</b><small class="rk-ust"><span class="l">Locked</span><span class="u">Unlocked</span></small></div><div class="rk-cards">${unlockCards(P)}<div class="rk-lock">${PADLOCK}</div></div><div class="rk-cap">${cap}</div></div>` : ""}
+          <div class="rk-btns"><button class="btn" id="rkGo">Continue</button>${P ? `<button class="btn quiet" id="rkWard">Go to the wardrobe</button>` : ""}</div></div>
         <div class="rk-flash" aria-hidden="true"></div><button class="rk-skip" id="rkSkip" hidden>Skip</button><div class="rk-live" aria-live="polite"></div></div>`);
-      const c = C = {o, root, timers:new Set(), done, kind, calm, P, tok0, tok1, ti, settled:false, auto:0};
+      const c = C = {o, root, timers:new Set(), done, kind, calm, P, tok0, tok1, settled:false, auto:0};
       const at=(ms,f)=>{ const t=setTimeout(()=>{ c.timers.delete(t); if(C!==c) return; try{ f(); }catch(e){ try{ trace("FAULT rank ceremony: "+e.message); }catch(_){} } }, Math.max(0, ms)); c.timers.add(t); };
       c.at=at;
       // under it, the summary is out of reach (and does not scroll) until it is over
       c.inert=[...o.children]; c.inert.forEach(x=>{ x.inert=true; }); c.ov=o.style.overflow; o.style.overflow="hidden"; o.scrollTop=0;
       o.appendChild(root); try{ root.focus({preventScroll:true}); }catch(e){}
-      try{ trace("the rank ceremony: "+rankName(k0)+" to "+rankName(k1)+" ("+kind+"), +"+add+" token(s), "+tok1+" now; shown: "+(P ? P.it.id+(P.can?" (can buy)":" ("+P.short+" to go)") : "nothing")); }catch(e){}
+      try{ trace("the rank ceremony: "+rankName(k0)+" to "+rankName(k1)+" ("+kind+"), +"+add+" token(s), "+tok1+" now; opened: "+(P ? "Tier "+P.tier.n+" ("+P.tier.cat+")" : "nothing")); }catch(e){}
       setTimeout(()=>{ const lv=root.querySelector(".rk-live"); if(lv) lv.textContent=say; }, 250);
       // the pictures of the strip, one at a time while the first stages play (the one to show first)
-      if(P){ const its=[...root.querySelectorAll(".rk-it")], order=[ti, ...its.map((_,j)=>j).filter(j=>j!==ti)];
-        order.forEach((j,n)=>at(120+n*60, ()=>{ const th=its[j].querySelector(".th"); if(th.firstChild) return; th.innerHTML=wardThumb(strip[j]); const v=th.querySelector("svg"); if(v && j!==ti){ try{ v.pauseAnimations(); v.setCurrentTime(0.9); }catch(e){} } })); }
+      if(P) unlockThumbs(c);      // (ward2) the tier's pictures, drawn under their dark cards while the stamp plays
       root.addEventListener("click", e=>{ if(e.target.closest("button")) return; if(!c.settled && c.skippable) skip(); });
       root.addEventListener("keydown", e=>{ if(e.key==="Escape"){ e.preventDefault(); if(!c.settled) skip(); else close("go"); } });
       const sk=root.querySelector("#rkSkip"); sk.onclick=()=>{ if(!c.settled) skip(); };
@@ -590,7 +742,7 @@ const SHELL = (()=>{
       at(1000, ()=>{ c.skippable=true; sk.hidden=false; });
       let t=0;
       // (B) the emblem becomes the new one
-      at(t, ()=>stageB(c, D)); t+=D.B;
+      at(t, ()=>stageB(c, D)); if(kind==="jubilee" && !calm) at(t+2120+900, ()=>SFX.fanfare(true)); t+=D.B;
       // (D) what it gives
       at(t, ()=>stageD(c, D)); }
     /* (the owner, 17 Nov: "show the current rank for a few seconds, then the new rank flies in and stamps over the current one like a blacksmith
@@ -624,23 +776,15 @@ const SHELL = (()=>{
       if(top) at(T+900, ()=>SFX.fanfare(true)); }
     function stageD(c, D){ const r=c.root, at=(ms,f)=>c.at(ms,f); r.classList.remove("sA","aOut","pulse"); r.classList.add("sB","rev","sD"); if(!r.classList.contains("night")) r.classList.add("warm"); r.classList.remove("night");
       const n=r.querySelector(".rk-n"), tk=r.querySelector(".rk-tk"), add=c.tok1-c.tok0;
-      if(c.calm){ n.textContent=c.tok1; stripAt(c, false); r.classList.add("lit"); at(D.D, ()=>settle(c)); return; }
+      if(c.calm){ n.textContent=c.tok1; unlockEnd(c); at(D.D, ()=>settle(c)); return; }
       // the tokens fly from the emblem into the counter, one by one
       at(380, ()=>{ const em=r.querySelector(".rk-new"), a=em.getBoundingClientRect(), b=tk.getBoundingClientRect(), m=Math.min(add, 8);
         for(let i=0;i<m;i++){ const coin=el(`<span class="rk-coin">${tokenIcon()}</span>`); r.appendChild(coin); const x0=a.left+a.width/2-14, y0=a.top+a.height/2-14, x1=b.left+b.width/2-14, y1=b.top+b.height/2-14, dx=rnd(-60,60);
           try{ coin.animate([{transform:`translate(${x0}px,${y0}px) scale(.4)`, opacity:0},{transform:`translate(${x0+dx}px,${y0-60}px) scale(1.1)`, opacity:1, offset:.35},{transform:`translate(${x1}px,${y1}px) scale(1)`, opacity:1}], {duration:620, delay:i*110, easing:"cubic-bezier(.5,0,.4,1)", fill:"both"}).onfinish=()=>{ coin.remove(); if(C!==c) return;
               n.textContent=Math.round(c.tok0+add*(i+1)/m); tk.classList.remove("bump"); void tk.offsetWidth; tk.classList.add("bump"); SFX.ting(i); }; }catch(e){ coin.remove(); n.textContent=c.tok1; } } });
       if(!c.P){ at(D.D-300, ()=>settle(c)); return; }
-      // the wardrobe turns to the thing
-      at(1000, ()=>stripAt(c, true));
-      at(2450, ()=>{ r.classList.add("lit"); SFX.stamp(c.P.can); const it=r.querySelectorAll(".rk-it")[c.ti]; if(it) sparkAt(r.querySelector(".rk-strip"), it.offsetLeft+it.offsetWidth/2+(parseFloat(r.querySelector(".rk-track").dataset.x)||0), it.offsetTop+it.offsetHeight/2, 14, {r0:40, r1:90, t0:700, t1:1100, fall:30}); });
-      at(D.D-250, ()=>settle(c)); }
-    // the strip's place: the thing to show in the middle (animate: from six things before it, slowing, a soft tick as each passes)
-    function stripAt(c, animate){ const r=c.root, tr=r.querySelector(".rk-track"), st=r.querySelector(".rk-strip"); if(!tr || !st) return; const its=tr.children; if(!its[c.ti]) return;
-      const step=its[1] ? its[1].offsetLeft-its[0].offsetLeft : 100, x1=st.clientWidth/2-(its[c.ti].offsetLeft+its[c.ti].offsetWidth/2), x0=x1+c.ti*step*0.98;
-      tr.dataset.x=x1; if(!animate || lessMotion()){ tr.style.transform=`translateX(${x1}px)`; return; }
-      try{ const an=tr.animate([{transform:`translateX(${x0}px)`},{transform:`translateX(${x1}px)`}], {duration:1400, easing:"cubic-bezier(.12,.62,.18,1)", fill:"forwards"}); tr.style.transform=`translateX(${x1}px)`;
-        let last=Math.round(x0/step); const loop=()=>{ if(C!==c || an.playState==="finished") return; const m=new DOMMatrixReadOnly(getComputedStyle(tr).transform), k=Math.round(m.m41/step); if(k!==last){ last=k; SFX.tickS(); } requestAnimationFrame(loop); }; requestAnimationFrame(loop); }catch(e){ tr.style.transform=`translateX(${x1}px)`; } }
+      // (ward2) the tier unlocks: the padlock, the cards turned over, the words
+      const end=unlockPlay(c); at(end+700, ()=>settle(c)); }
     function settle(c){ if(c.settled) return; c.settled=true; const r=c.root; r.classList.add("end"); const sk=r.querySelector("#rkSkip"); if(sk) sk.hidden=true;
       const go=r.querySelector("#rkGo"); try{ go.focus({preventScroll:true, focusVisible:false}); }catch(e){}
       // it is never a dead end: left alone, it settles into the summary under it
@@ -648,14 +792,13 @@ const SHELL = (()=>{
     function skip(){ const c=C; if(!c || c.settled) return; c.timers.forEach(clearTimeout); c.timers.clear(); SFX.hush(); const r=c.root;
       r.classList.remove("sA","aOut","ghost","alt","night","pulse"); r.classList.add("sB","rev","sD","warm","lit","skipped");
       r.querySelectorAll(".rk-em, .rk-glow, .rk-track").forEach(x=>{ try{ x.getAnimations().forEach(a=>a.cancel()); }catch(e){} }); r.querySelectorAll(".rk-coin").forEach(x=>x.remove());
-      r.querySelector(".rk-n").textContent=c.tok1; r.querySelectorAll(".rk-it .th").forEach(th=>{ if(!th.firstChild){ const it=WARDROBE.find(x=>x.id===th.parentNode.dataset.id); if(it) th.innerHTML=wardThumb(it); } });
-      stripAt(c, false); settle(c); }
+      r.querySelector(".rk-n").textContent=c.tok1; unlockEnd(c); settle(c); }
     function finish(c){ c.timers.forEach(clearTimeout); c.timers.clear(); clearTimeout(c.auto); if(c.inert) c.inert.forEach(x=>{ x.inert=false; }); c.o.style.overflow=c.ov||""; }
     function close(how){ const c=C; if(!c) return; C=null; finish(c); const r=c.root, gone=()=>r.remove();
       if(lessMotion()) gone(); else { r.classList.add("out"); setTimeout(gone, 320); }
       try{ trace("the rank ceremony closed ("+how+")"); }catch(e){}
       if(c.done) try{ c.done(how); }catch(e){}
-      if(how==="ward" && c.P){ wardrobe(()=>{}); setTimeout(()=>{ const b=$("ward").querySelector(`[data-it="${c.P.it.id}"]`); if(b){ b.scrollIntoView({block:"center", behavior:lessMotion()?"auto":"smooth"}); if(!lessMotion()){ b.classList.remove("got"); void b.offsetWidth; b.classList.add("got","hl"); } } }, 380); } }
+      if(how==="ward" && c.P){ wardrobe(()=>{}); setTimeout(()=>{ const b=$("ward").querySelector(`#wt${c.P.tier.n}`); if(b){ b.scrollIntoView({block:"center", behavior:lessMotion()?"auto":"smooth"}); if(!lessMotion()){ b.classList.remove("got"); void b.offsetWidth; b.classList.add("got","hl"); } } }, 380); } }
     // the screen is left another way (the phone's back button presses Continue): the ceremony goes at once
     function stop(){ const c=C; if(!c) return; C=null; finish(c); SFX.hush(); c.root.remove(); }
     return {run, stop, close, get on(){ return !!C; }}; })();
@@ -684,7 +827,7 @@ const SHELL = (()=>{
       if(!o || o.hidden || !F){ if(then) then(); return; }
       const calm=lessMotion(), nm=String(S.learnerName||"").trim();
       const root=el(`<div class="rkc hfc${calm?" calm":""}" role="dialog" aria-modal="true" aria-label="Bravo" tabindex="-1"><div class="hf-veil"></div>
-        <div class="rk-hf" aria-hidden="true"><div class="rk-pair${F.own?" own":""}"><div class="hf-at"></div><div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&nbsp;!</div></div></div>
+        <div class="rk-hf" aria-hidden="true"><div class="rk-pair${F.own?" own":""}"><div class="hf-at"></div><div class="rk-hit"></div><div class="rk-say">Bravo${nm?", "+esc(nm):""}&#8239;!</div></div></div>
         <button class="rk-skip" id="hfSkip" hidden>Skip</button><div class="rk-live" aria-live="polite"></div></div>`);
       const c = C = {o, root, then, timers:new Set(), done:false};
       const at=(ms,f)=>{ const t=setTimeout(()=>{ c.timers.delete(t); if(C!==c) return; try{ f(); }catch(e){ try{ trace("FAULT high five: "+e.message); }catch(_){} } }, Math.max(0, ms)); c.timers.add(t); };
@@ -701,7 +844,7 @@ const SHELL = (()=>{
         const k=Math.min(1, (vh-top-24)/(330+56), (innerWidth-16)/350); if(k<1) pr.style.setProperty("--k", k.toFixed(3));
         root.querySelector(".hf-at").outerHTML=F.html;      // put in now: the film's clock starts here
         root.classList.add("in","sA"); const sk=root.querySelector("#hfSkip"); if(sk){ sk.hidden=false; sk.onclick=()=>end(c, "skip"); }
-        const lv=root.querySelector(".rk-live"); if(lv) lv.textContent="Marie: Bravo"+(nm?", "+nm:"")+"!";
+        const lv=root.querySelector(".rk-live"); if(lv) lv.textContent="Marie: Bravo"+(nm?", "+nm:"")+" !";
         if(calm){ root.classList.add("hit"); at(1500, ()=>end(c, "go")); return; }
         const sv=root.querySelector(".rk-hf5"); let lag=0; try{ if(sv && sv.getCurrentTime) lag=sv.getCurrentTime()*1000; }catch(e){}
         const hit=()=>{ const h=root.querySelector(".rk-hit");
@@ -822,7 +965,7 @@ const SHELL = (()=>{
     function skip(){ const c=C; if(!c || c.settled) return; c.timers.forEach(clearTimeout); c.timers.clear(); SFX.hush(); const r=c.root; r.querySelectorAll(".rk-coin, .wc-fly").forEach(x=>x.remove()); const n=r.querySelector(".wc-n"); if(n) n.textContent=G.tokens||0; r.classList.add("pay","spent","paid","corner","in","on","end","skipped"); settle(c); }
     function finish(c){ c.timers.forEach(clearTimeout); c.timers.clear(); if(c.inert) c.inert.forEach(x=>{ x.inert=false; }); c.o.style.overflow=c.ov||""; }
     function close(keep){ const c=C; if(!c) return; C=null; finish(c); const r=c.root, it=c.it, w=W();
-      if(!keep){ w.worn=Object.assign({}, c.prevWorn); store(); try{ trace("wardrobe: "+it.id+" kept for later"); }catch(e){} }
+      if(!keep){ w.worn=Object.assign({}, c.prevWorn); store(); wearSync(); try{ trace("wardrobe: "+it.id+" kept for later"); }catch(e){} }
       if(lessMotion()) r.remove(); else { r.classList.add("out"); setTimeout(()=>r.remove(), 300); }
       wardrobe.keep=true; wardrobe(wardrobe.back); const cd=$("ward").querySelector(`[data-it="${it.id}"]`); if(cd && !lessMotion()){ cd.classList.remove("got"); void cd.offsetWidth; cd.classList.add("got"); } }
     function stop(){ const c=C; if(!c) return; C=null; finish(c); SFX.hush(); c.root.remove(); }
@@ -949,7 +1092,7 @@ const SHELL = (()=>{
       root.addEventListener("click", e=>{ if(e.target.closest("button") && e.target.id!=="tySkip") return; if(c.skippable && !c.ended) skip(); });
       root.addEventListener("keydown", e=>{ if(e.key==="Escape" && !c.ended){ e.preventDefault(); skip(); } });
       at(700, ()=>{ c.skippable=true; const s=root.querySelector("#tySkip"); if(s) s.hidden=false; });
-      if(calm){ root.classList.add("in"); root.querySelectorAll(".ty-row").forEach(r=>r.classList.add("on","done")); at(250, ()=>{ setBar(c, to); root.classList.add("total"); root.querySelector(".ty-n").textContent="+"+total; SFX.chord("grade", true); });
+      if(calm){ root.classList.add("in"); root.querySelectorAll(".ty-row").forEach(r=>r.classList.add("on","done")); at(250, ()=>{ setBar(c, to); root.classList.add("total"); root.querySelector(".ty-n").textContent="+"+total; SFX.chord("grade", true); tokLine(c, false); });
         at(1500, ()=>{ const got=[]; for(let j=k0+1;j<=rankOf(to);j++) got.push(j); if(got.length) RK.run(host, got, how=>{ if(how==="ward") end(c, "ward"); else at(300, ()=>end(c, "go")); }); else end(c, "go"); }); return; }
       root.classList.add("in"); at(520, ()=>next(c, 0)); }
     // the bar at p (its rank's emblem and name follow it)
@@ -981,11 +1124,20 @@ const SHELL = (()=>{
         d.animate([{transform:`translate(${x0}px,${y0}px) scale(.8)`, opacity:1},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-26}px) scale(1.1)`, opacity:1, offset:.5},{transform:`translate(${x1}px,${y1}px) scale(.5)`, opacity:.9}], {duration:300, easing:"cubic-bezier(.5,0,.9,.6)", fill:"forwards"}).onfinish=()=>d.remove(); }catch(e){} }
     // the tokens of the ranks still to come in this tally (the ceremony shows the count as it is at its own rank)
     function laterTokens(c, k){ let t=0; for(let j=k+1;j<=rankOf(c.to);j++) t+=tokensFor(j); return t; }
-    function finish(c){ const r=c.root; r.classList.add("total"); r.querySelector(".ty-n").textContent="+"+(c.to-c.from); SFX.chord("grade"); c.at(calmMs(1300), ()=>end(c, "go")); }
+    function finish(c){ const r=c.root; r.classList.add("total"); r.querySelector(".ty-n").textContent="+"+(c.to-c.from); SFX.chord("grade"); const tk=tokLine(c, !lessMotion()); c.at(calmMs(1300)+tk, ()=>end(c, "go")); }
+    // (ward2; Jon: "the big token tranch for rank up and also the trickle"; "per perfect lesson") the tokens of a perfect lesson: a line under the
+    // points, "A perfect lesson +2", and the coins fly from it into a counter, a coin's ring each (the counter on Home and in the wardrobe follows)
+    function tokLine(c, animate){ const n=(T().tok||0); if(!n || c.tokShown) return 0; c.tokShown=true; const r=c.root, t1=G.tokens||0, t0=Math.max(0, t1-n);
+      const row=el(`<div class="ty-tok"><span class="ty-tl">${tokenIcon()}<span>A perfect lesson</span><b class="num">+${n}</b></span><span class="ty-tc">${tokenIcon()}<b class="num">${animate ? t0 : t1}</b></span></div>`); r.querySelector(".ty-list").after(row);
+      if(!animate){ row.classList.add("in"); return 0; }
+      requestAnimationFrame(()=>row.classList.add("in")); const cn=row.querySelector(".ty-tc b"), m=Math.min(n, 6);
+      for(let i=0;i<m;i++) c.at(420+i*160, ()=>{ try{ const a=row.querySelector(".ty-tl b").getBoundingClientRect(), b=row.querySelector(".ty-tc .tokn").getBoundingClientRect(), coin=el(`<span class="rk-coin">${tokenIcon()}</span>`); r.appendChild(coin);
+          coin.animate([{transform:`translate(${a.left}px,${a.top}px) scale(.6)`},{transform:`translate(${(a.left+b.left)/2}px,${Math.min(a.top,b.top)-40}px) scale(1)`, offset:.5},{transform:`translate(${b.left}px,${b.top}px) scale(.8)`}], {duration:480, easing:"cubic-bezier(.5,0,.4,1)", fill:"forwards"}).onfinish=()=>{ coin.remove(); cn.textContent=Math.round(t0+n*(i+1)/m); const tc=row.querySelector(".ty-tc"); tc.classList.remove("bump"); void tc.offsetWidth; tc.classList.add("bump"); SFX.ting(i); }; }catch(e){ cn.textContent=t1; } });
+      return 420+m*160+700; }
     const calmMs = ms=>lessMotion() ? Math.min(ms, 600) : ms;
     // a tap: straight to the end (a rank crossed and not yet celebrated still has its ceremony, which has a skip of its own)
     function skip(){ const c=C; if(!c || c.ended) return; c.timers.forEach(clearTimeout); c.timers.clear(); cancelAnimationFrame(c.raf); if(c.tone){ c.tone.stop(); c.tone=null; }
-      const r=c.root; r.classList.remove("flowing","full"); r.querySelectorAll(".ty-row").forEach(x=>x.classList.add("on","done")); setBar(c, c.to); r.querySelector(".ty-n").textContent="+"+(c.to-c.from); r.classList.add("total","skipped");
+      const r=c.root; r.classList.remove("flowing","full"); r.querySelectorAll(".ty-row").forEach(x=>x.classList.add("on","done")); setBar(c, c.to); r.querySelector(".ty-n").textContent="+"+(c.to-c.from); r.classList.add("total","skipped"); tokLine(c, false);
       const got=[]; for(let j=rankOf(c.from)+1;j<=rankOf(c.to);j++) if(!c.shownRanks.has(j)) got.push(j);
       if(got.length && !RK.on){ c.ended=true; RK.run(c.host, got, how=>{ if(C!==c) return; c.ended=false; end(c, how==="ward" ? "ward" : "go"); }); return; }
       if(!RK.on) c.at(500, ()=>end(c, "go")); }
@@ -1200,6 +1352,8 @@ const SHELL = (()=>{
       ting:i=>go((a,t)=>{ const f=N.E6*Math.pow(2, Math.min(i,7)*2/12); v(a, t, f, 0.32, 0.06, {bell:true, att:0.003}); v(a, t+0.04, f*1.5, 0.18, 0.025, {att:0.003}); }),
       // the strip going by: a soft click for each thing that passes
       tickS:()=>go((a,t)=>{ noise(a, t, 0.018, 0.12, 3200, 1.2); }),
+      // (ward2) the padlock opening: a sharp metal click (the bolt), a lighter snap (the shackle), a small ring
+      unlock:()=>go((a,t)=>{ noise(a, t, 0.012, 0.4, 4600, 2.2); v(a, t, 2600, 0.04, 0.04, {type:"square", cut:6000}); noise(a, t+0.055, 0.025, 0.3, 2400, 1.6); v(a, t+0.06, 180, 0.12, 0.12, {from:1.5, glide:0.06, cut:800}); v(a, t+0.08, N.G6, 0.45, 0.035, {bell:true}); }),
       // the stamp on the thing: a soft thump and three notes up (a thing still to come: two)
       stamp:can=>go((a,t)=>{ v(a, t, 140, 0.2, 0.25, {from:1.6, glide:0.12, cut:900}); noise(a, t, 0.05, 0.25, 900, 0.8);
         (can ? [N.C6, N.E6, N.G6] : [N.G5, N.C6]).forEach((f,i)=>v(a, t+0.08+i*0.075, f, 0.5, 0.05, {bell:true})); }),
@@ -1291,7 +1445,7 @@ const SHELL = (()=>{
   const STK={up:null};
   const fz = ()=>Array.isArray(G.freezes) ? G.freezes : (G.freezes=[]);      // the freezes held: the day each was had (it covers only days after it)
   function streakPay(){ const paid=[]; const P=G.streakPaid||(G.streakPaid={});
-    for(const [m,t,f] of RULES.STREAK_MILESTONES) if(G.run.len>=m && !P[m]){ P[m]=dayOf(); G.tokens=(G.tokens||0)+t; G.tokEarned=(G.tokEarned||0)+t; let got=0; for(let k=0;k<(f||0);k++) if(fz().length<RULES.FREEZE_MAX){ fz().push(dayOf()); got++; } paid.push([m,t,got]); }
+    for(const [m,t,f] of RULES.STREAK_MILESTONES) if(G.run.len>=m && !P[m]){ P[m]=dayOf(); earn(t); let got=0; for(let k=0;k<(f||0);k++) if(fz().length<RULES.FREEZE_MAX){ fz().push(dayOf()); got++; } paid.push([m,t,got]); }
     if(paid.length){ try{ trace("streak: "+G.run.len+" days; a badge, "+paid.map(x=>"+"+x[1]+" token(s)"+(x[2]?" +"+x[2]+" freeze":"")+" ("+x[0]+" days)").join(", ")); }catch(e){} } return paid; }
   const missedSince = (last, today)=>{ const out=[]; if(!last) return out; for(let k=1;k<daysBetween(last, today);k++) out.push(addDays(last, k)); return out; };
   // which missed days the freezes held cover: in order, each by a freeze had before it, until one cannot be covered
@@ -1498,7 +1652,7 @@ const SHELL = (()=>{
   /* ---- who is learning? (more than one learner on this phone) ---- */
   function who(force){ const o=$("whoL"); if(!o) return; let chosen=false; try{ chosen=sessionStorage.getItem("frDIn.chosen")==="1"; }catch(e){}
     if(!force && (USERS.list.length<2 || chosen || running)) return false;
-    o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && force?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), "portrait")}<span${u.name.length>9?' class="ln"':""}>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div>${force?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
+    o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && force?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), {view:"portrait", wear:wornOf(u.id)})}<span${u.name.length>9?' class="ln"':""}>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div>${force?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
     o.hidden=false;
     o.querySelectorAll("[data-u]").forEach(b=>{ b.onclick=()=>{ tick("go"); try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} if(b.dataset.u===uid){ o.hidden=true; afterWho(); return; } switchUser(b.dataset.u); }; });
     $("whoAdd").onclick=()=>ask({title:"Add someone", label:"Their first name", ok:"Add", value:""}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name."; try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} return addUser(nm); });
@@ -1676,7 +1830,7 @@ const SHELL = (()=>{
     if(RULES.AWAY_ON){ const n=stepFor(days); if(n>0){ const from=G.next; to = G.furthest<RULES.AWAY_MIN_DONE ? 0 : Math.max(0, from-n);
         if(to<from){ G.warmTo=from; G.next=to; G.why="warm"; try{ trace("welcome back after "+days+" days away: a warm-up from Lesson "+(to+1)+" back to Lesson "+(from+1)); }catch(e){} } else to=null; } }
     store(); const o=$("back"), name=esc(S.learnerName||"");
-    o.innerHTML=`<div class="wb-art" aria-hidden="true">${AV.svg(AV.get(), "portrait", "av")}</div><h1>Welcome back${name?", "+name:""}.</h1><div class="sub">${to!=null ? "Let's warm up." : "It is good to see you."}</div>
+    o.innerHTML=`<div class="wb-art" aria-hidden="true">${avOut("portrait", "av")}</div><h1>Welcome back${name?", "+name:""}.</h1><div class="sub">${to!=null ? "Let's warm up." : "It is good to see you."}</div>
       <div class="card nextc warm"><div class="orb">${ic("sun")}</div><div>${to!=null ? `<b>Starting with Lesson ${to+1}</b><p>You know it already. Then on to Lesson ${G.warmTo+1}.</p>` : `<b>Lesson ${G.next+1} is ready</b>`}</div></div>
       <div class="spacer"></div><button class="btn" id="wbGo">Let's start</button>`;
     longName(o); o.hidden=false; $("wbGo").onclick=()=>{ tick(); o.hidden=true; home(); }; return true; }
@@ -1855,7 +2009,7 @@ const SHELL = (()=>{
   function nameSet(v){ const wn=$("whoName"), wf=$("whoForm"); if(wn && wf && wf.requestSubmit){ wn.value=v; wf.requestSubmit(); } else { S.learnerName=v; save(); }
     const w=$("who"); if(w) w.hidden=true; return !!S.learnerName; }
   function init(){ try{ window.SPLASH && SPLASH.progress(0.85, null); }catch(e){} textSize(); MV.watch(); uiTaps(); if(G.replay){ try{ trace("an exercise done again was left before its end: the place is put back"); }catch(e){} restorePlace(); }
-    if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); mastery0(); seed(); ranks50(); rankSync(); if(!G.tally) G.tally={base:G.points||0, items:[]}; syncNext(); store(); home(); MIC.init();
+    if(G.again){ try{ trace("a lesson done again by choice was left before its end: the place is put back"); }catch(e){} restoreAgain(); } untrap(); mastery0(); seed(); ranksNow(); rankSync(); if(!G.tally) G.tally={base:G.points||0, items:[]}; syncNext(); store(); home(); MIC.init();
     // (the owner, 16 Nov 17:50: "the first time the user uses the app ... it shouldn't go straight to the customization screen. It should take the user
     // straight into the main app, and then they can customise if they want to. The learner should be gender-neutral if the person chooses to do this.")
     // A new learner goes straight to Home: no name screen, no pictograms, no maker, no moments first. The figure starts neutral (changed in the
@@ -1869,7 +2023,7 @@ const SHELL = (()=>{
     // let go): what the page kept back for this moment (the listener, the clips ahead, the stage under home) starts now, under the fade
     const first=()=>{ const go=()=>{ try{ dispatchEvent(new Event("ff-first-screen")); }catch(e){} }; try{ requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(go, 0))); }catch(e){ go(); } };
     try{ UI.fonts().then(()=>{ try{ window.SPLASH && SPLASH.done(); }finally{ first(); } }); }catch(e){ try{ SPLASH.done(); }catch(x){} first(); } }
-  return {RULES, coach:COACH, rankEmblem, rankEn, get G(){ return G; }, rankOf, rankName, ringsNow, weekGoal, wardrobe, WARDROBE, TIERS, home, lessonDone, who, maker, you, lessons, tab, anchors, score, init, AV, MIC, welcome, offerUpdate};
+  return {RULES, coach:COACH, rankEmblem, rankEn, matName, matHtml, MATERIALS, MAT_OF, TITLES, get G(){ return G; }, rankOf, rankName, ringsNow, weekGoal, wardrobe, WARDROBE, TIERS, home, lessonDone, who, maker, you, lessons, tab, anchors, score, init, AV, MIC, welcome, offerUpdate};
 })();
 window.SHELL = SHELL;      // the page's hooks look for it there
 SHELL.init();
