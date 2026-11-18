@@ -945,3 +945,10 @@ html[data-motion="less"] #tlyHost > .rkc,html[data-motion="less"] #tlyHost > .rk
 .ty-tok{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:12px auto 0;width:min(340px,100%);padding:9px 14px;border-radius:14px;background:#FFF6DA;border:1px solid #EBD7A6;opacity:0;transform:translateY(8px);transition:opacity 260ms, transform 360ms var(--spring)}
 .ty-tok.in{opacity:1;transform:none} .ty-tl{display:flex;align-items:center;gap:7px;font:700 16px/1.2 var(--font-ui);color:var(--ink)} .ty-tl b{color:#8F5600;font-size:19px}
 .ty-tok .tokn{width:22px;height:22px;flex:none} .ty-tc{display:flex;align-items:center;gap:5px;font:700 19px/1 var(--font-ui);color:var(--ink)} .ty-tc.bump{animation:tcBump 260ms var(--spring)} @keyframes tcBump{40%{transform:scale(1.18)}}
+
+/* (owner, 17 Nov) a stage not yet reached: what it teaches stays hidden */
+.stq.stlock{background:var(--paper-2);color:var(--ink-3);border-style:dashed;cursor:default}
+.stq.stlock .icon{color:var(--ink-3)}
+.stq.stlock.shake{animation:stshake .32s ease}
+@keyframes stshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion:reduce){.stq.stlock.shake{animation:none}}
