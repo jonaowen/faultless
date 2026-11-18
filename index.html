@@ -416,7 +416,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-17.82";      // must equal version.json
+const APP_VERSION="2026-11-18.83";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -460,6 +460,8 @@ const VOCAB = {
   jemappelle: {name:"je m'appelle", kind:"phrase", say:["Je m'appelle…"], rep:["Répète : je m'appelle."], accept:["jemappelle"]},
   mappelle: {name:"m'appelle", kind:"phrase", say:["M'appelle."], accept:["m'appelle","mappelle","appelle","m appelle","appel","appelle"]},
   jmclaire: {name:"je m'appelle Marie", kind:"phrase", say:["Je m'appelle Marie."], accept:[]},
+  // (.83, D-01: the DI rebuild, ID-MOI) the own-name frame "Moi, c'est …", judged as one unit (tokensOf joins it); the name after it is ignored
+  moicest: {name:"moi, c'est", kind:"phrase", say:["Moi, c'est…"], accept:["moicest"]},
   // counting (DISE Lesson 1, Exercise 4): the numbers, and the counts said as one response
   n1: {name:"un", kind:"number", say:["Un."], accept:["un","1","hun","hein"]},
   n2: {name:"deux", kind:"number", say:["Deux."], accept:["deux","2","deu","d'eux"]},
@@ -598,6 +600,14 @@ const VOCAB = {
   nage: {name:"nage", kind:"word", verb:true, tu:"nages", say:[], accept:["nage","nages","nagent"]},
   chante: {name:"chante", kind:"word", verb:true, tu:"chantes", say:[], accept:["chante","chantes","chantent"]},      // "Il chante." took the place of "Il nage." (11 Nov, afternoon)
   ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
+  // (.83, D-08, D-17: the DI rebuild) grimper, dessiner (Lesson 3), applaudir (Lesson 7, in the place of "Arrive.", never a command now)
+  grimpe: {name:"grimpe", kind:"word", verb:true, tu:"grimpes", say:[], accept:["grimpe","grimpes","grimpent"]},
+  dessine: {name:"dessine", kind:"word", verb:true, tu:"dessines", say:[], accept:["dessine","dessines","dessinent"]},
+  applaudit: {name:"applaudit", kind:"word", verb:true, tu:"applaudis", alone:"applaudis", say:[], accept:["applaudit","applaudis","applaudissent","applaudi"]},
+  dessiner: {name:"dessiner", kind:"word", inf:true, say:[], accept:["dessiner","dessiné","dessinez","dessinée","dessinés"]},
+  grimper: {name:"grimper", kind:"word", inf:true, say:[], accept:["grimper","grimpé","grimpez","grimpée"]},
+  applaudir: {name:"applaudir", kind:"word", inf:true, say:[], accept:["applaudir","applaudi"]},
+  toi: {name:"toi", kind:"word", say:[], accept:["toi"]},      // (.83, D-02: ID-TOI, "Toi, c'est Marie.")
   joue: {name:"joue", kind:"word", verb:true, tu:"joues", say:[], accept:["joue","joues","jouent"]},      // (.62) jouer: "Joue." (Lesson 9)
   tombe: {name:"tombe", kind:"word", verb:true, tu:"tombes", say:[], accept:["tombe","tombes","tombent"]},      // (.62) tomber: "Tombe." (Lesson 9)
   chanter: {name:"chanter", kind:"word", inf:true, say:[], accept:["chanter","chanté","chantez","chantée","chantés"]},      // (.63) after vas / vais (Lesson 10)
@@ -738,13 +748,13 @@ function genItem(it){
    typed first name in the same style as Pierre's and Sylvie's: the own-name test and lead (the learner's turn), and the
    model learner's own-name answer just before it ("Je m'appelle Pierre."), so the pictures do not move between the two.
    The visible rule: say the name on the lit tag (tagLit). The course's own scene is not changed; the card is added here. */
-const OWN_LEAD_RE = /^Je m'appelle…$/;
+const OWN_LEAD_RE = /^(?:Je m'appelle|Moi, c'est)…$/;      // (.83, D-01: "Moi, c'est…")
 function markOwn(o){
   const ans=(o.answerUnits||[]).join(" ");
   const own = (o.type==="task" && o.kind==="test" && (o.expect||[]).includes("REST"))
     || (o.type==="model" && o.voice==="teacher" && o.at==="you" && OWN_LEAD_RE.test(ans))         // dise5c (own_tag "lit"): Marie's held "Je m'appelle…", her hand on the learner's tag
     || (o.type==="task" && o.kind==="lead" && o.at==="you" && OWN_LEAD_RE.test(ans))
-    || (o.type==="model" && (o.voice==="paul" || o.voice==="julie") && ans==="Je m'appelle "+VOCAB[o.voice].name+".");
+    || (o.type==="model" && (o.voice==="paul" || o.voice==="julie") && (ans==="Je m'appelle "+VOCAB[o.voice].name+"." || ans==="Moi, c'est "+VOCAB[o.voice].name+"."));      // (.83, D-01)
   if(!own) return o;
   o.ownName=true; if(o.type==="model"){ if(o.voice==="teacher") o.ownHeld=true; else o.ownModel=true; }
   const sc=o.scene;
@@ -961,7 +971,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:82, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:83, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -996,6 +1006,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=67)) migrate67();      // (.67) a state saved before Lessons 11 and 12 came (Lessons 1-10 unchanged)
   if(!(s.courseRev>=72)) migrate72();      // (.72) a state saved before Lessons 1-12 were rebuilt for near-twins by ear (R-157) and Lesson 13 came
   if(!(s.courseRev>=82)) migrate82();      // (.82) a state saved before Lessons 1-14 said natural French (R-158): Lesson 14's E22-E24 and E26 / E28 change places
+  if(!(s.courseRev>=83)) migrate83();      // (.83) a state saved before Lessons 1-14 were rebuilt from the DI analysis (Moi, c'est …; grimpe / dessine; applaudis)
   } }catch(e){} }
 /* (.82) Lessons 1-14 in natural French (rules.md R-158). Every exercise keeps its id and every lesson its number of exercises, but one: in
    Lesson 14 the names fille / magasin and their taps now come before the either/or "Une montagne ou un cheval ?" (with the noun said with
@@ -1004,6 +1015,47 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
    L14E28, L14E28 (the taps again) is L14E26. Their records go with them (done, an error, first-time-correct, delayed tests, the shell's
    green dots); a learner inside one of the three starts it again at the first of them that is not done. A delayed test of any other
    changed task is taken out when it runs (runDelayed, since .43). */
+/* (.83, CLAUDE.md §1: the DI rebuild; dev/plan/DI_REBUILD_BRIEF.md §3) Lessons 1-14 are rebuilt from the DI analysis: the learner's own name
+   is "Moi, c'est …" (s'appeler waits for its reflexive family, about Lesson 23), "C'est Pierre." from Lesson 1, "Et moi ? -> Toi, c'est
+   Marie." from Lesson 4, Lesson 3's commands are "Grimpe." / "Dessine.", Lesson 7's "Applaudis." / "Écris." ("Il arrive." said, never a
+   command), il / elle by ear inside a sentence, "Il y a quoi ?" of a scene, verb + pas with every subject. No exercise of Lessons 1-14 is
+   the exercise it was (OLDCOUNT_83: their number as served before).
+   - Records: every record of an exercise of Lessons 1-14 is dropped (finished, errors, the counts, delayed tests, the shell's green dot; its
+     points stay), with one log line.
+   - Place: a learner whose place is in Lesson C goes on at the start of Lesson RESTART_83[C], the first rebuilt lesson that brings something
+     they were never brought before their place (the rule of .72): Lesson 1 brings "C'est Pierre." and "Moi, c'est …", which no learner of
+     .82 has met, so every learner goes on at the start of Lesson 1, the lessons from there on done again. (For the owner: RESTART_83 is
+     the one line to change if he rules otherwise, e.g. the start of the learner's own lesson.)
+   - A detour of an older version is over; a lesson or an exercise being done again by choice (G.again, G.replay) is ended. */
+const OLDCOUNT_83 = {"L1": 16, "L2": 17, "L3": 14, "L4": 26, "L5": 27, "L6": 39, "L7": 41, "L8": 51, "L9": 51, "L10": 50, "L11": 50, "L12": 50, "L13": 60, "L14": 52};
+const RESTART_83 = {"1": 1, "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 1, "8": 1, "9": 1, "10": 1, "11": 1, "12": 1, "13": 1, "14": 1, "15": 1};
+function migrate83(){
+  const ch = k => { const m=/^L(\d+)E\d+/.exec(String(k)); return !!m && +m[1]>=1 && +m[1]<=14; };
+  let back="";
+  try{ const raw=localStorage.getItem("frDIn.g."+USERS.current), G0=raw && JSON.parse(raw), A=G0 && (G0.replay || G0.again);
+    if(A && A.snap){ for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in A.snap) S[k]=A.snap[k]; else delete S[k];
+      back="; the place before "+(G0.replay ? "an exercise" : "a lesson")+" done again was put back first"; } }catch(e){}
+  const at = S.detour && S.detour.back ? S.detour.back : {lesson:S.lesson||0, ex:S.ex||0};
+  const fin = Object.keys(S.finished||{}).filter(k=>S.finished[k]);
+  const lid = "L"+(at.lesson+1), doneHere = fin.filter(k=>new RegExp("^"+lid+"E\\d+$").test(k)).length >= (OLDCOUNT_83[lid]||Infinity);
+  const C = at.lesson+1+(doneHere?1:0), start = Math.min((RESTART_83[C]||C), LESSONS.length)-1;
+  const dropped = fin.filter(ch);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  LESSONS.forEach((L,i)=>{ for(const e of L.exercises){ if(i<start) S.finished[e.id]=true; else { delete S.finished[e.id]; delete S.exHadError[e.id]; } } });
+  const before=(S.delayed||[]).length;
+  S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||""));
+  const hadDetour=!!S.detour; S.detour=null; S.lesson=start; S.ex=0;
+  let shell="";
+  try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
+    if(raw){ const G=JSON.parse(raw), was=!!(G.again||G.replay);
+      for(const k of Object.keys(G.ex||{})) if(ch(k)) delete G.ex[k];
+      G.again=null; G.replay=null; G.cur=null; G.next=null; G.why=""; G.warmTo=null;
+      localStorage.setItem(gk, JSON.stringify(G)); if(was) shell="; a lesson or an exercise being done again was ended"; } }catch(e){}
+  if(fin.length || before || hadDetour)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-14 rebuilt from the DI analysis; records dropped of "+dropped.length+" exercises"+((before-S.delayed.length)?"; delayed tests dropped: "+(before-S.delayed.length):"")+(hadDetour?"; the detour is over":"")+back+shell+"; this learner goes on at the start of Lesson "+(start+1)+(start+1<C?" (it brings what their Lesson "+C+" and the lessons before it did not)":""), heard:[]});
+  S.courseRev=83;
+}
 const MOVED_82 = {L14E22:"L14E24", L14E23:"L14E22", L14E24:"L14E23", L14E26:"L14E28", L14E28:"L14E26"};
 function migrate82(){
   const re = k => { const m=/^(L14E2[2-8])(\b.*)?$/.exec(String(k)); return m && MOVED_82[m[1]] ? MOVED_82[m[1]]+(m[2]||"") : k; };
@@ -2072,6 +2124,7 @@ const RE_IL_NOUN = new RegExp("(^| )(?:il|elle) (?=(?:"+NOUN_FORMS+")(?: |$))","
 const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
+  n = n.replace(/(^| )moi,? c'? ?est(?= |$)/g, "$1moicest");                                       // (.83, D-01) moi c'est: the own-name frame, one unit
   n = n.replace(/(^| )tu t'? ?app?ell?es?(?= |$)/g, "$1tutappelles");                             // tu t'appelles (said to the teacher about her)
   n = n.replace(/(^| )s'app?ell?e(?:s|nt)?(?= |$)/g, "$1sappelle");
   n = n.replace(/(^| )oui oui(?= |$)/g, "$1ouioui");                                                  // (.48) "Oui oui." (yes, yes): one unit, so the stutter rule does not take one away                                 // il / elle s'appelle … (the pronoun before it is judged)
@@ -2439,6 +2492,34 @@ function repeatedCue(text, cue){
 }
 let curCue="", lastRepeatedCue=false;
 let holdEar=false;
+/* (.82) The start of the answer written as a word of its own. The owner's "Ville." for "Répète : ville." (17 Nov 2026 20:09:04, Lesson 6
+   Exercise 26; plain on the recording: Whisper writes "ville" in three hearings of four) came out as "lis ville" and was corrected as a
+   wrong name. It was one unbroken stretch of sound (0.66 to 1.16 s): the listener wrote its loud first 140 to 170 ms as "lis" (confidence
+   0.5 to 0.8; "lis" is in the list from Lesson 6 Exercise 7, "Lis.") and the rest as "ville" (1.00), with no gap between them. In every recorded
+   answer of 9-17 Nov 2026 that was refused as one word more than the answer, the word was a plausible wrong answer said and then
+   changed ("une un livre", "un une", "julie claire", "un quatre"): those are judged as said. So one word before exactly the answer is
+   the start of the answer, not a word, only when (a) it is not something a learner might say here: no front word, pronoun, c'est, yes /
+   no or any other word the judge weighs (SLOT), no person's name, thing or number (NAMED, nameOf), no word of any answer of the exercise being run, no
+   word of the question, no hesitation word; and (b) it is short and joined to the answer: 200 ms or less, the answer's first word
+   starting within 40 ms of its end. The trace and the run file's reason say what the listener wrote. Typed or heard with a gap, "lis
+   ville" stays wrong (the judge itself is unchanged). */
+const SPLIT_START = {maxMs:200, gapMs:40};
+/* text: what the listener wrote (voskClean); words: its words with times in ms ({w, s, e, c}); the place is the one being run (S, curCue).
+   Returns null, or what to hear instead: {w, rest, dur, gap, conf, r} (r: the judge's verdict on the rest). Checked by
+   dev/harness/replay/listencheck.js (gate step 6). */
+function splitWordStart(text, words, expect, alsoOk=[]){
+  const tw=(text||"").split(" ").filter(Boolean); if(tw.length<2 || expect.includes("REST")) return null;
+  const w=tw[0], rest=tw.slice(1).join(" "); if(w===tw[1] || w==="[unk]") return null;
+  const r=judge(rest, expect, [], alsoOk); if(!r.ok || r.near || r.unsure || r.hesitation) return null;
+  const E=((LESSONS[S.lesson]||{}).exercises||[])[S.ex], exW=new Set();
+  if(E) for(const P of E.parts) for(const it of P.items) if(Array.isArray(it.expect)) for(const x of tokensOf(phraseOf(it.expect))) exW.add(x);
+  for(const x of tokensOf(phraseOf(expect))) exW.add(x);
+  if(Object.values(SLOT).some(a=>a.includes(w)) || NAMED.includes((nameOf(w)||{}).n) || exW.has(w) || cueWords(curCue).includes(w) || HESIT_WORDS.includes(w) || FILLERS.includes(w) || /\d/.test(w)) return null;
+  let i=-1; for(let k=(words||[]).length-2;k>=0;k--) if(words[k].w===w && words[k+1].w===tw[1]){ i=k; break; }
+  if(i<0) return null; const a=words[i], dur=a.e-a.s, gap=words[i+1].s-a.e;
+  if(dur>SPLIT_START.maxMs || gap>SPLIT_START.gapMs) return null;
+  return {w, rest, dur, gap, conf:a.c, r};
+}
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
   const cue=curCue, either=/(^| )ou( |$)/.test(normalise(cue||""));
@@ -2489,6 +2570,7 @@ async function listenVosk(expect, alsoOk=[]){
   const loneFront = expect.length===1 && ["UN","UNE","n1"].includes(expect[0]);
   const LET_GO = {gapMs:200, shortMs:240, maxMs:330, quieter:0.88, beforeMs:200};
   const heardW=[]; let letGoNote="";
+  const allW=[];      // (.82) every word the listener wrote, with its times: splitWordStart, below
   const letGo=()=>{ if(!loneFront || !sound) return; let changed=false;
     for(let i=0;i<heardW.length;i++){ const b=heardW[i], a=i?heardW[i-1]:null;
       if(b.w!=="deux") continue;
@@ -2529,6 +2611,7 @@ async function listenVosk(expect, alsoOk=[]){
             +(spk?": \""+spk+"\" was over within "+(spk===w.word?TAIL_END_MS/1000:0.46)+" s of the microphone opening, so it is the end of the teacher's own cue from the speaker, not counted":"")
             +(firstEarly?"; \""+firstEarly+"\" was over within 0.46 s":"")); } }
       lastWordEnd=Math.round(ws[ws.length-1].end*1000); }
+    if(t && ws.length===t.split(" ").length) for(const w of ws) allW.push({w:w.word, s:Math.round(w.start*1000), e:Math.round(w.end*1000), c:w.conf});
     if(t){ finals.push(t); if(loneFront && ws.length===t.split(" ").length){ const k=finals.length-1; for(const w of ws) heardW.push({w:w.word, s:Math.round(w.start*1000), e:Math.round(w.end*1000), k}); letGo(); } }
     partial=""; noteRaw(); if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
@@ -2609,6 +2692,9 @@ async function listenVosk(expect, alsoOk=[]){
     return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
   }
   let v=judge(text, expect, [], alsoOk, {raw});
+  if(!v.ok){ const sp=splitWordStart(text, allW, expect, alsoOk); if(sp){
+    trace("\""+sp.w+"\" "+sp.dur+" ms long (confidence "+(+sp.conf||0).toFixed(2)+"), the answer "+sp.gap+" ms after it, and not a word a learner might say here: the start of the answer written as a word; heard as \""+sp.rest+"\"");
+    v={...sp.r, reason:"the start of the answer written as a word: the listener wrote \""+text+"\"", splitStart:sp.w}; } }
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
@@ -2885,7 +2971,7 @@ const CARD = (w, h, r=16) => { const f=n=>(+n).toFixed(1); return `<rect class="
 const cardGroupOf = side => side==="L" ? fL : side==="R" ? fR : side==="pL" ? document.getElementById("badge_paul") : side==="pR" ? document.getElementById("badge_julie") : /^s\d+$/.test(side||"") ? frameRow.querySelector('[data-slot="'+side+'"]') : null;
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", sleeping:"sleep", singing:"sing", reading:"read", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
   working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen",      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
-  writing:"write", running:"run", falling:"fall", swimming:"swim"};      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
+  writing:"write", running:"run", falling:"fall", swimming:"swim", climbing:"climb", drawing:"draw", clapping:"clap"};      // (act83) grimper, dessiner, applaudir (people.js climb, draw, clap)      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -3287,6 +3373,10 @@ async function pointAt(who){
   askMark(null);
   // mark:false (the review of 11 Nov, F9): the question is about this picture, but a border on it would give the answer ("Qui danse ?"): nothing is marked
   if(who && typeof who==="object" && who.mark===false && who.kind==="test"){ goldOff(); if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; } return; }
+  // (.83; the reader of the DI rebuild, F1, D-13) "C'est quoi ?" of two things: nothing single is pointed at; the border passes over each in
+  // the order of the answer and goes off, so the question is about the two (a screen of things with nothing marked is "Il y a quoi ?"'s)
+  if(who && typeof who==="object" && who.at==="none" && Array.isArray(who.sweep) && who.sweep.length>=2 && who.sweep.every(x=>ON_SCREEN(x))){
+    selfTag(false); for(const x of who.sweep){ goldOn(x); await sleep(380); } goldOff(); trace("the border passed over "+who.sweep.join(", ")); return; }
   const side = sideOf(who); if(side!=="self") selfTag(false); if(side==="none") return;
   if(ON_SCREEN(side)){ goldOn(side);
     if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
@@ -4447,7 +4537,7 @@ const ACT_HALF = 0.5;
 /* (figures 12; Jon, 16 Nov: "all the animations should be brought down to the speed of something like jumping, standing up, or sitting
    down ... the smiling one is too long") the smile's own floors go: one whole loop of it (1.6 s in people.js) is shown, as for every action */
 const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400};      // (figures 15) swim: one loop (1.2 s)
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400, climb:4800, draw:3000, clap:3000};      // (figures 15) swim: one loop (1.2 s)
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
@@ -4953,7 +5043,7 @@ const OWN_LISTEN = ["Écoute."];          // said before the learner's own recor
 // "je m'appelle" + a course person's name, then "je m'appelle" again with no course name after it (or one that could be their own)
 function selfCorrectedOwn(r){
   const toks=tokensOf(r.raw || (r.heard||[])[0] || ""), other=w=>{ const n=nameOf(w); return !!(n && !n.near && VOCAB[n.n].kind==="person" && !ownMaybe(n.n)); };
-  const o=toks.findIndex(other), L=toks.lastIndexOf("jemappelle");
+  const o=toks.findIndex(other), L=Math.max(toks.lastIndexOf("jemappelle"), toks.lastIndexOf("moicest"));      // (.83, D-01: "Moi, c'est …" too)
   return o>=0 && L>o && !toks.slice(L+1).some(other);
 }
 // the learner's earlier right own-name answers, newest first: kept ones, then any in the log (a state from before .24)
@@ -5509,6 +5599,7 @@ function courseGrammar(expect){
     { let cpos=null; LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>it.kind==="test" && (it.expect||[]).includes("CEST"))) && (cpos=[li,ei])));
       P.delete("c'est"); at("c'est", cpos||[0,0]); }       // "c'est" enters with its first sentence, not before
     P.delete(""); P.delete("je"); P.delete("m'appelle"); at("je m'appelle",[0,0]); at("m'appelle",[0,0]);
+    P.delete("moi c'est"); at("moi c'est",[0,0]);      // (.83, D-01) the own-name frame from the start, as "je m'appelle" was
     VOSK.base=[...P.keys()].sort(); VOSK.from=P;
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
@@ -5519,7 +5610,7 @@ function courseGrammar(expect){
   if(extra.length) return JSON.stringify([...new Set(extra)]);
   /* "je m'appelle" is in the grammar only when the answer has it: otherwise its "je" takes the start of "Julie" (Jon's
      9 Nov 16:04 run: a correct "Julie" heard as "je") */
-  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire"].includes(e));
+  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire","moicest"].includes(e));
   let base = self ? VOSK.base : VOSK.base.filter(p=>!/m'appelle/.test(p));
   /* The greetings ("salut", "salut marie"…) are in the list only from the exercise that teaches them (Lesson 4), or when
      the answer is one. With them in, "c'est Marie / Pierre / Sylvie" was heard as "salut …" (same names, one short word
@@ -5536,6 +5627,17 @@ function courseGrammar(expect){
      meant: it can only take a right answer away. */
   const GATED_FROM=0, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
   base = base.filter(p=>reached(VOSK.from.get(p)||[0,0]));
+  /* (.82) A lone front word and a lone pronoun are not heard against each other. From Lesson 4 Exercise 8 (il / elle taught) the list
+     of every "Un ou une ?" had "il" and "elle" in it, and the owner's "une" (17 Nov 2026 19:51, Lesson 5 Exercise 23) came out as
+     "il" five times and "elle" once, each corrected as a wrong answer; every "un" passed. "Il" is the nearest sound the small model
+     has for an "une" whose n is let go softly ([y] beside [i]), and it was never an answer there: "il" and "elle" are no answer to
+     "Un ou une ?" (nor to "Répète : une."), and "un" and "une" are none to "Il ou elle ?". So where the answer asked for is "Un." or
+     "Une." alone, the phrases that begin with il / elle (il, elle, il danse, il y en a…) are left out of the list, and where it is
+     "Il." or "Elle." alone, the phrases that begin with un / une. Each pair stays whole ("un" is still heard against "une", and the
+     "deux" of a let-go "une" stays), so "un" said for "Une." is refused as before. See dev/qa/une82 for the replays. */
+  const lone = (expect||[]).length===1 ? expect[0] : "";
+  if(["UN","UNE","n1"].includes(lone)) base = base.filter(p=>!/^(il|elle)( |$)/.test(p));
+  else if(["IL","ELLE"].includes(lone)) base = base.filter(p=>!/^(un|une)( |$)/.test(p));
   /* (.51) Where the answer is the front word alone ("Un." / "Une."), "deux" stays in the list before it is reached (Lesson 1
      Exercise 7). It is what the listener writes for the end of "une" let go (listenVosk, "said once and written as two
      words"): with it, such a "une" is "un deux" and is heard as "une"; without it the n is not written at all and three of a
