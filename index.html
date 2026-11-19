@@ -397,7 +397,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="listener/listener.js"></script>
 <script src="course/lesson1.js"></script>
 <script src="course/lesson2.js"></script>
-<!-- (.84) the release serves the lessons whose rows are final, from Lesson 1: Lessons 2 on are shown as coming (shell.js COMING) until each is final -->
+<script src="course/lesson3.js"></script>
+<!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.86: Lessons 1-3): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
 <script>
@@ -405,7 +406,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-19.85";      // must equal version.json
+const APP_VERSION="2026-11-19.86";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -592,6 +593,9 @@ const VOCAB = {
   // (.83, D-08, D-17: the DI rebuild) grimper, dessiner (Lesson 3), applaudir (Lesson 7, in the place of "Arrive.", never a command now)
   grimpe: {name:"grimpe", kind:"word", verb:true, tu:"grimpes", say:[], accept:["grimpe","grimpes","grimpent"]},
   dessine: {name:"dessine", kind:"word", verb:true, tu:"dessines", say:[], accept:["dessine","dessines","dessinent"]},
+  // (.86, Lesson 3) voyager, the owner's swap for grimper (18 Nov 2026); its picture: people.js PICS.action "travel" (a figure setting off with a suitcase)
+  voyage: {name:"voyage", kind:"word", verb:true, tu:"voyages", say:[], accept:["voyage","voyages","voyagent"]},
+  voyager: {name:"voyager", kind:"word", inf:true, say:[], accept:["voyager","voyagé","voyagez","voyagée"]},
   applaudit: {name:"applaudit", kind:"word", verb:true, tu:"applaudis", alone:"applaudis", say:[], accept:["applaudit","applaudis","applaudissent","applaudi"]},
   dessiner: {name:"dessiner", kind:"word", inf:true, say:[], accept:["dessiner","dessiné","dessinez","dessinée","dessinés"]},
   grimper: {name:"grimper", kind:"word", inf:true, say:[], accept:["grimper","grimpé","grimpez","grimpée"]},
@@ -966,7 +970,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:85, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:86, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1004,6 +1008,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=83)) migrate83();      // (.83) a state saved before Lessons 1-14 were rebuilt from the DI analysis (Moi, c'est …; grimpe / dessine; applaudis)
   if(!(s.courseRev>=84)) migrate84();      // (.84) a state saved before the new Lesson 1 (the final content analysis): everyone starts again at Lesson 1
   if(!(s.courseRev>=85)) migrate85();      // (.85) a state saved when Lesson 1 was the only lesson served: a learner who passed it goes on to Lesson 2
+  if(!(s.courseRev>=86)) migrate86();      // (.86) a state saved when Lessons 1-2 were served: a learner who passed Lesson 2 goes on to Lesson 3
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1074,21 +1079,28 @@ function migrate83(){
    stays where he or she is. CHANGED_85: the exercises of Lesson 1 whose items changed between .84 and .85 (none if Lesson 1 is served as it
    was): their records are dropped, as migrate82 did for moved exercises. */
 const CHANGED_85 = [];
-function migrate85(){
-  const ch = k => CHANGED_85.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
+/* (.86) Lessons 1-3 are served (Lesson 3: voyage / dessine, Un ou une ?, Dis :, Touche + a name); Lessons 4 on are coming. migrate85's rule,
+   for any release that serves one lesson more than the one before it: a learner saved when Lessons 1-N were served keeps every record, and
+   one who passed Lesson N (the last served then), is at it and does not owe its yellow exercises goes on at the start of Lesson N + 1.
+   CHANGED_86: the exercises of Lessons 1-2 whose items changed between .85 and .86 (their records dropped, as CHANGED_85). */
+const CHANGED_86 = [];
+function migrate85(){ carryOn(85, 1, CHANGED_85); }
+function migrate86(){ carryOn(86, 2, CHANGED_86); }
+function carryOn(rev, served, changed){
+  const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
   const dropped = Object.keys(S.finished||{}).filter(ch).length;
-  if(CHANGED_85.length){ S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc); S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||"")); }
+  if(changed.length){ S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc); S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||"")); }
   let moved=false;
   try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
-    if(raw){ const G=JSON.parse(raw); if(CHANGED_85.length && G.ex) for(const k of Object.keys(G.ex)) if(ch(k)) delete G.ex[k];
-      const passed1=((G.lessons||{}).L1||[]).some(r=>r && r.passed);
-      if(passed1 && (S.lesson||0)===0 && !S.detour && G.why!=="perfect" && LESSONS.length>1){
-        S.lesson=1; S.ex=0; for(const e of LESSONS[1].exercises) delete (S.finished||{})[e.id];
-        G.next=1; G.furthest=Math.max(G.furthest||0, 1); G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; moved=true; }
+    if(raw){ const G=JSON.parse(raw); if(changed.length && G.ex) for(const k of Object.keys(G.ex)) if(ch(k)) delete G.ex[k];
+      const passed=((G.lessons||{})["L"+served]||[]).some(r=>r && r.passed);
+      if(passed && (S.lesson||0)===served-1 && !S.detour && G.why!=="perfect" && LESSONS.length>served){
+        S.lesson=served; S.ex=0; for(const e of LESSONS[served].exercises) delete (S.finished||{})[e.id];
+        G.next=served; G.furthest=Math.max(G.furthest||0, served); G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; moved=true; }
       localStorage.setItem(gk, JSON.stringify(G)); } }catch(e){}
-  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-2 served"+(dropped?"; records dropped of "+dropped+" exercises of Lesson 1 that changed":"")+(moved?"; Lesson 1 was passed: this learner goes on at the start of Lesson 2 (the Lesson 1 record kept)":""), heard:[]});
-  S.courseRev=85;
+  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+(served+1)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
+  S.courseRev=rev;
 }
 function migrate84(){
   const ch = k => { const m=/^L(\d+)E\d+/.exec(String(k)); return !!m && +m[1]>=1 && +m[1]<=14; };
@@ -2565,12 +2577,26 @@ const SPLIT_START = {maxMs:200, gapMs:40};
 /* text: what the listener wrote (voskClean); words: its words with times in ms ({w, s, e, c}); the place is the one being run (S, curCue).
    Returns null, or what to hear instead: {w, rest, dur, gap, conf, r} (r: the judge's verdict on the rest). Checked by
    dev/harness/replay/listencheck.js (gate step 6). */
+/* (.86; reader 87, the coordinator's ruling of 19 Nov 2026) never taken as the start of an answer: every word of every test's answer in the
+   lessons up to the one being run (its expect and alsoOk tokens, and the words of its answer as said: "Moi, c'est …" is one token,
+   "moicest", in expect), and the person's own words moi / toi / lui / nous / vous / eux as the listener writes them (VOCAB's accept: "the
+   pronouns" of the rule, which SLOT does not hold) */
+const ANSWER_WORDS = {};
+const PERSON_WORDS = ["moi", "toi", "lui", "nous", "vous", "eux"];
+function answerWordsReached(){ const li=(typeof S!=="undefined" && S.lesson|0) || 0;
+  if(!ANSWER_WORDS[li]){ const w=new Set();
+    for(const k of PERSON_WORDS){ w.add(k); for(const a of ((typeof VOCAB!=="undefined" && VOCAB[k] && VOCAB[k].accept) || [])) w.add(a); }
+    for(let i=0;i<=li && i<LESSONS.length;i++) for(const E of LESSONS[i].exercises) for(const P of E.parts) for(const it of P.items){
+      if(Array.isArray(it.expect)) for(const x of tokensOf(phraseOf(it.expect))) w.add(x);
+      for(const a of (it.alsoOk||[])) if(Array.isArray(a)) for(const x of tokensOf(phraseOf(a))) w.add(x);
+      for(const u of (it.answerUnits||[])) for(const x of normalise(String(u)).split(" ")) if(x) w.add(x); }
+    ANSWER_WORDS[li]=w; }
+  return ANSWER_WORDS[li]; }
 function splitWordStart(text, words, expect, alsoOk=[]){
   const tw=(text||"").split(" ").filter(Boolean); if(tw.length<2 || expect.includes("REST")) return null;
   const w=tw[0], rest=tw.slice(1).join(" "); if(w===tw[1] || w==="[unk]") return null;
   const r=judge(rest, expect, [], alsoOk); if(!r.ok || r.near || r.unsure || r.hesitation) return null;
-  const E=((LESSONS[S.lesson]||{}).exercises||[])[S.ex], exW=new Set();
-  if(E) for(const P of E.parts) for(const it of P.items) if(Array.isArray(it.expect)) for(const x of tokensOf(phraseOf(it.expect))) exW.add(x);
+  const exW=new Set(answerWordsReached());      // (.86; reader 87, the coordinator's ruling) a word of ANY answer of the lessons reached (moi, toi, names, numbers ...), not only this exercise's: "moi c'est pierre" to "C'est qui ?" is not "C'est Pierre."
   for(const x of tokensOf(phraseOf(expect))) exW.add(x);
   if(Object.values(SLOT).some(a=>a.includes(w)) || NAMED.includes((nameOf(w)||{}).n) || exW.has(w) || cueWords(curCue).includes(w) || HESIT_WORDS.includes(w) || FILLERS.includes(w) || /\d/.test(w)) return null;
   let i=-1; for(let k=(words||[]).length-2;k>=0;k--) if(words[k].w===w && words[k+1].w===tw[1]){ i=k; break; }
@@ -3029,7 +3055,7 @@ const CARD = (w, h, r=16) => { const f=n=>(+n).toFixed(1); return `<rect class="
 const cardGroupOf = side => side==="L" ? fL : side==="R" ? fR : side==="pL" ? document.getElementById("badge_paul") : side==="pR" ? document.getElementById("badge_julie") : /^s\d+$/.test(side||"") ? frameRow.querySelector('[data-slot="'+side+'"]') : null;
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", sleeping:"sleep", singing:"sing", reading:"read", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
   working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen",      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
-  writing:"write", running:"run", falling:"fall", swimming:"swim", climbing:"climb", drawing:"draw", clapping:"clap"};      // (act83) grimper, dessiner, applaudir (people.js climb, draw, clap)      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
+  writing:"write", running:"run", falling:"fall", swimming:"swim", climbing:"climb", drawing:"draw", clapping:"clap", travelling:"travel"};      // (act83) grimper, dessiner, applaudir (people.js climb, draw, clap)      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -4147,7 +4173,7 @@ async function tapModel(t, by, slot){
   const slots=[].concat(slot);
   await setPortraits(t.scene); gestureEar();
   if(t.touch && t.touch.silent){ await say(t.questionUnits); await silentTouches(t.touch.count); for(const s1 of slots) await handTap(by, s1); }
-  else await Promise.all([say(t.questionUnits), (async()=>{ await sleep(450); for(const s1 of slots) await handTap(by, s1); })()]);
+  else await Promise.all([t.cueVoice ? cueAs(t.cueVoice, t.questionUnits, t.cueAt, null) : say(t.questionUnits), (async()=>{ await sleep(450); for(const s1 of slots) await handTap(by, s1); })()]);      // (.86) a model learner's cue in his or her voice (Marie's hand taps)
   const done = actx ? actx.currentTime : 0;      // (.45) the end of the model, for the pause after it in a correction (corrModel)
   await sleep(250); handHide(); rest();
   return done;
@@ -4156,7 +4182,9 @@ async function presentTapShow(a){
   const lit = a.tap.by==="paul" || a.tap.by==="julie", drawn = tapperScene(a.scene, a.tap.by);
   curTask=a.id; ph("model (tap): "+(handName(a.tap.by)||"the hand")); await setPortraits(drawn); itemStart(a); await convIntro(a);
   if(drawn!==a.scene) trace("the picture cards show "+VOCAB[a.tap.by].name+" doing each action: "+VOCAB[a.tap.by].name+" taps");
-  if(a.teacherUnits.length){ gestureEar(); await say(a.teacherUnits); await sleep(250); }
+  // (.86; the coordinator, 19 Nov 2026: Marie never names herself in a command) a model learner says the cue where it names Marie ("Touche
+  // Marie."): cueAs, his or her own voice and green ring (no question mark: the one who taps is the one lit next)
+  if(a.teacherUnits.length){ gestureEar(); if(a.cueVoice) await cueAs(a.cueVoice, a.teacherUnits, a.cueAt, null); else await say(a.teacherUnits); await sleep(250); }
   if(a.touch && a.touch.silent) await silentTouches(a.touch.count);
   if(lit) speakLit(a.tap.by, true);
   await handTap(a.tap.by, a.tap.at); if(lit) speakLit(a.tap.by, false);
@@ -4174,7 +4202,9 @@ let holdHand=false;
 async function presentTap(t, {retest=false, firstSeen=null, cued=false}={}){
   ph(t.leadHand ? "lead (tap)" : retest ? "retest (tap)" : "test (tap)"); rest();
   tapArm(t.targets);                     // (.27) a touch while the cue is said counts
-  if(!cued){ CUT.on=false; TAPARM.cut=true;      // (.57) a tap during the cue cuts it and is taken at once
+  if(!cued && t.cueVoice){ CUT.on=false; await cueAs(t.cueVoice, t.questionUnits, t.cueAt, null);      // (.86) a model learner's tap cue ("Touche Marie."): his or her voice; a tap during it is taken when it ends
+    if(t.touch && t.touch.silent) await silentTouches(t.touch.count); }
+  else if(!cued){ CUT.on=false; TAPARM.cut=true;      // (.57) a tap during the cue cuts it and is taken at once
     try{ await say(t.questionUnits, "tutor", undefined, 0); }finally{ TAPARM.cut=false; }      // (.45) cued: "Vas-y." at the end of a correction was the cue
     if(t.touch && t.touch.silent && !CUT.on) await silentTouches(t.touch.count); }
   const cutByTap=CUT.on; CUT.on=false;
@@ -4415,12 +4445,12 @@ const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that
      h: `<p>Say only the answer, not the question.</p>`}]},
   touche_model: {t: "Touching a picture", parts: [
     {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {hand: {at: 0, by: "teacher"}, label: "Marie's hand touches Pierre's picture"}),
-     h: `<p>${XSAY("Touche.", "Touche")} = touch. Watch the hand.</p>`}]},
+     h: `<p>Marie tells you what to touch. Watch her hand.</p>`}]},      // (.86; the coordinator, 19 Nov 2026) no French: Lesson 3 row 6 teaches touche in its command frame only, so Marie's lone "Touche." is never played or shown (truth86 FRAME WORD ALONE)
   touche_tap: {t: "Your turn to touch", parts: [
     {pic: () => XPIC.phone({turn: "tap", row: [{person: "paul"}, {person: "julie"}], tapAll: [0, 1], crop: [0, 470], label: "The frame is blue: touch a picture"}),
      h: `<p>Blue frame: don't speak. Touch the picture Marie names.</p>`}]},
   /* (.82, R-124 and R-158: natural French) "Touche un." is not French; Marie says "Touches-en un." / "Touches-en une." (touch one of
-     them) with two or more of each kind on the screen. The card quotes her words, as touche_model quotes "Touche.", once, before the
+     them) with two or more of each kind on the screen. The card quotes her words (as touche_model quoted "Touche." before .86), once, before the
      first item that says it */
   touches_en: {t: "Touch one of them", parts: [
     {h: `<p>${XSAY("Touches-en un.", "Touches-en un")} ${XSAY("Touches-en une.", "Touches-en une")} = touch one of them. There are two of each: either one is right.</p>`}]},
@@ -4585,7 +4615,7 @@ async function convIntro0(it){
      says it once, before that item, which is the first model of the format. About how the app works only: no English about French. */
   if(typeof it.intro==="string") await convOnce(it.intro);      // (the engine's own introduction models carry intro:true: not a clip name)
   if(it.read) await convOnce("lis");
-  if(it.type==="tapshow" && /\bTouche\b/.test((it.questionUnits||[]).join(" "))) await convOnce("touche_model");      // (.84; the reader, B2) the card quotes "Touche.": only before the first cue that says it (Lesson 3: Touche Pierre.), never where the name alone cues the tap
+  if(it.type==="tapshow" && /\bTouche\b/.test((it.questionUnits||[]).join(" "))) await convOnce("touche_model");      // (.84; the reader, B2) only before the first cue that says Touche (Lesson 3: Touche Pierre.), never where the name alone cues the tap; (.86) the card quotes no French
   if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
   if(isTouchesEn(it)) await convOnce("touches_en");      // (.82, R-158) the first "Touches-en un." / "Touches-en une."
   /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
@@ -4695,7 +4725,7 @@ const ACT_HALF = 0.5;
 /* (figures 12; Jon, 16 Nov: "all the animations should be brought down to the speed of something like jumping, standing up, or sitting
    down ... the smiling one is too long") the smile's own floors go: one whole loop of it (1.6 s in people.js) is shown, as for every action */
 const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400, climb:4800, draw:3000, clap:3000};      // (figures 15) swim: one loop (1.2 s)
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400, climb:4800, draw:3000, clap:3000, travel:3000};      // (figures 15) swim: one loop (1.2 s)
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
@@ -5302,7 +5332,7 @@ async function corrModel(task, o={}){
   // (.84; the reader, B3 and S4) the border on whom the answer is about; "C'est Marie." is never said by Marie of herself: Pierre says it
   // (the plan's model, Lesson 1 row 5), his green ring on, the border on Marie
   await pointAt(task); if(!task.cueVoice) litPlay(task);
-  const by = ownCestBy(answerUnits(task).join(" "));
+  const by = corrVoiceOf(answerUnits(task).join(" "));      // (.86) who says the answer: ownCestBy, then LONE_BY (Marie's lone "Un." is never served: Sylvie's)
   // (.84; the coordinator, 18 Nov 2026) a correction repeats the item's cue: a "Répète :" test of Marie's is corrected with her "Répète : X."
   // again (its own clip), not X alone (Marie's lone "Un." is not heard as un; the cue's is)
   const rep = !task.cueVoice && /^R[ée]p[èe]te\b/.test((task.questionUnits||[]).join(" "));
@@ -5312,6 +5342,14 @@ async function corrModel(task, o={}){
   else if(rep) await say(task.questionUnits);
   else if(by) await cueAs(by, answerUnits(task), slotOfPerson(by) || "none", null); else await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
+/* (.86; the coordinator's ruling on the Lesson 3 reader's early read, 19 Nov 2026) a lone line whose clip of Marie's is never served (teacher/
+   un.mp3: no take passes the ear gate) is said in a correction, at the seven-trial limit and on a listening fault by the model learner whose
+   block it is (the Un. block is Sylvie's, seq-plan 82b7a88a); "Une." stays Marie's (dev/voice/clipcheck.py NEVER SERVED, truth MARIE'S LONE UN) */
+const LONE_BY = {"Un.": "julie"};
+/* (.86; reader 86's delta read) the one resolution of the voice that says a test's answer in a correction, at the seven-trial limit and on a
+   listening fault (corrModel): a model learner (ownCestBy, LONE_BY) or Marie (null). dev/harness/replay/clipgate.js asks the app this same
+   function for the clip it judges, so the gate hears the clip the app plays (proof CLIPGATE-CORR-VOICE) */
+const corrVoiceOf = a => ownCestBy(String(a||"")) || LONE_BY[String(a||"").trim()] || null;
 // (.84) the speaker who says "C'est <name>." in a correction when the name is Marie's: a model learner (never Marie of herself)
 // (.85; the coordinator, 18 Nov 2026: a pair with one's own name "counts exactly like C'est Marie.") a pair that names Marie ("Sylvie et
 // Marie.") is said by the model learner it does not name (Pierre); a pair of the two model learners is Marie's own to say
@@ -5349,7 +5387,7 @@ async function correction(task, nth, how=""){
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
   // "Vas-y.": the open palm, the border on what is asked about; the learner's turn opens when it has ended
-  if(task.tapTask){ rest(); const u=corrTurn(task); if(u.length) await say(u); return; }      // (.84) "Vas-y." or the item's own cue again
+  if(task.tapTask){ rest(); const u=corrTurn(task); if(u.length){ if(task.cueVoice && u===task.questionUnits) await cueAs(task.cueVoice, u, task.cueAt, null); else await say(u); } return; }      // (.84) "Vas-y." or the item's own cue again (.86: in the voice of the model learner who gives it)
   if(task.cue==="point"){ rest(); if(corrWordOk("vas-y")) await say(PHR.atoi); pointAt(task); return; }      // touch-and-name: the border on what to name comes on as "Vas-y." ends, as the pointing is its cue (askAndListen)
   await gesturePalm(task); await Promise.all([(async()=>{ const u=corrTurn(task); if(u.length) await say(u); })(), (async()=>{ await sleep(200); await pointAt(isOwnName(task) ? "you" : task); })()]);
 }
