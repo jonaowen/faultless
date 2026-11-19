@@ -396,6 +396,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 
 <script src="listener/listener.js"></script>
 <script src="course/lesson1.js"></script>
+<script src="course/lesson2.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1: Lessons 2 on are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -404,7 +405,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-19.84";      // must equal version.json
+const APP_VERSION="2026-11-19.85";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -965,7 +966,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:84, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:85, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1002,6 +1003,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=82)) migrate82();      // (.82) a state saved before Lessons 1-14 said natural French (R-158): Lesson 14's E22-E24 and E26 / E28 change places
   if(!(s.courseRev>=83)) migrate83();      // (.83) a state saved before Lessons 1-14 were rebuilt from the DI analysis (Moi, c'est …; grimpe / dessine; applaudis)
   if(!(s.courseRev>=84)) migrate84();      // (.84) a state saved before the new Lesson 1 (the final content analysis): everyone starts again at Lesson 1
+  if(!(s.courseRev>=85)) migrate85();      // (.85) a state saved when Lesson 1 was the only lesson served: a learner who passed it goes on to Lesson 2
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1065,6 +1067,29 @@ function migrate83(){
      Points, tokens, ranks, badges, the streak, the wardrobe and the figure stay (nothing earned is taken back; a perfect lesson's tokens are
      not paid twice: G.tp kept).
    - Place: the start of Lesson 1; a detour, a lesson or an exercise being done again is over. */
+/* (.85) Lessons 1 and 2 are served (Lesson 2: Lesson 1 again, and et on the names); Lessons 3 on are coming. A learner saved under .84 keeps
+   everything: the records of Lesson 1 (finished, errors, counts, delayed tests), the shell's lessons passed and perfect, points, tokens, streak,
+   wardrobe. Under .84 a learner who passed Lesson 1 could not go on (it was the last lesson served): such a learner, at Lesson 1 and not owing
+   its yellow exercises (G.why "perfect"), goes on at the start of Lesson 2, which is then the next lesson. A learner who has not passed Lesson 1
+   stays where he or she is. CHANGED_85: the exercises of Lesson 1 whose items changed between .84 and .85 (none if Lesson 1 is served as it
+   was): their records are dropped, as migrate82 did for moved exercises. */
+const CHANGED_85 = [];
+function migrate85(){
+  const ch = k => CHANGED_85.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  const dropped = Object.keys(S.finished||{}).filter(ch).length;
+  if(CHANGED_85.length){ S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc); S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||"")); }
+  let moved=false;
+  try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
+    if(raw){ const G=JSON.parse(raw); if(CHANGED_85.length && G.ex) for(const k of Object.keys(G.ex)) if(ch(k)) delete G.ex[k];
+      const passed1=((G.lessons||{}).L1||[]).some(r=>r && r.passed);
+      if(passed1 && (S.lesson||0)===0 && !S.detour && G.why!=="perfect" && LESSONS.length>1){
+        S.lesson=1; S.ex=0; for(const e of LESSONS[1].exercises) delete (S.finished||{})[e.id];
+        G.next=1; G.furthest=Math.max(G.furthest||0, 1); G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; moved=true; }
+      localStorage.setItem(gk, JSON.stringify(G)); } }catch(e){}
+  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-2 served"+(dropped?"; records dropped of "+dropped+" exercises of Lesson 1 that changed":"")+(moved?"; Lesson 1 was passed: this learner goes on at the start of Lesson 2 (the Lesson 1 record kept)":""), heard:[]});
+  S.courseRev=85;
+}
 function migrate84(){
   const ch = k => { const m=/^L(\d+)E\d+/.exec(String(k)); return !!m && +m[1]>=1 && +m[1]<=14; };
   const isL = k => /^L(\d+)$/.test(k) && +k.slice(1)>=1 && +k.slice(1)<=14;
@@ -2426,7 +2451,7 @@ function listen(expect, alsoOk=[]){
       trace("mic closed: "+st); if(verdict.ok && verdict.hesitation) trace("judge: "+verdict.reason);
       resolveR({status: st, heard:c, ...verdict});
     };
-    R.onstart=()=>{ if(gen===recGen) trace("mic open"); };
+    R.onstart=()=>{ if(gen===recGen){ trace("mic open"); traceLit("mic open"); } };
     R.onresult=e=>{ if(gen!==recGen) return; heardAny=true; last=Date.now(); results=Array.from(e.results); };
     R.onerror=e=>{ if(gen!==recGen) return; trace("recogniser error: "+e.error);
       if(e.error==="audio-capture" && rec && !parRecOff){      // the recording took the microphone: release it, keep listening with Chrome
@@ -2561,7 +2586,7 @@ async function listenVosk(expect, alsoOk=[]){
   const rec=new VOSK.model.KaldiRecognizer(16000, gram);    // made in the worker while the cue finishes
   await synthIdle(); const cueEnd=lastSpeechEnd;
   try{ await LISTENER.micOn(); }catch(e){ trace("microphone unavailable: "+e.message); recogBroken=true; signal("listen"); return listenManual(expect); }
-  trace("mic open");
+  trace("mic open"); traceLit("mic open");
   const sigT=setTimeout(()=>{ signal("listen"); trace("signal: green border "+(Date.now()-cueEnd)+" ms after the cue ended"); }, Math.max(0, SIGNAL_DELAY-(Date.now()-cueEnd)));
   /* The end of the teacher's own question can reach the microphone from the speaker (echo cancellation is off: it puts
      Android in call mode). tester H 9 Nov 16:42: it closed the turn before she began, 11 times. On the recordings that
@@ -3237,6 +3262,7 @@ const BOUNDS={L:{x:28,y:24,w:160,h:190,r:16}, R:{x:212,y:24,w:160,h:190,r:16}};
    askAndListen already uses: "the border goes off first, so its coming on is seen as the cue"). A model waits for it
    (goldClear), so the border is on its card before the word starts; a test does not (the border lands early in the cue, before
    its last word). A border that moves to another place, or comes back to the same picture, comes on at once as before. */
+const PAIR={item:null, on:null, timers:[]};      // (.85, S-1) the pair of people lit together (pairLit below)
 const GOLD={slot:"", thing:"", offAt:-1e9, timer:0}, GOLD_BLINK=250;
 const goldThing = side => { const p = curScene && curScene.row && /^s\d+$/.test(side) ? curScene.row[+side.slice(1)] : null; return side+" "+(p==null ? "" : JSON.stringify(p)); };
 function goldOn(side){ const g=document.getElementById("goldRing"), b=BOUNDS[side];
@@ -3247,7 +3273,9 @@ function goldOn(side){ const g=document.getElementById("goldRing"), b=BOUNDS[sid
   clearTimeout(GOLD.timer);
   if(g.getAttribute("opacity")!=="1" && GOLD.slot===side && GOLD.thing!==thing && since<GOLD_BLINK) GOLD.timer=setTimeout(show, GOLD_BLINK-since);
   else show(); }
-function goldOff(){ const g=document.getElementById("goldRing"); if(!g) return; clearTimeout(GOLD.timer); if(g.getAttribute("opacity")==="1") GOLD.offAt=performance.now(); g.setAttribute("opacity",0); litCard(null); }
+function goldOff(){ const g=document.getElementById("goldRing"); if(!g) return; clearTimeout(GOLD.timer); if(g.getAttribute("opacity")==="1") GOLD.offAt=performance.now();
+  if(PAIR.on && g.getAttribute("opacity")==="1") pairUnlit("the gold border off");      // (.85, S-1) a pair is lit until the next thing is pointed at
+  g.setAttribute("opacity",0); litCard(null); gold2(null); }
 // (next) the lit card is picked up (CSS .lit: it rises, its edge turns, its shadow lengthens) for exactly as long as the gold border is on it
 function litCard(side){ document.querySelectorAll("#frames .lit").forEach(el=>el.classList.remove("lit")); const e=document.getElementById("goldEdge"); if(e) e.setAttribute("opacity", side ? 1 : 0);
   const g=side && cardGroupOf(side); if(g) g.classList.add("lit"); }
@@ -3303,7 +3331,7 @@ async function setPortraits(sc){
       sc=Object.assign({}, sc, {row:[null, p0], boxLeft:true, alias:Object.assign({}, sc.alias||{}, {s0:"s1"})}, withP ? {boxWith:withP} : {}); }
     else trace("FAULT LAYOUT: the action box and "+sc.row.length+" picture(s) are on the screen together"); }
   const first = curSceneKey===null;
-  goldOff(); tagLit(null); lastPoint=null;
+  if(PAIR.on){ PAIR.on=null; selfTag(false); } goldOff(); tagLit(null); lastPoint=null;      // (.85) a new scene ends a pair's lighting, as pointAt does
   // the new pictures replace the old at once: no fade (Jon 9 Nov 14:21: the gap between responses is what counts)
   if(sc.row){ buildRow(sc.row, sc.strip ? {y:118, h:96} : (BOARD_TALL && sc.row.length<=2) ? {y:24, h:166} : undefined); buildStrip(sc.strip, sc.row.length>0); fL.style.opacity=0; fR.style.opacity=0; frameRow.style.opacity=1; }
   else { slotL.replaceChildren(picture(sc.L)); slotR.replaceChildren(picture(sc.R)); fL.style.opacity=1; fR.style.opacity=1; frameRow.style.opacity=0;
@@ -3342,7 +3370,7 @@ function markChanges(lessons){
 let SLIDE_IN=false;      // setPortraits: the next row comes in from the right (the second thing of a "C'était" chain)
 genEach(E=>markChanges([{exercises:[E]}]));      // (speed) each exercise as it is made (the marks never cross an exercise)
 async function slideOff(){
-  goldOff(); frameRow.style.transition="opacity .6s ease-in, transform .6s ease-in"; frameRow.style.transform="translateX(-240px)"; frameRow.style.opacity=0;
+  if(PAIR.on){ PAIR.on=null; selfTag(false); } goldOff(); frameRow.style.transition="opacity .6s ease-in, transform .6s ease-in"; frameRow.style.transform="translateX(-240px)"; frameRow.style.opacity=0;
   await sleep(650); frameRow.style.transition="none"; frameRow.style.transform=""; void frameRow.getBoundingClientRect(); frameRow.style.transition="";
 }
 async function thingGoes(it){
@@ -3408,11 +3436,13 @@ function pointPose(side){            // reach towards the picture frame on that 
   return {[s]:{x:S.x+dx/d*reach, y:S.y+dy/d*reach, shape:"point", rot:"auto", scale:1}};
 }
 
-function rest(){ offering=false; askMark(null); tagLit(null); selfTag(false); goldOff(); ARMS.go(POSE.rest, 280); }
+function rest(){ offering=false; askMark(null); tagLit(null);
+  if(PAIR.on){ lastPoint=null; armsGo(POSE.rest, 280); return; }      // (.85, S-1; delta read 1) a pair stays lit through the turn, the correction and the item's end, until the next thing is pointed at (or the scene goes)
+  selfTag(false); goldOff(); ARMS.go(POSE.rest, 280); }
 /* (figures 14; Jon, 16 Nov: a tester "couldn't see Marie pointing to her badge") while she points to herself, her own name tag is lit
    with the ring the other tags have (tagLit's gold, round her tag #claireTag, drawn in her figure), and she glances down at it as her
    hand arrives, then back at the learner. Taken away by rest(), by any other move of her arms (ARMS.go) and when she points at anything else. */
-function selfTag(on){ const old=document.getElementById("selfTagRing"); if(old) old.remove(); if(!on) return;
+function selfTag(on){ const old=document.getElementById("selfTagRing"); if(old && !on && PAIR.on && PAIR.on.includes("self")) pairUnlit("Marie's tag off"); if(old) old.remove(); if(!on) return;
   const t=document.getElementById("claireTag"); if(!t || !t.parentNode || getComputedStyle(t).opacity==="0") return;      // drawn in her figure, over the tag and with its tilt (the page's #tagMark is under her)
   try{ const r=t.getBBox(), u=r.height/21, q=document.createElementNS("http://www.w3.org/2000/svg","rect"), A={id:"selfTagRing", x:r.x-3*u, y:r.y-3*u, width:r.width+6*u, height:r.height+6*u, rx:5*u, fill:"#f6d35b", "fill-opacity":".28", stroke:"#d4a017", "stroke-width":2.6*u, "pointer-events":"none"};      // u: about a screen pixel (the tag is drawn in its own small units)
     for(const k in A) q.setAttribute(k, A[k]); if(t.getAttribute("transform")) q.setAttribute("transform", t.getAttribute("transform")); t.parentNode.insertBefore(q, t.nextSibling); }catch(e){} }
@@ -3429,7 +3459,7 @@ function tagLit(slot){
 const learnerSlot = () => slotOfPerson("you");
 function thumb(){}
 // pointing again at what is already pointed at costs no time (no 0.34 s wait for a move that does not happen)
-let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; goldOff(); selfTag(false); return armsGo(p,ms); };      // (figures 14) her own tag's ring goes when her hands do anything else
+let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; if(!PAIR.on){ goldOff(); selfTag(false); } return armsGo(p,ms); };      // (.85, S-1) a pair stays lit while her hands move (the ear of a correction), until the next thing is pointed at      // (figures 14) her own tag's ring goes when her hands do anything else
 // Jon 9 Nov 10:27: no pointing at the pictures; the gold border alone shows what the teacher means. Her hand still goes
 // to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
 const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||s==="strip"||/^s\d+$/.test(s);
@@ -3440,14 +3470,41 @@ function goldWho(side){
   const m=/^s(\d+)$/.exec(side||""); const x=m && curScene && curScene.row ? curScene.row[+m[1]] : null;
   const k = x==null ? "" : (typeof x==="object" ? (x.person || x.is || "") : String(x).split(":")[0]);
   return (VOCAB[k] && VOCAB[k].name) || k || "?"; }
+/* (.85, Lesson 2: "Sylvie et Marie.") one place of a sweep: a card's gold border, or Marie's own tag lit (her tag has no gold border) */
+function sweepMark(x){ if(x==="self"){ goldOff(); selfTag(true); } else { selfTag(false); goldOn(x); } trace("gold: "+x+" ("+goldWho(x)+")"); }      // (the trace: truth85 reads who each step of a sweep marks)
+/* (.85; the Lesson 2 reader, S-1; the coordinator, 19 Nov 2026: "both person cards lit together while the pair is said, through the
+   answer, the learner's turn and the corrections") a pair of people ("Pierre et Sylvie.", "Sylvie et Marie."): both lit at once and kept
+   lit until the next thing is pointed at: a card's gold border (the first card: the gold ring; the second: its twin, goldRing2), Marie's
+   own tag lit for her. While the pair is said, each card rises as its name is said (pairSaid, at the onset of the name word: TXT.onUnit). */
+function gold2(side){ let g=document.getElementById("goldRing2"); const g1=document.getElementById("goldRing");
+  if(!side){ if(g && g.getAttribute("opacity")==="1" && PAIR.on) pairUnlit("the second border off"); if(g) g.setAttribute("opacity",0); PAIR.on=null; return; }
+  const b=BOUNDS[side]; if(!b || !g1) return;
+  if(!g){ g=g1.cloneNode(false); g.id="goldRing2"; g1.parentNode.insertBefore(g, g1.nextSibling); }
+  const m=4; g.setAttribute("x",b.x-m); g.setAttribute("y",b.y-m); g.setAttribute("width",b.w+2*m); g.setAttribute("height",b.h+2*m); g.setAttribute("rx",b.r+m); g.setAttribute("opacity",1); }
+const personAt = x => x==="self" || (/^s\d+$/.test(x||"") && !!curScene && !!curScene.row && !!curScene.row[+x.slice(1)] && typeof curScene.row[+x.slice(1)]==="object" && !!curScene.row[+x.slice(1)].person);
+const personPair = sw => Array.isArray(sw) && sw.length===2 && sw.every(personAt);
+function pairLit(sweep){ let first=true;
+  for(const x of sweep){ if(x==="self") selfTag(true); else if(first){ goldOn(x); first=false; } else gold2(x); trace("gold: "+x+" ("+goldWho(x)+")"); }
+  PAIR.on=sweep.slice(); trace("both lit: "+sweep.map(x=>x+" ("+goldWho(x)+")").join(", ")); }
+// what is lit now (the release test truth85 reads it at the learner's turn and while a pair is said): the gold ring, its twin, Marie's tag
+function litNow(){ const out=[], g=document.getElementById("goldRing"), g2=document.getElementById("goldRing2");
+  if(g && g.getAttribute("opacity")==="1" && GOLD.slot) out.push(GOLD.slot+" ("+goldWho(GOLD.slot)+")");
+  if(g2 && g2.getAttribute("opacity")==="1" && PAIR.on){ const x=PAIR.on.find(y=>y!=="self" && y!==GOLD.slot); if(x) out.push(x+" ("+goldWho(x)+")"); }
+  if(document.getElementById("selfTagRing")) out.push("self ("+goldWho("self")+")");
+  return out.join(", ") || "nothing"; }
+// (.85, S-1) a pair unlit before the next thing is pointed at (pointAt clears PAIR.on first): traced, and truth85 PAIR NOT LIT fails it
+function pairUnlit(why){ trace("pair unlit: "+why+" ("+(PAIR.on||[]).join(", ")+")"); PAIR.on=null; }
+function traceLit(why){ if(PAIR.item) trace("lit ("+why+"): "+litNow()); }
+function pairSaid(x){ if(x!=="self") litCard(x); else litCard(null); trace("said: "+x+" ("+goldWho(x)+"); lit: "+litNow()); }
 async function pointAt(who){
-  askMark(null);
+  PAIR.on=null; askMark(null); gold2(null);      // (.85, S-1) a pair lit until here: the next thing pointed at ends it
   // mark:false (the review of 11 Nov, F9): the question is about this picture, but a border on it would give the answer ("Qui danse ?"): nothing is marked
   if(who && typeof who==="object" && who.mark===false && who.kind==="test"){ goldOff(); if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; } return; }
   // (.83; the reader of the DI rebuild, F1, D-13) "C'est quoi ?" of two things: nothing single is pointed at; the border passes over each in
   // the order of the answer and goes off, so the question is about the two (a screen of things with nothing marked is "Il y a quoi ?"'s)
-  if(who && typeof who==="object" && who.at==="none" && Array.isArray(who.sweep) && who.sweep.length>=2 && who.sweep.every(x=>ON_SCREEN(x))){
-    selfTag(false); for(const x of who.sweep){ goldOn(x); await sleep(380); } goldOff(); trace("the border passed over "+who.sweep.join(", ")); return; }
+  if(who && typeof who==="object" && who.at==="none" && Array.isArray(who.sweep) && who.sweep.length>=2 && who.sweep.every(x=>ON_SCREEN(x) || x==="self")){
+    if(personPair(who.sweep)){ goldOff(); selfTag(false); pairLit(who.sweep); return; }      // (.85, S-1) two people: both lit, and kept lit
+    for(const x of who.sweep){ sweepMark(x); await sleep(380); } goldOff(); selfTag(false); trace("the border passed over "+who.sweep.join(", ")); return; }
   const side = sideOf(who); if(side!=="self") selfTag(false); if(side==="none") return;
   trace("gold: "+side+" ("+goldWho(side)+")");      // (.84) who the border marks (the release test truth84: the person the answer names)
   if(ON_SCREEN(side)){ goldOn(side);
@@ -3695,7 +3752,7 @@ async function cueAs(voice, units, at, item){
      W3  the teacher's line as she says it; the ANSWER only after the learner has responded (a test is never reading aloud).
      R   reading unaided: "Lis." as she says it, then the written answer, outlined, before the response; nobody says it.
    ============================================================ */
-const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null};
+const TXT = {g:null, cur:null, chars:[], ctx:null, shownCtx:null, timers:[], onPart:null, onUnit:null};
 const BOARD = {key:null, b:null, boxes:[]};
 let BOARD_TALL = false;      // (next) this exercise has a board of four lines or more (set by runExercise)
 let BOARD_EX = null;      // (.28) the id of the exercise being run (null: no lesson running, as in the screen tools): a board shows only on its own items      // (.26) the DISE-style board shown now (boardShow)
@@ -3768,6 +3825,7 @@ const wordsIn = s => (s.match(/[^\s:?!.,;…«»]+/g)||[]).length;
 /* A unit starts to be said (meta: its clip's {dur, w: the onset in ms of each written word}; lag: ms until the sound is out). */
 function textUnit(unit, meta, lag){
   countUnit(unit, meta, lag);
+  if(TXT.onUnit) try{ TXT.onUnit(unit, meta, lag); }catch(e){}      // (.85, S-1) a pair of people: each card rises as its name is said
   const c=TXT.ctx; if(!c) return; if(c.board) return boardUnit(unit, meta, lag); const w=c.w; let str=null, parts=null, r=null;
   if(w.reveal==="after" && !c.revealed) return;       // a test of hearing (text.reveal "after"): nothing is written while it is said and answered
   if(w.stage==="W1"){ if(w.focus!=null) return; r=findUnit(w.S, unit, 0); if(!r) return; str=w.S; parts=w.p; }
@@ -4574,6 +4632,14 @@ function itemStart(it){
   COUNT.on = !!(counting && it.touch.by!=="you"); COUNT.n = counting ? it.touch.count : 0; COUNT.k = 0; COUNT.by = counting && it.touch.by==="both" ? "teacher" : counting ? it.touch.by : "";
   COUNT.timers.forEach(clearTimeout); COUNT.timers=[];
   TXT.onPart = it.sweep ? (pi, isAnswer)=>{ if(isAnswer && it.sweep[pi]) pointAt(it.sweep[pi]); } : null;      // sweep: the gold border is on card i while phrase i is said
+  // (.85, S-1) a pair of people: both stay lit (pointAt); as the pair is said, by anyone and whether or not a line is written, each card
+  // rises at the onset of its name (TXT.onUnit, called for every unit said; onPart fired only on a written line, never in Lesson 2)
+  PAIR.timers.forEach(clearTimeout); PAIR.timers=[]; PAIR.item = it.sweep && it.sweep.length===2 ? it : null;
+  TXT.onUnit = PAIR.item ? (unit, meta, lag)=>{ const ws=String(unit).split(/\s+/).filter(Boolean), names=[VOCAB.paul.name, VOCAB.julie.name, VOCAB.claire.name];
+      const at=ws.map((w,i)=>names.includes(w.replace(/[.,!?…]/g,"")) ? i : -1).filter(i=>i>=0); if(at.length!==2 || !/ et /.test(" "+unit+" ")) return;
+      if(personPair(it.sweep)) TXT.onPart=null;
+      at.forEach((wi,k)=>{ const ms=(meta && meta.w && meta.w[wi]!=null) ? meta.w[wi] : (meta && meta.dur) ? meta.dur*0.9*wi/ws.length : 0;
+        PAIR.timers.push(setTimeout(()=>{ if(personPair(it.sweep)) pairSaid(it.sweep[k]); }, Math.max(0,(lag||0)+ms))); }); } : null;
   if(it.hand) handAt(it.hand.by, it.hand.at);
   else if(counting && it.touch.by!=="you") handHover(it.touch.by);
   else handHide();
@@ -5229,8 +5295,8 @@ async function corrModel(task, o={}){
      the border on the single card and then on the card asked about (course field correction). */
   if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart;
     if(c.a) TXT.ctx={w:{stage:"W2", A:c.answer, a:c.a}, tc:0};
-    TXT.onPart=(pi, isAnswer)=>{ if(c.sweep[pi]) goldOn(sideOf(c.sweep[pi])); };
-    if(c.sweep[0]) goldOn(sideOf(c.sweep[0]));
+    TXT.onPart=(pi, isAnswer)=>{ if(c.sweep[pi]) sweepMark(sideOf(c.sweep[pi])); };
+    if(c.sweep[0]) sweepMark(sideOf(c.sweep[0]));
     SAY_SLOW=!!c.slow; try{ await say([c.answer]); } finally{ SAY_SLOW=false; TXT.onPart=on; TXT.ctx=keep; }
     return; }
   // (.84; the reader, B3 and S4) the border on whom the answer is about; "C'est Marie." is never said by Marie of herself: Pierre says it
@@ -5247,7 +5313,12 @@ async function corrModel(task, o={}){
   else if(by) await cueAs(by, answerUnits(task), slotOfPerson(by) || "none", null); else await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
 // (.84) the speaker who says "C'est <name>." in a correction when the name is Marie's: a model learner (never Marie of herself)
-const ownCestBy = a => new RegExp("^C'est "+VOCAB.claire.name+"\\.$").test(String(a||"").trim()) ? (slotOfPerson("paul") ? "paul" : slotOfPerson("julie") ? "julie" : "paul") : null;
+// (.85; the coordinator, 18 Nov 2026: a pair with one's own name "counts exactly like C'est Marie.") a pair that names Marie ("Sylvie et
+// Marie.") is said by the model learner it does not name (Pierre); a pair of the two model learners is Marie's own to say
+const ownCestBy = a => { const s=String(a||"").trim(), M=VOCAB.claire.name;
+  if(new RegExp("^C'est "+M+"\\.$").test(s)) return slotOfPerson("paul") ? "paul" : slotOfPerson("julie") ? "julie" : "paul";
+  const m=/^(\S+) et (\S+)\.$/.exec(s); if(!m || (m[1]!==M && m[2]!==M)) return null;
+  const o=m[1]===M ? m[2] : m[1]; return o===VOCAB.paul.name ? "julie" : o===VOCAB.julie.name ? "paul" : null; };
 /* (.84; the reader of the .84 Lesson 1, S4; the coordinator, 18 Nov 2026: "Vas-y." is not in Lessons 1-2: it is a whole not approved, and "Non."
    is not taught) a correction says only words the learner has heard: "Non." and "Vas-y." once the course has had them in a lesson
    before this one (and "Vas-y." never in Lessons 1-2); otherwise the tap's correction ends with the item's own cue again ("Pierre.") */
