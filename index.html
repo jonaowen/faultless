@@ -398,6 +398,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson1.js"></script>
 <script src="course/lesson2.js"></script>
 <script src="course/lesson3.js"></script>
+<script src="course/lesson4.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.86: Lessons 1-3): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -406,7 +407,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-19.86";      // must equal version.json
+const APP_VERSION="2026-11-19.87";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -970,7 +971,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:86, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:87, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1009,6 +1010,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=84)) migrate84();      // (.84) a state saved before the new Lesson 1 (the final content analysis): everyone starts again at Lesson 1
   if(!(s.courseRev>=85)) migrate85();      // (.85) a state saved when Lesson 1 was the only lesson served: a learner who passed it goes on to Lesson 2
   if(!(s.courseRev>=86)) migrate86();      // (.86) a state saved when Lessons 1-2 were served: a learner who passed Lesson 2 goes on to Lesson 3
+  if(!(s.courseRev>=87)) migrate87();      // (.87) a state saved when Lessons 1-3 were served: a learner who passed Lesson 3 goes on to Lesson 4
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1086,6 +1088,10 @@ const CHANGED_85 = [];
 const CHANGED_86 = [];
 function migrate85(){ carryOn(85, 1, CHANGED_85); }
 function migrate86(){ carryOn(86, 2, CHANGED_86); }
+/* (.87) CHANGED_87: the exercises of Lessons 1-3 whose items changed between .86 and .87 (their records dropped, as CHANGED_86), computed by
+   dev/harness/changed_exercises.py against the shipped .86 app (the release test changed) */
+const CHANGED_87 = [];
+function migrate87(){ carryOn(87, 3, CHANGED_87); }
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -5349,7 +5355,12 @@ const LONE_BY = {"Un.": "julie"};
 /* (.86; reader 86's delta read) the one resolution of the voice that says a test's answer in a correction, at the seven-trial limit and on a
    listening fault (corrModel): a model learner (ownCestBy, LONE_BY) or Marie (null). dev/harness/replay/clipgate.js asks the app this same
    function for the clip it judges, so the gate hears the clip the app plays (proof CLIPGATE-CORR-VOICE) */
-const corrVoiceOf = a => ownCestBy(String(a||"")) || LONE_BY[String(a||"").trim()] || null;
+const corrVoiceOf = a => ownCestBy(String(a||"")) || toiBy(String(a||"")) || LONE_BY[String(a||"").trim()] || null;
+/* (.87; the coordinator, 19 Nov 2026) "Toi, c'est Pierre." (the answer to Pierre's "Et moi, c'est qui ?") is modelled in a correction by the model
+   learner it does not name, as in the exercise's models (Sylvie says "Toi, c'est Pierre.", Pierre "Toi, c'est Sylvie."): nobody names himself or
+   herself, and the asker never answers his own question */
+const toiBy = a => { const m=/^Toi, c'est (\S+)\.$/.exec(String(a||"").trim()); if(!m) return null;
+  return m[1]===VOCAB.paul.name ? "julie" : m[1]===VOCAB.julie.name ? "paul" : m[1]===VOCAB.claire.name ? "paul" : null; };
 // (.84) the speaker who says "C'est <name>." in a correction when the name is Marie's: a model learner (never Marie of herself)
 // (.85; the coordinator, 18 Nov 2026: a pair with one's own name "counts exactly like C'est Marie.") a pair that names Marie ("Sylvie et
 // Marie.") is said by the model learner it does not name (Pierre); a pair of the two model learners is Marie's own to say
