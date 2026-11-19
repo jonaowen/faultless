@@ -622,7 +622,7 @@ const SHELL = (()=>{
       : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">You finished Lesson ${n}.</div>`;
     o.innerHTML = head
       + `<div class="card say">In this lesson you made <b class="first" data-n="${r.sc.x}">${r.sc.x}</b> correct ${pl(r.sc.x, "response")} and you were <b data-n="${r.sc.y}" data-pc="1">${r.sc.y}%</b> correct.${first?`<small>${r.sc.y}% of your answers were right the first time you were asked.</small>`:""}</div>`
-      + (r.why==="perfect" ? `<div class="card nextc lockc"><div class="orb">${ic("lock")}</div><div><b>Lesson ${Math.min(n+1, LESSONS.length)}</b><p>Opens when all are green</p></div></div>` : "")
+      + (r.why==="perfect" ? `<div class="card nextc lockc"><div class="orb">${ic("lock")}</div><div><b>Lesson ${n+1}</b><p>${n<LESSONS.length ? "Opens when all are green" : "Coming in a later version; first, all green here"}</p></div></div>` : "")
       + (r.why==="once" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>Lesson ${n} once more</b><p>You just need a bit more practice before moving on.</p></div></div>`
         : r.why==="back" ? `<div class="card nextc"><div class="orb">${ic("redo")}</div><div><b>A warm-up first</b><p>You are nearly there. Lesson ${G.next+1} first, then back to Lesson ${n}.</p></div></div>` : "")
       + `<div class="card exstrip"><div class="row"><b>${nPerf} of ${L.exercises.length} exercises perfect</b>${r.pts>0 ? `<span class="pts">${ic("star")} +${r.pts}</span>` : ""}</div><div class="exdots">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div></div>`
@@ -1210,7 +1210,7 @@ const SHELL = (()=>{
     const o=$("done"), name=esc(S.learnerName||""), all=!left;
     const level = lv && lv.Lv ? `<div class="card prog"><div class="row"><b>Your French</b><span class="lvl">${esc(lv.Lv.id)}</span></div>
         <p><b>${lv.pct}%</b> to ${esc(lv.Lv.id)}</p></div>` : "";
-    o.innerHTML = (unlock ? `<div class="okmark star">${ic("star")}</div><div class="perfect-tag">${ic("star")} Lesson ${R0.li+1}: all green</div><h1>Lesson ${G.next+1} is open${name?", "+name:""}!</h1>`
+    o.innerHTML = (unlock ? `<div class="okmark star">${ic("star")}</div><div class="perfect-tag">${ic("star")} Lesson ${R0.li+1}: all green</div>${R0.li+1<LESSONS.length ? `<h1>Lesson ${G.next+1} is open${name?", "+name:""}!</h1>` : `<h1>Lesson ${R0.li+1} is perfect${name?", "+name:""}!</h1><div class="sub">Lesson ${R0.li+2} is coming.</div>`}`      // (.84) the last lesson served: the next is coming, not open
           : all ? `<div class="okmark star">${ic("star")}</div><h1>Lesson ${R0.li+1} is perfect${name?", "+name:""}!</h1>`
           : made ? `<div class="okmark star">${ic("star")}</div><h1>${made} more perfect${name?", "+name:""}!</h1><div class="sub">Lesson ${R0.li+1}: ${made} of the ${eis.length} exercise${eis.length>1?"s":""} you went for ${made>1?"are":"is"} perfect now.</div>`
           : `<div class="sunmark">${ic("sun")}</div><h1>Well done${name?", "+name:""}.</h1><div class="sub">Lesson ${R0.li+1}: ${eis.length} exercise${eis.length>1?"s":""} practised.</div>`)
@@ -1568,6 +1568,7 @@ const SHELL = (()=>{
     h.innerHTML=`${streakBand(now)}
       <section class="card hero"><div class="headrow"><div>${eyebrow}<h1>Lesson ${n}</h1></div><div class="minis">${HI<(G.furthest||0) ? newPics(HI).slice(0,3).map(mini).join("") : ""}</div></div>
         ${A==null && G.why==="perfect" && !started ? `<div class="exdots hdots" aria-label="${L.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length} of ${nEx} perfect">${L.exercises.map(x=>{ const g=G.ex[x.id]; return `<i class="${g ? (g.g?"g":"y") : ""}"></i>`; }).join("")}</div>` : started ? `<div class="place" role="img" aria-label="Exercise ${S.ex+1} of ${nEx}"><div class="meta"><b>Exercise ${S.ex+1}</b> of ${nEx}</div><span class="pl-track"><i style="--f:${Math.max(0.03, fin/nEx).toFixed(3)}"></i></span></div>` : `<div class="meta">${A!=null ? `Your place stays at Lesson ${T+1}.` : nEx+" exercises · about "+mins+" minutes"}</div>`}${A==null && G.why==="once" ? `<div class="meta m2">A bit more practice, then Lesson ${n+1}.</div>` : A==null && G.why==="back" ? `<div class="meta m2">A warm-up, then Lesson ${n+1}.</div>` : A==null && G.why==="warm" && G.warmTo!=null ? `<div class="meta m2">Warming up, then on to Lesson ${G.warmTo+1}.</div>` : ""}
+        ${A==null && !G.why && (G.furthest||0)>=LESSONS.length && !started ? `<p class="hsoon" data-coming="${LESSONS.length+1}">${ic("lock")} Lesson ${LESSONS.length+1} is coming. Meanwhile, Lesson ${n} again.</p>` : ""}
         ${!S.learnerName ? `<label class="hname" for="hNameIn"><span>Your first name</span><input id="hNameIn" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done"></label>` : ""}<div id="heroSlot"></div>${A!=null ? `<button class="btn quiet" id="notAgain">Back to Lesson ${T+1}</button>` : ""}</section>
       <section class="card rhythm" aria-label="Today, this week, your French"><div class="rbody">${ringsSvg(R)}${ringRows(R)}</div>
         ${G.anchors.set ? `<div class="moments${two?"":" one"}"><div class="mo am${d.n===0?" next":""}"><span class="orb">${ic("sun")}</span><span class="k">After ${esc(G.anchors.first.after)}</span><b class="v">${sl.one}</b></div>${two?`<div class="mo pm${d.n===1&&!sl.twoTomorrow?" next":""}"><span class="orb">${ic("moon")}</span><span class="k">After ${esc(G.anchors.second.after)}</span><b class="v">${sl.two}</b></div>`:""}</div>` : `<button class="setmoments" id="setMoments">${ic("sun")} Choose your two moments ${ic("chev")}</button>`}</section>
@@ -1588,6 +1589,7 @@ const SHELL = (()=>{
     try{ if(window.SHELL) SHELL.streakNow=streakNow; }catch(e){}      // (for scripted checks; kept off the export line, which the onboarding patch also extends)
     $("hStreak").onclick=()=>{ tick(); if(streakNow().state==="repair"){ repairSheet(); return; } try{ window.SHELL && SHELL.coach && SHELL.coach.learned && SHELL.coach.learned("streak"); }catch(e){} streakSheet(); };      // (the onboarding's streak tip is learned)      // the words live in the lessons that gave them
     { const na=$("notAgain"); if(na) na.onclick=()=>{ tick(); pendingAgain=null; home(); }; }
+    h.querySelectorAll("[data-coming]").forEach(b=>{ b.onclick=()=>{ tick(); comingSheet(+b.dataset.coming); }; });      // (.84) the next lesson, coming
     ringsAnimate(h.querySelector(".rhythm"), ringsFrom(), R); G.ringsShown=ringsSnap(R); MV.count(h); store();
     h.classList.toggle("perf", A==null && G.why==="perfect");      // (MASTERY) "Go for perfect" is the day's one main button, green, whatever was done today
     h.classList.toggle("due2", two && d.n===1 && !sl.twoTomorrow && sl.two==="Now");      // (QA .67) the second lesson's moment has come: the start button is the green one again (shell.css)
@@ -1608,8 +1610,14 @@ const SHELL = (()=>{
   // ONE ROW A LESSON: its number and its state ("Perfect", "22 of 26 perfect" with a thin bar, "Next · Exercise 10 of 26"), and under it, small,
   // the French it gave as words ("se lever · s'asseoir") or the lesson it goes over again. Lessons to come: one muted line. No pictures.
   const wordsLine = i=>{ const L=LESSONS[i], e=CW.lessons[L.id]||{}, cs=cardsOf(L.id); return cs.length ? cs.map(c=>c.fr).join(" · ") : e.repeats ? "Goes over Lesson "+e.repeats+" again" : ""; };
+  /* (.84; the owner, 18 Nov 2026: the release serves the new Lesson 1, later lessons locked until each is final) COMING: a lesson the app does not
+     serve yet: its row, a lock, "Coming"; a tap says what it is. Never a dead end: Home always has a lesson to start (the last served, again). */
+  const COMING = i=>i>=LESSONS.length;
+  function comingSheet(n){ info(`Lesson ${n}`, `<p class="wsub"><b>Coming.</b> Lesson ${n} is being finished. It opens in a coming version of the app, by itself: nothing to do.</p><p class="wsub">Meanwhile, Lesson ${LESSONS.length} is there to do again, on Home.</p>`); }
+  // (.84) every lesson served passed: the last is a done row (its view: its exercises and its words), Home has it again (no dead end)
   function pathRows(T, from, upto){ let out="";
-    for(let i=from;i<upto;i++){ const Lk=LESSONS[i], pass=i<G.furthest, now=i===T && Lk, open=pass && i!==T && Lk, cls = now ? (G.why ? "once" : "now") : pass ? "done" : "later";
+    for(let i=from;i<upto;i++){ if(COMING(i)){ out+=`<div class="step later locked coming"><div class="node">${ic("lock")}</div><button class="lrow" data-coming="${i+1}" aria-label="Lesson ${i+1}: coming"><span class="t">Lesson ${i+1}</span><span class="lkw">Coming</span></button></div>`; continue; }
+      const allServed=(G.furthest||0)>=LESSONS.length, Lk=LESSONS[i], pass=i<G.furthest, now=i===T && Lk && !allServed, open=pass && (i!==T || allServed) && Lk, cls = now ? (G.why ? "once" : "now") : pass ? "done" : "later";
       const locked = RULES.MASTERY && G.why==="perfect" && T!=null && i===T+1;      // (MASTERY) the lesson after one that waits on its yellows: locked, and why
       if(!now && !open){ out+=`<div class="step later${locked?" locked":""}"><div class="node">${locked ? ic("lock") : i+1}</div><div class="lrow"><span class="t">Lesson ${i+1}</span>${locked ? `<span class="lkw">After Lesson ${T+1} is all green</span>` : ""}</div></div>`; continue; }
       const n=Lk.exercises.length, g=Lk.exercises.filter(x=>G.ex[x.id]&&G.ex[x.id].g).length, k=Lk.exercises.filter(x=>G.ex[x.id]).length;
@@ -1635,12 +1643,14 @@ const SHELL = (()=>{
   /* ---- lessons: every lesson of the course served, by stage: done (green; its exercises, perfect or not, and its words, in its view), the one now
      (it is started on Home), the ones to come (face down). The words a lesson gave are its cards' pictures on its card, and its view plays them. ---- */
   function lessons(){ const o=$("lessonsL"), T=G.next, done=Math.min(G.furthest, LESSONS.length), pc=perfectCount();
-    const st=(CW.stages||[]).filter(s=>s.first<=LESSONS.length), groups = st.length ? st.map(s=>({s, from:s.first-1, upto:Math.min(s.last, LESSONS.length)})) : [{s:null, from:0, upto:LESSONS.length}];
+    // (.84) the stage of the lessons served goes on to its last lesson: the lessons not served yet are there, locked, "Coming" (COMING)
+    const st=(CW.stages||[]).filter(s=>s.first<=LESSONS.length), groups = st.length ? st.map(s=>({s, from:s.first-1, upto:s.last})) : [{s:null, from:0, upto:LESSONS.length}];
     o.innerHTML=`<div class="tabhead"><h1>Your lessons</h1>${done ? `<p class="tsub"><b>${done}</b> done · <b>${ownedCards().length}</b> French ${pl(ownedCards().length, "word")}</p>` : ""}</div>
       ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${Math.max(0, Math.min(g.s.last, G.furthest)-g.s.first+1)} of ${g.s.last-g.s.first+1} done</span></div>${(G.furthest||0)>=g.s.first-1 ? `<button class="stq" data-stage="${g.s.id}">${ic("info")}What do I learn in Stage ${g.s.id}?</button>` : `<div class="stq stlock" data-stlock="${g.s.id}" role="note">${ic("lock")}Reach Stage ${g.s.id} to find out what you learn</div>`}` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
     o.hidden=false;
     o.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
     o.querySelectorAll("[data-home]").forEach(b=>{ b.onclick=()=>tab("today"); });
+    o.querySelectorAll("[data-coming]").forEach(b=>{ b.onclick=()=>{ tick(); comingSheet(+b.dataset.coming); }; });
     o.querySelectorAll("[data-stage]").forEach(b=>{ b.onclick=()=>{ tick(); stageCard(+b.dataset.stage); }; });
     o.querySelectorAll("[data-stlock]").forEach(b=>{ b.onclick=()=>{ tick(); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); }; });   // (owner, 17 Nov: "Future stages should be locked until you reach them … You get to the end of the stage to find out what you'll learn next")
     // the first time it is opened, the lesson now is in view (the scroll is the learner's after that)

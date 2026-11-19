@@ -396,19 +396,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 
 <script src="listener/listener.js"></script>
 <script src="course/lesson1.js"></script>
-<script src="course/lesson2.js"></script>
-<script src="course/lesson3.js"></script>
-<script src="course/lesson4.js"></script>
-<script src="course/lesson5.js"></script>
-<script src="course/lesson6.js"></script>
-<script src="course/lesson7.js"></script>
-<script src="course/lesson8.js"></script>
-<script src="course/lesson9.js"></script>
-<script src="course/lesson10.js"></script>
-<script src="course/lesson11.js"></script>
-<script src="course/lesson12.js"></script>
-<script src="course/lesson13.js"></script>
-<script src="course/lesson14.js"></script>
+<!-- (.84) the release serves the lessons whose rows are final, from Lesson 1: Lessons 2 on are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
 <script>
@@ -416,7 +404,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-17.82";      // must equal version.json
+const APP_VERSION="2026-11-19.84";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -460,6 +448,8 @@ const VOCAB = {
   jemappelle: {name:"je m'appelle", kind:"phrase", say:["Je m'appelle…"], rep:["Répète : je m'appelle."], accept:["jemappelle"]},
   mappelle: {name:"m'appelle", kind:"phrase", say:["M'appelle."], accept:["m'appelle","mappelle","appelle","m appelle","appel","appelle"]},
   jmclaire: {name:"je m'appelle Marie", kind:"phrase", say:["Je m'appelle Marie."], accept:[]},
+  // (.83, D-01: the DI rebuild, ID-MOI) the own-name frame "Moi, c'est …", judged as one unit (tokensOf joins it); the name after it is ignored
+  moicest: {name:"moi, c'est", kind:"phrase", say:["Moi, c'est…"], accept:["moicest"]},
   // counting (DISE Lesson 1, Exercise 4): the numbers, and the counts said as one response
   n1: {name:"un", kind:"number", say:["Un."], accept:["un","1","hun","hein"]},
   n2: {name:"deux", kind:"number", say:["Deux."], accept:["deux","2","deu","d'eux"]},
@@ -598,6 +588,19 @@ const VOCAB = {
   nage: {name:"nage", kind:"word", verb:true, tu:"nages", say:[], accept:["nage","nages","nagent"]},
   chante: {name:"chante", kind:"word", verb:true, tu:"chantes", say:[], accept:["chante","chantes","chantent"]},      // "Il chante." took the place of "Il nage." (11 Nov, afternoon)
   ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
+  // (.83, D-08, D-17: the DI rebuild) grimper, dessiner (Lesson 3), applaudir (Lesson 7, in the place of "Arrive.", never a command now)
+  grimpe: {name:"grimpe", kind:"word", verb:true, tu:"grimpes", say:[], accept:["grimpe","grimpes","grimpent"]},
+  dessine: {name:"dessine", kind:"word", verb:true, tu:"dessines", say:[], accept:["dessine","dessines","dessinent"]},
+  applaudit: {name:"applaudit", kind:"word", verb:true, tu:"applaudis", alone:"applaudis", say:[], accept:["applaudit","applaudis","applaudissent","applaudi"]},
+  dessiner: {name:"dessiner", kind:"word", inf:true, say:[], accept:["dessiner","dessiné","dessinez","dessinée","dessinés"]},
+  grimper: {name:"grimper", kind:"word", inf:true, say:[], accept:["grimper","grimpé","grimpez","grimpée"]},
+  applaudir: {name:"applaudir", kind:"word", inf:true, say:[], accept:["applaudir","applaudi"]},
+  toi: {name:"toi", kind:"word", say:[], accept:["toi"]},      // (.83, D-02: ID-TOI, "Toi, c'est Marie.")
+  // (.84, D-56, D-57) verb + infinitive: aimer ("Il aime danser."), and the infinitives in -er the course has not had after vas / vais
+  aime: {name:"aime", kind:"word", verb:true, tu:"aimes", say:[], accept:["aime","aimes","aiment"]},
+  jouer: {name:"jouer", kind:"word", inf:true, say:[], accept:["jouer","joué","jouez","jouée"]},
+  tomber: {name:"tomber", kind:"word", inf:true, say:[], accept:["tomber","tombé","tombez","tombée"]},
+  nager: {name:"nager", kind:"word", inf:true, say:[], accept:["nager","nagé","nagez","nagée"]},
   joue: {name:"joue", kind:"word", verb:true, tu:"joues", say:[], accept:["joue","joues","jouent"]},      // (.62) jouer: "Joue." (Lesson 9)
   tombe: {name:"tombe", kind:"word", verb:true, tu:"tombes", say:[], accept:["tombe","tombes","tombent"]},      // (.62) tomber: "Tombe." (Lesson 9)
   chanter: {name:"chanter", kind:"word", inf:true, say:[], accept:["chanter","chanté","chantez","chantée","chantés"]},      // (.63) after vas / vais (Lesson 10)
@@ -621,9 +624,10 @@ const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener
   // Lessons 5-10 (.20): not, the plural front word, we, and, the / of / to in fixed answers, "it was"
   PAS:["pas","pa"], DES:["des","dès","dés"], ON:["on","ont"], ET:["et","eh","hé"], BIEN:["bien","biens"], LE:["le","la","là"],      /* "le français" came out as "la français" for 8 of 16 English voices; no answer of the course sets le against la for a word (ruling of 11 Nov 2026) */ LA:["la","là"],
   DE:["de","d'"], A:["à","a","ah","un"],     /* "un": "à cinq" came out as "un cinq" for 5 of 16 English voices (10 Nov 2026); no answer is "un cinq" */ CETAIT:["c'était","c'étaient","s'était","c'etait","cétait"],
-  VAIS:["vais"], LES:["les","lès"], A1:["à","a","ah"] };      // A1 (.25): "À." said alone       // .24: "les" (the sound-discrimination format: le livre / les livres)          // je vais + verb (Lesson 9). "tu vas" and "il va" are the slot VA above ("vas" and "va" sound the same; phraseOf writes "vas" after "tu")
+  VAIS:["vais"], LES:["les","lès"], A1:["à","a","ah"],
+  LE1:["le","leu"], LA1:["la","là"] };      // (.84, F-ART-09 "Le ou la ?" -> "La.", F-ART-02 "Tu touches quoi ?" -> "La voiture.": le and la judged exactly where they are what is asked; LE keeps "la" elsewhere: the ruling of 11 Nov 2026)      // A1 (.25): "À." said alone       // .24: "les" (the sound-discrimination format: le livre / les livres)          // je vais + verb (Lesson 9). "tu vas" and "il va" are the slot VA above ("vas" and "va" sound the same; phraseOf writes "vas" after "tu")
 const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu",
-  PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais", LES:"les", A1:"à" };
+  PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais", LES:"les", A1:"à", LE1:"le", LA1:"la" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
 /* (.72) The short course words a hesitation ("um", "uh", "er") is written as when the listener has no filler nearer (judge). */
 const HESIT_WORDS = ["un","une","et","eh","oh"];
@@ -643,7 +647,7 @@ const FILLERS_HEARD = ["hmm","mmm"];
      danse" is what the listener writes for "on danse" / "elle danse", tokensOf);
    - "un" / "une" when the answer begins with il, elle or on ("un" is the listener's "elle" and "on": "elle… il mange" would come out
      "un il mange") or with oui or non (a nasal "non" cut short). */
-const HESIT_FRONT = ["UN","UNE","DES","LE","LA","LES","CEST","CETAIT","A","A1","ET"], HESIT_UN_BEFORE = ["IL","ELLE","ON","OUI","NON"];
+const HESIT_FRONT = ["UN","UNE","DES","LE","LA","LE1","LA1","LES","CEST","CETAIT","A","A1","ET"], HESIT_UN_BEFORE = ["IL","ELLE","ON","OUI","NON"];
 function hesitBlocked(w, wants){
   return wants.some(want=>{ const ws=want.filter(e=>e!=="REST");
     return ws.some(e=> (SLOT[e] && SLOT[e].includes(w)) || (VOCAB[e] && (VOCAB[e].accept||[]).includes(w)) || HESIT_FRONT.includes(e)
@@ -738,13 +742,13 @@ function genItem(it){
    typed first name in the same style as Pierre's and Sylvie's: the own-name test and lead (the learner's turn), and the
    model learner's own-name answer just before it ("Je m'appelle Pierre."), so the pictures do not move between the two.
    The visible rule: say the name on the lit tag (tagLit). The course's own scene is not changed; the card is added here. */
-const OWN_LEAD_RE = /^Je m'appelle…$/;
+const OWN_LEAD_RE = /^(?:Je m'appelle|Moi, c'est)…$/;      // (.83, D-01: "Moi, c'est…")
 function markOwn(o){
   const ans=(o.answerUnits||[]).join(" ");
   const own = (o.type==="task" && o.kind==="test" && (o.expect||[]).includes("REST"))
     || (o.type==="model" && o.voice==="teacher" && o.at==="you" && OWN_LEAD_RE.test(ans))         // dise5c (own_tag "lit"): Marie's held "Je m'appelle…", her hand on the learner's tag
     || (o.type==="task" && o.kind==="lead" && o.at==="you" && OWN_LEAD_RE.test(ans))
-    || (o.type==="model" && (o.voice==="paul" || o.voice==="julie") && ans==="Je m'appelle "+VOCAB[o.voice].name+".");
+    || (o.type==="model" && (o.voice==="paul" || o.voice==="julie") && (ans==="Je m'appelle "+VOCAB[o.voice].name+"." || ans==="Moi, c'est "+VOCAB[o.voice].name+"."));      // (.83, D-01)
   if(!own) return o;
   o.ownName=true; if(o.type==="model"){ if(o.voice==="teacher") o.ownHeld=true; else o.ownModel=true; }
   const sc=o.scene;
@@ -961,7 +965,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:82, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:84, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -996,6 +1000,13 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=67)) migrate67();      // (.67) a state saved before Lessons 11 and 12 came (Lessons 1-10 unchanged)
   if(!(s.courseRev>=72)) migrate72();      // (.72) a state saved before Lessons 1-12 were rebuilt for near-twins by ear (R-157) and Lesson 13 came
   if(!(s.courseRev>=82)) migrate82();      // (.82) a state saved before Lessons 1-14 said natural French (R-158): Lesson 14's E22-E24 and E26 / E28 change places
+  if(!(s.courseRev>=83)) migrate83();      // (.83) a state saved before Lessons 1-14 were rebuilt from the DI analysis (Moi, c'est …; grimpe / dessine; applaudis)
+  if(!(s.courseRev>=84)) migrate84();      // (.84) a state saved before the new Lesson 1 (the final content analysis): everyone starts again at Lesson 1
+  /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
+     (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
+  if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
+  /* (.84) a place beyond the exercises of its lesson (a lesson built again with fewer exercises than the one that saved it): its last exercise */
+  if((S.ex||0)>=LESSONS[S.lesson||0].exercises.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": exercise "+(S.ex+1)+" of Lesson "+(S.lesson+1)+" is not in the lesson as served; its last exercise", heard:[]}); S.ex=LESSONS[S.lesson||0].exercises.length-1; }
   } }catch(e){} }
 /* (.82) Lessons 1-14 in natural French (rules.md R-158). Every exercise keeps its id and every lesson its number of exercises, but one: in
    Lesson 14 the names fille / magasin and their taps now come before the either/or "Une montagne ou un cheval ?" (with the noun said with
@@ -1004,6 +1015,80 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
    L14E28, L14E28 (the taps again) is L14E26. Their records go with them (done, an error, first-time-correct, delayed tests, the shell's
    green dots); a learner inside one of the three starts it again at the first of them that is not done. A delayed test of any other
    changed task is taken out when it runs (runDelayed, since .43). */
+/* (.83, CLAUDE.md §1: the DI rebuild; dev/plan/DI_REBUILD_BRIEF.md §3) Lessons 1-14 are rebuilt from the DI analysis: the learner's own name
+   is "Moi, c'est …" (s'appeler waits for its reflexive family, about Lesson 23), "C'est Pierre." from Lesson 1, "Et moi ? -> Toi, c'est
+   Marie." from Lesson 4, Lesson 3's commands are "Grimpe." / "Dessine.", Lesson 7's "Applaudis." / "Écris." ("Il arrive." said, never a
+   command), il / elle by ear inside a sentence, "Il y a quoi ?" of a scene, verb + pas with every subject. No exercise of Lessons 1-14 is
+   the exercise it was (OLDCOUNT_83: their number as served before).
+   - Records: every record of an exercise of Lessons 1-14 is dropped (finished, errors, the counts, delayed tests, the shell's green dot; its
+     points stay), with one log line.
+   - Place: a learner whose place is in Lesson C goes on at the start of Lesson RESTART_83[C], the first rebuilt lesson that brings something
+     they were never brought before their place (the rule of .72): Lesson 1 brings "C'est Pierre." and "Moi, c'est …", which no learner of
+     .82 has met, so every learner goes on at the start of Lesson 1, the lessons from there on done again. (For the owner: RESTART_83 is
+     the one line to change if he rules otherwise, e.g. the start of the learner's own lesson.)
+   - A detour of an older version is over; a lesson or an exercise being done again by choice (G.again, G.replay) is ended. */
+const OLDCOUNT_83 = {"L1": 16, "L2": 17, "L3": 14, "L4": 26, "L5": 27, "L6": 39, "L7": 41, "L8": 51, "L9": 51, "L10": 50, "L11": 50, "L12": 50, "L13": 60, "L14": 52};
+const RESTART_83 = {"1": 1, "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 1, "8": 1, "9": 1, "10": 1, "11": 1, "12": 1, "13": 1, "14": 1, "15": 1};
+function migrate83(){
+  const ch = k => { const m=/^L(\d+)E\d+/.exec(String(k)); return !!m && +m[1]>=1 && +m[1]<=14; };
+  let back="";
+  try{ const raw=localStorage.getItem("frDIn.g."+USERS.current), G0=raw && JSON.parse(raw), A=G0 && (G0.replay || G0.again);
+    if(A && A.snap){ for(const k of ["lesson","ex","finished","delayed","exHadError","ftc","doneDay"]) if(k in A.snap) S[k]=A.snap[k]; else delete S[k];
+      back="; the place before "+(G0.replay ? "an exercise" : "a lesson")+" done again was put back first"; } }catch(e){}
+  const at = S.detour && S.detour.back ? S.detour.back : {lesson:S.lesson||0, ex:S.ex||0};
+  const fin = Object.keys(S.finished||{}).filter(k=>S.finished[k]);
+  const lid = "L"+(at.lesson+1), doneHere = fin.filter(k=>new RegExp("^"+lid+"E\\d+$").test(k)).length >= (OLDCOUNT_83[lid]||Infinity);
+  const C = at.lesson+1+(doneHere?1:0), start = Math.min((RESTART_83[C]||C), LESSONS.length)-1;
+  const dropped = fin.filter(ch);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  LESSONS.forEach((L,i)=>{ for(const e of L.exercises){ if(i<start) S.finished[e.id]=true; else { delete S.finished[e.id]; delete S.exHadError[e.id]; } } });
+  const before=(S.delayed||[]).length;
+  S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||""));
+  const hadDetour=!!S.detour; S.detour=null; S.lesson=start; S.ex=0;
+  let shell="";
+  try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
+    if(raw){ const G=JSON.parse(raw), was=!!(G.again||G.replay);
+      for(const k of Object.keys(G.ex||{})) if(ch(k)) delete G.ex[k];
+      G.again=null; G.replay=null; G.cur=null; G.next=null; G.why=""; G.warmTo=null;
+      localStorage.setItem(gk, JSON.stringify(G)); if(was) shell="; a lesson or an exercise being done again was ended"; } }catch(e){}
+  if(fin.length || before || hadDetour)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-14 rebuilt from the DI analysis; records dropped of "+dropped.length+" exercises"+((before-S.delayed.length)?"; delayed tests dropped: "+(before-S.delayed.length):"")+(hadDetour?"; the detour is over":"")+back+shell+"; this learner goes on at the start of Lesson "+(start+1)+(start+1<C?" (it brings what their Lesson "+C+" and the lessons before it did not)":""), heard:[]});
+  S.courseRev=83;
+}
+/* (.84; the owner, 18 Nov 2026: "prioritise whatever you have to do to get the new lesson 1 done (where the new lesson 1 will obey the new content
+   analysis). Then we can get it tested") The release serves the new Lesson 1 alone; Lessons 2 on are coming, each when its rows are final. Every
+   learner starts again at the start of Lesson 1: no exercise of the lessons served before is the exercise it was.
+   - Records: every record of an exercise of Lessons 1-14 is dropped (finished, errors, the counts, delayed tests, the shell's green dots).
+   - The shell's record: the lessons passed and perfect of Lessons 1-14 are kept apart (G.before84: the history, not counted), so the furthest
+     lesson is Lesson 1 again and Lesson 1 is "Next"; the words those lessons gave are face down again until their lesson is passed anew.
+     Points, tokens, ranks, badges, the streak, the wardrobe and the figure stay (nothing earned is taken back; a perfect lesson's tokens are
+     not paid twice: G.tp kept).
+   - Place: the start of Lesson 1; a detour, a lesson or an exercise being done again is over. */
+function migrate84(){
+  const ch = k => { const m=/^L(\d+)E\d+/.exec(String(k)); return !!m && +m[1]>=1 && +m[1]<=14; };
+  const isL = k => /^L(\d+)$/.test(k) && +k.slice(1)>=1 && +k.slice(1)<=14;
+  const fin = Object.keys(S.finished||{}).filter(k=>S.finished[k]), dropped=fin.filter(ch);
+  const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
+  S.finished=keep(S.finished); S.exHadError=keep(S.exHadError); S.ftc=keep(S.ftc);
+  const before=(S.delayed||[]).length; S.delayed=(S.delayed||[]).filter(d=>!ch(d.ex||""));
+  const hadDetour=!!S.detour; S.detour=null; const was=(S.lesson||0)+1; S.lesson=0; S.ex=0;
+  // (.84; the second reader, N8; the coordinator: a saved learner, the owner included, sees Lesson 1's cards again) the cards seen are forgotten:
+  // the conventions (S.conv), the first question's card, the lesson's introduction and the learner's figure card
+  const cards=Object.keys(S.conv||{}).length; S.conv={}; S.qIntroSeen=false; S.introSeen=false; S.youDoSeen=false;
+  // (.84; the third reader, B-3rd-1) the own-name recordings of the old course ("Je m'appelle Jon.") are not models for Lesson 1's "Moi, c'est …"
+  const ownDropped=(S.ownClips||[]).length; S.ownClips=[];
+  let shell="", moved=0;
+  try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
+    if(raw){ const G=JSON.parse(raw), old=G.before84||(G.before84={lessons:{}, lp:{}, wordsAt:{}});
+      for(const k of Object.keys(G.ex||{})) if(ch(k)){ delete G.ex[k]; moved++; }
+      for(const f of ["lessons","lp","wordsAt"]) for(const k of Object.keys(G[f]||{})) if(isL(k)){ old[f][k]=G[f][k]; delete G[f][k]; moved++; }
+      G.furthest=0; G.next=0; G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; G.below={};
+      localStorage.setItem(gk, JSON.stringify(G)); shell="; the lessons passed before are kept apart (G.before84)"; } }catch(e){}
+  if(fin.length || before || hadDetour || was>1 || moved)
+    S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": the new Lesson 1 (the final content analysis); records dropped of "+dropped.length+" exercises"+((before-S.delayed.length)?"; delayed tests dropped: "+(before-S.delayed.length):"")+(hadDetour?"; the detour is over":"")+shell+"; the cards seen ("+cards+") shown again; own-name recordings dropped ("+ownDropped+"); this learner (in Lesson "+was+") starts again at the start of Lesson 1", heard:[]});
+  S.courseRev=84;
+}
 const MOVED_82 = {L14E22:"L14E24", L14E23:"L14E22", L14E24:"L14E23", L14E26:"L14E28", L14E28:"L14E26"};
 function migrate82(){
   const re = k => { const m=/^(L14E2[2-8])(\b.*)?$/.exec(String(k)); return m && MOVED_82[m[1]] ? MOVED_82[m[1]]+(m[2]||"") : k; };
@@ -2072,6 +2157,7 @@ const RE_IL_NOUN = new RegExp("(^| )(?:il|elle) (?=(?:"+NOUN_FORMS+")(?: |$))","
 const MULTI = Object.values(VOCAB).flatMap(v=>v.accept.filter(a=>a.includes(" ")).map(a=>[new RegExp("(^| )"+a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?= |$)","g"), "$1"+v.name.toLowerCase()]));
 function tokensOf(text){
   let n = normalise(text).replace(/(^| )(je |j'|j)m'? ?app?ell?e(?= |$)/g, "$1jemappelle");   // je m'appelle, j'm'appelle, je mappelle…
+  n = n.replace(/(^| )moi,? c'? ?est(?= |$)/g, "$1moicest");                                       // (.83, D-01) moi c'est: the own-name frame, one unit
   n = n.replace(/(^| )tu t'? ?app?ell?es?(?= |$)/g, "$1tutappelles");                             // tu t'appelles (said to the teacher about her)
   n = n.replace(/(^| )s'app?ell?e(?:s|nt)?(?= |$)/g, "$1sappelle");
   n = n.replace(/(^| )oui oui(?= |$)/g, "$1ouioui");                                                  // (.48) "Oui oui." (yes, yes): one unit, so the stutter rule does not take one away                                 // il / elle s'appelle … (the pronoun before it is judged)
@@ -2439,6 +2525,34 @@ function repeatedCue(text, cue){
 }
 let curCue="", lastRepeatedCue=false;
 let holdEar=false;
+/* (.82) The start of the answer written as a word of its own. The owner's "Ville." for "Répète : ville." (17 Nov 2026 20:09:04, Lesson 6
+   Exercise 26; plain on the recording: Whisper writes "ville" in three hearings of four) came out as "lis ville" and was corrected as a
+   wrong name. It was one unbroken stretch of sound (0.66 to 1.16 s): the listener wrote its loud first 140 to 170 ms as "lis" (confidence
+   0.5 to 0.8; "lis" is in the list from Lesson 6 Exercise 7, "Lis.") and the rest as "ville" (1.00), with no gap between them. In every recorded
+   answer of 9-17 Nov 2026 that was refused as one word more than the answer, the word was a plausible wrong answer said and then
+   changed ("une un livre", "un une", "julie claire", "un quatre"): those are judged as said. So one word before exactly the answer is
+   the start of the answer, not a word, only when (a) it is not something a learner might say here: no front word, pronoun, c'est, yes /
+   no or any other word the judge weighs (SLOT), no person's name, thing or number (NAMED, nameOf), no word of any answer of the exercise being run, no
+   word of the question, no hesitation word; and (b) it is short and joined to the answer: 200 ms or less, the answer's first word
+   starting within 40 ms of its end. The trace and the run file's reason say what the listener wrote. Typed or heard with a gap, "lis
+   ville" stays wrong (the judge itself is unchanged). */
+const SPLIT_START = {maxMs:200, gapMs:40};
+/* text: what the listener wrote (voskClean); words: its words with times in ms ({w, s, e, c}); the place is the one being run (S, curCue).
+   Returns null, or what to hear instead: {w, rest, dur, gap, conf, r} (r: the judge's verdict on the rest). Checked by
+   dev/harness/replay/listencheck.js (gate step 6). */
+function splitWordStart(text, words, expect, alsoOk=[]){
+  const tw=(text||"").split(" ").filter(Boolean); if(tw.length<2 || expect.includes("REST")) return null;
+  const w=tw[0], rest=tw.slice(1).join(" "); if(w===tw[1] || w==="[unk]") return null;
+  const r=judge(rest, expect, [], alsoOk); if(!r.ok || r.near || r.unsure || r.hesitation) return null;
+  const E=((LESSONS[S.lesson]||{}).exercises||[])[S.ex], exW=new Set();
+  if(E) for(const P of E.parts) for(const it of P.items) if(Array.isArray(it.expect)) for(const x of tokensOf(phraseOf(it.expect))) exW.add(x);
+  for(const x of tokensOf(phraseOf(expect))) exW.add(x);
+  if(Object.values(SLOT).some(a=>a.includes(w)) || NAMED.includes((nameOf(w)||{}).n) || exW.has(w) || cueWords(curCue).includes(w) || HESIT_WORDS.includes(w) || FILLERS.includes(w) || /\d/.test(w)) return null;
+  let i=-1; for(let k=(words||[]).length-2;k>=0;k--) if(words[k].w===w && words[k+1].w===tw[1]){ i=k; break; }
+  if(i<0) return null; const a=words[i], dur=a.e-a.s, gap=words[i+1].s-a.e;
+  if(dur>SPLIT_START.maxMs || gap>SPLIT_START.gapMs) return null;
+  return {w, rest, dur, gap, conf:a.c, r};
+}
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
   const cue=curCue, either=/(^| )ou( |$)/.test(normalise(cue||""));
@@ -2489,6 +2603,7 @@ async function listenVosk(expect, alsoOk=[]){
   const loneFront = expect.length===1 && ["UN","UNE","n1"].includes(expect[0]);
   const LET_GO = {gapMs:200, shortMs:240, maxMs:330, quieter:0.88, beforeMs:200};
   const heardW=[]; let letGoNote="";
+  const allW=[];      // (.82) every word the listener wrote, with its times: splitWordStart, below
   const letGo=()=>{ if(!loneFront || !sound) return; let changed=false;
     for(let i=0;i<heardW.length;i++){ const b=heardW[i], a=i?heardW[i-1]:null;
       if(b.w!=="deux") continue;
@@ -2529,6 +2644,7 @@ async function listenVosk(expect, alsoOk=[]){
             +(spk?": \""+spk+"\" was over within "+(spk===w.word?TAIL_END_MS/1000:0.46)+" s of the microphone opening, so it is the end of the teacher's own cue from the speaker, not counted":"")
             +(firstEarly?"; \""+firstEarly+"\" was over within 0.46 s":"")); } }
       lastWordEnd=Math.round(ws[ws.length-1].end*1000); }
+    if(t && ws.length===t.split(" ").length) for(const w of ws) allW.push({w:w.word, s:Math.round(w.start*1000), e:Math.round(w.end*1000), c:w.conf});
     if(t){ finals.push(t); if(loneFront && ws.length===t.split(" ").length){ const k=finals.length-1; for(const w of ws) heardW.push({w:w.word, s:Math.round(w.start*1000), e:Math.round(w.end*1000), k}); letGo(); } }
     partial=""; noteRaw(); if(onFinal) onFinal(); });
   rec.on("partialresult", m=>{ partial=(m.result && m.result.partial)||""; noteRaw(); });
@@ -2609,6 +2725,9 @@ async function listenVosk(expect, alsoOk=[]){
     return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
   }
   let v=judge(text, expect, [], alsoOk, {raw});
+  if(!v.ok){ const sp=splitWordStart(text, allW, expect, alsoOk); if(sp){
+    trace("\""+sp.w+"\" "+sp.dur+" ms long (confidence "+(+sp.conf||0).toFixed(2)+"), the answer "+sp.gap+" ms after it, and not a word a learner might say here: the start of the answer written as a word; heard as \""+sp.rest+"\"");
+    v={...sp.r, reason:"the start of the answer written as a word: the listener wrote \""+text+"\"", splitStart:sp.w}; } }
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
@@ -2885,7 +3004,7 @@ const CARD = (w, h, r=16) => { const f=n=>(+n).toFixed(1); return `<rect class="
 const cardGroupOf = side => side==="L" ? fL : side==="R" ? fR : side==="pL" ? document.getElementById("badge_paul") : side==="pR" ? document.getElementById("badge_julie") : /^s\d+$/.test(side||"") ? frameRow.querySelector('[data-slot="'+side+'"]') : null;
 const ACT_NAME = {dancing:"dance", jumping:"jump", smiling:"smile", "not smiling":"not smiling", walking:"walk", "standing up":"stand up", "sitting down":"sit down", eating:"eat", drinking:"drink", sleeping:"sleep", singing:"sing", reading:"read", "raising a hand":"raise hand", talking:"talk", arriving:"arrive", leaving:"leave",      // (.48) parler, arriver, partir
   working:"work", calling:"call", "going out":"go out", playing:"play", listening:"listen",      // (.55) travailler, appeler, sortir, jouer, écouter (people.js MOVES)
-  writing:"write", running:"run", falling:"fall", swimming:"swim"};      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
+  writing:"write", running:"run", falling:"fall", swimming:"swim", climbing:"climb", drawing:"draw", clapping:"clap"};      // (act83) grimper, dessiner, applaudir (people.js climb, draw, clap)      // (figures 15) nager (Lessons 13-14): people.js swim; (.59) écrire (Lesson 7): a sheet flat on a table, the pen moving along a line (people.js writer); (.60) courir, tomber (Lessons 9-10)
 // things the library draws through PICS.thing (cake, coffee, table … plate, face, French flag, picture card); what it lacks is drawn simply here or shown as a plain card
 /* (.25) the text of a written word or a speech card, with its blue letters and lines (course entity field "marks"; the ninth
    round: drawn as on the sentence line, at every stage). lines: the text broken into lines at spaces. */
@@ -2895,6 +3014,7 @@ function cardLines(t, marks, lines, fs, y0){
   return out;
 }
 function thingPicture(e){
+  if(e.is==="picture card" && e.liked) return heartOver(thingPicture(Object.assign({}, e, {liked:false})));      // (.84, F-INF-01) the card with the heart over it
   if(e.is==="picture card" && (e.figure==="paul" || e.figure==="julie")){ const c=modelCard(e); if(c) return c; }
   const lib = window.PICS && PICS.thing && (!PICS.things || PICS.things.includes(String(e.is).toLowerCase()));
   if(lib){ try{ const g=PICS.thing(e.is==="picture card" ? Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e) : e); if(g) return g; }catch(err){ trace("FAULT picture "+e.is+": "+err.message); } }
@@ -2992,6 +3112,34 @@ function handSign(L){
     : `<g transform="rotate(${k==="down"?180:0})">${fist}</g>`;
   const g=document.createElementNS(svgNS,"g"); g.innerHTML=`<g transform="translate(128 156)"><circle r="27" fill="#fffdf6" stroke="#cfc8b6" stroke-width="2"/>${body}</g>`; return g;
 }
+/* HEART84 BEGIN (.84, D-56, D-57: the infinitive and verb + infinitive; DI_ANALYSIS.md §2.18) The heart that says which action is liked.
+   F-INF-01: two action cards, a heart over the one liked ("Danser ou sauter ?" -> "Danser."): the card's item has `liked`.
+   F-INF-02: a man or a woman with no name tag and, in a thought bubble above them, the card of the action they like with the heart over
+   it ("Il aime quoi ?" -> "Il aime danser."): the person's item has `likes` (the doing). The bubble is not a card held up: a held card
+   is the near future ("Il va danser.", people.js spec.card), set beside this one in the same lessons, so the two never look alike: no
+   hand, three small circles rising from the head to a cloud. Nothing here moves and no hand is placed: a still overlay (the figure
+   rule's pixel mask and its checks: dev/design/tools/heart84/heart_mask.js, heart_check.py). */
+const HEART_D = "M0 9 C-3 4 -14 -2 -14 -9 C-14 -15 -9 -18 -5 -18 C-2 -18 0 -16 0 -13 C0 -16 2 -18 5 -18 C9 -18 14 -15 14 -9 C14 -2 3 4 0 9 Z";
+function heartMark(cx, cy, k){
+  const g=document.createElementNS(svgNS,"g"); g.setAttribute("data-p","heart84");
+  g.innerHTML=`<g transform="translate(${cx} ${cy}) scale(${k})"><path d="${HEART_D}" fill="#ffffff" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/><path data-p="heart84" d="${HEART_D}" fill="#e0245e" stroke="#a3123f" stroke-width="1.6" stroke-linejoin="round"/><path d="M-8 -12 C-10 -10 -10 -7 -9 -5" stroke="#ffd0dd" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>`;
+  return g;
+}
+function heartOver(card){                 // F-INF-01: the heart on the card's top right corner, half over it: clear of the figure and of its signs (a note, a speech bubble)
+  const g=document.createElementNS(svgNS,"g"); g.appendChild(card); g.appendChild(heartMark(134, 30, 1.3)); return g;
+}
+function likesPicture(person, card){      // F-INF-02: the person, smaller, bottom left; the thought bubble, top right, with the card and the heart
+  const g=document.createElementNS(svgNS,"g"), p=document.createElementNS(svgNS,"g");
+  p.setAttribute("data-p","liker84"); p.setAttribute("transform","translate(4 86) scale(.72)"); p.appendChild(person); g.appendChild(p);
+  const b=document.createElementNS(svgNS,"g"); b.setAttribute("data-p","bubble84");
+  b.innerHTML=`<circle cx="66" cy="86" r="3.4" fill="#ffffff" stroke="#9aa6b5" stroke-width="1.6"/><circle cx="76" cy="77" r="5" fill="#ffffff" stroke="#9aa6b5" stroke-width="1.6"/>`
+    +`<path transform="translate(8 5) scale(.92)" d="M92 6 C100 -2 122 -2 128 6 C140 -1 158 4 158 18 C163 28 162 46 156 54 C162 66 154 82 140 80 C134 92 112 94 104 84 C94 90 80 82 84 70 C74 64 76 48 84 44 C78 34 80 18 92 16 C88 12 88 8 92 6 Z" fill="#ffffff" stroke="#9aa6b5" stroke-width="1.8"/>`;
+  g.appendChild(b);
+  const c=document.createElementNS(svgNS,"g"); c.setAttribute("data-p","bubblecard84"); c.setAttribute("transform","translate(89 8) scale(.42)"); c.appendChild(card); g.appendChild(c);
+  g.appendChild(heartMark(140, 24, 0.95));
+  return g;
+}
+/* HEART84 END */
 function genPicture(e){ if(e && e.is==="face"){ const g=document.createElementNS(svgNS,"g"); try{ g.appendChild(genPicture0(e)); const h=handSign(e.looks||[]); if(h) g.appendChild(h); }catch(err){ trace("FAULT picture face: "+err.message); } return g; }
   try{ return genPicture0(e); }catch(err){ trace("FAULT picture "+(e.person||e.is)+": "+err.message); return placeholder(e.person||e.is); } }
 function genPicture0(e){
@@ -3005,6 +3153,8 @@ function genPicture0(e){
       const g=document.createElementNS(svgNS,"g"), c=document.createElementNS(svgNS,"g"); g.appendChild((e.looks && e.looks.length) ? PICS.person(Object.assign({}, e, {card:undefined}), VOCAB[e.person].name) : portrait(e.person));
       c.setAttribute("transform","translate(94 2) scale(.42)"); c.appendChild(thingPicture({is:"picture card", doing:e.card, count:1})); g.appendChild(c); return g; }
     return (e.doing || e.holding || e.card || (e.looks && e.looks.length)) ? PICS.person(e, VOCAB[e.person].name) : portrait(e.person); }
+  if(PEOPLE_KIND.includes(e.is) && e.likes && !e.doing && window.PICS)      // (.84, F-INF-02) standing, the liked action in a thought bubble with the heart
+    return likesPicture(PICS.person(Object.assign({}, e, {likes:undefined})), thingPicture({is:"picture card", doing:e.likes, count:1}));
   if(PEOPLE_KIND.includes(e.is) && e.doing==="swimming" && !picDoes("swimming")) return swimmer(e);
   if(PEOPLE_KIND.includes(e.is) && e.doing==="singing" && !picDoes("singing")) return singer(e);
   /* (.28; Jon, 12 Nov 11:50: "one man in three pictures" was three identical standing men, so "Danse." could not be answered) an
@@ -3283,11 +3433,23 @@ let lastPoint=null; const armsGo=ARMS.go; ARMS.go=(p,ms)=>{ lastPoint=null; gold
 // Jon 9 Nov 10:27: no pointing at the pictures; the gold border alone shows what the teacher means. Her hand still goes
 // to her chest for herself and opens to the learner ("your turn"), which a border cannot show.
 const ON_SCREEN = s => s==="L"||s==="R"||s==="pL"||s==="pR"||s==="strip"||/^s\d+$/.test(s);
+// (.84) the person (or thing) at a place of the screen, by name: Marie for her own tag, the learner for "you"
+function goldWho(side){
+  if(side==="self") return VOCAB.claire.name; if(side==="you") return "you";
+  if(side==="pL") return VOCAB.paul.name; if(side==="pR") return VOCAB.julie.name;
+  const m=/^s(\d+)$/.exec(side||""); const x=m && curScene && curScene.row ? curScene.row[+m[1]] : null;
+  const k = x==null ? "" : (typeof x==="object" ? (x.person || x.is || "") : String(x).split(":")[0]);
+  return (VOCAB[k] && VOCAB[k].name) || k || "?"; }
 async function pointAt(who){
   askMark(null);
   // mark:false (the review of 11 Nov, F9): the question is about this picture, but a border on it would give the answer ("Qui danse ?"): nothing is marked
   if(who && typeof who==="object" && who.mark===false && who.kind==="test"){ goldOff(); if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; } return; }
+  // (.83; the reader of the DI rebuild, F1, D-13) "C'est quoi ?" of two things: nothing single is pointed at; the border passes over each in
+  // the order of the answer and goes off, so the question is about the two (a screen of things with nothing marked is "Il y a quoi ?"'s)
+  if(who && typeof who==="object" && who.at==="none" && Array.isArray(who.sweep) && who.sweep.length>=2 && who.sweep.every(x=>ON_SCREEN(x))){
+    selfTag(false); for(const x of who.sweep){ goldOn(x); await sleep(380); } goldOff(); trace("the border passed over "+who.sweep.join(", ")); return; }
   const side = sideOf(who); if(side!=="self") selfTag(false); if(side==="none") return;
+  trace("gold: "+side+" ("+goldWho(side)+")");      // (.84) who the border marks (the release test truth84: the person the answer names)
   if(ON_SCREEN(side)){ goldOn(side);
     if(offering && lastPoint!=="palm"){ armsGo({R:palmUp("R")}, 300); lastPoint="palm"; }    // the "your turn" hand, no pointing
     return; }
@@ -3438,11 +3600,11 @@ async function askAndListen(task, expect, think=0, alsoOk=[], cued=false){
   }
   if(task.cue==="you"){                   // about the learner: the open palm to them, then "Vas-y" (or "Et toi ?") is the cue
     // own name (.24): the learner's card and name tag lit
-    offering=true; pointAt("you"); if(task.ownName) tagLit(learnerSlot()); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : PHR.atoi, "tutor", undefined, 0);
+    offering=true; pointAt("you"); if(task.ownName) tagLit(learnerSlot()); if(think) await sleep(think); await say(task.gen && task.questionUnits.length ? task.questionUnits : corrWordOk("vas-y") ? PHR.atoi : [], "tutor", undefined, 0);
     return listenT(task, expect, alsoOk);
   }
-  if(task.cueVoice){                      // a model learner says the cue: the gold border on them (who it is about), the green ring while they speak
-    pointAt(task.cueAt); if(think) await sleep(think);
+  if(task.cueVoice){                      // a model learner says the cue: the green ring while they speak; (.84; the reader of the .84 Lesson 1, B3) the gold border on whom the answer is about (the item's own place), never on the one who gives the cue
+    pointAt(task); if(think) await sleep(think);
     await cueAs(task.cueVoice, task.questionUnits, task.cueAt, task);
     return listenT(task, expect, alsoOk);
   }
@@ -3453,8 +3615,8 @@ async function askAndListen(task, expect, think=0, alsoOk=[], cued=false){
 }
 // "Vas-y" with the open palm and the pointing (questions); for touch-and-name, "Vas-y" alone, since the pointing is the cue
 async function announce(t){
-  if(t.cue==="point"){ offering=false; await say(PHR.atoi); return; }
-  await gesturePalm(t); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(t); })()]);
+  if(t.cue==="point"){ offering=false; if(corrWordOk("vas-y")) await say(PHR.atoi); return; }      // (.84) "Vas-y." only once heard, never in Lessons 1-2
+  await gesturePalm(t); await Promise.all([corrWordOk("vas-y") ? say(PHR.atoi) : sleep(0), (async()=>{ await sleep(200); await pointAt(t); })()]);
 }
 // Model (not a task)
 // who says the answer in a model: the teacher, or Paul / Julie (the model learners, in their own recorded voices)
@@ -4117,7 +4279,7 @@ const XPIC = (() => {
     const chars = charsOf(text, parts), r = charsSvg(chars, 200, y, fs, 340, TXT_INK), W = r.xs[r.xs.length - 1] - r.xs[0], x0 = 200 - W / 2 - 24, x1 = 200 + W / 2 + 24, top = y - fs * 1.15, bot = y + fs * 0.6;
     let box = ""; if (hi != null) { const a = chars.findIndex(c => c.part === hi); let e = -1; chars.forEach((c, i) => { if (c.part === hi) e = i; }); while (e > a && /[\s.,?!:;…]/.test(chars[e].c)) e--;
       if (a >= 0) box = `<rect x="${f1(r.xs[a] - 5)}" y="${f1(y - r.fs * 0.98)}" width="${f1(r.xs[e + 1] - r.xs[a] + 10)}" height="${f1(r.fs * 1.42)}" rx="7" fill="${TXT_HI}" stroke="${TXT_INK}" stroke-width="2.2"/>`; }
-    return { g: mk("g", {}, `<rect class="boardLip" x="${f1(x0)}" y="${f1(top + 2.5)}" width="${f1(x1 - x0)}" height="${f1(bot - top)}" rx="12"/><rect class="boardFace" x="${f1(x0)}" y="${f1(top)}" width="${f1(x1 - x0)}" height="${f1(bot - top)}" rx="12"/>${box}${r.svg}`), x0, x1, top, bot };
+    return { g: mk("g", {"data-board": text}, `<rect class="boardLip" x="${f1(x0)}" y="${f1(top + 2.5)}" width="${f1(x1 - x0)}" height="${f1(bot - top)}" rx="12"/><rect class="boardFace" x="${f1(x0)}" y="${f1(top)}" width="${f1(x1 - x0)}" height="${f1(bot - top)}" rx="12"/>${box}${r.svg}`), x0, x1, top, bot };
   }
   /* the views. Each returns an <svg> for the card: a part of the phone (crop: [y0, y1] of the phone), two phones side by side with a
      word under each, the learner seen from behind in front of the phone and saying their answer (the stage's own drawing of the
@@ -4143,7 +4305,7 @@ const XPIC = (() => {
     if (lb) { const q = lb.cloneNode(true), sfx = "_x" + (seq++); q.querySelectorAll("[id]").forEach(e => { e.id = e.id + sfx; }); q.querySelectorAll("[fill^='url(#']").forEach(e => { e.setAttribute("fill", e.getAttribute("fill").replace(/\)$/, sfx + ")")); });
       q.classList.remove("lb"); const s = 0.74, top = pb - 46; const s2 = mk("g", { transform: `translate(98 ${f1(top)}) scale(${s}) translate(-200 -474)` }); s2.appendChild(q); g.appendChild(s2); hb = top + 120 * s; }
     if (says) { const w = Math.max(100, says.length * 15.5 + 36), x = 10, y = pb - 128;
-      g.insertAdjacentHTML("beforeend", `<g><path d="M${x + 52} ${y + 46} L${x + 80} ${y + 82} L${x + 82} ${y + 46}Z" fill="#fff" stroke="var(--speak)" stroke-width="3" stroke-linejoin="round"/><rect x="${x}" y="${y}" width="${f1(w)}" height="50" rx="25" fill="#fff" stroke="var(--speak)" stroke-width="3"/><path d="M${x + 54} ${y + 47.5} L${x + 80} ${y + 47.5}" stroke="#fff" stroke-width="5"/>`
+      g.insertAdjacentHTML("beforeend", `<g data-says="${escX(says).replace(/"/g, "&quot;")}"><path d="M${x + 52} ${y + 46} L${x + 80} ${y + 82} L${x + 82} ${y + 46}Z" fill="#fff" stroke="var(--speak)" stroke-width="3" stroke-linejoin="round"/><rect x="${x}" y="${y}" width="${f1(w)}" height="50" rx="25" fill="#fff" stroke="var(--speak)" stroke-width="3"/><path d="M${x + 54} ${y + 47.5} L${x + 80} ${y + 47.5}" stroke="#fff" stroke-width="5"/>`
         + `<text x="${f1(x + w / 2)}" y="${y + 34}" text-anchor="middle" font-family="var(--font-ui)" font-size="27" font-weight="700" fill="var(--ink)">${escX(says)}</text></g>`); }
     return view(400, Math.max(pb, hb) + 4, g, o.label); }
   const alone = (node, x, y, w, h, label) => { const g = mk("g", { transform: `translate(${f1(-x)} ${f1(-y)})` }); g.appendChild(node); return view(w, h, g, label); };
@@ -4160,11 +4322,22 @@ const XPIC = (() => {
 /* The cards: a title, and parts, each with a picture (where one helps) and a few short sentences. say(t, w): a word Marie says, written,
    with a button that lets Marie say it (her own recording; nothing is said unless it is pressed). */
 const XSAY = (t, w) => `<button type="button" class="xc-say" data-say="${escX(t).replace(/"/g, "&quot;")}" aria-label="Hear Marie say ${escX(w || t).replace(/"/g, "&quot;")}"><svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg><span lang="fr">${escX(w || t)}</span></button>`;
-const XBOARD = {text: "Pierre ou Sylvie ?", parts: [[0, 6, [[5, 6]], [], [], 0, 0], [7, 9, [], [[7, 9]], [], 0, 0], [10, 16, [[15, 16]], [], [], 0, 0]]};      // Lesson 1's first board (L1E6), for a card shown with no board of its own
-const xBoardOf = it => { const b = it && it.board; return b && b.text ? b : XBOARD; };
-const XWAVY = {text: "il y en a six", parts: [[0, 2, [], [], [], 0, 0], [3, 4, [], [], [], 0, 0], [5, 7, [], [], [], 0, 0], [8, 9, [], [], [], 0, 0], [10, 13, [], [], [[12, 13]], 0, 0]]};      // Lesson 10's first board with a wavy line
-// the item's own board when its first line has the mark the card is about (k: 2 blue, 3 underline, 4 wavy), else a board of the course that has it
-const xBoardWith = (it, k) => { const b = it && it.board, first = b && String(b.text || "").split("\n")[0].length; return b && b.text && (b.parts || []).some(p => p[0] < first && (p[k] || []).length) ? b : k === 4 ? XWAVY : XBOARD; };
+/* (.84; the second reader, B-new-2: the blue card drew "Pierre ou Sylvie ?", Lesson 1's board of L1E12, at L1E5, seven exercises before it is
+   heard) a card draws only the board of the item it comes before, never a default board: the line of it that carries the mark the card is
+   about (k: 2 blue, 3 underline, 4 wavy), or its first line; an item with no board draws none (traced as a fault: the card's trigger needs one) */
+const xLine = (b, i) => { const ls = String(b.text || "").split("\n"); let a = 0; for (let j = 0; j < i; j++) a += ls[j].length + 1;
+  const e = a + ls[i].length, sh = q => Array.isArray(q) ? q.filter(r => r[0] >= a && r[1] <= e).map(r => [r[0] - a, r[1] - a]) : q;
+  return {text: ls[i], parts: (b.parts || []).filter(p => p[0] >= a && p[1] <= e).map(p => [p[0] - a, p[1] - a, sh(p[2]), sh(p[3]), sh(p[4]), ...p.slice(5)])}; };
+// (.84; the third reader, N-3rd-5) the line the item says, where the board has it (L1E5-a1 says "une": not "un", heard one item later)
+const xBoardOf = it => { const b = it && it.board; if (b && b.text) { const ls = String(b.text).split("\n"), say = String((it.answerUnits || []).join(" ") || "").toLowerCase().replace(/[.!?]/g, "").trim();
+  const k = ls.findIndex(l => l.toLowerCase().replace(/[.!?]/g, "").trim() === say); return xLine(b, k >= 0 ? k : 0); } trace("FAULT explanation card: no board of its own at " + ((it && (it.id || it.target)) || "?")); return null; };
+const xBoardWith = (it, k) => { const b = it && it.board; if (!(b && b.text)) return xBoardOf(it);
+  const own = xBoardOf(it); if (own && own.parts.some(p => (p[k] || []).length)) return own;      // (N-3rd-5) the line the item says, when it has the mark
+  const n = String(b.text).split("\n").length; for (let i = 0; i < n; i++) { const l = xLine(b, i); if (l.parts.some(p => (p[k] || []).length)) return l; }
+  trace("FAULT explanation card: the board of " + (it.id || it.target) + " has no mark " + k); return null; };
+const xBoard = b => b ? XPIC.board(b) : null;
+const xExample = it => { const a = it && (Array.isArray(it.answerUnits) && it.answerUnits.length ? it.answerUnits.join(" ") : it.target);      // (.84) the item's own answer
+  return a && typeof a === "string" && !/\[|prénom/.test(a) ? a : VOCAB.paul.name + "."; };
 const XROW3 = () => [{person: "paul"}, {person: "julie"}, {person: "you"}];
 const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that is clutter) the words kept to the minimum; the pictures do the work
   intro: {t: "How a lesson works", ok: "Start", parts: [
@@ -4174,11 +4347,13 @@ const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that
      h: `<p>${XSAY("Répète : " + VOCAB.claire.name + ".", "Répète")}: say it after her, once.</p>`},
     {h: `<p class="xc-rule">Only speak when the frame is green.</p>`},
     {h: `<div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg><p>Speak clearly and loudly.</p></div><div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-flat"/></svg><p>Phone flat on a table. Don't touch it.</p></div><div class="xc-row"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><p>To stop: the cross, then <b>Leave</b>.</p></div>`}]},
+  /* (.84; the reader of the .84 Lesson 1, B1: the card said "Pierre." before a question whose answer is "C'est Pierre.") a card's example answer
+     is the answer of the item it comes before (xExample); the release test truth84 fails a card example the next test does not accept */
   q: {t: "Questions", parts: [
-    {pic: () => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Marie asks; the learner says only the answer"}, VOCAB.paul.name + "."),
+    {pic: (it) => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Marie asks; the learner says only the answer"}, xExample(it)),
      h: `<p>Say only the answer.</p>`}]},
   onlyanswer: {t: "Just the answer", parts: [
-    {pic: () => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Only the answer"}, VOCAB.paul.name + "."),
+    {pic: (it) => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Only the answer"}, xExample(it)),
      h: `<p>Say only the answer, not the question.</p>`}]},
   touche_model: {t: "Touching a picture", parts: [
     {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {hand: {at: 0, by: "teacher"}, label: "Marie's hand touches Pierre's picture"}),
@@ -4195,23 +4370,25 @@ const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that
     {pic: () => XPIC.box("you", "dance", {}),
      h: `<p>Tap a picture, and you do it. Answer as if it were really you.</p>`}]},
   words: {t: "Words on the screen", parts: [
-    {pic: it => XPIC.board(xBoardOf(it), 0), h: `<p>The box shows the word being said.</p>`}]},
+    {pic: it => { const b = xBoardOf(it); return b ? XPIC.board(b, 0) : null; }, h: `<p>The box shows the word being said.</p>`}]},
   blue: {t: "Blue letters", parts: [
-    {pic: it => XPIC.board(xBoardWith(it, 2)), h: `<p><b class="xc-blue">Blue letters</b> are not said.</p>`}]},
+    {pic: it => xBoard(xBoardWith(it, 2)), h: `<p><b class="xc-blue">Blue letters</b> are not said.</p>`}]},
   underline: {t: "Lines under letters", parts: [
-    {pic: it => XPIC.board(xBoardWith(it, 3)), h: `<p>Underlined letters make one sound.</p>`}]},
+    {pic: it => xBoard(xBoardWith(it, 3)), h: `<p>Underlined letters make one sound.</p>`}]},
   wavy: {t: "A wavy line", parts: [
-    {pic: it => XPIC.board(xBoardWith(it, 4)), h: `<p>Wavy line: listen to how Marie says it.</p>`}]},
+    {pic: it => xBoard(xBoardWith(it, 4)), h: `<p>Wavy line: listen to how Marie says it.</p>`}]},
   lis: {t: "Reading out loud", parts: [
-    {pic: it => XPIC.learner({turn: "speak", board: xBoardOf(it), crop: [250, PHONE_H], k: 0.46, label: "The frame is green: the learner reads the words"}, xBoardOf(it).text.split("\n")[0]),
+    {pic: it => { const b = xBoardOf(it); return b ? XPIC.learner({turn: "speak", board: b, crop: [250, PHONE_H], k: 0.46, label: "The frame is green: the learner reads the words"}, b.text) : null; },
      h: `<p>${XSAY("Lis.", "Lis")}: read the box out loud.</p>`}]},
   count: {t: "Counting", parts: [
     {pic: () => XPIC.strip({is: "apple", count: 3}, 1), h: `<p>One number at each touch.</p>`}]},
   count_you: {t: "Your turn to count", parts: [
     {pic: () => XPIC.strip({is: "apple", count: 3}, 0), h: `<p>${XSAY("À toi.", "À toi")} ${XSAY("Compte.", "Compte")}: one number at each touch.</p>`}]},
-  asker: {t: "When Pierre or Sylvie asks", parts: [
-    {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {ring: 0, tail: "you", label: "Pierre asks; the point shows who answers"}),
-     h: `<p><b class="xc-green">Green ring</b>: who asks. Its point: who answers. Down: you.</p><p>A hand on their name tag: the question is about them.</p>`}]},
+  /* (.84; the second reader, S-new-3: the card spoke of a question, a point toward the learner and a hand on a name tag, none of which the
+     first item it comes before has: Pierre's "Répète : c'est Marie.", no point drawn since .35) the card says what the stage does */
+  asker: {t: "When Pierre or Sylvie speaks to you", parts: [
+    {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {ring: 0, label: "Pierre speaks to you: his green ring"}),
+     h: `<p><b class="xc-green">Green ring</b>: who is speaking to you.</p><p>Answer them as you answer Marie.</p>`}]},
   you_now: {t: "Remember", parts: [
     {pic: () => XPIC.box("you", "dance", {}), h: `<p>Answer as if you were doing it.</p>`}]},
   you_before: {t: "Remember", parts: [
@@ -4274,13 +4451,17 @@ async function explain(keys, o){
   keys.forEach((k, i) => { const c = XCARDS[k], sec = document.createElement("section"); sec.className = "xc-part"; sec.dataset.key = k;
     if (i > 0 || o.title) sec.insertAdjacentHTML("beforeend", `<h3>${escX(c.t)}</h3>`);
     c.parts.forEach(p => { if (p.pic) { const fig = document.createElement("div"); fig.className = "xc-pic"; try{ const s = p.pic(o.it); if (s) fig.appendChild(s); }catch(e){ trace("FAULT explanation card picture " + k + ": " + e.message); } if (fig.firstChild) sec.appendChild(fig); }
-      sec.insertAdjacentHTML("beforeend", p.h); });
+      sec.insertAdjacentHTML("beforeend", typeof p.h === "function" ? p.h(o) : p.h); });
     body.appendChild(sec); });
   el.querySelector("#xcardOk .lbl").textContent = o.ok || (keys.length === 1 && first.ok) || "Got it";
   el.classList.toggle("top", !!o.review); el.classList.remove("out"); el.hidden = false;
   const sc = el.querySelector(".xc-scroll"); sc.scrollTop = 0; requestAnimationFrame(() => XCARD.hint && XCARD.hint());
   try{ sc.focus({preventScroll: true}); }catch(e){}      // the card has the focus (no ring drawn on its button for a finger; Tab reaches the button)
   if (lesson) keys.forEach(k => trace("explanation card: " + k + " shown"));
+  if (lesson) body.querySelectorAll(".xc-part").forEach(sec => { const fr = [...new Set([...sec.querySelectorAll("[data-say]")].map(x => x.dataset.say).concat([...sec.querySelectorAll("[lang=fr]")].map(x => x.textContent.trim())))].filter(Boolean),
+    ex = [...sec.querySelectorAll("[data-says]")].map(x => x.getAttribute("data-says")),
+    bd = [...sec.querySelectorAll("[data-board]")].map(x => x.getAttribute("data-board"));      // (.84; B-new-2) the board text a card draws (as SVG)
+    trace("explanation card: " + sec.dataset.key + " French: " + JSON.stringify(fr) + (ex.length ? " example: " + JSON.stringify(ex) : "") + (bd.length ? " board: " + JSON.stringify(bd) : "")); });      // (.84) what a card shows and plays in French
   const how = await new Promise(res => { XCARD.done = res;
     if (navigator.webdriver && !window.__xcardHold) setTimeout(() => { if (XCARD.done === res) res("by itself (a scripted run)"); }, 300); });
   XCARD.done = null;
@@ -4322,7 +4503,8 @@ async function checkShow(lessonId, exId, partId, how){
   XCHECK.el.innerHTML = checkHtml(checkLabel(lessonId), checkThumb(exId, partId)); XCHECK.el.hidden = false; }
 function checkHide(){ if (XCHECK.el && !XCHECK.el.hidden) { XCHECK.el.hidden = true; XCHECK.key = null; trace("delayed test: the check's label goes"); } }
 XCARDS.check = {t: "A quick look back", parts: [
-  {h: `<div class="xc-checkdemo"><div class="xk-demo">${checkHtml("From Lesson 4", "")}</div></div><p>Something from earlier, asked again.</p>`}]};
+  // (.84; the second reader, Note-new-4: "From Lesson 4" in a Lesson-1-only app) the label the check itself carries, as checkShow writes it
+  {h: o => `<div class="xc-checkdemo"><div class="xk-demo">${checkHtml(o && o.checkFrom ? checkLabel(o.checkFrom) : "From earlier", "")}</div></div><p>Something from earlier, asked again.</p>`}]};
 XCARDS_ALL.push("check");
 const partsHave = (w, k) => ["t","a","p"].some(x=>(w[x]||[]).some(q=>(q[k]||[]).length));
 async function convIntro(it){
@@ -4345,7 +4527,7 @@ async function convIntro0(it){
      says it once, before that item, which is the first model of the format. About how the app works only: no English about French. */
   if(typeof it.intro==="string") await convOnce(it.intro);      // (the engine's own introduction models carry intro:true: not a clip name)
   if(it.read) await convOnce("lis");
-  if(it.type==="tapshow") await convOnce("touche_model");
+  if(it.type==="tapshow" && /\bTouche\b/.test((it.questionUnits||[]).join(" "))) await convOnce("touche_model");      // (.84; the reader, B2) the card quotes "Touche.": only before the first cue that says it (Lesson 3: Touche Pierre.), never where the name alone cues the tap
   if(it.tapTask){ if(it.ear && isCommandTap(it)) await youDoIntro(); await convOnce("touche_tap"); }
   if(isTouchesEn(it)) await convOnce("touches_en");      // (.82, R-158) the first "Touches-en un." / "Touches-en une."
   /* (.28; Jon, 11:40: "The explanation needs to come before the first time the learner has to do the thing") every line plays
@@ -4363,7 +4545,7 @@ async function convIntro0(it){
 // the conventions an item uses (what convIntro must have introduced before it), defined apart from the triggers above
 function convUsed(it){ const u=[], P=(it.board && it.board.parts)||[], has=k=>P.some(q=>(q[k]||[]).length);
   if(boardOn(it)){ u.push("words"); if(has(2)) u.push("blue"); if(has(3)) u.push("underline"); if(has(4)) u.push("wavy"); }
-  if(it.type==="tapshow") u.push("touche_model"); if(it.tapTask) u.push("touche_tap"); if(isTouchesEn(it)) u.push("touches_en");
+  if(it.type==="tapshow" && /\bTouche\b/.test((it.questionUnits||[]).join(" "))) u.push("touche_model"); if(it.tapTask) u.push("touche_tap"); if(isTouchesEn(it)) u.push("touches_en");      // (.84; the second reader, S-new-2: touche_model as its trigger in convIntro; the third, S-3rd-1: the line whole again)
   if(typeof it.intro==="string") u.push(it.intro);
   if(it.touch && !it.touch.silent) u.push("count"); if(it.cueVoice) u.push("asker");
   if(it.scene && it.at==="you" && (it.type==="task" || it.type==="test")){ if(it.scene.learnerDoing) u.push("you_now"); if(it.scene.learnerDid) u.push("you_before"); }
@@ -4413,7 +4595,7 @@ async function presentGenModel(m){
      their own voice, is the model (DISE: the teacher says the student's name with the student); until there is one, Marie's held
      "Je m'appelle…" with the learner's tag lit (fallback "held"). */
   if(m.modelFrom==="own_recording"){
-    const own = S.settings.manual ? null : await ownRecording(), sl=learnerSlot();
+    const own = S.settings.manual ? null : await ownRecording(m), sl=learnerSlot();
     if(own){ if(sl){ goldOn(sl); tagLit(sl); speakLit("you", true, sl); } trace("own-name model: the learner's own recording "+own.id);
       const bc=TXT.ctx && TXT.ctx.board ? TXT.ctx.points.slice(TXT.ctx.k) : null; if(bc && bc.length) boardHi(bc);      // (.26) the board words of the sentence, while it is heard
       await playOwn(own); speakLit("you", false); if(bc) boardHi(null); if(!SESSION.clips.includes(own.id)) SESSION.clips.push(own.id);
@@ -4447,7 +4629,7 @@ const ACT_HALF = 0.5;
 /* (figures 12; Jon, 16 Nov: "all the animations should be brought down to the speed of something like jumping, standing up, or sitting
    down ... the smiling one is too long") the smile's own floors go: one whole loop of it (1.6 s in people.js) is shown, as for every action */
 const FIGURE_TIME = act => Math.round((ACT_TIME[act]||3000)*0.5*ACT_HALF);
-const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400};      // (figures 15) swim: one loop (1.2 s)
+const ACT_SHOWN=4, ACT_TIME={"stand up":3600, "sit down":3600, walk:3600, jump:3000, dance:3000, smile:3000, "raise hand":3600, eat:3600, drink:3600, stop:2200, swim:2400, climb:4800, draw:3000, clap:3000};      // (figures 15) swim: one loop (1.2 s)
 /* The box. who: "marie", "you", "both" (the learner and Marie together), or null to take it away. opt.still: one frozen frame;
    opt.stopped: has just stopped doing `act` (standing still); opt.face: the learner's own state. Asking for what is already
    shown changes nothing, so a figure goes on moving from one task into the next ("Danse." … "Tu fais quoi ?"). */
@@ -4585,7 +4767,9 @@ function actBox(who, act, opt){
   g.setAttribute("opacity",1);
 }
 async function presentAct(a){
-  curTask=a.kind+" "+a.act; itemStart(a); ph("action: "+(a.kind==="show"?"the teacher does it":"the learner does it")+" ("+a.act+")");
+  // (.84; the third reader, S-3rd-2) the phase says whose figure it is: a figure item on Pierre's or Sylvie's place is theirs, not the learner's
+  const byModel = a.kind==="figure" && a.at && !["you","none","self"].includes(a.at);
+  curTask=a.kind+" "+a.act; itemStart(a); ph("action: "+(a.kind==="show"?"the teacher does it":byModel?"a model learner's figure does it":"the learner does it")+" ("+a.act+")");
   const sc=sceneOf(a.scene)||{}, cmd=a.teacherUnits||[], own=boxOf(sc);       // own: the scene itself says what the box shows (Lessons 5+)
   const bare=Object.assign({}, sc); BOX_KEYS.forEach(k=>delete bare[k]);
   /* (.25) kind "figure" with point on Pierre or Sylvie: it is THEIR figure that does it (they have just tapped the picture of the
@@ -4897,14 +5081,17 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   if(r.status==="silence" && r.speech){
     logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:t.id, phase, cue:t.cue, expected:t.answerUnits.join(" "), heard:[], ...lx(r),
               result:"LISTENING FAULT (speech recorded, the recogniser heard nothing; unscored)", delayed:!!ctx.delayedRec});
-    save(); if(isOwnName(t)) await ownNameCorrection(t, {why:"listening fault"}); else { await pointAt(t.cueVoice ? t.cueAt : t); await sayAnswer(t); } rest(); return true;
+    // (.84; the second reader, B-new-3) the answer is modelled as every correction models it (corrModel): the border on whom the answer is
+    // about, "C'est Marie." said by a model learner (never Marie of herself), a "Répète :" test's cue again ("Répète : un.", never her lone "Un.")
+    ph("listening fault"); trace("correction frame: "+corrKind(t)+" (listening fault: the model only, unscored)");
+    save(); if(isOwnName(t)) await ownNameCorrection(t, {why:"listening fault"}); else await corrModel(t, {noTurn:true}); rest(); return true;
   }
   /* Own name (.24): a right answer's recording is kept as this learner's model for later own-name corrections; an answer
      that gives a course person's name and then "je m'appelle" again with a name of their own ("Je m'appelle Sylvie… je
      m'appelle [own name]") is still an error, marked self-corrected (its correction is the same: never a model learner). */
   if(isOwnName(t) && r.status==="heard"){
     // (never an answer "believed" after the same course name three times: it may say that name)
-    if(r.ok && r.clip && !/three times running/.test(r.reason||"")){ S.ownClips=(S.ownClips||[]).filter(x=>x.id!==r.clip).concat([{id:r.clip, t:new Date().toISOString(), task:t.id}]).slice(-6); trace("own-name recording kept as this learner's model: "+r.clip); }
+    if(r.ok && r.clip && !/three times running/.test(r.reason||"")){ S.ownClips=(S.ownClips||[]).filter(x=>x.id!==r.clip).concat([{id:r.clip, t:new Date().toISOString(), task:t.id, frame:ownFrame((t.answerUnits||[]).join(" "))}]).slice(-6); trace("own-name recording kept as this learner's model: "+r.clip); }
     if(!r.ok && r.otherName && selfCorrectedOwn(r)){ r={...r, selfCorrected:true, reason:(r.reason||"")+"; then \"je m'appelle\" again with a name of their own (self-corrected)"}; }
   }
   ctx.lastVerdict = r;
@@ -4953,13 +5140,17 @@ const OWN_LISTEN = ["Écoute."];          // said before the learner's own recor
 // "je m'appelle" + a course person's name, then "je m'appelle" again with no course name after it (or one that could be their own)
 function selfCorrectedOwn(r){
   const toks=tokensOf(r.raw || (r.heard||[])[0] || ""), other=w=>{ const n=nameOf(w); return !!(n && !n.near && VOCAB[n.n].kind==="person" && !ownMaybe(n.n)); };
-  const o=toks.findIndex(other), L=toks.lastIndexOf("jemappelle");
+  const o=toks.findIndex(other), L=Math.max(toks.lastIndexOf("jemappelle"), toks.lastIndexOf("moicest"));      // (.83, D-01: "Moi, c'est …" too)
   return o>=0 && L>o && !toks.slice(L+1).some(other);
 }
 // the learner's earlier right own-name answers, newest first: kept ones, then any in the log (a state from before .24)
-function ownClipCandidates(){
-  const ids=(S.ownClips||[]).map(x=>x.id).reverse();
-  for(let i=(S.log||[]).length-1;i>=0;i--){ const e=S.log[i]; if(e && e.clip && e.result==="correct" && e.cue==="you" && OWN_LEAD_RE.test(e.expected||"") && !/three times running/.test(e.reason||"") && !ids.includes(e.clip)) ids.push(e.clip); }
+/* (.84; the third reader, B-3rd-1: a saved learner's "Je m'appelle Jon." played as the model for "Moi, c'est …") an own recording is a model only
+   for a test of its own frame: the frame of the answer ("moi, c'est" / "je m'appelle") is kept with the clip and must be the task's */
+const ownFrame = a => { const m=/^\s*(moi, c'est|je m'appelle)/i.exec(String(a||"").replace(/’/g,"'")); return m ? m[1].toLowerCase() : null; };
+function ownClipCandidates(task){
+  const want = task ? ownFrame((task.answerUnits||[]).join(" ")) : null;
+  const ids=(S.ownClips||[]).filter(x=>!want || x.frame===want).map(x=>x.id).reverse();
+  for(let i=(S.log||[]).length-1;i>=0;i--){ const e=S.log[i]; if(e && e.clip && e.result==="correct" && e.cue==="you" && OWN_LEAD_RE.test(e.expected||"") && (!want || ownFrame(e.expected)===want) && !/three times running/.test(e.reason||"") && !ids.includes(e.clip)) ids.push(e.clip); }
   return ids.filter(id=>String(id).startsWith(USERS.current+"_"));
 }
 // where the speech is in a recording (20 ms frames over a threshold from its own quiet and loud parts)
@@ -4974,10 +5165,10 @@ function speechSpan(buf){
   const t0=Math.max(0, a*0.02-0.10), t1=Math.min(buf.duration, (b+1)*0.02+0.20);
   return {t0, t1, dur:t1-t0, peak:pk};
 }
-async function ownRecording(){
+async function ownRecording(task){
   if(!S.settings.keepAudio && !(S.ownClips||[]).length) return null;
   audioUnlock(); if(!actx) return null;
-  for(const id of ownClipCandidates().slice(0,8)){
+  for(const id of ownClipCandidates(task).slice(0,8)){
     let raw=null; try{ raw=await clipStore("get", id); }catch(e){} if(!raw) continue;
     let buf=null; try{ const u=raw instanceof Uint8Array ? raw : new Uint8Array(raw); buf=await actx.decodeAudioData(u.buffer.slice(u.byteOffset, u.byteOffset+u.byteLength)); }catch(e){ continue; }
     const seg=speechSpan(buf); if(!seg || seg.dur<0.5 || seg.dur>3.6 || seg.peak<0.01) continue;      // nothing in it, or a long one (said twice, or more than the answer)
@@ -4992,7 +5183,7 @@ function playOwn(o){
 }
 async function ownNameCorrection(task, o={}){
   offering=false; const slot=learnerSlot(), why=o.why||"";
-  const own = S.settings.manual ? null : await ownRecording();
+  const own = S.settings.manual ? null : await ownRecording(task);
   const L = x => logEntry(Object.assign({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, heard:[], delayed:!!ctx.delayedRec, why}, x));
   if(own){
     ph("own-name correction: own recording"+(why?" ("+why+")":""));
@@ -5023,7 +5214,15 @@ async function ownNameCorrection(task, o={}){
    the cue; for "Répète : X." the words themselves, "X."; for a sound-pair task the pair again, slowly; for the learner's own
    name their own earlier right answer played, or their name tag lit. The pauses are from the end of one clip to the start of
    the next (clipGap). Her hand is at her ear from "Non, écoute." to the end of the model; the open palm comes with "Vas-y.". */
-async function corrModel(task){
+/* (.84; the coordinator's ruling on the third reader's N-3rd-1) where no turn follows the model (a listening fault, the seven-trial limit), a
+   "Répète :" test's model is the answer, said by a model learner who models it in the lesson (his clip passes the gates: Sylvie's "Un.",
+   Pierre's "Une."), or by Marie where only she models it (her "Saute.", the owner's ear); never the cue: it would tell the learner to repeat
+   with no turn to do it in. Where a turn follows (a correction), the cue again (the coordinator, 18 Nov 2026). */
+function modelVoiceOf(answer){ const a=String(answer||"").trim();
+  for(const L of LESSONS) for(const e of L.exercises) for(const p of e.parts) for(const it of p.items)
+    if((it.type==="model" || it.kind==="model") && (it.voice==="paul" || it.voice==="julie") && (it.answerUnits||[]).join(" ").trim()===a) return it.voice;      // (runtime items carry type, the course file kind)
+  return null; }
+async function corrModel(task, o={}){
   if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : "", framed:true}); return; }
   if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
   /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
@@ -5034,8 +5233,32 @@ async function corrModel(task){
     if(c.sweep[0]) goldOn(sideOf(c.sweep[0]));
     SAY_SLOW=!!c.slow; try{ await say([c.answer]); } finally{ SAY_SLOW=false; TXT.onPart=on; TXT.ctx=keep; }
     return; }
-  await pointAt(task.cueVoice ? task.cueAt : task); if(!task.cueVoice) litPlay(task); await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
+  // (.84; the reader, B3 and S4) the border on whom the answer is about; "C'est Marie." is never said by Marie of herself: Pierre says it
+  // (the plan's model, Lesson 1 row 5), his green ring on, the border on Marie
+  await pointAt(task); if(!task.cueVoice) litPlay(task);
+  const by = ownCestBy(answerUnits(task).join(" "));
+  // (.84; the coordinator, 18 Nov 2026) a correction repeats the item's cue: a "Répète :" test of Marie's is corrected with her "Répète : X."
+  // again (its own clip), not X alone (Marie's lone "Un." is not heard as un; the cue's is)
+  const rep = !task.cueVoice && /^R[ée]p[èe]te\b/.test((task.questionUnits||[]).join(" "));
+  if(rep && o.noTurn){ const v=by || modelVoiceOf(answerUnits(task).join(" "));
+    trace("the model with no turn after it: the answer"+(v ? ", by "+VOCAB[v].name : ", by Marie"));
+    if(v) await cueAs(v, answerUnits(task), slotOfPerson(v) || "none", null); else await say(answerUnits(task)); }
+  else if(rep) await say(task.questionUnits);
+  else if(by) await cueAs(by, answerUnits(task), slotOfPerson(by) || "none", null); else await say(answerUnits(task));      // the answer (for "Répète : X.": the words to say)
 }
+// (.84) the speaker who says "C'est <name>." in a correction when the name is Marie's: a model learner (never Marie of herself)
+const ownCestBy = a => new RegExp("^C'est "+VOCAB.claire.name+"\\.$").test(String(a||"").trim()) ? (slotOfPerson("paul") ? "paul" : slotOfPerson("julie") ? "julie" : "paul") : null;
+/* (.84; the reader of the .84 Lesson 1, S4; the coordinator, 18 Nov 2026: "Vas-y." is not in Lessons 1-2: it is a whole not approved, and "Non."
+   is not taught) a correction says only words the learner has heard: "Non." and "Vas-y." once the course has had them in a lesson
+   before this one (and "Vas-y." never in Lessons 1-2); otherwise the tap's correction ends with the item's own cue again ("Pierre.") */
+const HEARD_WORDS = {};
+function heardBefore(word){ const li=(typeof S!=="undefined" && S.lesson|0) || 0; if(HEARD_WORDS[li]==null){ const w=new Set();
+    for(let i=0;i<li && i<LESSONS.length;i++) for(const e of LESSONS[i].exercises) for(const p of e.parts) for(const it of p.items)
+      for(const x of [...(it.questionUnits||[]), ...(it.answerUnits||[])]) String(x).toLowerCase().split(/[^a-zà-ÿœ'-]+/).forEach(k=>k && w.add(k));
+    HEARD_WORDS[li]=w; }
+  return HEARD_WORDS[li].has(word); }
+const corrWordOk = w => heardBefore(w) && !(w==="vas-y" && ((typeof S!=="undefined" && S.lesson|0) < 2));
+const corrTurn = t => corrWordOk("vas-y") ? PHR.atoi : (t.questionUnits && t.questionUnits.length ? t.questionUnits : []);
 const corrKind = t => isOwnName(t) ? "own name" : t.tapTask ? "tap" : t.corr ? "sound pair" : t.cue==="repeat" ? "Répète" : t.cue==="point" ? "touch-and-name" : t.cueVoice ? "spoken answer, cue by a model learner" : "spoken answer";
 /* (.53; Jon, 14 Nov 2026, after a naive tester had a right "une" refused six times with the same words: "'Non, écoute. Une. Vas-y' obscures what
    the correction actually is by having three words irrelevant to the correction. So instead, the correction should just be the target word.
@@ -5051,13 +5274,13 @@ async function correction(task, nth, how=""){
   /* (.54; Jon, 15 Nov 2026: "I'd lean towards removing écoute since a truly naive learner doesn't know what it means since we didn't teach it")
      A tap's correction is "Non."  -  0.5 s  -  the cue and her hand's tap  -  0.5 s  -  "Vas-y.". "Écoute." is said nowhere now (a model's
      opening "Écoute." has not been said since 9 Nov: presentGenModel). */
-  offering=false; gestureEar(); await say(["Non."]);
+  offering=false; gestureEar(); if(corrWordOk("non")) await say(["Non."]);
   await clipGap("before the model"); await corrModel(task);
   await clipGap("after the model");
   // "Vas-y.": the open palm, the border on what is asked about; the learner's turn opens when it has ended
-  if(task.tapTask){ rest(); await say(PHR.atoi); return; }
-  if(task.cue==="point"){ rest(); await say(PHR.atoi); pointAt(task); return; }      // touch-and-name: the border on what to name comes on as "Vas-y." ends, as the pointing is its cue (askAndListen)
-  await gesturePalm(task); await Promise.all([say(PHR.atoi), (async()=>{ await sleep(200); await pointAt(isOwnName(task) ? "you" : task.cueVoice ? task.cueAt : task); })()]);
+  if(task.tapTask){ rest(); const u=corrTurn(task); if(u.length) await say(u); return; }      // (.84) "Vas-y." or the item's own cue again
+  if(task.cue==="point"){ rest(); if(corrWordOk("vas-y")) await say(PHR.atoi); pointAt(task); return; }      // touch-and-name: the border on what to name comes on as "Vas-y." ends, as the pointing is its cue (askAndListen)
+  await gesturePalm(task); await Promise.all([(async()=>{ const u=corrTurn(task); if(u.length) await say(u); })(), (async()=>{ await sleep(200); await pointAt(isOwnName(task) ? "you" : task); })()]);
 }
 // (.43) what a task is, whatever its id: what is asked, the answer, what the judge expects. Kept with a saved delayed test (see load).
 const taskSig = it => [(it.questionUnits||[]).join(" "), it.target||"", (it.expect||[]).join(" ")].join(" | ");
@@ -5127,9 +5350,9 @@ async function trialLimit(it, part, anchor){
   ph("seven-trial limit");
   offering=false; gestureEar();
   if(oralCorr(it)) await sleep(CORR_GAP);      // (.53) a spoken task: the target only, her hand at her ear
-  else { await say(["Non."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too; then one model and on, with no "Vas-y."
+  else { if(corrWordOk("non")) await say(["Non."]); await clipGap("before the model (seven-trial limit)"); }      // (.45) the error is said here too, once "Non." has been heard (.84; the second reader, S-new-1: as correction()); then one model and on, with no "Vas-y."
   if(isOwnName(it)) await ownNameCorrection(it, {why:"seven-trial limit", framed:true});
-  else await corrModel(it);      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
+  else await corrModel(it, {noTurn:true});      // the model in the form the task uses, as in every correction (a tap: her hand taps the right picture)
   await litStill(); rest();
   logEntry({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:it.id, phase, result:"SEVEN-TRIAL LIMIT: modelled once, moved on"+(isOwnName(it)?" to the next part":"")+"; part comes back at the start of the next lesson", heard:[]});
   scheduleDelayed(part, {afterEx:null, lessonStart: anchor ? anchor.lessonStart : null}, it.id);
@@ -5509,6 +5732,7 @@ function courseGrammar(expect){
     { let cpos=null; LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>it.kind==="test" && (it.expect||[]).includes("CEST"))) && (cpos=[li,ei])));
       P.delete("c'est"); at("c'est", cpos||[0,0]); }       // "c'est" enters with its first sentence, not before
     P.delete(""); P.delete("je"); P.delete("m'appelle"); at("je m'appelle",[0,0]); at("m'appelle",[0,0]);
+    P.delete("moi c'est"); at("moi c'est",[0,0]);      // (.83, D-01) the own-name frame from the start, as "je m'appelle" was
     VOSK.base=[...P.keys()].sort(); VOSK.from=P;
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
@@ -5519,7 +5743,7 @@ function courseGrammar(expect){
   if(extra.length) return JSON.stringify([...new Set(extra)]);
   /* "je m'appelle" is in the grammar only when the answer has it: otherwise its "je" takes the start of "Julie" (Jon's
      9 Nov 16:04 run: a correct "Julie" heard as "je") */
-  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire"].includes(e));
+  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire","moicest"].includes(e));
   let base = self ? VOSK.base : VOSK.base.filter(p=>!/m'appelle/.test(p));
   /* The greetings ("salut", "salut marie"…) are in the list only from the exercise that teaches them (Lesson 4), or when
      the answer is one. With them in, "c'est Marie / Pierre / Sylvie" was heard as "salut …" (same names, one short word
@@ -5536,6 +5760,18 @@ function courseGrammar(expect){
      meant: it can only take a right answer away. */
   const GATED_FROM=0, now=[S.lesson,S.ex], reached = pos => pos[0]<GATED_FROM || pos[0]<now[0] || (pos[0]===now[0] && pos[1]<=now[1]);
   base = base.filter(p=>reached(VOSK.from.get(p)||[0,0]));
+  /* (.82) A lone front word and a lone pronoun are not heard against each other. From Lesson 4 Exercise 8 (il / elle taught) the list
+     of every "Un ou une ?" had "il" and "elle" in it, and the owner's "une" (17 Nov 2026 19:51, Lesson 5 Exercise 23) came out as
+     "il" five times and "elle" once, each corrected as a wrong answer; every "un" passed. "Il" is the nearest sound the small model
+     has for an "une" whose n is let go softly ([y] beside [i]), and it was never an answer there: "il" and "elle" are no answer to
+     "Un ou une ?" (nor to "Répète : une."), and "un" and "une" are none to "Il ou elle ?". So where the answer asked for is "Un." or
+     "Une." alone, the phrases that begin with il / elle (il, elle, il danse, il y en a…) are left out of the list, and where it is
+     "Il." or "Elle." alone, the phrases that begin with un / une. Each pair stays whole ("un" is still heard against "une", and the
+     "deux" of a let-go "une" stays), so "un" said for "Une." is refused as before. See dev/qa/une82 for the replays. */
+  const lone = (expect||[]).length===1 ? expect[0] : "";
+  if(["UN","UNE","n1"].includes(lone)) base = base.filter(p=>!/^(il|elle)( |$)/.test(p));
+  else if(["IL","ELLE"].includes(lone)) base = base.filter(p=>!/^(un|une)( |$)/.test(p));
+  else if(["LE1","LA1"].includes(lone)) base = base.filter(p=>!/^(il|elle|un|une)( |$)/.test(p));      // (.84) "Le ou la ?": le and la heard against each other, not against the other small words alone
   /* (.51) Where the answer is the front word alone ("Un." / "Une."), "deux" stays in the list before it is reached (Lesson 1
      Exercise 7). It is what the listener writes for the end of "une" let go (listenVosk, "said once and written as two
      words"): with it, such a "une" is "un deux" and is heard as "une"; without it the n is not written at all and three of a
