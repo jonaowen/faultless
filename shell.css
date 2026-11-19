@@ -952,3 +952,7 @@ html[data-motion="less"] #tlyHost > .rkc,html[data-motion="less"] #tlyHost > .rk
 .stq.stlock.shake{animation:stshake .32s ease}
 @keyframes stshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @media (prefers-reduced-motion:reduce){.stq.stlock.shake{animation:none}}
+/* (.84) the lessons not served yet: a locked row, "Coming" (a button: it says what it is); on Home, once every lesson served is passed */
+#lessonsL .step.coming .lrow{background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+#home .hsoon{display:flex;align-items:center;gap:8px;margin:6px 0 0;font:600 15px/1.35 var(--font-ui);color:var(--ink-3);cursor:pointer}
+#home .hsoon .icon{width:15px;height:15px;flex:none}
