@@ -880,6 +880,11 @@ function wearer(c, o, u){
 
 /* ---------- the animation clock: every moving figure on the page, one requestAnimationFrame ---------- */
 const LIVE = new Set(); let ticking = false;
+/* (.90; the coordinator's ruling of 20 Nov 2026 on Lesson 7's three-figure screens: frame gaps of 120-310 ms while a clip played) THE HOLD:
+   while a clip plays and more than two figures move, every figure but the one speaking holds the key frame of its action (the clip's own
+   still phase: the frame its card shows, the one the figure masks read as that action); they move again when the clip ends. PICS.hold(on,
+   keep): keep = the element of the figure that speaks (or null); PICS.moving(): the moving figures on the page */
+const HOLD = { on: false, keep: null };
 const STAT = { frames: 0, ms: 0 };                                      // how long the drawing takes (for the measurements in dev/design)
 function tick(){
   let any = false; const t00 = performance.now();
@@ -887,11 +892,21 @@ function tick(){
     if (!g.isConnected) continue;
     let t = 0; try { const svg = f.mark.ownerSVGElement; t = svg.getCurrentTime() - f.mark.getStartTime(); } catch (e){ t = -1; }
     if (t < 0){ if (f.t0 == null) continue; t = 0; }
+    if (HOLD.on && !(HOLD.keep && HOLD.keep.contains && HOLD.keep.contains(g))){ if (!f.held){ f.held = true; f.last = null; f.draw(g, f.still || 0);
+        // its decorations that move by themselves (SMIL: the dancer's notes, the jumper's lines) stop too; the clock's own marker is left running
+        const pic = g.parentNode && g.parentNode.namespaceURI === g.namespaceURI && g.parentNode.tagName !== "svg" ? g.parentNode : g;      // (the action's own group: the figure and what it draws round it, the notes)
+        f.smil = [...pic.querySelectorAll("animate, animateTransform")].filter(el => el !== f.mark); f.smil.forEach(el => { try { el.endElement(); } catch (e) {} }); } continue; }
+    f.held = false;
     const ph = t / f.dur; if (f.last === ph) continue; f.last = ph; f.t0 = 1; f.draw(g, ph); }
   STAT.frames++; STAT.ms += performance.now() - t00;
   if (any) requestAnimationFrame(tick); else ticking = false;
 }
-function play(g, mark, dur, draw){ LIVE.add({ ref: typeof WeakRef === "function" ? new WeakRef(g) : g, mark, dur, draw }); if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
+function play(g, mark, dur, draw, still){ LIVE.add({ ref: typeof WeakRef === "function" ? new WeakRef(g) : g, mark, dur, draw, still: still || 0 }); if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
+function playKey(still, g, mark, dur, draw){ return play(g, mark, dur, draw, still); }      // (.90) the clip's key frame for the hold
+function holdFigures(on, keep){ HOLD.on = !!on; HOLD.keep = on ? (keep || null) : null;
+  if (!on) for (const f of LIVE){ if (f.held && f.smil) f.smil.forEach(el => { try { el.beginElement(); } catch (e) {} }); f.held = false; f.smil = null; } }
+function movingFigures(){ let n = 0; for (const f of LIVE){ const g = f.ref.deref ? f.ref.deref() : f.ref; if (g && g.isConnected) n++; } return n; }
+globalThis.__FIGHOLD = { hold: holdFigures, moving: movingFigures };      // (.90) the hold, for PICS (this clock is inside the figures' closure)
 
 /* FIG.figure(c, o): the <g> of a whole figure. c: the person (traits); o.clip: the action; o.still: one frame (o.phase, 0..1, default the
    clip's own); o.x, o.y: where the middle of the feet stands in the picture box; o.k: its size; o.yaw: the camera (degrees; 0 = the figure
@@ -914,7 +929,7 @@ function figure(c, o){
   const mark = g.lastChild.firstChild;
   let order = first.map(n => n.id).join(" "), byId = null;
   /* (figures 12) a one-way action (once) is drawn from its first frame to its last and the last held: no wrap, no fade */
-  play(g, mark, dur, (root, ph) => { const host = root.children[1], i = once ? Math.max(0, Math.min(Math.round(ph * NF), NF - 1)) : ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF); return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
+  playKey(ph0, g, mark, dur, (root, ph) => { const host = root.children[1], i = once ? Math.max(0, Math.min(Math.round(ph * NF), NF - 1)) : ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF); return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
     if (root._fi === i) return; root._fi = i;
     if (!byId){ byId = {}; for (const el of host.children) if (el.hasAttribute("data-p")) byId[el.getAttribute("data-p")] = el; }
     if (K.ord !== order){ order = K.ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; }
@@ -3061,7 +3076,7 @@ function closeUp(name, c, o){
   const dur = D.dur, NF = Math.round(dur * 30), kept = new Array(NF), F0 = listAt(0);
   g.innerHTML = `<defs>${F0.defs}</defs><g class="fig">${html(F0.list)}</g><g opacity="1"><animate attributeName="opacity" values="1;1" dur="${f2(dur)}s" repeatCount="indefinite"/></g>` + front;
   const mark = g.children[2].firstChild; let order = F0.list.map(n => n.id).join(" "), byId = null;
-  play(g, mark, dur, (root, ph) => { const host = root.children[1], i = ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF).list; return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
+  playKey(ph0, g, mark, dur, (root, ph) => { const host = root.children[1], i = ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF).list; return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
     if (root._fi === i) return; root._fi = i;
     if (!byId){ byId = {}; for (const el of host.children) if (el.hasAttribute("data-p")) byId[el.getAttribute("data-p")] = el; }
     if (K.ord !== order){ order = K.ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; }
@@ -3218,7 +3233,7 @@ function handOver(cA, cB, o){
     : `<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.03;${T[6]};${T[7]};1" dur="${f2(dur)}s" repeatCount="indefinite"/>`;
   g.innerHTML = defs + `<g clip-path="url(#${u}box)">${MIR}${ground}<g class="fig">${fade}${html(F0)}</g>${MIRz}</g><g opacity="1"><animate attributeName="opacity" values="1;1" dur="${f2(dur)}s" repeatCount="indefinite"/></g>`;
   const mark = g.lastChild.firstChild; let order = F0.map(n => n.id).join(" "), byId = null;
-  play(g, mark, dur, (root, ph) => { const host = root.querySelector(".fig"), i = once ? Math.max(0, Math.min(Math.round(ph * NF), endI)) : ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF); return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
+  playKey(HO.still, g, mark, dur, (root, ph) => { const host = root.querySelector(".fig"), i = once ? Math.max(0, Math.min(Math.round(ph * NF), endI)) : ((Math.round(ph * NF) % NF) + NF) % NF, K = kept[i] || (kept[i] = (() => { const L = listAt(i / NF); return { L, ord: L.map(n => n.id).join(" ") }; })()), list = K.L;
     if (root._fi === i) return; root._fi = i;
     if (!byId){ byId = {}; for (const el of host.children) if (el.hasAttribute("data-p")) byId[el.getAttribute("data-p")] = el; }
     if (K.ord !== order){ order = K.ord; const seen = {}; for (const n of list){ let el = byId[n.id]; if (!el){ el = mk(nodeHTML(n, u)).firstChild; byId[n.id] = el; } host.appendChild(el); seen[n.id] = 1; }
@@ -3894,7 +3909,7 @@ function highFivePic(o){ o = o || {}; const M = figOf({ person: "marie" });
 function putOnPic(spec, o){ o = o || {}; return FIG.putOn(spec || null, o.wear || [], o.item); }
 /* the teacher on the stage (see FIG.tutor): Marie as the course knows her (her skin, her brown hair to the shoulder, her navy) */
 function tutorFig(opts){ const c = traits({ person: "marie" }); c.top = [tone("#2E4A6B", 0.14), tone("#2E4A6B", -0.2)]; c.style = "tucked"; return FIG.tutor(c, Object.assign({ legs: ["#77614f", "#5a4738"] }, opts)); }
-window.PICS = { _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key: kindPic("key"), group, fingers, dog: kindPic("dog"), car: kindPic("car"), action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard, handOver: handOverPic, highFive: highFivePic, putOn: putOnPic, setWear, wearing: () => WEAR.slice(),
+window.PICS = { hold: (on, keep) => globalThis.__FIGHOLD.hold(on, keep), moving: () => globalThis.__FIGHOLD.moving(), _fig: FIG, _thingsHook: true, _thingsDogKey: true, tutor: tutorFig, portrait: portraitPic, learnerCard: learnerCardPic, setLearner, learner: () => LEARNER, avatar: FIG.avatar, wardrobeThumb: FIG.wardrobeThumb, wardrobe: FIG.WARD, avatarString: FIG.specString, avatarParse: FIG.specParse, avatarOptions: FIG.AV, person, key: kindPic("key"), group, fingers, dog: kindPic("dog"), car: kindPic("car"), action, thing, together, place: placePic, going: goingPic, at: atPic, hand: handCard, handOver: handOverPic, highFive: highFivePic, putOn: putOnPic, setWear, wearing: () => WEAR.slice(),
   things: ["cake", "pizza", "coffee", "glass", "banana", "plate", "bus", "table", "chair", "bag", "box", "house", "door", "window", "cat", "tree", "bicycle", "horse", "face", "french flag", "picture card", "newspaper", "letter", "weather",
     "ball", "hat", "phone", "bread", "flower", "lamp", "shirt", "trousers", "dress", "fish", "cheese", "tomato", "plane", "motorbike", "baby", "heart", "foot", "hand", "head", "town", "street", "restaurant", "photo", "metro", "sea", "mountain", "leaf", "arm",
     "train", "park", "beach", "garden", "shop", "station", "kitchen"] };

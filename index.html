@@ -401,6 +401,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson4.js"></script>
 <script src="course/lesson5.js"></script>
 <script src="course/lesson6.js"></script>
+<script src="course/lesson7.js"></script>
+<script src="course/lesson8.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -409,7 +411,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-20.89";      // must equal version.json
+const APP_VERSION="2026-11-20.91";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -731,7 +733,11 @@ function genItem(it){
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
-  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner","intro"]) if(it[k]) o[k]=it[k];
+  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner","intro","cuePoints"]) if(it[k]) o[k]=it[k];
+  /* (.90, Lesson 7: "Elle danse. Et Pierre ?") a cue of two sentences about two people: the gold border (Marie's hand) is on the one each
+     sentence is about while it is said (the course's cue_points, one place a unit of the cue); every path that says the cue (the test, a
+     model, a correction, a model learner's cue) reads them from the units it is given (say, cueAs) */
+  if(Array.isArray(o.cuePoints) && o.cuePoints.length===tu.length){ o.teacherUnits.points=o.cuePoints; if(o.questionUnits.length===tu.length) o.questionUnits.points=o.cuePoints; }
   if(+(it.pauseAfterMs||it.pause_after_ms)>0) o.pauseAfterMs=+(it.pauseAfterMs||it.pause_after_ms);      // (.46) course_fix, design log section 58
   if(it.mark===false) o.mark=false;
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
@@ -976,7 +982,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:89, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:91, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1017,7 +1023,9 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=86)) migrate86();      // (.86) a state saved when Lessons 1-2 were served: a learner who passed Lesson 2 goes on to Lesson 3
   if(!(s.courseRev>=87)) migrate87();      // (.87) a state saved when Lessons 1-3 were served: a learner who passed Lesson 3 goes on to Lesson 4
   if(!(s.courseRev>=88)) migrate88();
-  if(!(s.courseRev>=89)) migrate89();      // (.89) a state saved when Lessons 1-5 were served: a learner who passed Lesson 5 goes on to Lesson 6      // (.88) a state saved when Lessons 1-4 were served: a learner who passed Lesson 4 goes on to Lesson 5
+  if(!(s.courseRev>=89)) migrate89();
+  if(!(s.courseRev>=90)) migrate90();
+  if(!(s.courseRev>=91)) migrate91();      // (.91) a state saved when Lessons 1-7 were served: a learner who passed Lesson 7 goes on to Lesson 8      // (.90) a state saved when Lessons 1-6 were served: a learner who passed Lesson 6 goes on to Lesson 7      // (.89) a state saved when Lessons 1-5 were served: a learner who passed Lesson 5 goes on to Lesson 6      // (.88) a state saved when Lessons 1-4 were served: a learner who passed Lesson 4 goes on to Lesson 5
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1108,6 +1116,16 @@ function migrate88(){ carryOn(88, 4, CHANGED_88); }
    through migrate88 first (carryOn(88, 4, ...) lands him at Lesson 5 at most), then this: no lesson is skipped. */
 const CHANGED_89 = [];
 function migrate89(){ carryOn(89, 5, CHANGED_89); }
+/* (.90) CHANGED_90: the exercises of Lessons 1-6 whose items changed between .89 and .90 (their records dropped, as CHANGED_89), computed by
+   dev/harness/changed_exercises.py against the .89 app and checked by the release test changed. A learner of .88 or before comes through
+   migrate89 first (carryOn(89, 5, ...) lands him at Lesson 6 at most), then this: no lesson is skipped. */
+const CHANGED_90 = [];
+function migrate90(){ carryOn(90, 6, CHANGED_90); }
+/* (.91) CHANGED_91: the exercises of Lessons 1-7 whose items changed between .90 and .91 (their records dropped, as CHANGED_90), computed by
+   dev/harness/changed_exercises.py against the .90 app and checked by the release test changed. A learner of .89 or before comes through
+   migrate90 first (carryOn(90, 6, ...) lands him at Lesson 7 at most), then this: no lesson is skipped. */
+const CHANGED_91 = [];
+function migrate91(){ carryOn(91, 7, CHANGED_91); }
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -1852,8 +1870,12 @@ function clipsOf(v, slow){ const tix=TEACHER.index, lix=LEARNER.index, urls=new 
 function unitClips(ex){ let slow=true; try{ slow=/"slow":true/.test(JSON.stringify(ex.parts)); }catch(e){} const urls=clipsOf(ex.parts, slow);
   try{ const say=voiceLine; ex.parts.forEach(p=>p.items.forEach(it=>{      // learnerLines, for this exercise
     if(it.type==="model" && it.voice && it.voice!=="teacher") urls.add(LEARNER_CLIP(say(it.voice, it.answerUnits)));
-    if(it.cueVoice && it.questionUnits.length) urls.add(LEARNER_CLIP(say(it.cueVoice, it.questionUnits)));
+    if(it.cueVoice && it.questionUnits.length){ if(it.questionUnits.points) for(const u of it.questionUnits) urls.add(LEARNER_CLIP(say(it.cueVoice, [u])));      // (.90) a cue with cue points: each unit its own clip (cueAs)
+      else urls.add(LEARNER_CLIP(say(it.cueVoice, it.questionUnits))); }
     if(it.introOnly) urls.add(LEARNER_CLIP(answerUnits(it).join(" "))); })); }catch(e){}
+  try{ ex.parts.forEach(p=>p.items.forEach(it=>{ const a=(it.answerUnits||[]).join(" ").trim();      // (.91) the line Marie corrects "Je V." with (corrModel jeOwn: "Répète : je V."; answerUnits(it) needs the exercise playing, so the units are read here)
+    if(it.at!=="you" || !/^Je \S+\.$/.test(a) || /^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "))) return;
+    clipsOf(["Répète : "+a.charAt(0).toLowerCase()+a.slice(1)], false).forEach(u=>urls.add(u)); })); }catch(e){}
   return [...urls]; }
 function commonClips(){ const urls=clipsOf(["Vas-y.", "Non.", "Oui.", "Touche.", "À toi.", "Lis.", "Compte.", "Écoute.", "Avec moi.", "Répète :", "Je m'appelle "+VOCAB.claire.name+"."]);
   try{ ["paul","julie"].forEach(w=>urls.add(LEARNER_CLIP(voiceLine(w, ["Je m'appelle "+VOCAB[w].name+"."])))); }catch(e){}
@@ -1950,7 +1972,12 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
       [sc.L, sc.R].forEach(w=>{ if(typeof w==="string") add("who|"+w, ()=>picture(w)); });
       row.forEach(x=>{ if(x) add("row|"+JSON.stringify(x), ()=>picture(x)); });
       const b=boxOf(sc);
-      if(b && b[0]==="pair"){ fig("marie", b[1]); fig("you", b[2].you); } else if(b && b[0]!=="handed") fig(b[0], b[1], b[2]);
+      // (.91; truth91 PICTURE FIRST BUILT, Lesson 8 row 6's models) the box beside ONE person's card goes to the left half, as setScene draws it
+      // ({left:true}, and "Marie and Sylvie:" where they do the same: withP): the figure drawn ahead with the same options
+      let bo=b && b[2]; if(b && sc.row && sc.row.length===1 && sc.row[0] && sc.row[0].person){ const p0=sc.row[0], same=a=>a && p0.doing && (ACT_NAME[p0.doing]||p0.doing)===a,
+        withP = !sc.bothDoing && ((sc.learnerDoing && !sc.teacherDoing && same(sc.learnerDoing)) || (sc.teacherDoing && !sc.learnerDoing && same(sc.teacherDoing))) ? p0.person : null;
+        bo=Object.assign({}, b[2], {left:true}, withP ? {withP} : {}); }
+      if(b && b[0]==="pair"){ fig("marie", b[1]); fig("you", b[2].you); } else if(b && b[0]!=="handed") fig(b[0], b[1], bo);
       const acts = it.kind==="show" || it.kind==="do" || it.kind==="figure";
       if(acts && it.act && it.act!=="tap"){      // presentAct: Marie does it (show), the learner's figure does it, or Pierre's / Sylvie's (a figure item on their place)
         const m=/^s(\d+)$/.exec(it.at||""), x=m && row[+m[1]], by=x && typeof x==="object" && (x.person==="paul" || x.person==="julie") ? x.person : null;
@@ -1962,6 +1989,16 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
         else if(it.tap.by==="paul" || it.tap.by==="julie")      // tapperScene: the picture cards show the one who taps doing each action
           row.forEach(x=>{ if(x && typeof x==="object" && x.is==="picture card"){ const y=Object.assign({}, x, {figure:it.tap.by}); add("row|"+JSON.stringify(y), ()=>picture(y)); } }); }
     }
+    // (.90, taken from .91 l91-work abc7c9ec: truth91's PICTURE FIRST BUILT at the lesson's end) the lesson's end shows a tile of each exercise:
+    // shell.js firstSvg, the first row picture of its items that is not the learner's own, still, count 1 (Lesson 7's L7E5 is Marie's own card): drawn ahead too
+    try{ for(const ln of planNow().lessons){ const L_=LESSONS[ln-1]; if(!L_) continue;
+      for(const x of L_.exercises){ let sp=null;
+        for(const p of x.parts){ for(const it of p.items){ const row=(it.scene&&it.scene.row)||[]; sp=row.find(r=>r && typeof r==="object" && r.person!=="you"); if(sp) break; } if(sp) break; }
+        if(sp){ const st=Object.assign({}, sp, {count:1, still:true}); add("row|"+JSON.stringify(st), ()=>picture(st)); } } } }catch(e){}
+    // (.91; truth91 PICTURE FIRST BUILT after Lesson 8, which has no word cards) Home's hero after the run: the small still pictures of the
+    // lesson's fresh pictures (shell.js newPics, exported as window.homeMinis), of each lesson of the run and the one after it
+    try{ if(typeof window.homeMinis==="function") for(const ln of planNow().lessons) for(const i of [ln-1, ln]) if(i>=0 && i<LESSONS.length)
+      for(const st of window.homeMinis(i)) if(st && typeof st==="object") add("row|"+JSON.stringify(st), ()=>picture(st)); }catch(e){}
     // the word cards of the lesson's end (shell.js cardPic and its small still pictures: words.js, the cards of each lesson of the run)
     try{ const CW=window.COURSE_WORDS && COURSE_WORDS.lessons || {};
       for(const ln of planNow().lessons) for(const c of ((CW["L"+ln]||{}).cards||[])){ const sp=c.spec; if(sp==null || sp==="claire") continue;
@@ -2035,6 +2072,17 @@ let SAY_SLOW=false;
 const CUT={on:false, src:null};
 function teacherCut(){ if(CUT.on) return; CUT.on=true; trace("cue cut by a tap"); try{ if(CUT.src){ CUT.src._cut=true; CUT.src.stop(); } }catch(e){} try{ window.speechSynthesis && speechSynthesis.cancel(); }catch(e){} }
 const sleepCut = async ms => { const t0=performance.now(); while(!CUT.on && performance.now()-t0<ms) await sleep(Math.min(30, ms)); };
+/* (.90; the coordinator's ruling of 20 Nov 2026 on Lesson 7's three-figure screens) THE HOLD: while a clip plays and more than two figures
+   move on the screen, every figure but the one speaking holds the key frame of its action (people.js PICS.hold: the frame its card shows);
+   they move again when the clip ends. who: the model learner whose card speaks ("paul" / "julie"), or null (Marie's own line: her presenter
+   figure is not one of the moving pictures) */
+function holdOn(who){
+  if(!(window.PICS && PICS.hold && PICS.moving)) return false;
+  const n=PICS.moving(); if(n<=2) return false;
+  const sl = who ? slotOfPerson(who) : null, keep = sl ? cardGroupOf(sl) : null;
+  PICS.hold(true, keep); trace(`hold: ${n} figures moving, all held for the clip`+(keep ? ` but ${(VOCAB[who]||{}).name||who}'s, who speaks` : ""));
+  return true; }
+function holdOff(held){ if(held && window.PICS && PICS.hold){ PICS.hold(false); } }
 async function playTeacher(text, onStart){
   // a question that has the same words as a statement ("Il mange ?" / "Il mange.", "Ça va ?" / "Ça va.") has its own
   // recording, with the rising tune, under <key>_q; where there is none, the one recording serves both
@@ -2045,7 +2093,9 @@ async function playTeacher(text, onStart){
   if(!meta) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
   await audioFresh(k);
-  return new Promise(res=>{
+  await paintedFrame(k);                 // (.90, N-22) the new screen painted before the clip and the mouth start
+  const held=holdOn(null);               // (.90) the hold
+  return new Promise(res0=>{ const res=v=>{ holdOff(held); res0(v); };
     const src=actx.createBufferSource(); src.buffer=buf; src.connect(actx.destination);
     const startAt=actx.currentTime+0.03, lat=((actx.outputLatency||actx.baseLatency||0)*1000), tCall=performance.now();
     clipMark(k, startAt, buf.duration);
@@ -2112,7 +2162,7 @@ function learnerLines(lessons){
   const want = new Set(["paul","julie"].map(w=>say(w, ["Je m'appelle "+VOCAB[w].name+"."])));
   lessons.forEach(i=>LESSONS[i].exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
     if(it.type==="model" && it.voice && it.voice!=="teacher") want.add(say(it.voice, it.answerUnits));
-    if(it.cueVoice && it.questionUnits.length) want.add(say(it.cueVoice, it.questionUnits));      // a cue in a model learner's own voice
+    if(it.cueVoice && it.questionUnits.length){ if(it.questionUnits.points) for(const u of it.questionUnits) want.add(say(it.cueVoice, [u])); else want.add(say(it.cueVoice, it.questionUnits)); }      // a cue in a model learner's own voice ((.90) with cue points: each unit's clip)
     if(it.introOnly) want.add(answerUnits(it).join(" ")); }))));        // the introduction: the model learner says it with the teacher
   return [...want];
 }
@@ -2122,10 +2172,12 @@ LEARNER.ready = fetch("audio/learner/index.json").then(r=>r.ok?r.json():null).th
 async function playLearner(text, delay=0){       // resolves when the clip has finished (false if there is no clip)
   const buf=await learnerClip(text); if(!buf || !actx) return false;
   await audioFresh(text);
+  await paintedFrame(text);              // (.90, N-22) as playTeacher
+  const held=holdOn(/^julie /.test(text) ? "julie" : /^(man|woman) /.test(text) ? null : "paul");      // (.90) the hold: the speaker's card moves
   { const k=LEARNER_CLIP(text).replace(/^.*\//,"").replace(/\.mp3$/,""), m=LEARNER.index && LEARNER.index[k];
     textUnit(text.replace(/^(?:julie|man|woman) /,""), m || {dur:buf.duration*1000}, delay+30+((actx.outputLatency||actx.baseLatency||0)*1000)); }
   return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; const g=actx.createGain(); g.gain.value=0.9;
-    src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(actx.currentTime+delay/1000); });
+    src.connect(g).connect(actx.destination); src.onended=()=>{ holdOff(held); res(true); }; src.start(actx.currentTime+delay/1000); });
 }
 function speakOne(text, opts={}){
   textUnit(text, null, 0);
@@ -2177,6 +2229,7 @@ async function say(units, who="tutor", pause=S.settings.pause, tail=0){
   }
   else for(let i=0;i<units.length;i++){
     if(CUT.on) break;                          // (.57) the cue was cut by a tap: the rest is not said
+    if(units.points && units.points[i] && who!=="group") cueMark(units.points[i]);      // (.90) the gold on the one this sentence is about
     const cp = who!=="group" && countParts(units[i]);
     if(who==="group") await speakOne(units[i], {group:true}); else if(cp) await sayCount(cp); else await speakTeacher(units[i]);
     if(i<units.length-1) await (TAPARM.cut ? sleepCut(pause) : sleep(pause));
@@ -2688,6 +2741,62 @@ function answerWordsReached(){ const li=(typeof S!=="undefined" && S.lesson|0) |
       for(const u of (it.answerUnits||[])) for(const x of normalise(String(u)).split(" ")) if(x) w.add(x); }
     ANSWER_WORDS[li]=w; }
   return ANSWER_WORDS[li]; }
+/* (.90) IL / ELLE BY THE VOWEL. The owner's run of 20 Nov 2026 08:27 (Lesson 5 on the live .89, Android): 13 of his 42 "Il." at
+   L5E2 were written "elle" (9) or "et elle" (4) and corrected, five times running on one task; he said "il" each time ("It couldn't
+   hear [it] properly, hence the repeated errors"). Replayed offline, the app's own Vosk model writes the same words on the same
+   recordings, with confidences up to 0.93. The two words differ only in their vowel, [i] against [ɛ], and that vowel is the first
+   sound of the word: measured on the front 40 % of the word's time, the second resonance of the mouth over the first (F2 / F1, from
+   the spectral envelope of 25 ms frames within 6 dB of the loudest) was 6.26 or more in every "il" said (his 42 and the 36 served clips of Marie,
+   Sylvie and Pierre) and 5.35 or less in every "elle" (his 20 and 44 served clips). So where the listener wrote one of the two words
+   in the place of the other and the rest of the answer is right, the vowel decides, but only towards the answer asked for and only
+   when it is clear (VOWEL_IE.iMin, mid-gap; eMax, well below every "il"): the check can take back a refusal, never make one. A wrong
+   answer that the listener wrote right stays wrong, and a vowel in between leaves the listener's verdict as it was. The log keeps
+   the recording and says what the listener wrote (reason "the vowel decided"). Check: dev/harness/tests/vowelie_node.js. */
+const VOWEL_IE = {frac:0.4, iMin:5.8, eMax:5.0, order:14, keepDb:6};
+function vowelRatio(audio, s, e){            // F2 / F1 of the loudest frames of audio between s and e (ms on the capture's clock), or 0
+  const SRv=16000, a0=Math.max(0, Math.round(s*16)), a1=Math.min(audio.length, Math.round(e*16)), N=400, H=160, P=VOWEL_IE.order;
+  const frames=[];
+  for(let k=a0; k+N<=a1; k+=H){ let en=0; for(let i=0;i<N;i++) en+=audio[k+i]*audio[k+i]; frames.push([10*Math.log10(en/N+1e-12), k]); }
+  if(!frames.length) return 0;
+  const mx=Math.max(...frames.map(f=>f[0])), F1=[], F2=[], y=new Float64Array(N);
+  for(const [db,k] of frames){ if(db<mx-VOWEL_IE.keepDb) continue;
+    for(let i=0;i<N;i++){ const x=i? audio[k+i]-0.63*audio[k+i-1] : audio[k]; y[i]=x*(0.54-0.46*Math.cos(2*Math.PI*i/(N-1))); }
+    const r=new Float64Array(P+1); for(let j=0;j<=P;j++){ let t=0; for(let i=0;i+j<N;i++) t+=y[i]*y[i+j]; r[j]=t; }
+    if(!(r[0]>0)) continue;
+    const c=new Float64Array(P+1); c[0]=1; let err=r[0];
+    for(let i=1;i<=P;i++){ let acc=r[i]; for(let j=1;j<i;j++) acc+=c[j]*r[i-j]; const kk=-acc/err; const prev=c.slice();
+      for(let j=1;j<i;j++) c[j]=prev[j]+kk*prev[i-j]; c[i]=kk; err*=(1-kk*kk); if(!(err>0)) break; }
+    const env=[]; for(let f=150; f<3800; f+=10){ const w=2*Math.PI*f/SRv; let re=0, im=0; for(let j=0;j<=P;j++){ re+=c[j]*Math.cos(w*j); im-=c[j]*Math.sin(w*j); } env.push([f, -10*Math.log10(re*re+im*im+1e-24)]); }
+    const pk=[]; for(let i=1;i<env.length-1;i++) if(env[i][1]>env[i-1][1] && env[i][1]>=env[i+1][1]) pk.push(env[i][0]);
+    if(pk.length>=2){ F1.push(pk[0]); F2.push(pk[1]); } }
+  if(!F1.length) return 0;
+  const med=a=>{ const b=[...a].sort((p,q)=>p-q), m=b.length>>1; return b.length%2? b[m] : (b[m-1]+b[m])/2; };
+  return med(F2)/med(F1);
+}
+/* text: what the listener wrote (after voskClean); expect: the answer's keys; allW: every word written with its times; audio: the
+   whole capture. Returns null, or {text, wrote, ratio, said} with text the answer as the vowel has it. */
+function vowelIE(text, expect, allW, audio){
+  if(!text || !audio || !allW || !allW.length) return null;
+  const want=listenerWords(phraseOf(expect).toLowerCase().replace(/[.!?,]/g," ").replace(/\s+/g," ").trim()).split(" ");
+  const got=text.split(" "), PRON=["il","elle"];
+  let i=-1, et=false;
+  if(got.length===want.length){ const d=want.map((w,k)=>w===got[k]?-1:k).filter(k=>k>=0);
+    if(d.length===1 && PRON.includes(want[d[0]]) && PRON.includes(got[d[0]])) i=d[0]; }
+  else if(got.length===want.length+1){        // "et elle" written for "il": the [i] taken for "et", the [l] for "elle"
+    for(let k=0;k<want.length;k++) if(want[k]==="il" && got[k]==="et" && got[k+1]==="elle" && got.slice(0,k).join(" ")===want.slice(0,k).join(" ") && got.slice(k+2).join(" ")===want.slice(k+1).join(" ")){ i=k; et=true; break; } }
+  if(i<0) return null;
+  // the written word's place in allW: the last run of the written words (anything the speaker's own sound gave comes first)
+  const ws=allW.map(x=>x.w); let at=-1;
+  for(let k=ws.length-got.length; k>=0; k--) if(got.every((w,j)=>ws[k+j]===w)){ at=k; break; }
+  if(at<0) return null;
+  const a=allW[at+i], b=et? allW[at+i+1] : a, s=a.s, e=b.e;
+  if(!(e>s)) return null;
+  const ratio=vowelRatio(audio, s, s+VOWEL_IE.frac*(e-s));
+  if(!ratio) return null;
+  const said = want[i]==="il" ? (ratio>=VOWEL_IE.iMin ? "il" : null) : (ratio<=VOWEL_IE.eMax ? "elle" : null);
+  if(!said) return null;
+  return {text: want.join(" "), wrote: got.slice(i, i+(et?2:1)).join(" "), ratio:+ratio.toFixed(2), said};
+}
 function splitWordStart(text, words, expect, alsoOk=[]){
   const tw=(text||"").split(" ").filter(Boolean); if(tw.length<2 || expect.includes("REST")) return null;
   const w=tw[0], rest=tw.slice(1).join(" "); if(w===tw[1] || w==="[unk]") return null;
@@ -2875,6 +2984,9 @@ async function listenVosk(expect, alsoOk=[]){
   if(!v.ok){ const sp=splitWordStart(text, allW, expect, alsoOk); if(sp){
     trace("\""+sp.w+"\" "+sp.dur+" ms long (confidence "+(+sp.conf||0).toFixed(2)+"), the answer "+sp.gap+" ms after it, and not a word a learner might say here: the start of the answer written as a word; heard as \""+sp.rest+"\"");
     v={...sp.r, reason:"the start of the answer written as a word: the listener wrote \""+text+"\"", splitStart:sp.w}; } }
+  if(!v.ok){ const vw=vowelIE(text, expect, allW, cap.all); if(vw){ const r=judge(vw.text, expect, [], alsoOk, {raw:vw.text}); if(r.ok){      // (.90) IL / ELLE BY THE VOWEL (vowelIE)
+    trace("IL / ELLE BY THE VOWEL: the listener wrote \""+vw.wrote+"\"; the vowel's F2/F1 is "+vw.ratio+" ("+(vw.said==="il"?"[i]":"[ɛ]")+"): heard as \""+vw.text+"\"");
+    v={...r, reason:"the vowel decided: the listener wrote \""+text+"\"", vowel:vw.ratio}; } } }
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
@@ -3292,6 +3404,9 @@ function genPicture(e){ if(e && e.is==="face"){ const g=document.createElementNS
 function genPicture0(e){
   const blank=()=>document.createElementNS(svgNS,"g");
   if(e.person==="you") return learnerCard();                // the learner's own card and name tag (.24, markOwn)
+  /* (.90; the coordinator's ruling (a) on Lesson 7's "Et <name> ?", 20 Nov 2026) Marie's own card in the row, doing her own action: the
+     library's Marie (people.js PICS.person, spec.person "marie"), her name tag on the card */
+  if(e.person==="claire") return window.PICS ? PICS.person(Object.assign({}, e, {person:"marie"}), "Marie") : portrait("claire");
   if(e.person){
     if(!window.PICS) return portrait(e.person);
     // someone who has just stopped: the library's standing figure, or (an older library) the action's frozen frame
@@ -3432,10 +3547,18 @@ const sceneKey = sc => (sc.row ? "row:"+JSON.stringify(sc.row)+JSON.stringify(sc
    Start, and always before any other scene: what the stage holds when a lesson begins is what it held before. */
 let FIRST_SCENE=null;
 function stageFirst(){ if(FIRST_SCENE){ const s0=FIRST_SCENE; FIRST_SCENE=null; setPortraits(s0); } }
+/* (.90; reader 89's N-22, the coordinator's should-fix: one 152 ms and one 208 ms frame under a clip just after its screen was built, in a
+   quiet oracle_L6) a screen built or rebuilt (setPortraits, setScene) is marked; the next clip waits for one painted frame first (two
+   animation frames: the frame that draws the new screen has been painted), never more than PAINT_CAP ms, and the wait is traced */
+const SCREEN={built:0}, PAINT_CAP=80;
+async function paintedFrame(what){ if(!SCREEN.built) return; SCREEN.built=0; const t0=performance.now();
+  await Promise.race([new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))), sleep(PAINT_CAP)]);
+  trace("a painted frame before "+what+": "+Math.round(performance.now()-t0)+" ms"); }
 async function setPortraits(sc){
   if(FIRST_SCENE) stageFirst();
   sc=sceneOf(sc); if(!sc) return; const key=sceneKey(sc);
   if(key===curSceneKey) return;
+  SCREEN.built=performance.now();
   /* The action box stands where the pictures are. Model learners who are only looking on (nothing to do, no special look)
      are then shown as the small badges beside the teacher, wherever the script put them (Lesson 4, "Je fais quoi ?" answered
      by Pierre while Marie dances: until .19 the box covered half of each of their pictures). alias: where each went. */
@@ -3605,6 +3728,9 @@ function goldWho(side){
   const k = x==null ? "" : (typeof x==="object" ? (x.person || x.is || "") : String(x).split(":")[0]);
   return (VOCAB[k] && VOCAB[k].name) || k || "?"; }
 /* (.85, Lesson 2: "Sylvie et Marie.") one place of a sweep: a card's gold border, or Marie's own tag lit (her tag has no gold border) */
+/* (.90) one place of a cue's cue_points: a card of the row, its gold border, Marie's own card among them (ruling (a): her card in the row,
+   {person:"claire"}, lit as Pierre's and Sylvie's are); "self" (her tag) only for an older item with no row card of hers; traced as truth reads it */
+function cueMark(x){ if(x==="self"){ goldOff(); selfTag(true); } else { selfTag(false); goldOn(x); } trace("gold: "+x+" ("+goldWho(x)+")"); }
 function sweepMark(x){ if(x==="self"){ goldOff(); selfTag(true); } else { selfTag(false); goldOn(x); } trace("gold: "+x+" ("+goldWho(x)+")"); }      // (the trace: truth85 reads who each step of a sweep marks)
 /* (.85; the Lesson 2 reader, S-1; the coordinator, 19 Nov 2026: "both person cards lit together while the pair is said, through the
    answer, the learner's turn and the corrections") a pair of people ("Pierre et Sylvie.", "Sylvie et Marie."): both lit at once and kept
@@ -3654,7 +3780,7 @@ async function pointAt(who){
 // two scenes: the classroom (teacher and one model learner facing her) and one-to-one (teacher facing the learner)
 let scene="one";
 async function setScene(which){
-  if(which===scene) return; scene=which;
+  if(which===scene) return; scene=which; SCREEN.built=performance.now();
   const demo = which==="class";
   const scr=document.getElementById("screen");
   const clip=document.getElementById("screenClipRect"), clipTo=(x,y,w,h)=>{ if(clip){ clip.setAttribute("x",x); clip.setAttribute("y",y); clip.setAttribute("width",w); clip.setAttribute("height",h); } };
@@ -3795,11 +3921,11 @@ async function askAndListen(task, expect, think=0, alsoOk=[], cued=false){
     return listenT(task, expect, alsoOk);
   }
   if(task.cueVoice){                      // a model learner says the cue: the green ring while they speak; (.84; the reader of the .84 Lesson 1, B3) the gold border on whom the answer is about (the item's own place), never on the one who gives the cue
-    pointAt(task); if(think) await sleep(think);
+    if(task.questionUnits && task.questionUnits.points) cueMark(task.questionUnits.points[0]); else pointAt(task); if(think) await sleep(think);      // (.90) with cue points: its first place
     await cueAs(task.cueVoice, task.questionUnits, task.cueAt, task);
     return listenT(task, expect, alsoOk);
   }
-  pointAt(task); litPlay(task);           // focus: the gold border comes on as she speaks (.59: a lit action card moves from here)
+  if(task.questionUnits && task.questionUnits.points) cueMark(task.questionUnits.points[0]); else pointAt(task); litPlay(task);           // focus: the gold border comes on as she speaks (.59: a lit action card moves from here); (.90) a cue with cue points: its first place
   if(think) await sleep(think);
   await say(task.w1 ? w1Units(task) : task.questionUnits, "tutor", undefined, 0);          // cue: the learner's turn follows at once
   return listenT(task, expect, alsoOk);          // signal at 0.5 s, then the learner responds
@@ -3868,7 +3994,11 @@ async function cueAs(voice, units, at, item){
     askMark(slot, !moving && !!at && at!=="none" && sideOf(item.at)===sideOf(at), ans==="you" ? null : ans); }
   stopRec(); recentSaid.push(units.join(" ")); trace("say["+voiceName(who)+"]: "+units.join(" · "));
   speakLit(who, true, at); caption("["+voiceName(who)+"] "+units.join(" "));
-  if(!(await playLearner(voiceLine(who, units)))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
+  if(units.points){                    // (.90) a cue of two sentences about two people: each said in turn, the gold on the one it is about
+    for(let i=0;i<units.length;i++){ if(units.points[i]) cueMark(units.points[i]);
+      if(!(await playLearner(voiceLine(who, [units[i]])))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units[i]+"\": the phone's voice said it"); await speakOne(units[i], {group:true}); }
+      if(i<units.length-1) await sleep(S.settings.pause); } }
+  else if(!(await playLearner(voiceLine(who, units)))){ trace("FAULT no recording of "+voiceName(who)+" for \""+units.join(" ")+"\": the phone's voice said it"); await speakOne(units.join(" "), {group:true}); }
   speakLit(who, false); askMark("said"); lastSpeechEnd=Date.now();
 }
 /* ============================================================
@@ -4800,7 +4930,8 @@ async function presentGenModel(m){
   // the script's "Écoute." is not said (Jon 9 Nov 14:21: adults who chose the app know to listen; it costs time)
   const listenFirst = m.teacherUnits.length && /^écoute/i.test(m.teacherUnits[0]);
   if(m.voice==="teacher") gestureEar();                     // the listening hand: this is not the learner's turn
-  if(m.at==="you"){ offering=true; await pointAt("you"); } else { await pointAt(m); litPlay(m); }      // (.59) a lit action card moves from the cue
+  if(m.at==="you"){ offering=true; await pointAt("you"); } else if(m.teacherUnits && m.teacherUnits.points && !listenFirst){ cueMark(m.teacherUnits.points[0]); litPlay(m); } else { await pointAt(m); litPlay(m); }      // (.59) a lit action card moves from the cue; (.90) a cue with cue points: its first place first
+  
   const rest_ = listenFirst ? m.teacherUnits.slice(1) : m.teacherUnits;
   if(rest_.length){ if(m.cueVoice) await cueAs(m.cueVoice, rest_, m.cueAt, m); else await say(rest_); await sleep((m.voice==="teacher"?300:500)+pace()); }
   // a model learner's own-name answer (.24): their tag lit and their hand on it while they say it (askMark: the who-asks-whom hand)
@@ -5304,6 +5435,9 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
   /* Own name (.24): a right answer's recording is kept as this learner's model for later own-name corrections; an answer
      that gives a course person's name and then "je m'appelle" again with a name of their own ("Je m'appelle Sylvie… je
      m'appelle [own name]") is still an error, marked self-corrected (its correction is the same: never a model learner). */
+  // (.91) a right "Je V." of the learner's own figure: its recording kept as this learner's model of that sentence (jeRecording)
+  if((jeOwn(t) || jeRep(t)) && r.status==="heard" && r.ok && r.clip){ const a=answerUnits(t).join(" ").trim();
+    S.jeClips=(S.jeClips||[]).filter(x=>x.id!==r.clip).concat([{id:r.clip, t:new Date().toISOString(), task:t.id, answer:a}]).slice(-8); trace("je-answer recording kept as this learner's model of \""+a+"\": "+r.clip); }
   if(isOwnName(t) && r.status==="heard"){
     // (never an answer "believed" after the same course name three times: it may say that name)
     if(r.ok && r.clip && !/three times running/.test(r.reason||"")){ S.ownClips=(S.ownClips||[]).filter(x=>x.id!==r.clip).concat([{id:r.clip, t:new Date().toISOString(), task:t.id, frame:ownFrame((t.answerUnits||[]).join(" "))}]).slice(-6); trace("own-name recording kept as this learner's model: "+r.clip); }
@@ -5454,10 +5588,29 @@ async function corrModel(task, o={}){
   // (.84; the reader, B3 and S4) the border on whom the answer is about; "C'est Marie." is never said by Marie of herself: Pierre says it
   // (the plan's model, Lesson 1 row 5), his green ring on, the border on Marie
   await pointAt(task); if(!task.cueVoice) litPlay(task);
-  const by = corrVoiceOf(answerUnits(task).join(" "));      // (.86) who says the answer: ownCestBy, then LONE_BY (Marie's lone "Un." is never served: Sylvie's)
+  // (.91; the coordinator's ruling, 20 Nov 2026: nobody says a "Je ..." sentence that is untrue of them on the screen shown) the answer of
+  // "Je danse. Et toi ?" is the learner's own action ("Je saute.", the learner's figure jumping): Marie's plain "Je saute." (her own figure
+  // dancing) is never played. With a turn after (the correction): her "Répète : je saute." (true: the learner's line), the learner's turn
+  // follows. With none (the seven-trial limit, a listening fault): the learner's own right recording of that sentence in this run, else the
+  // item's cue again ("Je danse. Et toi ?": her own sentence, true of her), never a "Répète :" with no turn
+  if(jeOwn(task)){ const a=answerUnits(task).join(" ").trim(), rj="Répète : "+a.charAt(0).toLowerCase()+a.slice(1);
+    if(!o.noTurn){ trace("the je-answer correction: \""+rj+"\" (never Marie's plain \""+a+"\" of herself)"); await say([rj]); return; }
+    const own = S.settings.manual ? null : await jeRecording(task);
+    if(own){ speakLit("you", true, learnerSlot()); trace("the learner's own recording of \""+a+"\" played: "+own.id); await playOwn(own); speakLit("you", false); return; }
+    trace("the je-answer with no turn after: the item's cue again (no recording of the learner's own \""+a+"\" yet)"); await say(task.teacherUnits); return; }
+  const by = corrVoiceOf(answerUnits(task).join(" "), task);      // (.86) who says the answer: ownCestBy, then LONE_BY (Marie's lone "Un." is never served: Sylvie's); (.90) etMarieBy
   // (.84; the coordinator, 18 Nov 2026) a correction repeats the item's cue: a "Répète :" test of Marie's is corrected with her "Répète : X."
   // again (its own clip), not X alone (Marie's lone "Un." is not heard as un; the cue's is)
   const rep = !task.cueVoice && /^R[ée]p[èe]te\b/.test((task.questionUnits||[]).join(" "));
+  // (.91; the coordinator's ruling of 20 Nov 2026 on reader 91's S-8) a "Répète : je V." item with no turn after it (the seven-trial limit, a
+  // listening fault): no voice says "Je V." (Pierre's and Sylvie's models are of their own figures, on other screens): the learner's own
+  // right recording of it if this run has one; else nothing is said: the learner's own figure does V (the screen's learnerDoing), the board
+  // line of "je V." is lit, and the lesson goes on (Marie's cue "Répète : je V." has just been heard)
+  if(rep && o.noTurn && jeRep(task)){ const a=answerUnits(task).join(" ").trim(), own = S.settings.manual ? null : await jeRecording(task);
+    if(own){ speakLit("you", true, learnerSlot()); trace("the learner's own recording of \""+a+"\" played (no turn after): "+own.id); await playOwn(own); speakLit("you", false); return; }
+    trace("the je-sentence with no turn after: nothing said; the learner's figure does it, its board line lit (\""+a+"\")");
+    if(task.board && (task.boardPoint||[]).length){ boardShow(task.board); boardHi(task.boardPoint); }
+    await sleep(1400); if(task.board) boardHi(null); return; }
   if(rep && o.noTurn){ const v=by || modelVoiceOf(answerUnits(task).join(" "));
     trace("the model with no turn after it: the answer"+(v ? ", by "+VOCAB[v].name : ", by Marie"));
     if(v) await cueAs(v, answerUnits(task), slotOfPerson(v) || "none", null); else await say(answerUnits(task)); }
@@ -5471,10 +5624,34 @@ async function corrModel(task, o={}){
    voices that model them in Lessons 4 and 5; Marie never says the word alone (no label of hers in the rows: R-158 §1; her lone il.mp3 / elle.mp3
    pass no ear gate and are never served). Lesson 4's "Répète : il." tests are unchanged: their cue again, and with no turn the same two voices */
 const LONE_BY = {"Un.": "julie", "Il.": "julie", "Elle.": "paul"};
+/* (.91) an item whose answer is the learner's own "Je V." about their own figure ("Je danse. Et toi ?" -> "Je saute.": at "you", not a
+   "Répète :" test): its correction is never Marie's plain "Je V." (corrModel); its right answers' recordings are kept (S.jeClips, as the
+   own-name ones) for the model where no turn follows */
+const jeOwn = it => !!it && it.at==="you" && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
+/* (.91; reader 91's S-8) a "Répète : je V." item of the learner's own figure (Lesson 8 row 5): its no-turn model says no "Je V." (corrModel) */
+const jeRep = it => !!it && it.at==="you" && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : je \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
+async function jeRecording(task){
+  audioUnlock(); if(!actx) return null;
+  const want=answerUnits(task).join(" ").trim();
+  for(const x of (S.jeClips||[]).filter(x=>x.answer===want).reverse().slice(0,4)){
+    let raw=null; try{ raw=await clipStore("get", x.id); }catch(e){} if(!raw) continue;
+    let buf=null; try{ const u=raw instanceof Uint8Array ? raw : new Uint8Array(raw); buf=await actx.decodeAudioData(u.buffer.slice(u.byteOffset, u.byteOffset+u.byteLength)); }catch(e){ continue; }
+    const seg=speechSpan(buf); if(!seg || seg.dur<0.4 || seg.dur>3.0 || seg.peak<0.01) continue;
+    return {id:x.id, buf, seg};
+  }
+  return null;
+}
 /* (.86; reader 86's delta read) the one resolution of the voice that says a test's answer in a correction, at the seven-trial limit and on a
    listening fault (corrModel): a model learner (ownCestBy, LONE_BY) or Marie (null). dev/harness/replay/clipgate.js asks the app this same
    function for the clip it judges, so the gate hears the clip the app plays (proof CLIPGATE-CORR-VOICE) */
-const corrVoiceOf = a => ownCestBy(String(a||"")) || toiBy(String(a||"")) || LONE_BY[String(a||"").trim()] || null;
+const corrVoiceOf = (a, it) => etMarieBy(String(a||""), it) || ownCestBy(String(a||"")) || toiBy(String(a||"")) || LONE_BY[String(a||"").trim()] || null;
+/* (.90; reader 90's S-4) the answer of an "Et <name> ?" item about Marie ("Il voyage. Et Marie ?" -> "Elle voyage.") is never said by Marie
+   of herself: in a correction, at the seven-trial limit and on a listening fault the model learner who did not ask says it (Sylvie asks:
+   Pierre), as the exercise's models have it (nobody answers about himself or herself, the asker never answers her own question) */
+/* (.90; the coordinator's ruling (a), 20 Nov 2026) Marie's own card is a card of the row ({person:"claire"}): the item about her points at it */
+const marieAt = it => { if(it.at==="self") return true; const m=/^s(\d+)$/.exec(it.at||""), x=m && it.scene && it.scene.row && it.scene.row[+m[1]]; return !!(x && typeof x==="object" && x.person==="claire"); };
+const etMarieBy = (a, it) => { if(!it || !it.cuePoints || !marieAt(it) || !/^(Il|Elle) \S+\.$/.test(a.trim())) return null;
+  return it.cueVoice==="paul" ? "julie" : "paul"; };
 /* (.87; the coordinator, 19 Nov 2026) "Toi, c'est Pierre." (the answer to Pierre's "Et moi, c'est qui ?") is modelled in a correction by the model
    learner it does not name, as in the exercise's models (Sylvie says "Toi, c'est Pierre.", Pierre "Toi, c'est Sylvie."): nobody names himself or
    herself, and the asker never answers his own question */
@@ -6037,6 +6214,14 @@ function courseGrammar(expect){
     base = base.filter(p=>p.split(" ").every(w=>NUMW.has(w))); }
   const own = (expect||[]).length ? norm(phraseOf(expect)) : "";
   if(own && !frag_(own)) { base=base.concat([own]); const w=own.split(" "); if(w.length<=2) base=base.concat(w.filter(x=>x!=="je" && x!=="m'appelle")); }
+  /* (.90) "Tu" heard against "toi". The owner's run of 20 Nov 2026 10:47 (Lesson 5 on the live .89): his "too c'est Pierre" at L5E5-b2 (an
+     English "too", [tu], where "toi" [twa] was asked) was written "toi c'est pierre" and accepted; "tu" was not in the list there, so the
+     listener could write nothing else. Its vowel: F1 260 Hz against 395-585 in his 22 right "toi" that day. Replayed offline with "tu" and
+     "tu c'est <the name>" added, the app's own model writes "tu c'est pierre" for that recording (refused: said "tu" for "toi") and leaves
+     all 24 of his right answers and Marie's and Sylvie's served "Toi, c'est X." as they were (the two "trois c'est" among them still
+     accepted as sound-alikes). So where the answer is "Toi, c'est X.", "tu" and "tu c'est x" are in the list. Check:
+     dev/harness/tests/tutoi.js. */
+  if(own && /^toi c'est \S+$/.test(own)) base=base.concat(["tu", own.replace(/^toi /,"tu ")]);
   return JSON.stringify([...new Set(base.concat(extra, FILLERS_HEARD))].concat(["[unk]"]));      // (.72) fillers: see FILLERS_HEARD
 }
 /* (speed, 16 Nov; QA 7b.2) vosk.js (5.8 MB, most of it its worker as text) was a script of the page, read before the page's own script. It is
