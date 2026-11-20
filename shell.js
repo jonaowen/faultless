@@ -1453,6 +1453,9 @@ const SHELL = (()=>{
       return (memo[i]=out); }; })();
   const newPics = i=>{ const cs=cardsOf(LESSONS[i].id).filter(c=>c.spec!=null); if(cs.length) return cs.map(c=>c.spec).slice(0,5);
     const before=new Set(); for(let k=0;k<i;k++) picsOf(k).forEach(x=>before.add(JSON.stringify([x.person,x.is,x.doing,x.value]))); const fresh=picsOf(i).filter(x=>!before.has(JSON.stringify([x.person,x.is,x.doing,x.value]))); return (fresh.length?fresh:picsOf(i)).slice(0,5); };
+  /* (.91; truth91 PICTURE FIRST BUILT after Lesson 8: a lesson with no word cards shows its fresh pictures on Home's hero) the hero's small still
+     pictures of lesson i, for index.html warmPictures to draw ahead */
+  window.homeMinis = i=>{ try{ return newPics(i).slice(0,3).map(stillSpec); }catch(e){ return []; } };
   /* ---- THE STREAK (the owner, 16 Nov: "the idea of a streak should be more of a feature of this app ... very prominent ... integrate it into the
      reward system we already have"; and on freezing and repairing: "Duolingo know what they're doing, so we should copy them"). Not a second
      system: it is the run of days the record has always kept (G.run, G.bestRun), and its day is the day's ring: a lesson finished (new or again)
