@@ -411,7 +411,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-20.91";      // must equal version.json
+const APP_VERSION="2026-11-20.92";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -982,7 +982,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:91, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:92, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1026,6 +1026,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=89)) migrate89();
   if(!(s.courseRev>=90)) migrate90();
   if(!(s.courseRev>=91)) migrate91();      // (.91) a state saved when Lessons 1-7 were served: a learner who passed Lesson 7 goes on to Lesson 8      // (.90) a state saved when Lessons 1-6 were served: a learner who passed Lesson 6 goes on to Lesson 7      // (.89) a state saved when Lessons 1-5 were served: a learner who passed Lesson 5 goes on to Lesson 6      // (.88) a state saved when Lessons 1-4 were served: a learner who passed Lesson 4 goes on to Lesson 5
+  if(!(s.courseRev>=92)) migrate92();      // (.92) no new lesson: the records of the exercises that now carry the own-name frame are dropped (CHANGED_92)
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1126,6 +1127,11 @@ function migrate90(){ carryOn(90, 6, CHANGED_90); }
    migrate90 first (carryOn(90, 6, ...) lands him at Lesson 7 at most), then this: no lesson is skipped. */
 const CHANGED_91 = [];
 function migrate91(){ carryOn(91, 7, CHANGED_91); }
+/* (.92) CHANGED_92: the exercises of Lessons 1-8 whose items changed between .91 and .92 (the own-name test of Lessons 1-3 now carries the written
+   frame "Moi, c'est ______", and every test answered with two names takes them in either order: the owner, 20 Nov 2026), computed by dev/harness/changed_exercises.py against the .91 app and checked by the release
+   test changed. No lesson is added: carryOn(92, 8, ...) moves nobody. */
+const CHANGED_92 = ["L1E14", "L1E16", "L1E17", "L2E11", "L2E15", "L2E17", "L2E18", "L3E11", "L3E12", "L3E13", "L4E12", "L5E9"];
+function migrate92(){ carryOn(92, 8, CHANGED_92); }
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -1139,7 +1145,7 @@ function carryOn(rev, served, changed){
         S.lesson=served; S.ex=0; for(const e of LESSONS[served].exercises) delete (S.finished||{})[e.id];
         G.next=served; G.furthest=Math.max(G.furthest||0, served); G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; moved=true; }
       localStorage.setItem(gk, JSON.stringify(G)); } }catch(e){}
-  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+(served+1)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
+  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+Math.min(served+1, LESSONS.length)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
   S.courseRev=rev;
 }
 function migrate84(){
@@ -4120,6 +4126,10 @@ function boardShow(b){
   if(BOARD.key===key && TXT.g.firstChild){ TXT.g.setAttribute("opacity",1); boardHi(null); return; }
   const text=String(b.text||""), parts=b.parts||[], lines=text.split("\n"), n=lines.length;
   let fs = n>=3 ? 17 : n===2 ? 19 : TXT_SIZE;      // (next) four lines keep 17: the cards above make room (BOARD_TALL) { const w0=Math.max(...lines.map(l=>MEAS(l, fs))); if(w0>340) fs=Math.max(12, fs*340/w0); }
+  /* (.92) a board of one line wider than the screen has room for (the own-name correction's "Moi, c'est " + a long first name: the app takes
+     30 letters) gets smaller letters until its face (the line + 48) fits the scene's 400 with a margin. No board of the course is that wide
+     (the widest one-line board of Lessons 1-8 measures 190): this changes no screen of theirs. Check: tests/boardtest.js FITS. */
+  if(n===1){ const w0=MEAS(text, fs); if(w0>BOARD_LINE_MAX) fs=Math.max(9, fs*BOARD_LINE_MAX/w0); }
   /* (.28) the board's top edge stays under the pictures (they end at y 214) and over Marie's head: a board of two or three lines
      overlapped the bottom of the cards and the learner's name tag in the action box */
   /* (.62) a board of three or four lines (L8E15, L9E18) ran down behind Marie's head and over the side portraits of Pierre and Sylvie:
@@ -4151,6 +4161,7 @@ function boardShow(b){
    (BOARD_FLOOR: the top of her hair, measured on the screen at 291), and between the side portraits when they are shown (their top at 258,
    their inner edges at 86 and 314: BOARD_SIDES) */
 const BOARD_FLOOR = 291, BOARD_SIDES = {top:254, x0:88, x1:312};
+const BOARD_LINE_MAX = 336;      // (.92) the widest a one-line board's text may be (scene units; the face adds 24 each side: 384 of 400)
 const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||"")+":"+(HAND.at||""); };
 /* the bottom of an element in the board's own coordinates (the hand resting on a picture is drawn in another layer) */
 const bottomInBoard = el => { try{ const r=el.getBoundingClientRect(), m=TXT.g.getScreenCTM(); return r.height ? (r.bottom - m.f)/m.d : 0; }catch(e){ return 0; } };
@@ -4217,9 +4228,12 @@ function boardUsed(it){
    the underlines) go by this, not by the item having a board: since .37 a board is hidden on the items that do not use it, and
    the lines still played at the first item of the exercise, with nothing written on the screen (L1E1: before "Répète : Marie.";
    L1E2 as .43 has it: the underline line before "Pierre ou Sylvie ?"). Now they play at the first item that shows a board. */
-const boardOn = it => !!(it && it.board && !(BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-")) && boardUsed(it));
+/* (.92) the own-name frame goes with its test wherever the test is asked: as a delayed test (after an error: the learner who most needs it)
+   it is shown too, where every other board stays with its own exercise (.28) */
+const ownFrameItem = it => !!(it && it.board && it.board.text===OWN_FRAME.text+"______" && (it.expect||[]).includes("REST"));
+const boardOn = it => !!(it && it.board && !(BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-") && !ownFrameItem(it)) && boardUsed(it));
 function textCtx(it){
-  if(it && it.board && BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-")){ TXT.ctx=null; textHide(); trace("board not shown: "+(it.id||"")+" is not of the exercise being run ("+BOARD_EX+")"); return; }
+  if(it && it.board && BOARD_EX && !String(it.id||"").startsWith(BOARD_EX+"-") && !ownFrameItem(it)){ TXT.ctx=null; textHide(); trace("board not shown: "+(it.id||"")+" is not of the exercise being run ("+BOARD_EX+")"); return; }
   /* (.37; Jon on the run of 12 Nov 20:00: "the written words for je m'appelle were still on the screen when she was expected to do a
      different task") the board shows only on an item that uses it: one pointed at on the board, or one whose words (the cue or the
      answer) include a word written on it. "C'est qui ?" -> "Sylvie." in the exercise of "je m'appelle ____" shows nothing. */
@@ -5530,8 +5544,21 @@ function playOwn(o){
     const startAt=actx.currentTime+0.03; clipMark("the learner's own recording", startAt, o.seg.dur);
     src.connect(g).connect(actx.destination); src.onended=()=>res(true); src.start(startAt, o.seg.t0, o.seg.dur); setTimeout(()=>res(false), (o.seg.dur+1.5)*1000); });
 }
+/* (.92) THE OWN-NAME FRAME, WRITTEN. A tester's Lesson 1 run of 20 Nov 2026 (15:09, on the live .89): the own-name test ("Moi, c'est Marie.",
+   Marie's hand on his tag) failed at every meeting, the seven-trial limit three times (L1E14, L1E16, L1E17: "moi", "Marie", "c'est Marie",
+   "c'est"; never his own sentence). Its correction said nothing: the app has no recording of a sentence he had not yet said right, so it
+   lit his name tag only. The owner, 20 Nov 2026: "Remedy: have it written down. Moi, c'est ______", and of the correction: "the
+   correction could have their name as part of it, because the app knows their name because they wrote it in, so the written text would be:
+   Moi, c'est Richard". So: in Lessons 1-3 the test is asked with the frame "Moi, c'est ______" on the board (the course files: gen/fmt84.py
+   own_frame_rows), and here, in every lesson, the correction of an own-name answer writes the frame with the learner's own name in the
+   blank, from the model (OWN_FRAME.readMs where there is no recording to play) until the task is presented again (itemStart puts the
+   board as the task has it: the blank again, or nothing). The marks on "Moi" and "c'est" are the course board's. Check: dev/harness/tests/ownframe.js. */
+const OWN_FRAME = {text:"Moi, c'est ", parts:[[0,3,[],[[1,3]],[],0,0],[5,10,[[8,10]],[],[],0,0]], readMs:1500};
+function ownFrameWith(name){ const text=OWN_FRAME.text+name; return {text, blanks:[], parts:OWN_FRAME.parts.map(p=>p.slice()).concat([[OWN_FRAME.text.length, text.length, [], [], [], 0, 0]])}; }
 async function ownNameCorrection(task, o={}){
   offering=false; const slot=learnerSlot(), why=o.why||"";
+  const nm=learnerTagName(), fb = nm ? ownFrameWith(nm) : null;
+  if(fb){ TXT.timers.forEach(clearTimeout); TXT.timers=[]; boardShow(fb); trace("own-name correction: the frame written with the learner's own name (\""+OWN_FRAME.text+"\" + the name on the tag)"); }
   const own = S.settings.manual ? null : await ownRecording(task);
   const L = x => logEntry(Object.assign({lesson:ctx.lesson, ex:ctx.ex, part:ctx.part, task:task.id, phase, heard:[], delayed:!!ctx.delayedRec, why}, x));
   if(own){
@@ -5542,13 +5569,14 @@ async function ownNameCorrection(task, o={}){
     trace("own recording played: "+own.id+" ("+own.seg.t0.toFixed(2)+"-"+own.seg.t1.toFixed(2)+" s of it)");
     await playOwn(own); speakLit("you", false);
     if(!SESSION.clips.includes(own.id)) SESSION.clips.push(own.id);      // the run file carries the clip that was played
-    L({result:"own-name correction: the learner's own right answer played", modelClip:own.id});
+    L({result:"own-name correction: the learner's own right answer played", modelClip:own.id, written:!!fb});
   } else {
     ph("own-name correction: name tag"+(why?" ("+why+")":""));
-    if(o.framed && actx){ await sleep(27); clipMark("the lit name tag", actx.currentTime, 0.7); }      // (.45) a model with no clip: its 0.7 s count as one for the pauses of the correction frame
-    if(slot){ goldOn(slot); tagLit(slot); } await sleep(700);
+    const ms = fb ? OWN_FRAME.readMs : 700;      // (.92) the written sentence is the model: time to read it
+    if(o.framed && actx){ await sleep(27); clipMark("the lit name tag", actx.currentTime, ms/1000); }      // (.45) a model with no clip: its time counts as one for the pauses of the correction frame
+    if(slot){ goldOn(slot); tagLit(slot); } await sleep(ms);
     trace("own-name correction: no right own-name answer of this learner recorded yet; the learner's name tag is lit"+(slot?"":" (no card on the screen)"));
-    L({result:"own-name correction: the learner's name tag lit (no own recording yet)", modelClip:null});
+    L({result:"own-name correction: the learner's name tag lit (no own recording yet)", modelClip:null, written:!!fb});
   }
   lastSpeechEnd=Date.now();
 }
