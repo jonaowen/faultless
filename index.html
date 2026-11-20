@@ -399,7 +399,9 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson2.js"></script>
 <script src="course/lesson3.js"></script>
 <script src="course/lesson4.js"></script>
-<!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.86: Lessons 1-3): the later lessons are shown as coming (shell.js COMING) until each is final -->
+<script src="course/lesson5.js"></script>
+<script src="course/lesson6.js"></script>
+<!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
 <script>
@@ -407,7 +409,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-19.87";      // must equal version.json
+const APP_VERSION="2026-11-20.89";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -635,6 +637,9 @@ const SLOT = { CEST, UN:["un","1","hun","hein","a"],   /* "a": what the listener
 const SLOT_WORD = { CEST:"c'est", UN:"un", UNE:"une", IL:"il", ELLE:"elle", OUI:"oui", NON:"non", CA:"ça", VA:"va", JE:"je", TU:"tu",
   PAS:"pas", DES:"des", ON:"on", ET:"et", BIEN:"bien", LE:"le", LA:"la", DE:"de", A:"à", CETAIT:"c'était", VAIS:"vais", LES:"les", A1:"à", LE1:"le", LA1:"la" };
 const FILLERS = ["euh","heu","hum","hmm","ben","bah","mmm"];
+/* (.89; the run doctor) An expected word, the word the listener writes for it when it is said right, and the expected word that must
+   follow for the swap to be read as unsure (judge: "trois, c'est Pierre" is no answer; "Trois." alone stays the number). */
+const SOUND_ALIKE = { toi:{heard:["trois"], before:"CEST"} };
 /* (.72) The short course words a hesitation ("um", "uh", "er") is written as when the listener has no filler nearer (judge). */
 const HESIT_WORDS = ["un","une","et","eh","oh"];
 /* (.72) The fillers in the listener's word list (courseGrammar), so that a hesitation has a word to land on other than a course word. Only those
@@ -971,7 +976,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:87, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:89, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1011,6 +1016,8 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=85)) migrate85();      // (.85) a state saved when Lesson 1 was the only lesson served: a learner who passed it goes on to Lesson 2
   if(!(s.courseRev>=86)) migrate86();      // (.86) a state saved when Lessons 1-2 were served: a learner who passed Lesson 2 goes on to Lesson 3
   if(!(s.courseRev>=87)) migrate87();      // (.87) a state saved when Lessons 1-3 were served: a learner who passed Lesson 3 goes on to Lesson 4
+  if(!(s.courseRev>=88)) migrate88();
+  if(!(s.courseRev>=89)) migrate89();      // (.89) a state saved when Lessons 1-5 were served: a learner who passed Lesson 5 goes on to Lesson 6      // (.88) a state saved when Lessons 1-4 were served: a learner who passed Lesson 4 goes on to Lesson 5
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1092,6 +1099,15 @@ function migrate86(){ carryOn(86, 2, CHANGED_86); }
    dev/harness/changed_exercises.py against the shipped .86 app (the release test changed) */
 const CHANGED_87 = [];
 function migrate87(){ carryOn(87, 3, CHANGED_87); }
+/* (.88) CHANGED_88: the exercises of Lessons 1-4 whose items changed between .87 and .88 (their records dropped, as CHANGED_87), computed by
+   dev/harness/changed_exercises.py against the .87 app (the release test changed) */
+const CHANGED_88 = [];
+function migrate88(){ carryOn(88, 4, CHANGED_88); }
+/* (.89) CHANGED_89: the exercises of Lessons 1-5 whose items changed between .88 and .89 (their records dropped, as CHANGED_88), computed by
+   dev/harness/changed_exercises.py against the .88 app and checked by the release test changed. A learner of .87 or before comes
+   through migrate88 first (carryOn(88, 4, ...) lands him at Lesson 5 at most), then this: no lesson is skipped. */
+const CHANGED_89 = [];
+function migrate89(){ carryOn(89, 5, CHANGED_89); }
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -1883,23 +1899,85 @@ async function waitClips(get, LABEL){
 const CACHE_V="faultless-app-v1";      // the service worker's copy of the voices (sw.js: CACHE), read by the page itself (clipGet)
 const keptOf = urls => urls.filter(u=>CLIPS.kept[u]).length+" read from the phone's copy, "+urls.filter(u=>CLIPS.here[u] && !CLIPS.kept[u] && !CLIPS.none[u]).length+" from the site";
 /* THE TAP ON START WAITS HERE, under the loading screen, until the first part of the run's plan is on the phone (the start button's
-   handler calls it after the faces and the microphone); the rest follows behind. Nothing is shown when it is there already. LOADING.soon is
-   set at the tap itself so that the listener's loading screen, if it is up, is not taken down between the two waits. */
+   handler calls it after the faces and the microphone); the rest follows behind. LOADING.soon is set at the tap itself so that the
+   listener's loading screen, if it is up, is not taken down between the two waits.
+   (.88; readers 88 and 89, S-6, the coordinator's ruling) The loading screen is up on BOTH paths while the run's pictures are drawn
+   (warmPictures): where the clips are already on the phone (the usual start from Home; until now nothing was shown there, and Home
+   stood still for as long as the drawing took), and where they are still coming in: there the pictures are drawn while the clips
+   load, not after them. A line names the path and the time the screen was up. */
 const LOADING = {on:false, soon:false};
 async function lessonLoad(){
   try{ await LESSON_SET.indexes(); }catch(e){}
   const P=planNow(), first=()=>firstPart(planNow());
   trace("lesson content: "+P.all.length+" clips for this run: "+P.units.length+" exercise(s) of Lesson"+(P.lessons.length>1?"s ":" ")+P.lessons.join(", ")+" ("+P.units.slice(0,4).map(u=>u.id).join(", ")+(P.units.length>4?" …":"")+"); its first part: "+first().length+" clips ("+first().filter(clipHere).length+" already here)");
   PLAN.gen++;      // what was being read in on Home stops: the first part has the link to itself
-  if(lessonHere()){ LOADING.soon=false; LESSON_SET.ready=lessonAhead(); return; }
+  const t1=performance.now(), painted=()=>Promise.race([new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))), sleep(150)]);      // the screen is on the glass before the drawing begins
+  if(lessonHere()){ LOADING.on=true;      // (.88, S-6) the clips are here: the loading screen all the same, while the run's pictures are drawn
+    try{ try{ SPLASH.show(); SPLASH.progress(null, "Getting the pictures ready"); }catch(e){} await painted(); await warmPictures(); }
+    finally{ LOADING.on=false; LOADING.soon=false; try{ window.SPLASH && SPLASH.done(); }catch(e){} }
+    trace("the loading screen, start path \"the clips were here\": up for "+Math.round(performance.now()-t1)+" ms while the run's pictures were drawn");
+    LESSON_SET.ready=lessonAhead(); return; }
   LOADING.on=true; trace("the lesson's content is not all on the phone yet: the loading screen");
-  try{ const w=await waitClips(first, "Loading the lesson");
+  const warm=painted().then(()=>warmPictures(true));      // (.88, S-6) the run's pictures are drawn while the clips come in (the bar stays the clips')
+  try{ const w=await waitClips(first, "Loading the lesson"); try{ SPLASH.progress(null, "Getting the pictures ready"); }catch(e){} await warm;
+    trace("the loading screen, start path \"the clips were loading\": up for "+Math.round(performance.now()-t1)+" ms (the clips: "+w.ms+" ms; the run's pictures were drawn meanwhile)");
     if(w.stuck) trace("FAULT the lesson's content neither loaded nor failed 25 s after its last sign of life: the lesson is let through");
     const none=first().filter(u=>CLIPS.none[u]);
     if(none.length) trace("FAULT lesson content: "+none.length+" clip(s) could not be fetched ("+none.slice(0,3).map(clipName).join(", ")+(none.length>3?" …":"")+")");
     if(lessonHere()) trace("the lesson's content is on the phone (its first part: "+w.ms+" ms under the loading screen; "+keptOf(first())+(w.told ? "; asked for again "+w.told+" time(s) while there was no connection" : "")+")");
     else trace("the lesson begins with "+first().filter(u=>!CLIPS.here[u]).length+" clip(s) of its content still on their way ("+w.ms+" ms under the loading screen)"); }
   finally{ LOADING.on=false; LOADING.soon=false; try{ window.SPLASH && SPLASH.done(); }catch(e){} LESSON_SET.ready=lessonAhead(); }      // the rest of the plan, behind
+}
+/* (.88; the owner's run of Lesson 3 on .86, 19 Nov 2026, Android Chrome: "AV FAULT — av voyage: speaker 30 ms behind the audio clock, longest
+   frame gap 278 ms" on Marie's very first "Voyage.", the first time the travel figure was drawn; every later clip 44 ms or less; then reader
+   89's B-1: drawn ahead for the first two exercises only, the stall came back in the middle of Lesson 6, 145 to 211 ms where the pairs of men
+   and women of L6E5 and L6E13 were first built; the coordinator's ruling) EVERY PICTURE AND MOVING FIGURE OF THE RUN BEING STARTED IS
+   DRAWN ONCE BEFORE ITS FIRST CLIP, at the tap on Start, under the loading screen (which is held for the listener anyway): for every
+   exercise of the run's plan, each picture of its rows (and the same cards as Pierre's or Sylvie's where one of them taps), each figure
+   of its action boxes and of its action items (who does what), built by the functions the lesson uses (picture, actPicture) into a group
+   nobody sees, a few at a time, each group kept for a few frames so that the figures' clock (people.js tick) draws each motion's first
+   frames, then taken away. The first time a figure moves it costs the phone a long frame; here those frames fall before anything is said.
+   The loading screen says "Getting the pictures ready" while it lasts. */
+async function warmPictures(quiet){      // quiet: the loading screen's bar and words are another's (the clips coming in)
+  const t0=performance.now(), seen=new Set(), todo=[]; let n=0;
+  const add=(key, make)=>{ if(seen.has(key)) return; seen.add(key); todo.push(make); };
+  const fig=(who, act, opt)=>{ if(who && act && window.PICS && PICS.action) add("fig|"+who+"|"+act+"|"+JSON.stringify(opt||{}), ()=>actPicture(who, act, opt||{})); };
+  try{
+    // Pierre's and Sylvie's own pictures, by name: the introduction before Lesson 1 and every scene of two (sceneOf "L" / "R") draw them so
+    ["paul","julie"].forEach(w=>add("who|"+w, ()=>picture(w)));
+    for(const X of runPlan()) for(const part of (X.parts||[])) for(const it of (part.items||[])){
+      const sc=sceneOf(it.scene)||{}, row=sc.row||[];
+      [sc.L, sc.R].forEach(w=>{ if(typeof w==="string") add("who|"+w, ()=>picture(w)); });
+      row.forEach(x=>{ if(x) add("row|"+JSON.stringify(x), ()=>picture(x)); });
+      const b=boxOf(sc);
+      if(b && b[0]==="pair"){ fig("marie", b[1]); fig("you", b[2].you); } else if(b && b[0]!=="handed") fig(b[0], b[1], b[2]);
+      const acts = it.kind==="show" || it.kind==="do" || it.kind==="figure";
+      if(acts && it.act && it.act!=="tap"){      // presentAct: Marie does it (show), the learner's figure does it, or Pierre's / Sylvie's (a figure item on their place)
+        const m=/^s(\d+)$/.exec(it.at||""), x=m && row[+m[1]], by=x && typeof x==="object" && (x.person==="paul" || x.person==="julie") ? x.person : null;
+        fig(it.kind==="show" ? "marie" : it.kind==="figure" && by ? by : sc.bothDoing ? "both" : "you", it.act); }
+      if(it.kind==="show" && it.act==="tap" && it.tap){
+        if(it.tap.by==="teacher"){      // presentTapShow: after her own tap on an action card her figure does it
+          const m=/^s(\d+)$/.exec(it.tap.at||""), x=m && row[+m[1]], act=x && typeof x==="object" && x.is==="picture card" && ACT_NAME[x.doing];
+          if(act && act!=="not smiling") fig("marie", act); }
+        else if(it.tap.by==="paul" || it.tap.by==="julie")      // tapperScene: the picture cards show the one who taps doing each action
+          row.forEach(x=>{ if(x && typeof x==="object" && x.is==="picture card"){ const y=Object.assign({}, x, {figure:it.tap.by}); add("row|"+JSON.stringify(y), ()=>picture(y)); } }); }
+    }
+    // the word cards of the lesson's end (shell.js cardPic and its small still pictures: words.js, the cards of each lesson of the run)
+    try{ const CW=window.COURSE_WORDS && COURSE_WORDS.lessons || {};
+      for(const ln of planNow().lessons) for(const c of ((CW["L"+ln]||{}).cards||[])){ const sp=c.spec; if(sp==null || sp==="claire") continue;
+        add("row|"+JSON.stringify(sp), ()=>picture(sp));
+        if(typeof sp==="object"){ const st=Object.assign({}, sp, {still:true}); add("row|"+JSON.stringify(st), ()=>picture(st)); } } }catch(e){}
+    const svg=document.createElementNS(svgNS, "svg"); svg.setAttribute("width", 340); svg.setAttribute("height", 220); svg.setAttribute("aria-hidden", "true"); svg.id="warmPics";
+    svg.style.cssText="position:fixed;left:0;top:0;opacity:0.01;pointer-events:none;z-index:-1";
+    document.body.appendChild(svg);
+    const frames=k=>Promise.race([new Promise(r=>{ let c=k; const f=()=>{ if(--c<=0) r(); else requestAnimationFrame(f); }; requestAnimationFrame(f); }), sleep(400)]);
+    for(let i=0;i<todo.length;i+=8){      // eight at a time: built, shown to the figures' clock for a few frames, taken away
+      for(const make of todo.slice(i, i+8)){ try{ const g=document.createElementNS(svgNS, "g"), x=make(); if(x){ g.appendChild(x); svg.appendChild(g); n++; } }catch(e){} }
+      if(todo.length>24 && LOADING.on && !quiet){ try{ SPLASH.progress(Math.min(0.98, (i+8)/todo.length), "Getting the pictures ready"); }catch(e){} }
+      await frames(4); svg.replaceChildren(); }
+    svg.remove();
+  }catch(e){ trace("FAULT pictures drawn ahead: "+e.message); try{ const o=document.getElementById("warmPics"); if(o) o.remove(); }catch(_){} }
+  trace("pictures of the run drawn ahead, before its first clip: "+n+" ("+Math.round(performance.now()-t0)+" ms)");
 }
 /* at the start of an exercise (its own, a delayed test, R4c): its clips are there (the run's plan has fetched them ahead); if they are not
    all there, a short "Loading…" here, at the boundary, never in the middle of a line */
@@ -1962,7 +2040,7 @@ async function playTeacher(text, onStart){
   // recording, with the rising tune, under <key>_q; where there is none, the one recording serves both
   let k=teacherKey(text, false);
   // .24: the slow recording of a line (the sound-discrimination format: "Le livre, les livres." said slowly), <key>_slow
-  if(SAY_SLOW){ const ks=teacherKey(text, true); if(ks!==k) k=ks; else trace("FAULT no slow recording of \""+text+"\": said at the usual speed"); }
+  if(SAY_SLOW){ const ks=teacherKey(text, true); if(ks!==k){ k=ks; trace("said slowly: the slow recording "+k); } else trace("FAULT no slow recording of \""+text+"\": said at the usual speed"); }
   const meta=TEACHER.index && TEACHER.index[k];
   if(!meta) return false;
   const buf=await teacherBuf(k); if(!buf) return false;
@@ -2404,6 +2482,18 @@ function judge(text, expect, echoes=[], alsoOk=[], heard={}){      // heard.raw 
       return {ok:false, reason:"said \""+bad[0][1]+"\" for \""+SLOT_WORD[bad[0][0]]+"\": the person of the question said back", person:true};
     if(bad.length===1 && (bad[0][0]==="JE" || bad[0][0]==="TU") && !otherSubject(bad[0][1]))      // whatever short word was heard in its place ("un danses", "pomme danses": 4 of 16 English voices)
       return {ok:true, reason:"FAULT PERSON UNSURE: heard \""+bad[0][1]+"\" where \""+SLOT_WORD[bad[0][0]]+"\" was expected; accepted, not judged on the person", unsure:"person"};
+    /* (.89; the run doctor, run of 19 Nov 2026 21:38, Lesson 4) A sound-alike that makes no French answer in its place (SOUND_ALIKE).
+       The owner's "Toi, c'est Pierre." / "Toi, c'est Sylvie." came out as "trois c'est pierre / sylvie" four times in one run
+       (L4E2-a7, L4E2-a8, L4E6-b2, L4E6-b4, first tries) and were corrected; every retest was heard right. On those four recordings
+       the phoneme recogniser (wav2vec2 xlsr-53 espeak, no word list) heard [twa] with no [ʁ] each time, and the line's phonemes
+       [twasɛ…] beat [tʁwasɛ…] by 2.6 to 9.6 nats; "trois" is in the list as the number ("Combien ?", from Lesson 1), and an
+       English "toi" has the r-coloured start of "trois" for this small model (as "lève trois" for "Lève-toi", tokensOf). A number
+       before "c'est" and a name is nothing a learner says. So where the answer begins "Toi, c'est" and the only word out of place
+       is "trois" in toi's place, the answer is accepted as unsure, like the je / tu rule above: the run file says so and keeps the
+       recording for the run doctor. Everything else stays judged: "Moi, c'est X." (the contrast taught), another name, a word
+       left out, and "trois" anywhere it can be the number. Checked by dev/harness/tests/soundalike_node.js. */
+    if(bad.length===1 && SOUND_ALIKE[bad[0][0]] && SOUND_ALIKE[bad[0][0]].heard.includes(bad[0][1]) && whole[whole.indexOf(bad[0][0])+1]===SOUND_ALIKE[bad[0][0]].before)
+      return {ok:true, reason:"FAULT SOUND-ALIKE UNSURE: heard \""+bad[0][1]+"\" where \""+VOCAB[bad[0][0]].name+"\" was expected (\""+bad[0][1]+", "+SLOT_WORD[SOUND_ALIKE[bad[0][0]].before]+" …\" is no answer); accepted, the recording kept for the run doctor", unsure:"soundalike"};
     if(bad.length && bad.length<whole.length && !bad.some(([e])=>VOCAB[e] && VOCAB[e].kind==="person"))
       return {ok:false, reason:"said "+bad.map(([e,w])=>"\""+w+"\" for \""+(SLOT_WORD[e]||(VOCAB[e]?VOCAB[e].name:e))+"\"").join(", ")};
   }
@@ -3474,7 +3564,19 @@ function rest(){ offering=false; askMark(null); tagLit(null);
 /* (figures 14; Jon, 16 Nov: a tester "couldn't see Marie pointing to her badge") while she points to herself, her own name tag is lit
    with the ring the other tags have (tagLit's gold, round her tag #claireTag, drawn in her figure), and she glances down at it as her
    hand arrives, then back at the learner. Taken away by rest(), by any other move of her arms (ARMS.go) and when she points at anything else. */
-function selfTag(on){ const old=document.getElementById("selfTagRing"); if(old && !on && PAIR.on && PAIR.on.includes("self")) pairUnlit("Marie's tag off"); if(old) old.remove(); if(!on) return;
+function selfTag(on, figure=true){ const old=document.getElementById("selfTagRing"), oldR=document.getElementById("selfRing"), oldE=document.getElementById("selfEdge"); if(old && !on && PAIR.on && PAIR.on.includes("self")) pairUnlit("Marie's tag off"); if(old) old.remove(); if(oldR) oldR.remove(); if(oldE) oldE.remove(); if(!on) return;
+  /* (.88; the owner on L3E11-a1 of .86, 19 Nov 2026: "Pierre's gold outline was quite clear, but Marie's name tag, I didn't notice because it's
+     small ... So I only said one name instead of two"; the coordinator's ruling) lit, Marie carries the gold outline a lit person card carries,
+     round her whole figure (SELF_BOUNDS, the outline she is tapped by; the card's ring: the same stroke, the same margin), together with her
+     tag's ring, wherever she is lit as a person named: every such path lights her through here (pointAt of an item, sweepMark, the pair, the
+     correction's border). figure false: her own action or command (presentAct: her hand to her chest, "Danse." and she dances): the tag's
+     ring alone, as before; nobody is asked about her there. */
+  if(figure) try{ const g1=document.getElementById("goldRing"), bz=SELF_BOUNDS, m=4, NS="http://www.w3.org/2000/svg";
+    const mk=(id, d, A)=>{ const q=document.createElementNS(NS,"rect"); q.id=id; q.setAttribute("x",bz.x-m-d); q.setAttribute("y",bz.y-m-d); q.setAttribute("width",bz.w+2*m+2*d); q.setAttribute("height",bz.h+2*m+2*d); q.setAttribute("rx",bz.r+m+d);
+      q.setAttribute("fill","none"); q.setAttribute("pointer-events","none"); q.style.stroke=A.stroke; q.style.strokeWidth=A.w; return q; };
+    // the lit card's ring and its darker edge (#goldRing, #goldEdge in the page's styles: --lit, 6 wide; --lit-deep, 1.4 wide, 3.6 further out), not lifted: she is not a card
+    const e=mk("selfEdge", 3.6, {stroke:"var(--lit-deep)", w:"1.4"}), q=mk("selfRing", 0, {stroke:"var(--lit)", w:"6"});
+    g1.parentNode.insertBefore(q, g1.nextSibling); g1.parentNode.insertBefore(e, q); }catch(e){}
   const t=document.getElementById("claireTag"); if(!t || !t.parentNode || getComputedStyle(t).opacity==="0") return;      // drawn in her figure, over the tag and with its tilt (the page's #tagMark is under her)
   try{ const r=t.getBBox(), u=r.height/21, q=document.createElementNS("http://www.w3.org/2000/svg","rect"), A={id:"selfTagRing", x:r.x-3*u, y:r.y-3*u, width:r.width+6*u, height:r.height+6*u, rx:5*u, fill:"#f6d35b", "fill-opacity":".28", stroke:"#d4a017", "stroke-width":2.6*u, "pointer-events":"none"};      // u: about a screen pixel (the tag is drawn in its own small units)
     for(const k in A) q.setAttribute(k, A[k]); if(t.getAttribute("transform")) q.setAttribute("transform", t.getAttribute("transform")); t.parentNode.insertBefore(q, t.nextSibling); }catch(e){} }
@@ -3522,7 +3624,7 @@ function pairLit(sweep){ let first=true;
 function litNow(){ const out=[], g=document.getElementById("goldRing"), g2=document.getElementById("goldRing2");
   if(g && g.getAttribute("opacity")==="1" && GOLD.slot) out.push(GOLD.slot+" ("+goldWho(GOLD.slot)+")");
   if(g2 && g2.getAttribute("opacity")==="1" && PAIR.on){ const x=PAIR.on.find(y=>y!=="self" && y!==GOLD.slot); if(x) out.push(x+" ("+goldWho(x)+")"); }
-  if(document.getElementById("selfTagRing")) out.push("self ("+goldWho("self")+")");
+  if(document.getElementById("selfTagRing") || document.getElementById("selfRing")) out.push("self ("+goldWho("self")+")");      // (.88) her figure's outline, with or without her tag
   return out.join(", ") || "nothing"; }
 // (.85, S-1) a pair unlit before the next thing is pointed at (pointAt clears PAIR.on first): traced, and truth85 PAIR NOT LIT fails it
 function pairUnlit(why){ trace("pair unlit: "+why+" ("+(PAIR.on||[]).join(", ")+")"); PAIR.on=null; }
@@ -3544,10 +3646,10 @@ async function pointAt(who){
     return; }
   goldOff();
   const pose = pointPose(side), key=side+(offering?"+palm":"");
-  if(key===lastPoint) return;
+  if(key===lastPoint){ if(side==="self" && typeof who==="object" && !document.getElementById("selfRing")) selfTag(true); return; }      // (.88) already pointing at herself for an action: her outline comes on for an item about her
   if(offering) pose[otherArm(side)] = palmUp(otherArm(side));     // keep the "your turn" hand out while pointing
   armsGo(pose, 340); lastPoint=key;            // the hand moves while she speaks: nothing waits for it
-  if(side==="self"){ selfTag(true); if(scene!=="class"){ gaze("learner"); setTimeout(()=>{ if(scene!=="class") gaze("out"); }, 560); } }      // (figures 14) her tag lit; a glance down to it, then back
+  if(side==="self"){ selfTag(true, typeof who==="object"); if(scene!=="class"){ gaze("learner"); setTimeout(()=>{ if(scene!=="class") gaze("out"); }, 560); } }      // (figures 14) her tag lit; a glance down to it, then back
 }
 // two scenes: the classroom (teacher and one model learner facing her) and one-to-one (teacher facing the learner)
 let scene="one";
@@ -4190,7 +4292,9 @@ async function presentTapShow(a){
   if(drawn!==a.scene) trace("the picture cards show "+VOCAB[a.tap.by].name+" doing each action: "+VOCAB[a.tap.by].name+" taps");
   // (.86; the coordinator, 19 Nov 2026: Marie never names herself in a command) a model learner says the cue where it names Marie ("Touche
   // Marie."): cueAs, his or her own voice and green ring (no question mark: the one who taps is the one lit next)
-  if(a.teacherUnits.length){ gestureEar(); if(a.cueVoice) await cueAs(a.cueVoice, a.teacherUnits, a.cueAt, null); else await say(a.teacherUnits); await sleep(250); }
+  if(a.teacherUnits.length){ gestureEar(); if(a.cueVoice) await cueAs(a.cueVoice, a.teacherUnits, a.cueAt, null);
+    else { SAY_SLOW=!!a.slow; try{ await say(a.teacherUnits); } finally{ SAY_SLOW=false; } }      // (.89, Lesson 6 row 4: "Marie says the sentence of one of them, slowly, then at her usual rate") a model tap whose cue is said slowly: its slow recording
+    await sleep(250); }
   if(a.touch && a.touch.silent) await silentTouches(a.touch.count);
   if(lit) speakLit(a.tap.by, true);
   await handTap(a.tap.by, a.tap.at); if(lit) speakLit(a.tap.by, false);
@@ -4288,7 +4392,7 @@ const XPIC = (() => {
     const g = mk("g"), N = items.length, n = N || 1, gap = n > 2 ? 10 : 24, area = { y: 24, h: 190 };
     const w = Math.min(160, (344 - gap * (n - 1)) / n, area.h * 160 / 190), h = w * 190 / 160, y0 = area.y + (area.h - h) / 2, k = w / 160, B = [];
     items.forEach((spec, i) => { const x = 200 - (n * w + (n - 1) * gap) / 2 + i * (w + gap);
-      const c = mk("g", { transform: `translate(${f1(x)},${f1(y0)})` }); if (lit === i) c.classList.add("lit");
+      const c = mk("g", { transform: `translate(${f1(x)},${f1(y0)})` }); if (lit === i) { c.classList.add("lit"); c.setAttribute("data-lit", "s" + i + " (" + whoOfSpec(spec) + ")"); }      // (.88) which card is lit, as the gold border's trace names it
       c.innerHTML = `<g class="cardIn">${CARD(w, h, Math.max(8, 16 * k))}</g>`;
       const inner = mk("g", { transform: `scale(${k.toFixed(4)})` }); try{ inner.appendChild(picture(spec)); }catch(e){} c.firstChild.appendChild(inner);
       g.appendChild(c); B.push({ x, y: y0, w, h, r: Math.max(8, 16 * k) }); });
@@ -4431,7 +4535,16 @@ const xBoardWith = (it, k) => { const b = it && it.board; if (!(b && b.text)) re
   trace("FAULT explanation card: the board of " + (it.id || it.target) + " has no mark " + k); return null; };
 const xBoard = b => b ? XPIC.board(b) : null;
 const xExample = it => { const a = it && (Array.isArray(it.answerUnits) && it.answerUnits.length ? it.answerUnits.join(" ") : it.target);      // (.84) the item's own answer
-  return a && typeof a === "string" && !/\[|prénom/.test(a) ? a : VOCAB.paul.name + "."; };
+  // (.88) an own-name answer with the learner's own name in it ("Moi, c'est Jon."), where the name is known
+  const own = a && typeof a === "string" && /\[prénom\]/.test(a) && S.learnerName ? a.replace(/\[prénom\]/g, S.learnerName) : a;
+  return own && typeof own === "string" && !/\[|prénom/.test(own) ? own : VOCAB.paul.name + "."; };
+/* (.88; reader 88's B-4: the "Just the answer" card said "Elle." beside a lit man, and "Sylvie." beside Pierre) a card that shows the learner
+   answering draws the item's own row with the card its answer is about lit (the item's place: the one the gold border marks); an item about
+   the learner or about Marie's own tag (no card of the row) draws the learner alone. With no item: Pierre and Sylvie, Pierre lit, as before */
+const whoOfSpec = x => { const k = x == null ? "" : (typeof x === "object" ? (x.person || x.is || "") : String(x).split(":")[0]); return (VOCAB[k] && VOCAB[k].name) || k || "?"; };
+const xRowOf = it => { if (!it) return {row: [{person: "paul"}, {person: "julie"}], lit: 0};
+  const r = it.scene && Array.isArray(it.scene.row) ? it.scene.row : [], m = /^s(\d+)$/.exec(String(it.at || ""));
+  return m && r[+m[1]] ? {row: r, lit: +m[1]} : {}; };
 const XROW3 = () => [{person: "paul"}, {person: "julie"}, {person: "you"}];
 const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that is clutter) the words kept to the minimum; the pictures do the work
   intro: {t: "How a lesson works", ok: "Start", parts: [
@@ -4444,10 +4557,10 @@ const XCARDS = {      // (Jon, 16 Nov 14:26, on interface text: no sentence that
   /* (.84; the reader of the .84 Lesson 1, B1: the card said "Pierre." before a question whose answer is "C'est Pierre.") a card's example answer
      is the answer of the item it comes before (xExample); the release test truth84 fails a card example the next test does not accept */
   q: {t: "Questions", parts: [
-    {pic: (it) => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Marie asks; the learner says only the answer"}, xExample(it)),
+    {pic: (it) => XPIC.learner(Object.assign({turn: "speak", pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Marie asks; the learner says only the answer"}, xRowOf(it)), xExample(it)),
      h: `<p>Say only the answer.</p>`}]},
   onlyanswer: {t: "Just the answer", parts: [
-    {pic: (it) => XPIC.learner({turn: "speak", row: [{person: "paul"}, {person: "julie"}], lit: 0, pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Only the answer"}, xExample(it)),
+    {pic: (it) => XPIC.learner(Object.assign({turn: "speak", pose: {R: palmUp("R")}, crop: [130, PHONE_H], k: 0.42, label: "Only the answer"}, xRowOf(it)), xExample(it)),
      h: `<p>Say only the answer, not the question.</p>`}]},
   touche_model: {t: "Touching a picture", parts: [
     {pic: () => XPIC.row([{person: "paul"}, {person: "julie"}], {hand: {at: 0, by: "teacher"}, label: "Marie's hand touches Pierre's picture"}),
@@ -4554,8 +4667,9 @@ async function explain(keys, o){
   if (lesson) keys.forEach(k => trace("explanation card: " + k + " shown"));
   if (lesson) body.querySelectorAll(".xc-part").forEach(sec => { const fr = [...new Set([...sec.querySelectorAll("[data-say]")].map(x => x.dataset.say).concat([...sec.querySelectorAll("[lang=fr]")].map(x => x.textContent.trim())))].filter(Boolean),
     ex = [...sec.querySelectorAll("[data-says]")].map(x => x.getAttribute("data-says")),
-    bd = [...sec.querySelectorAll("[data-board]")].map(x => x.getAttribute("data-board"));      // (.84; B-new-2) the board text a card draws (as SVG)
-    trace("explanation card: " + sec.dataset.key + " French: " + JSON.stringify(fr) + (ex.length ? " example: " + JSON.stringify(ex) : "") + (bd.length ? " board: " + JSON.stringify(bd) : "")); });      // (.84) what a card shows and plays in French
+    bd = [...sec.querySelectorAll("[data-board]")].map(x => x.getAttribute("data-board")),      // (.84; B-new-2) the board text a card draws (as SVG)
+    lit = [...sec.querySelectorAll("[data-lit]")].map(x => x.getAttribute("data-lit"));      // (.88; reader 88's B-4) the card of the row a card's picture lights, read from what was drawn
+    trace("explanation card: " + sec.dataset.key + " French: " + JSON.stringify(fr) + (ex.length ? " example: " + JSON.stringify(ex) + " lit: " + JSON.stringify(lit) : "") + (bd.length ? " board: " + JSON.stringify(bd) : "")); });      // (.84) what a card shows and plays in French
   const how = await new Promise(res => { XCARD.done = res;
     if (navigator.webdriver && !window.__xcardHold) setTimeout(() => { if (XCARD.done === res) res("by itself (a scripted run)"); }, 300); });
   XCARD.done = null;
@@ -5101,11 +5215,10 @@ async function presentLead(t){
 }
 // Test task. Returns true if correct. Affirmation (DISE videos): the ding, a nod, and the teacher says the answer back.
 async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0, quiet=false, afterAtoi=false, cued=false}={}){      // cued (.45): "Vas-y." at the end of a correction was the cue; the question is not said again
-  /* (.40; tester R, 13 Nov 15:24: "Et toi ?" asked on its own (a delayed test, a part gone through again) was answered with his
-     name alone: "And you?" asks for what the sentence before it said. When no "Je m'appelle …" was said just before, Marie says
-     her own sentence first, as the part that teaches it does.) */
-  if(!cued && t.questionUnits && /^et toi \?$/i.test(String(t.questionUnits[t.questionUnits.length-1]||"").trim()) && !(LASTMODEL && Date.now()-LASTMODEL.t<20000 && /m'appelle/i.test(LASTMODEL.text))){
-    await setPortraits(t.scene); await pointAt("self"); await say(["Je m'appelle "+VOCAB.claire.name+"."]); LASTMODEL={t:Date.now(), text:"Je m'appelle"}; trace("before 'Et toi ?' on its own: Marie's own sentence"); }
+  /* (.88; reader 88's B-1) the rule of .40 is gone: before an "Et toi ?" asked on its own Marie said "Je m'appelle Marie." first. The course
+     now writes her own sentence into the cue itself ("Moi, c'est Marie. Et toi ?", Lesson 5 row 10: only Marie says it, R-036), so the old
+     rule added a second, untaught frame before every such test (its last unit is "Et toi ?"), which the judge refuses when copied. A test
+     says its item's own units and nothing else (the release test truth: LINE NOT THE ITEM'S). */
   if(afterAtoi) think=AFTER_ATOI;          // "Vas-y" has just been said (end of a correction)
   if(!cued){ const g=goldThingOf(t); if(MODEL_END.gap>COUNT_GAP || (g && MODEL_END.thing && g!==MODEL_END.thing)) await listPace("test"); }      // (.46) straight after a model about another thing, or after a model's pause (not a retest cued by "Vas-y.")
   curTask=t.id; await thingGoes(t); await setPortraits(t.scene); itemStart(t); await convIntro(t);
@@ -5326,7 +5439,10 @@ function modelVoiceOf(answer){ const a=String(answer||"").trim();
   return null; }
 async function corrModel(task, o={}){
   if(isOwnName(task)){ const v=ctx.lastVerdict||{}; await ownNameCorrection(task, {why: v.selfCorrected ? "self-corrected" : "", framed:true}); return; }
-  if(task.tapTask){ const done=await tapModel(task, "teacher", task.correct); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
+  // (.89; the coordinator on reader 89's S-1, 19 Nov 2026) where two pictures are right ("Touche une maison." on a screen of two houses) her
+  // hand taps ONE of them under the one cue, as every model of the lesson does: the correction models what the learner does (.62 had it tap
+  // each right picture in turn, which reads as "the houses")
+  if(task.tapTask){ const done=await tapModel(task, "teacher", [].concat(task.correct)[0]); if(actx){ CLIP.k="the hand's tap"; CLIP.e=Math.max(CLIP.e, done||actx.currentTime); } return; }      // a tap: her hand taps the right picture while she says the cue again (the model ends when the cue has been said and the ring has left the tapped picture; the hand goes during the pause)
   /* the sound-discrimination format ("Le livre ou les livres ?"): not the right answer modelled, but the pair again, slowly,
      the border on the single card and then on the card asked about (course field correction). */
   if(task.corr){ const c=task.corr, keep=TXT.ctx, on=TXT.onPart;
@@ -5351,7 +5467,10 @@ async function corrModel(task, o={}){
 /* (.86; the coordinator's ruling on the Lesson 3 reader's early read, 19 Nov 2026) a lone line whose clip of Marie's is never served (teacher/
    un.mp3: no take passes the ear gate) is said in a correction, at the seven-trial limit and on a listening fault by the model learner whose
    block it is (the Un. block is Sylvie's, seq-plan 82b7a88a); "Une." stays Marie's (dev/voice/clipcheck.py NEVER SERVED, truth MARIE'S LONE UN) */
-const LONE_BY = {"Un.": "julie"};
+/* (.88; the coordinator, 19 Nov 2026: "the Un. precedent") the answers of "Il ou elle ?" (Lesson 5) the same: "Il." is Sylvie's and "Elle." Pierre's, the
+   voices that model them in Lessons 4 and 5; Marie never says the word alone (no label of hers in the rows: R-158 §1; her lone il.mp3 / elle.mp3
+   pass no ear gate and are never served). Lesson 4's "Répète : il." tests are unchanged: their cue again, and with no turn the same two voices */
+const LONE_BY = {"Un.": "julie", "Il.": "julie", "Elle.": "paul"};
 /* (.86; reader 86's delta read) the one resolution of the voice that says a test's answer in a correction, at the seven-trial limit and on a
    listening fault (corrModel): a model learner (ownCestBy, LONE_BY) or Marie (null). dev/harness/replay/clipgate.js asks the app this same
    function for the clip it judges, so the gate hears the clip the app plays (proof CLIPGATE-CORR-VOICE) */
@@ -5524,7 +5643,7 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       hadError=true; scheduleDelayed(part, anchor, it.id);
       /* The learner said the question back: that is not a wrong French answer but not knowing what is asked for. The
          narrator (English, as in the introduction) says so once, then the usual correction follows. */
-      if(lastRepeatedCue){ lastRepeatedCue=false; await explain(["onlyanswer"]); }      // (16 Nov: a card, "Just the answer")
+      if(lastRepeatedCue){ lastRepeatedCue=false; await explain(["onlyanswer"], {it}); }      // (16 Nov: a card, "Just the answer"; .88, reader 88's S-3: its example is this item's answer, "Il." after "Il ou elle ?", not "Pierre.")
 
       if(firstOfItem){
         /* a brand-new item that failed at its first test. Until .23: three models, a lead and the test, and after a right
@@ -5773,7 +5892,8 @@ function afterDemoScreen(){ rest(); showPlay(true, true); return new Promise(r=>
    fed through it. If Vosk cannot load, the browser's recogniser answers, as before.
    The start now waits for what a lesson needs to be heard and spoken rightly:
      - Vosk, the listener that judges every answer: its model on the phone, or failed (then the browser's recogniser);
-       not waited for when the learner answers by tapping (manual) or the browser's recogniser is chosen in the tester panel;
+       (.88) waited for whatever the settings, since it is loaded for everyone: where the learner answers by tapping (manual) or the
+       browser's recogniser is chosen in the tester panel, at most 15 s after the tap (startListenerLoad: LISTENER_CAP);
      - the index of the teacher's recordings (without it Marie would speak with the phone's own voice);
      - and, at the tap, the lesson's own clips (lessonLoad).
    The loading screen, its bar and the 25 s watchdog are as they were (.67); the bar now follows the download of Vosk's model. */
@@ -5791,24 +5911,37 @@ function startListenerLoad(){
   /* (owner, 16 Nov: "you can always tap Start Lesson, and then, when you enter the lesson, you hit a loading screen where it loads") a tap on the
      start while the listener is still loading puts the loading screen up (the app's own: SPLASH, with how far the download is); the lesson starts
      by itself the moment the listener is there (or has failed, or has given no sign of life for 25 s). */
-  let lastSign=performance.now(), settled=false, startAsked=false, frac=null;
+  /* (.88; the coordinator's ruling of 19 Nov 2026 on the first-draw test's finding) NO FIRST CLIP BEFORE THE LISTENER IS READY, whatever
+     the learner's settings. The listener is loaded for everyone (startVosk); the start was held for it only where the settings use it
+     (the app's own recogniser, the default), so with Chrome's recogniser or in manual mode it arrived in the middle of the lesson's first
+     clip and cost a long frame there (132 to 186 ms measured). Now a tap on Start waits under the loading screen for every setting:
+       - where the settings use the listener: until it is there or has failed; the fallback as before: no sign of life for 25 s, the
+         start is let through with a FAULT line;
+       - where they do not: the same, but never longer than LISTENER_CAP (15 s) after the tap: then the lesson starts and a line says so
+         (the listener may then still arrive during the lesson). */
+  const LISTENER_CAP=15000;
+  let lastSign=performance.now(), settled=false, startAsked=false, frac=null, capped=false;
   const LABEL="Getting ready to hear you";
-  const through=()=>{ btn.classList.remove("loading"); if(!startAsked) return; startAsked=false; trace("the listener is there: the lesson asked for starts");
+  const through=why=>{ btn.classList.remove("loading"); if(!startAsked) return; startAsked=false; trace((why || "the listener is there")+": the lesson asked for starts");      // (.88) the line says what happened: there, failed, capped, or let through by the watchdog
     try{ btn.click(); }catch(e){} setTimeout(()=>{ try{ if(!LOADING.on && !LOADING.soon) window.SPLASH && SPLASH.done(); }catch(e){} }, 120); };      // (speed) not while the lesson's content is still to come under the same screen (lessonLoad takes it down)
   let label=LABEL;
   HEAR.sign=(got,total)=>{ lastSign=performance.now(); if(total){ frac=Math.min(1, got/total); label = frac<1 ? LABEL+" · "+Math.round(got/1e6)+" of "+Math.round(total/1e6)+" MB" : LABEL;
     if(startAsked){ try{ SPLASH.progress(frac<1 ? frac*0.9 : null, label); }catch(e){} } } };
   const needsVosk=()=>!S.settings.manual && S.settings.engine!=="google";      // read when the index has arrived: the learner's settings are loaded by then
-  listenerLoad = TEACHER.ready.then(()=>needsVosk() ? HEAR.settled : null)
-    .then(()=>{ settled=true; through(); })
-    .catch(()=>{ settled=true; through(); });
-  const watch=setInterval(()=>{ if(settled){ clearInterval(watch); return; }
-    if(performance.now()-lastSign>25000){ clearInterval(watch); const late=[!TEACHER.index && "the index of the teacher's recordings", needsVosk() && !VOSK.model && !VOSK.failed && "the listener (Vosk)"].filter(Boolean).join(" and ");
-      trace("FAULT "+late+" neither ready nor failed 25 s after its last sign of life: the start is let through"); HEAR.giveUp(); through(); } }, 1000);
+  listenerLoad = TEACHER.ready.then(()=>HEAR.settled)      // (.88) for every setting (it was: only where the settings use the listener)
+    .then(()=>{ settled=true; through(VOSK.model ? "the listener is there" : "the listener is not there (it failed, or was given up)"); })
+    .catch(()=>{ settled=true; through("the listener's loading failed"); });
+  const watch=setInterval(()=>{ if(settled || capped){ clearInterval(watch); return; }
+    if(performance.now()-lastSign>25000){ clearInterval(watch); const late=[!TEACHER.index && "the index of the teacher's recordings", !VOSK.model && !VOSK.failed && "the listener (Vosk)"].filter(Boolean).join(" and ");
+      trace("FAULT "+late+" neither ready nor failed 25 s after its last sign of life: the start is let through"); HEAR.giveUp(); through("no sign of life from the listener's loading for 25 s (the fallback)"); } }, 1000);
   // before the shell's own handler (this one is registered first): the tap is kept, the loading screen shown, the sound let out by this touch
   document.addEventListener("click", e=>{ const b=e.target && e.target.closest && e.target.closest("#playBtn"); if(!b || running || !b.classList.contains("loading")) return;
     e.stopImmediatePropagation(); e.preventDefault(); if(startAsked) return; startAsked=true; try{ audioUnlock(); }catch(_){} try{ UI.haptic("tick"); }catch(_){} try{ window.UISOUND && UISOUND("go"); }catch(_){}
     trace("start asked while the listener is loading: the loading screen");
+    // (.88) the cap where the settings do not use the listener: armed at every tap, and the settings read when it fires (they are loaded
+    // with the teacher's index, which may not be there yet at the tap; without the index 15 s on, the watchdog above is the way out)
+    setTimeout(()=>{ if(settled || capped || !TEACHER.index || needsVosk()) return; capped=true;
+      HEAR.giveUp(); through("the listener, which this learner's settings do not use, is still loading "+Math.round(LISTENER_CAP/1000)+" s after the tap on Start (the cap)"); }, LISTENER_CAP);
     try{ SPLASH.show(); SPLASH.progress(frac!=null && frac<1 ? frac*0.9 : null, label); }catch(_){} }, true);
 }
 startListenerLoad();
@@ -5968,7 +6101,7 @@ document.getElementById("playBtn").onclick=async ()=>{
   if(document.getElementById("playBtn").classList.contains("loading")) return;
   running=true; UI.haptic("tick");
   stageFirst(); voskWords();      // (speed) whatever of the start's own work has not been done while idle is done now, before the lesson
-  try{ LOADING.soon=!lessonHere(); }catch(e){}
+  LOADING.soon=true;      // (.88; reader 88's delta 5) on both paths: lessonLoad puts the loading screen up whether the clips are here or still to come, so a screen already up for the listener is never taken down between the two (it was set only where clips were to come: Home flashed for a moment)
   await UI.fonts();      // (next) the faces are there before the first board is measured
   // the audio system is needed for the phone's own listener (Vosk) and for recording every answer (whichever recogniser judges it)
   // (speed) it was opened only when the in-app model was loaded (it always was: the start waited for it); now whenever the phone's own listener is chosen
