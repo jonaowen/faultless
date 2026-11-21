@@ -403,6 +403,8 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson6.js"></script>
 <script src="course/lesson7.js"></script>
 <script src="course/lesson8.js"></script>
+<script src="course/lesson9.js"></script>
+<script src="course/lesson10.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -411,7 +413,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-21.93";      // must equal version.json
+const APP_VERSION="2026-11-21.94";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -982,7 +984,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:93, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:94, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1028,6 +1030,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=91)) migrate91();      // (.91) a state saved when Lessons 1-7 were served: a learner who passed Lesson 7 goes on to Lesson 8      // (.90) a state saved when Lessons 1-6 were served: a learner who passed Lesson 6 goes on to Lesson 7      // (.89) a state saved when Lessons 1-5 were served: a learner who passed Lesson 5 goes on to Lesson 6      // (.88) a state saved when Lessons 1-4 were served: a learner who passed Lesson 4 goes on to Lesson 5
   if(!(s.courseRev>=92)) migrate92();      // (.92) no new lesson: the records of the exercises that now carry the own-name frame are dropped (CHANGED_92)
   if(!(s.courseRev>=93)) migrate93();      // (.93) no new lesson: the naming of action words on "Dis." comes into Lessons 4-8; a learner past a new exercise does it first
+  if(!(s.courseRev>=94)) migrate94();      // (.94) a state saved when Lessons 1-8 were served: a learner who passed Lesson 8 goes on to Lesson 9
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1136,7 +1139,7 @@ function migrate92(){ carryOn(92, 8, CHANGED_92); }
 /* (.93) THE VOCABULARY GATE (the owner, 20 and 21 Nov 2026: an action word is not in the learner's vocabulary until the learner has said it
    from its lit card on Marie's "Dis.", with no model and no lead; the cue is taught first, with models and leads). Five new exercises, each
    one or two places before its lesson's Retour, the exercises before them as they were: L4E13 teaches the cue (on danse and dessine),
-   L5E11 is the gate of the four action words, L6E13, L7E15 and L8E12 name them in turn. No lesson is added: carryOn(93, 8, ...) moves
+   L5E11 is the gate of the four action words, L6E11, L7E13 and L8E12 name them in turn. No lesson is added: carryOn(93, 8, ...) moves
    nobody. CHANGED_93: the exercises whose items changed between .92 and .93 (the exercises after a new one in Lessons 4 and 6, which
    take the next id; each Retour; L8E2, drawn again), computed by dev/harness/changed_exercises.py against the .92 app and checked by the
    release test changed. NEW_93: the new exercises by lesson. A learner inside one of these lessons meets its new exercise on the next
@@ -1146,17 +1149,25 @@ function migrate92(){ carryOn(92, 8, CHANGED_92); }
 const CHANGED_93 = ["L4E13", "L4E14", "L5E11", "L6E11", "L6E12", "L6E13", "L6E14", "L7E13", "L7E14", "L7E15", "L8E12", "L8E2"];
 const NEW_93 = [[3, "L4E13"], [4, "L5E11"], [5, "L6E11"], [6, "L7E13"], [7, "L8E12"]];
 function migrate93(){ carryOn(93, 8, CHANGED_93); newFirst(93, NEW_93); }
+/* (.94) Lessons 9 and 10 are served (Lesson 9: tu + verb, "Et moi ?" -> "Tu danses.", and "C'est quoi ?" on the four things; Lesson 10: the
+   four things named with no model and no lead, "Touche une voiture." with two of each thing, "C'est quel nombre ?", sept). Lessons 1-8 are
+   the .93 lessons item for item (CHANGED_94 is empty: release test changed). A learner who passed Lesson 8 goes on to Lesson 9. */
+const CHANGED_94 = [];
+function migrate94(){ carryOn(94, 8, CHANGED_94); }
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
    already running gets them added before its way back). A learner in or before a lesson with a new exercise needs nothing: the lesson
    runs every exercise not finished. One log line says what this learner does first. */
+/* (.94; the owner's run of 21 Nov 2026 17:15: the log said "back to Lesson 7, exercise 15" and he went on at exercise 13) the exercise a
+   learner goes on at in a lesson: the first one with no record (the lesson runs every exercise not finished), else the place saved */
+const goesOnAt = (li, ex) => { const L=LESSONS[li], k = L ? L.exercises.findIndex(e=>!S.finished[e.id]) : -1; return (k>=0 ? k : ex)+1; };
 function newFirst(rev, fresh){
   const place = S.detour && S.detour.back ? S.detour.back : {lesson:S.lesson||0, ex:S.ex||0};
   const legs = fresh.filter(([li])=>li<place.lesson && LESSONS[li]).map(([li, id])=>({lesson:li, ids:[id]}));
   if(!legs.length) return;
   if(S.detour) S.detour.more=(S.detour.more||[]).concat(legs);
   else S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}};
-  (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+(place.ex+1), heard:[]});
+  (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+goesOnAt(place.lesson, place.ex), heard:[]});
 }
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
@@ -1171,7 +1182,7 @@ function carryOn(rev, served, changed){
         S.lesson=served; S.ex=0; for(const e of LESSONS[served].exercises) delete (S.finished||{})[e.id];
         G.next=served; G.furthest=Math.max(G.furthest||0, served); G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; moved=true; }
       localStorage.setItem(gk, JSON.stringify(G)); } }catch(e){}
-  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+Math.min(served+1, LESSONS.length)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
+  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+Math.min(served+(({94:2})[rev]||1), LESSONS.length)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
   S.courseRev=rev;
 }
 function migrate84(){
@@ -1906,7 +1917,8 @@ function unitClips(ex){ let slow=true; try{ slow=/"slow":true/.test(JSON.stringi
       else urls.add(LEARNER_CLIP(say(it.cueVoice, it.questionUnits))); }
     if(it.introOnly) urls.add(LEARNER_CLIP(answerUnits(it).join(" "))); })); }catch(e){}
   try{ ex.parts.forEach(p=>p.items.forEach(it=>{ const a=(it.answerUnits||[]).join(" ").trim();      // (.91) the line Marie corrects "Je V." with (corrModel jeOwn: "Répète : je V."; answerUnits(it) needs the exercise playing, so the units are read here)
-    if(it.at!=="you" || !/^Je \S+\.$/.test(a) || /^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "))) return;
+    // (.94) and the line she corrects "Tu V." with, said to her of her own action ("Et moi ?" -> "Tu danses.", at "self": tuOwn, "Répète : tu V.")
+    if(!((it.at==="you" && /^Je \S+\.$/.test(a)) || (it.at==="self" && /^Tu \S+\.$/.test(a))) || /^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "))) return;
     clipsOf(["Répète : "+a.charAt(0).toLowerCase()+a.slice(1)], false).forEach(u=>urls.add(u)); })); }catch(e){}
   return [...urls]; }
 function commonClips(){ const urls=clipsOf(["Vas-y.", "Non.", "Oui.", "Touche.", "À toi.", "Lis.", "Compte.", "Écoute.", "Avec moi.", "Répète :", "Je m'appelle "+VOCAB.claire.name+"."]);
@@ -5481,7 +5493,7 @@ async function presentTest(t, {retest=false, firstSeen=null, atoi=true, think=0,
      that gives a course person's name and then "je m'appelle" again with a name of their own ("Je m'appelle Sylvie… je
      m'appelle [own name]") is still an error, marked self-corrected (its correction is the same: never a model learner). */
   // (.91) a right "Je V." of the learner's own figure: its recording kept as this learner's model of that sentence (jeRecording)
-  if((jeOwn(t) || jeRep(t)) && r.status==="heard" && r.ok && r.clip){ const a=answerUnits(t).join(" ").trim();
+  if((jeOwn(t) || jeRep(t) || tuOwn(t) || tuRep(t)) && r.status==="heard" && r.ok && r.clip){ const a=answerUnits(t).join(" ").trim();      // (.94) and a right "Tu V." said to Marie
     S.jeClips=(S.jeClips||[]).filter(x=>x.id!==r.clip).concat([{id:r.clip, t:new Date().toISOString(), task:t.id, answer:a}]).slice(-8); trace("je-answer recording kept as this learner's model of \""+a+"\": "+r.clip); }
   if(isOwnName(t) && r.status==="heard"){
     // (never an answer "believed" after the same course name three times: it may say that name)
@@ -5652,11 +5664,13 @@ async function corrModel(task, o={}){
   // dancing) is never played. With a turn after (the correction): her "Répète : je saute." (true: the learner's line), the learner's turn
   // follows. With none (the seven-trial limit, a listening fault): the learner's own right recording of that sentence in this run, else the
   // item's cue again ("Je danse. Et toi ?": her own sentence, true of her), never a "Répète :" with no turn
-  if(jeOwn(task)){ const a=answerUnits(task).join(" ").trim(), rj="Répète : "+a.charAt(0).toLowerCase()+a.slice(1);
-    if(!o.noTurn){ trace("the je-answer correction: \""+rj+"\" (never Marie's plain \""+a+"\" of herself)"); await say([rj]); return; }
+  // (.94, Lesson 9: "Et moi ?" -> "Tu danses.", said to Marie of her own action) the same for "Tu V.": Marie's plain "Tu danses." would be
+  // said to the learner, whose figure does another action; her "Répète : tu danses." is the learner's line (tuOwn)
+  if(jeOwn(task) || tuOwn(task)){ const a=answerUnits(task).join(" ").trim(), rj="Répète : "+a.charAt(0).toLowerCase()+a.slice(1), tu=tuOwn(task);
+    if(!o.noTurn){ trace(tu ? "the tu-answer correction: \""+rj+"\" (never Marie's plain \""+a+"\" to the learner)" : "the je-answer correction: \""+rj+"\" (never Marie's plain \""+a+"\" of herself)"); await say([rj]); return; }
     const own = S.settings.manual ? null : await jeRecording(task);
     if(own){ speakLit("you", true, learnerSlot()); trace("the learner's own recording of \""+a+"\" played: "+own.id); await playOwn(own); speakLit("you", false); return; }
-    trace("the je-answer with no turn after: the item's cue again (no recording of the learner's own \""+a+"\" yet)"); await say(task.teacherUnits); return; }
+    trace("the "+(tu ? "tu" : "je")+"-answer with no turn after: the item's cue again (no recording of the learner's own \""+a+"\" yet)"); await say(task.teacherUnits); return; }
   const by = corrVoiceOf(answerUnits(task).join(" "), task);      // (.86) who says the answer: ownCestBy, then LONE_BY (Marie's lone "Un." is never served: Sylvie's); (.90) etMarieBy
   // (.84; the coordinator, 18 Nov 2026) a correction repeats the item's cue: a "Répète :" test of Marie's is corrected with her "Répète : X."
   // again (its own clip), not X alone (Marie's lone "Un." is not heard as un; the cue's is)
@@ -5670,6 +5684,11 @@ async function corrModel(task, o={}){
     trace("the je-sentence with no turn after: nothing said; the learner's figure does it, its board line lit (\""+a+"\")");
     if(task.board && (task.boardPoint||[]).length){ boardShow(task.board); boardHi(task.boardPoint); }
     await sleep(1400); if(task.board) boardHi(null); return; }
+  // (.94) a "Répète : tu V." item with no turn after it: as the je-sentence, no voice says "Tu V." (Marie's would be said to the learner): the
+  // learner's own right recording of it if this run has one; else nothing is said: Marie's figure does V, and the lesson goes on
+  if(rep && o.noTurn && tuRep(task)){ const a=answerUnits(task).join(" ").trim(), own = S.settings.manual ? null : await jeRecording(task);
+    if(own){ speakLit("you", true, learnerSlot()); trace("the learner's own recording of \""+a+"\" played (no turn after): "+own.id); await playOwn(own); speakLit("you", false); return; }
+    trace("the tu-sentence with no turn after: nothing said; Marie's figure does it (\""+a+"\")"); await sleep(1400); return; }
   if(rep && o.noTurn){ const v=by || modelVoiceOf(answerUnits(task).join(" "));
     trace("the model with no turn after it: the answer"+(v ? ", by "+VOCAB[v].name : ", by Marie"));
     if(v) await cueAs(v, answerUnits(task), slotOfPerson(v) || "none", null); else await say(answerUnits(task)); }
@@ -5689,6 +5708,10 @@ const LONE_BY = {"Un.": "julie", "Il.": "julie", "Elle.": "paul"};
 const jeOwn = it => !!it && it.at==="you" && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
 /* (.91; reader 91's S-8) a "Répète : je V." item of the learner's own figure (Lesson 8 row 5): its no-turn model says no "Je V." (corrModel) */
 const jeRep = it => !!it && it.at==="you" && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : je \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
+/* (.94, Lesson 9) an item whose answer is "Tu V." said to Marie of her own action ("Et moi ?" -> "Tu danses.": at "self", not a "Répète :"
+   test): as jeOwn, its correction is never Marie's plain "Tu V." (corrModel); its right answers' recordings are kept (S.jeClips) */
+const tuOwn = it => !!it && it.at==="self" && /^Tu \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
+const tuRep = it => !!it && it.at==="self" && /^Tu \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : tu \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
 async function jeRecording(task){
   audioUnlock(); if(!actx) return null;
   const want=answerUnits(task).join(" ").trim();
@@ -6047,7 +6070,7 @@ async function main(){
     S.detour=null; S.lesson=Math.min(d.back.lesson, LESSONS.length-1); S.ex=d.back.ex;
     const B=LESSONS[S.lesson];
     if(B.exercises.every(e=>S.finished[e.id]) && S.lesson+1<LESSONS.length){ S.lesson++; S.ex=0; LESSONS[S.lesson].exercises.forEach(e=>delete S.finished[e.id]); }      // they had finished that lesson: on to the next
-    logEntry({result:"DETOUR OVER: back to Lesson "+(S.lesson+1)+", exercise "+(S.ex+1), heard:[]}); save(); lessonTag(); }
+    logEntry({result:"DETOUR OVER: back to Lesson "+(S.lesson+1)+", exercise "+goesOnAt(S.lesson, S.ex), heard:[]}); save(); lessonTag(); }
   const lesson=LESSONS[S.lesson];
   // start of a lesson: delayed tests due at the start of this lesson
   if(S.ex===0 && !S.finished[lesson.exercises[0].id]){
