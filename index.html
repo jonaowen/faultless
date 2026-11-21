@@ -1149,6 +1149,7 @@ function migrate92(){ carryOn(92, 8, CHANGED_92); }
 const CHANGED_93 = ["L4E13", "L4E14", "L5E11", "L6E11", "L6E12", "L6E13", "L6E14", "L7E13", "L7E14", "L7E15", "L8E12", "L8E2"];
 const NEW_93 = [[3, "L4E13"], [4, "L5E11"], [5, "L6E11"], [6, "L7E13"], [7, "L8E12"]];
 function migrate93(){ carryOn(93, 8, CHANGED_93); newFirst(93, NEW_93); }
+const NEW_BEHIND = [].concat(NEW_93);      // (.94) every fix release's new exercises, in the order of the releases (carryOn reads it; migrate_node checks it holds each NEW_RR)
 /* (.94) Lessons 9 and 10 are served (Lesson 9: tu + verb, "Et moi ?" -> "Tu danses.", and "C'est quoi ?" on the four things; Lesson 10: the
    four things named with no model and no lead, "Touche une voiture." with two of each thing, "C'est quel nombre ?", sept). Lessons 1-8 are
    the .93 lessons item for item (CHANGED_94 is empty: release test changed). A learner who passed Lesson 8 goes on to Lesson 9. */
@@ -1169,6 +1170,7 @@ function newFirst(rev, fresh){
   else S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}};
   (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+goesOnAt(place.lesson, place.ex), heard:[]});
 }
+const FIX_REVS = [92, 93];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -1178,11 +1180,20 @@ function carryOn(rev, served, changed){
   try{ const gk="frDIn.g."+USERS.current, raw=localStorage.getItem(gk);
     if(raw){ const G=JSON.parse(raw); if(changed.length && G.ex) for(const k of Object.keys(G.ex)) if(ch(k)) delete G.ex[k];
       const passed=((G.lessons||{})["L"+served]||[]).some(r=>r && r.passed);
-      if(passed && (S.lesson||0)===served-1 && !S.detour && G.why!=="perfect" && LESSONS.length>served){
-        S.lesson=served; S.ex=0; for(const e of LESSONS[served].exercises) delete (S.finished||{})[e.id];
+      /* (.94) A fix release moves nobody: the release that opens the next lesson does (until .94 no lesson followed a fix release's last, so
+         its step could not move anyone; with Lessons 9 and 10 served, migrate92's step took a .91 learner to Lesson 9 itself, under its own
+         line). And a learner who holds a detour through new exercises (newFirst, set by a fix release's step on the way) is moved as well:
+         the detour's way back becomes the start of the next lesson, and the new exercises of the lesson just passed are done first too. */
+      const at = S.detour && S.detour.back ? S.detour.back.lesson : (S.lesson||0);
+      if(passed && at===served-1 && G.why!=="perfect" && LESSONS.length>served && !FIX_REVS.includes(rev)){
+        if(S.detour && S.detour.back){ const have=new Set([S.detour.ids].concat((S.detour.more||[]).map(m=>m.ids)).flat());
+          const extra=NEW_BEHIND.filter(([li, id])=>li===served-1 && !have.has(id) && LESSONS[li]).map(([li, id])=>({lesson:li, ids:[id]}));
+          S.detour.more=(S.detour.more||[]).concat(extra); S.detour.back={lesson:served, ex:0}; }
+        S.lesson=served; S.ex=0;      // (with a detour too: main() runs the detour from its own lessons, then goes to its way back)
+        for(const e of LESSONS[served].exercises) delete (S.finished||{})[e.id];
         G.next=served; G.furthest=Math.max(G.furthest||0, served); G.why=""; G.warmTo=null; G.again=null; G.replay=null; G.cur=null; moved=true; }
       localStorage.setItem(gk, JSON.stringify(G)); } }catch(e){}
-  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+Math.min(served+(({94:2})[rev]||1), LESSONS.length)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
+  if(moved || dropped) S.log.push({t:new Date().toISOString(), result:"SAVED PLACE CARRIED OVER for version "+APP_VERSION+": Lessons 1-"+Math.min(FIX_REVS.includes(rev) ? served : served+(({94:2})[rev]||1), LESSONS.length)+" served"+(dropped?"; records dropped of "+dropped+" exercises that changed":"")+(moved?"; Lesson "+served+" was passed: this learner goes on at the start of Lesson "+(served+1)+" (the Lesson "+served+" record kept)":""), heard:[]});
   S.courseRev=rev;
 }
 function migrate84(){
