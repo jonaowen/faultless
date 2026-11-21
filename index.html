@@ -2010,6 +2010,11 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
         withP = !sc.bothDoing && ((sc.learnerDoing && !sc.teacherDoing && same(sc.learnerDoing)) || (sc.teacherDoing && !sc.learnerDoing && same(sc.teacherDoing))) ? p0.person : null;
         bo=Object.assign({}, b[2], {left:true}, withP ? {withP} : {}); }
       if(b && b[0]==="pair"){ fig("marie", b[1]); fig("you", b[2].you); } else if(b && b[0]!=="handed") fig(b[0], b[1], bo);
+      // (.93; truth93 PICTURE FIRST BUILT, the naming of an action word on "Dis.": L4E13's models, L5E11-a1 ...) litPlay draws the card a spoken
+      // model or test points at once more, as the lit card (spec.moving): that picture is drawn ahead too
+      if((it.kind==="model" || it.kind==="test") && !it.tap){ const m=/^s(\d+)$/.exec(it.at||""), x=m && row[+m[1]];
+        if(x && typeof x==="object" && x.is==="picture card" && x.doing && ACT_NAME[x.doing] && !/^(not )?smiling$/.test(x.doing)){
+          const y=Object.assign({}, x, {moving:true}); add("row|"+JSON.stringify(y), ()=>picture(y)); } }
       const acts = it.kind==="show" || it.kind==="do" || it.kind==="figure";
       if(acts && it.act && it.act!=="tap"){      // presentAct: Marie does it (show), the learner's figure does it, or Pierre's / Sylvie's (a figure item on their place)
         const m=/^s(\d+)$/.exec(it.at||""), x=m && row[+m[1]], by=x && typeof x==="object" && (x.person==="paul" || x.person==="julie") ? x.person : null;
