@@ -1205,6 +1205,9 @@ function act(name, c, o){
       `<path d="${marks}" stroke="#414B5E" stroke-opacity=".2" stroke-width="2.4" stroke-linecap="round"/></g></g>`;
   }
   const D1 = f2(C.dur), fade = (vals, kts) => still ? "" : `<animate attributeName="opacity" values="${vals}" keyTimes="${kts}" dur="${D1}s" repeatCount="indefinite"/>`, INK = `stroke="#414B5E" stroke-opacity=".3"`;
+  if (name === "travel" && !o.bare && !o.house && !o.door && !o.card){      // (.93; the owner, 20 Nov 2026: "voyage could be mistaken for walking. If it means travelling, we need some kind of travel backdrop, like mountains") far mountains and a plane in the sky behind the walker with the suitcase: the app's own mountain and plane, small and pale as far things are
+    back += `<g opacity=".5"><g transform="translate(-22 66) scale(.6)">${oneThing({ is: "mountain" }).outerHTML}</g><g transform="translate(92 92) scale(.44)">${oneThing({ is: "mountain" }).outerHTML}</g></g><g opacity=".8" transform="translate(4 10) scale(.27)">${oneThing({ is: "plane" }).outerHTML}</g>`;
+  }
   if (o.house && !o.bare){                                  // arriving / leaving: the house, and the arrow on the ground to its door or from it
     const left = o.house === "left", y = 183, x0 = left ? 46 : 24, x1 = left ? 150 : 112;
     back += `<g transform="translate(${left ? -4 : 88} 72) scale(.5)">${oneThing({ is: "house", looks: ["red roof"] }).outerHTML}</g>`;

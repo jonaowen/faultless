@@ -128,9 +128,15 @@ const SHELL = (()=>{
   const cardsOf = id=>((CW.lessons[id]||{}).cards)||[];
   const passedIdx = i=>i<G.furthest;      // a lesson below the furthest reached has been passed
   const ownedCards = ()=>{ const out=[]; LESSONS.forEach((L,i)=>{ if(passedIdx(i)) cardsOf(L.id).forEach((c,ci)=>out.push(Object.assign({lesson:i, ci}, c))); }); return out; };
-  const stageOf = n=>(CW.stages||[]).find(s=>n>=s.first && n<=s.last) || null;      // n: a lesson number (1-based)
-  function stageLine(n){ const s=stageOf(n); if(!s) return ""; const done=Math.max(0, Math.min(s.last, G.furthest)-s.first+1), of=s.last-s.first+1; return {s, done, of, text:`Stage ${s.id} · ${done} of ${of}`}; }
-  function stageBar(n){ const st=stageLine(n); if(!st) return ""; return `<div class="card stage"><div class="row"><span>Stage ${st.s.id}</span><span>${st.done} of ${st.of} ${pl(st.of, "lesson")}</span></div><div class="segs" aria-hidden="true">${Array.from({length:st.of},(_,k)=>`<i class="${k<st.done?"on":""}"></i>`).join("")}</div></div>`; }
+  /* (.93; rules.md R-164) A stage whose boundary the plan has not declared yet is OPEN (last: null): it has no number of lessons to
+     promise. It runs over the lessons served and those planned so far (upto), which are there, locked, "Coming"; its progress is a
+     count of lessons done, never "N of M". */
+  const stageEnd = s=>s.last==null ? Math.max(LESSONS.length+1, s.upto||0) : s.last;
+  const stageOf = n=>(CW.stages||[]).find(s=>n>=s.first && n<=stageEnd(s)) || null;      // n: a lesson number (1-based)
+  const stageCount = s=>{ const done=Math.max(0, Math.min(stageEnd(s), G.furthest)-s.first+1), of = s.last==null ? 0 : s.last-s.first+1, segs = of || Math.max(done, Math.min(stageEnd(s), LESSONS.length)-s.first+1);
+    return {done, of, segs, text: of ? `${done} of ${of} ${pl(of, "lesson")}` : `${done} ${pl(done, "lesson")} done`}; };
+  function stageLine(n){ const s=stageOf(n); if(!s) return ""; return Object.assign({s}, stageCount(s)); }
+  function stageBar(n){ const st=stageLine(n); if(!st) return ""; return `<div class="card stage"><div class="row"><span>Stage ${st.s.id}</span><span>${st.text}</span></div><div class="segs" aria-hidden="true">${Array.from({length:st.segs},(_,k)=>`<i class="${k<st.done?"on":""}"></i>`).join("")}</div></div>`; }
   // a picture from a scene spec of the course; Marie herself (the course's "claire") is drawn as the picture library's portrait of her
   const pic = spec=>spec==="claire" && window.PICS && PICS.portrait ? PICS.portrait("marie", "Marie") : picture(spec);
   function cardPic(c){ try{ if(c.spec!=null){ const g=pic(c.spec); return `<svg viewBox="0 0 160 190" aria-hidden="true">${g.outerHTML}</svg>`; } }catch(e){}
@@ -1647,9 +1653,9 @@ const SHELL = (()=>{
      (it is started on Home), the ones to come (face down). The words a lesson gave are its cards' pictures on its card, and its view plays them. ---- */
   function lessons(){ const o=$("lessonsL"), T=G.next, done=Math.min(G.furthest, LESSONS.length), pc=perfectCount();
     // (.84) the stage of the lessons served goes on to its last lesson: the lessons not served yet are there, locked, "Coming" (COMING)
-    const st=(CW.stages||[]).filter(s=>s.first<=LESSONS.length), groups = st.length ? st.map(s=>({s, from:s.first-1, upto:s.last})) : [{s:null, from:0, upto:LESSONS.length}];
+    const st=(CW.stages||[]).filter(s=>s.first<=LESSONS.length), groups = st.length ? st.map(s=>({s, from:s.first-1, upto:stageEnd(s)})) : [{s:null, from:0, upto:LESSONS.length}];
     o.innerHTML=`<div class="tabhead"><h1>Your lessons</h1>${done ? `<p class="tsub"><b>${done}</b> done · <b>${ownedCards().length}</b> French ${pl(ownedCards().length, "word")}</p>` : ""}</div>
-      ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${Math.max(0, Math.min(g.s.last, G.furthest)-g.s.first+1)} of ${g.s.last-g.s.first+1} done</span></div>${(G.furthest||0)>=g.s.first-1 ? `<button class="stq" data-stage="${g.s.id}">${ic("info")}What do I learn in Stage ${g.s.id}?</button>` : `<div class="stq stlock" data-stlock="${g.s.id}" role="note">${ic("lock")}Reach Stage ${g.s.id} to find out what you learn</div>`}` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
+      ${groups.map(g=>`${g.s ? `<div class="pathhead"><h2>Stage ${g.s.id}</h2><span class="meta">${(c=>c.of ? `${c.done} of ${c.of} done` : `${c.done} done`)(stageCount(g.s))}</span></div>${(G.furthest||0)>=g.s.first-1 ? `<button class="stq" data-stage="${g.s.id}">${ic("info")}What do I learn in Stage ${g.s.id}?</button>` : `<div class="stq stlock" data-stlock="${g.s.id}" role="note">${ic("lock")}Reach Stage ${g.s.id} to find out what you learn</div>`}` : ""}<div class="path">${pathRows(T, g.from, g.upto)}</div>`).join("")}`;
     o.hidden=false;
     o.querySelectorAll("[data-lv]").forEach(b=>{ b.onclick=()=>{ tick(); lessonView(+b.dataset.lv); }; });   // (owner, 16 Nov) the whole card, not only its "Exercises" / "Perfect" corner (the corner's button is inside it)
     o.querySelectorAll("[data-home]").forEach(b=>{ b.onclick=()=>tab("today"); });
@@ -1661,24 +1667,21 @@ const SHELL = (()=>{
 
   /* ---- (.78, Jon 17 Nov: "a 'what do I learn in stage 1?' bubble which, if you tap it, opens a card which explains what you'll learn") what a
      stage teaches: what you will be able to say, each with an example from the stage's own lessons (Marie says it on a tap), the words it
-     brings (face down until their lesson is passed), and how far the learner is. Made from the lessons served (words.js's canDo was
-     written before the rebuild: it left out "c'est / c'est pas" and yes and no, and Stage 2's said things no lesson yet brings). A line
-     whose lesson is not served yet is "coming"; `at` is the lesson in which the example is first said. ---- */
-  const STAGE_SAYS = {
-    1: [["Say your name and someone else's", "Tu t'appelles Marie.", 4], ["Say hello and how you are", "Ça va bien.", 7], ["Say what something is, and what it is not", "C'est pas une maison.", 10],
-        ["Count to ten and say how many", "Il y en a trois.", 9], ["Say what someone is doing", "Elle chante.", 8], ["Say what you are going to do", "Je vais chanter.", 10], ["Answer yes or no", "Oui, il parle.", 10]],
-    2: [["Say what there is", "Il y a une maison.", 13], ["Say what someone is not doing", "Il danse pas.", 13], ["Say thank you and goodbye", "Au revoir, Sylvie.", 13],
-        ["Ask what something is and what someone is called", "", 0], ["Name colours", "", 0], ["Say what someone has, and where they are going", "", 0], ["Count to twelve", "", 0]] };
+     brings (face down until their lesson is passed), and how far the learner is. (.93; rules.md R-164, P-3) The lines are the stage's
+     statements in words.js (`says`: the plan's STAGE_ENTRY.tsv, each with an example and `at`, the lesson of the course as built in
+     which the learner first says it for that statement; 0: not built yet). They were a table written here by hand, which went on
+     promising "Tu t'appelles Marie." and "Je vais chanter." after the course was re-sequenced. A line whose lesson is not served yet
+     is "coming". ---- */
   const keyFr = t=>String(t).toLowerCase().replace(/œ/g,"oe").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"").replace(/[^a-z ]/g," ").trim().split(/\s+/).join("_");      // as the page names Marie's clips
   function stageCard(id){ const st=(CW.stages||[]).find(x=>x.id===id); if(!st) return; const served=LESSONS.length;
-    const says=(STAGE_SAYS[id]||[]).map(([can, fr, at])=>{ const coming = !at || at>served, got = !coming && at<=G.furthest;
+    const says=(st.says||[]).map(([can, fr, at])=>{ const coming = !at || at>served, got = !coming && at<=G.furthest;
       return `<li class="${coming?"coming":got?"got":""}"><span class="mk">${coming ? "" : got ? ic("check") : ""}</span><span class="cw"><b>${esc(can)}</b>${coming ? `<small class="soon">Coming</small>` : `<button class="ex" data-clip="${keyFr(fr)}" lang="fr" aria-label="${esc(fr)}: play">${esc(fr)}${ic("speaker")}</button>`}</span></li>`; }).join("");
-    const words=[]; for(let n=st.first; n<=Math.min(st.last, served); n++){ const L=LESSONS[n-1]; if(!L) continue; cardsOf(L.id).forEach(c=>words.push({c, open:n-1<G.furthest})); }
+    const words=[]; for(let n=st.first; n<=Math.min(stageEnd(st), served); n++){ const L=LESSONS[n-1]; if(!L) continue; cardsOf(L.id).forEach(c=>words.push({c, open:n-1<G.furthest})); }
     const chips=words.map(({c, open})=>open ? `<button class="wchip" data-clip="${esc(c.clip||"")}" lang="fr" aria-label="${esc(c.fr)}: play">${esc(c.fr)}</button>` : `<span class="wchip down" aria-hidden="true" style="--w:${Math.max(3, Math.min(9, c.fr.length))}"></span>`).join("");
     const nOpen=words.filter(w=>w.open).length;
-    const of=st.last-st.first+1, done=Math.max(0, Math.min(st.last, G.furthest)-st.first+1);
-    const prog=`<div class="stprog"><span><b>${done}</b> of ${of} ${pl(of, "lesson")} done</span><div class="segs" aria-hidden="true">${Array.from({length:of},(_,k)=>`<i class="${k<done?"on":""}"></i>`).join("")}</div></div>`;
-    info(`Stage ${id} · Lessons ${st.first}–${st.last}`, `${prog}<h3 class="stsec">You will be able to</h3><ul class="stsay">${says}</ul>${words.length ? `<h3 class="stsec">Its words<span>${nOpen} of ${words.length}</span></h3><div class="wchips">${chips}</div>` : ""}`);
+    const {done, of, segs}=stageCount(st);
+    const prog=`<div class="stprog"><span><b>${done}</b> ${of ? `of ${of} ${pl(of, "lesson")}` : pl(done, "lesson")} done</span><div class="segs" aria-hidden="true">${Array.from({length:segs},(_,k)=>`<i class="${k<done?"on":""}"></i>`).join("")}</div></div>`;
+    info(st.last==null ? `Stage ${id}` : `Stage ${id} · Lessons ${st.first}–${st.last}`, `${prog}<h3 class="stsec">You will be able to</h3><ul class="stsay">${says}</ul>${words.length ? `<h3 class="stsec">Its words<span>${nOpen} of ${words.length}</span></h3><div class="wchips">${chips}</div>` : ""}`);
     const sh=$("sheet"); sh.querySelectorAll("[data-clip]").forEach(b=>{ if(!b.dataset.clip) return; b.onclick=()=>{ tick(); playClip(b.dataset.clip, b); }; }); }
 
   /* ---- who is learning? (more than one learner on this phone) ---- */

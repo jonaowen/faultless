@@ -411,7 +411,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-20.92";      // must equal version.json
+const APP_VERSION="2026-11-21.93";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -982,7 +982,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:92, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:93, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1027,6 +1027,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=90)) migrate90();
   if(!(s.courseRev>=91)) migrate91();      // (.91) a state saved when Lessons 1-7 were served: a learner who passed Lesson 7 goes on to Lesson 8      // (.90) a state saved when Lessons 1-6 were served: a learner who passed Lesson 6 goes on to Lesson 7      // (.89) a state saved when Lessons 1-5 were served: a learner who passed Lesson 5 goes on to Lesson 6      // (.88) a state saved when Lessons 1-4 were served: a learner who passed Lesson 4 goes on to Lesson 5
   if(!(s.courseRev>=92)) migrate92();      // (.92) no new lesson: the records of the exercises that now carry the own-name frame are dropped (CHANGED_92)
+  if(!(s.courseRev>=93)) migrate93();      // (.93) no new lesson: the naming of action words on "Dis." comes into Lessons 4-8; a learner past a new exercise does it first
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1132,6 +1133,31 @@ function migrate91(){ carryOn(91, 7, CHANGED_91); }
    test changed. No lesson is added: carryOn(92, 8, ...) moves nobody. */
 const CHANGED_92 = ["L1E14", "L1E16", "L1E17", "L2E11", "L2E15", "L2E17", "L2E18", "L3E11", "L3E12", "L3E13", "L4E12", "L5E9"];
 function migrate92(){ carryOn(92, 8, CHANGED_92); }
+/* (.93) THE VOCABULARY GATE (the owner, 20 and 21 Nov 2026: an action word is not in the learner's vocabulary until the learner has said it
+   from its lit card on Marie's "Dis.", with no model and no lead; the cue is taught first, with models and leads). Five new exercises, each
+   one or two places before its lesson's Retour, the exercises before them as they were: L4E13 teaches the cue (on danse and dessine),
+   L5E11 is the gate of the four action words, L6E13, L7E15 and L8E12 name them in turn. No lesson is added: carryOn(93, 8, ...) moves
+   nobody. CHANGED_93: the exercises whose items changed between .92 and .93 (the exercises after a new one in Lessons 4 and 6, which
+   take the next id; each Retour; L8E2, drawn again), computed by dev/harness/changed_exercises.py against the .92 app and checked by the
+   release test changed. NEW_93: the new exercises by lesson. A learner inside one of these lessons meets its new exercise on the next
+   start (a lesson runs every exercise not finished, from the first). A learner already PAST a lesson with a new exercise would meet
+   "Dis." later without having been taught it: that learner is sent once through each new exercise of the lessons behind them, in order
+   (the cue taught, the gate, the namings), then back to their place (S.detour, as migrate62 and migrate64). */
+const CHANGED_93 = ["L4E13", "L4E14", "L5E11", "L6E11", "L6E12", "L6E13", "L6E14", "L7E13", "L7E14", "L7E15", "L8E12", "L8E2"];
+const NEW_93 = [[3, "L4E13"], [4, "L5E11"], [5, "L6E11"], [6, "L7E13"], [7, "L8E12"]];
+function migrate93(){ carryOn(93, 8, CHANGED_93); newFirst(93, NEW_93); }
+/* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
+   whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
+   already running gets them added before its way back). A learner in or before a lesson with a new exercise needs nothing: the lesson
+   runs every exercise not finished. One log line says what this learner does first. */
+function newFirst(rev, fresh){
+  const place = S.detour && S.detour.back ? S.detour.back : {lesson:S.lesson||0, ex:S.ex||0};
+  const legs = fresh.filter(([li])=>li<place.lesson && LESSONS[li]).map(([li, id])=>({lesson:li, ids:[id]}));
+  if(!legs.length) return;
+  if(S.detour) S.detour.more=(S.detour.more||[]).concat(legs);
+  else S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}};
+  (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+(place.ex+1), heard:[]});
+}
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -1984,6 +2010,11 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
         withP = !sc.bothDoing && ((sc.learnerDoing && !sc.teacherDoing && same(sc.learnerDoing)) || (sc.teacherDoing && !sc.learnerDoing && same(sc.teacherDoing))) ? p0.person : null;
         bo=Object.assign({}, b[2], {left:true}, withP ? {withP} : {}); }
       if(b && b[0]==="pair"){ fig("marie", b[1]); fig("you", b[2].you); } else if(b && b[0]!=="handed") fig(b[0], b[1], bo);
+      // (.93; truth93 PICTURE FIRST BUILT, the naming of an action word on "Dis.": L4E13's models, L5E11-a1 ...) litPlay draws the card a spoken
+      // model or test points at once more, as the lit card (spec.moving): that picture is drawn ahead too
+      if((it.kind==="model" || it.kind==="test") && !it.tap){ const m=/^s(\d+)$/.exec(it.at||""), x=m && row[+m[1]];
+        if(x && typeof x==="object" && x.is==="picture card" && x.doing && ACT_NAME[x.doing] && !/^(not )?smiling$/.test(x.doing)){
+          const y=Object.assign({}, x, {moving:true}); add("row|"+JSON.stringify(y), ()=>picture(y)); } }
       const acts = it.kind==="show" || it.kind==="do" || it.kind==="figure";
       if(acts && it.act && it.act!=="tap"){      // presentAct: Marie does it (show), the learner's figure does it, or Pierre's / Sylvie's (a figure item on their place)
         const m=/^s(\d+)$/.exec(it.at||""), x=m && row[+m[1]], by=x && typeof x==="object" && (x.person==="paul" || x.person==="julie") ? x.person : null;
