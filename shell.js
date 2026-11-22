@@ -1684,23 +1684,25 @@ const SHELL = (()=>{
     info(st.last==null ? `Stage ${id}` : `Stage ${id} · Lessons ${st.first}–${st.last}`, `${prog}<h3 class="stsec">You will be able to</h3><ul class="stsay">${says}</ul>${words.length ? `<h3 class="stsec">Its words<span>${nOpen} of ${words.length}</span></h3><div class="wchips">${chips}</div>` : ""}`);
     const sh=$("sheet"); sh.querySelectorAll("[data-clip]").forEach(b=>{ if(!b.dataset.clip) return; b.onclick=()=>{ tick(); playClip(b.dataset.clip, b); }; }); }
 
-  /* ---- who is learning? (more than one learner on this phone) ---- */
+  /* ---- who is learning? (more than one learner on this phone; mode "pick" after removing a user: always shown, no Back button) ---- */
   function who(force){ const o=$("whoL"); if(!o) return; let chosen=false; try{ chosen=sessionStorage.getItem("frDIn.chosen")==="1"; }catch(e){}
+    const pick = force==="pick", showBack = force===true;
     if(!force && (USERS.list.length<2 || chosen || running)) return false;
-    o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && force?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), {view:"portrait", wear:wornOf(u.id)})}<span${u.name.length>9?' class="ln"':""}>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div>${force?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
+    o.innerHTML=`<h1>Who is learning?</h1><div class="pgrid">${USERS.list.map(u=>`<button class="pcard${u.id===uid && showBack?" on":""}" data-u="${esc(u.id)}">${AV.svg(AV.get(u.id), {view:"portrait", wear:wornOf(u.id)})}<span${u.name.length>9?' class="ln"':""}>${esc(u.name)}</span></button>`).join("")}<button class="pcard add" id="whoAdd">${ic("plus")}<span>Add someone</span></button></div>${showBack?`<button class="btn quiet" id="whoBack" style="margin-top:18px">Back</button>`:""}`;
     o.hidden=false;
     o.querySelectorAll("[data-u]").forEach(b=>{ b.onclick=()=>{ tick("go"); try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} if(b.dataset.u===uid){ o.hidden=true; afterWho(); return; } switchUser(b.dataset.u); }; });
-    $("whoAdd").onclick=()=>ask({title:"Add someone", label:"Their first name", ok:"Add", value:""}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name."; try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} return addUser(nm); });
+    $("whoAdd").onclick=()=>ask({title:"Add someone", label:"Their first name", ok:"Add", value:"", stayOnOk:true}, v=>{ const nm=cleanName(v||""); if(!nm) return "Type a name."; try{ sessionStorage.setItem("frDIn.chosen","1"); }catch(e){} return addUser(nm); });
     const bk=$("whoBack"); if(bk) bk.onclick=()=>{ o.hidden=true; };
     return true; }
 
   /* ---- a small sheet that asks one thing (a name) ---- */
   function ask(o, done){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(o.title)}"><h2>${esc(o.title)}</h2>${o.label ? `<label for="askIn">${esc(o.label)}</label>` : ""}<input id="askIn" aria-label="${esc(o.label||o.title)}" type="text" maxlength="30" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" value="${esc(o.value||"")}"><div class="msg" id="askMsg"></div><div class="two"><button class="btn quiet" id="askNo">Cancel</button><button class="btn" id="askOk">${esc(o.ok)}</button></div></div>`;
     sheetOpen(sh, false); const inp=$("askIn"); setTimeout(()=>inp.focus(), 60);
-    const close=()=>sheetClose(sh);
+    let busy=false;
+    const close=()=>{ if(!busy) sheetClose(sh); };
     $("askNo").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
-    const go=()=>{ const m=done(inp.value); if(m){ $("askMsg").textContent=m; } else close(); };
-    $("askOk").onclick=go; inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); }); }
+    const go=()=>{ if(busy) return; const m=done(inp.value); if(m){ $("askMsg").textContent=m; } else { busy=true; $("askOk").disabled=true; $("askNo").disabled=true; if(!o.stayOnOk){ busy=false; close(); } } };
+    $("askOk").onclick=go; inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } }); }
   function info(title, html, closeLabel){ const sh=$("sheet"); sh.innerHTML=`<div class="sh" role="dialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2><div class="sh-body">${html}</div><button class="btn${/class="btn/.test(html)?" quiet":""}" id="infoOk">${esc(closeLabel||"Close")}</button></div>`;
     sheetOpen(sh); const close=()=>sheetClose(sh); $("infoOk").onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; }
 
@@ -1903,7 +1905,10 @@ const SHELL = (()=>{
         sure({title:"Are you sure?", body:"Everything of "+nm+"'s will be gone. This cannot be undone.", ok:"Yes, remove", no:"Keep", warn:true}, ()=>{
           let m=""; const c0=window.confirm; try{ window.confirm=()=>true; m=removeUser(uid); }catch(e){ m="That did not work. Nothing was removed."; } finally{ window.confirm=c0; }      // asked twice here: the page's own grey box does not ask a third time
           if(!USERS.list.some(x=>x.id===uid)){ try{ localStorage.removeItem(GK); localStorage.removeItem(AK(uid)); }catch(e){} }      // the record and the figure go only once the learner is gone (they went first: "Cancel" at the third box left the learner without his figure)
-          if(m){ info("Not removed", `<p>${esc(m)}</p>`); return true; } }); return true; }); };
+          if(m){ info("Not removed", `<p>${esc(m)}</p>`); return true; }
+          // (.96) lock the sheet while removeUser waits for IndexedDB clip cleanup before reloading to "Who is learning?"
+          const sh=$("sheet"); sh.onclick=null; sh.innerHTML=`<div class="sh" role="status" aria-label="Removing"><h2>Removing ${esc(nm)}…</h2><div class="sh-body"><p>Returning to Who is learning.</p></div></div>`;
+          return true; }); return true; }); };
     $("youTester").onclick=()=>{ tab("today"); $("panel").hidden=false; try{ renderPanel(); }catch(e){} }; }
   function about(){ info("About Flawless French", `<p><b>Flawless French</b> teaches French the way a good teacher does: Marie says, shows and asks; you answer out loud or tap a picture; every answer is heard, and a mistake is put right at once.</p>
       <p><b>How the course moves on.</b> The next lesson opens when every exercise of a lesson is perfect. You can do any lesson you have done again, at any time.</p>
@@ -2050,7 +2055,8 @@ const SHELL = (()=>{
     // A new learner goes straight to Home: no name screen, no pictograms, no maker, no moments first. The figure starts neutral (changed in the
     // Wardrobe's "How you look"); the first name, which Lesson 1 needs, is one field on Lesson 1's card; the two moments wait on Home's rings.
     firstRun();
-    if(!who(false)) welcome();
+    let showWho=false; try{ if(sessionStorage.getItem("frDIn.showWho")==="1"){ sessionStorage.removeItem("frDIn.showWho"); showWho="pick"; } }catch(e){}
+    if(!who(showWho)) welcome();
     G.lastSeen=new Date().toISOString(); store();
     if(document.readyState==="complete") offline(); else window.addEventListener("load", offline);
     // the first screen is drawn (home, who is learning, the first run's name or the welcome back): the loading screen hands over once the faces are in
