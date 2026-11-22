@@ -405,6 +405,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson8.js"></script>
 <script src="course/lesson9.js"></script>
 <script src="course/lesson10.js"></script>
+<script src="course/lesson11.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -413,7 +414,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-22.95";      // must equal version.json
+const APP_VERSION="2026-11-22.96";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -735,11 +736,14 @@ function genItem(it){
   // a cue said by a pictured model learner in their own voice (course field cue_by): whose recordings, and where they are
   if(it.cueVoice){ o.cueVoice=it.cueVoice; o.cueAt=it.cueAt||"none"; }
   // .24 (course_dise6): the written sentence, counting by touch, a hand resting on a picture, reading, the confirmation line
-  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner","intro","cuePoints"]) if(it[k]) o[k]=it[k];
+  for(const k of ["text","touch","hand","read","confirm","soundPair","sweep","slow","corr","tapInfo","youBox","ear","alsoOk","modelFrom","ownTag","board","boardPoint","boardPointLearner","intro","cuePoints","cueVoices"]) if(it[k]) o[k]=it[k];
   /* (.90, Lesson 7: "Elle danse. Et Pierre ?") a cue of two sentences about two people: the gold border (Marie's hand) is on the one each
      sentence is about while it is said (the course's cue_points, one place a unit of the cue); every path that says the cue (the test, a
      model, a correction, a model learner's cue) reads them from the units it is given (say, cueAs) */
   if(Array.isArray(o.cuePoints) && o.cuePoints.length===tu.length){ o.teacherUnits.points=o.cuePoints; if(o.questionUnits.length===tu.length) o.questionUnits.points=o.cuePoints; }
+  /* (.96, Lesson 11 row 8: "Je voyage. Et toi ?") a cue spoken by two voices in turn (Pierre's sentence, then Marie's "Et toi ?", R-036):
+     cue_voices names each unit's voice ("paul", "julie", "teacher"), parallel to cue_points */
+  if(Array.isArray(o.cueVoices) && o.cueVoices.length===tu.length){ o.teacherUnits.voices=o.cueVoices; if(o.questionUnits.length===tu.length) o.questionUnits.voices=o.cueVoices; }
   if(+(it.pauseAfterMs||it.pause_after_ms)>0) o.pauseAfterMs=+(it.pauseAfterMs||it.pause_after_ms);      // (.46) course_fix, design log section 58
   if(it.mark===false) o.mark=false;
   if(it.text && it.text.stage==="W1"){ const b=it.teacher.replace(/^\s*répète\s*:\s*/i,"").trim(); o.w1=true; o.bareUnits=[b.charAt(0).toUpperCase()+b.slice(1)]; }
@@ -984,7 +988,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:95, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:96, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1032,6 +1036,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=93)) migrate93();      // (.93) no new lesson: the naming of action words on "Dis." comes into Lessons 4-8; a learner past a new exercise does it first
   if(!(s.courseRev>=94)) migrate94();      // (.94) a state saved when Lessons 1-8 were served: a learner who passed Lesson 8 goes on to Lesson 9
   if(!(s.courseRev>=95)) migrate95();      // (.95) fix release: names' gate in Lesson 2 (C'est Pierre. / Moi, c'est ... moved from L1 to L2), C7 F-NAME-12 in L5, dropped-word listening guard
+  if(!(s.courseRev>=96)) migrate96();      // (.96) a state saved when Lessons 1-10 were served: a learner who passed Lesson 10 goes on to Lesson 11
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1163,6 +1168,8 @@ function migrate94(){ carryOn(94, 8, CHANGED_94); }
    for C7 (b). No lesson is added: carryOn(95, 10, CHANGED_95) moves nobody. */
 const CHANGED_95 = ["L1E5", "L1E6", "L1E7", "L1E8", "L1E9", "L1E10", "L1E11", "L1E12", "L1E13", "L1E14", "L1E15", "L1E16", "L1E17", "L2E5", "L2E6", "L2E7", "L2E8", "L2E9", "L2E10", "L2E11", "L2E12", "L2E14", "L2E15", "L2E16", "L3E3", "L3E10", "L4E1", "L5E12"];
 function migrate95(){ carryOn(95, 10, CHANGED_95); }
+const CHANGED_96 = ["L5E4", "L5E6", "L5E8", "L5E13", "L6E6", "L6E9", "L6E12", "L6E15", "L7E12", "L8E11", "L9E10", "L10E5", "L10E7", "L10E9", "L10E12", "L10E13"];
+function migrate96(){ carryOn(96, 10, CHANGED_96); }
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
    already running gets them added before its way back). A learner in or before a lesson with a new exercise needs nothing: the lesson
@@ -1585,7 +1592,7 @@ function removeUser(id){
   USERS.list=USERS.list.filter(x=>x.id!==id); try{ localStorage.removeItem(SAVE_NS+".u."+id); localStorage.removeItem("frDIn.pg."+id); }catch(e){}
   // (.77) only this learner's keys go; the page starts again once their recordings are gone (or after 2 s), never before
   let clips=Promise.resolve(); try{ clips=clipStore("all").then(all=>Promise.all(Object.keys(all).filter(k=>k.startsWith(id+"_")).map(k=>clipStore("del", k)))).catch(()=>{}); }catch(e){}
-  if(USERS.current===id){ USERS.current=USERS.list[0].id; saveUsers(); Promise.race([clips, new Promise(r=>setTimeout(r, 2000))]).then(()=>location.reload()); } else { saveUsers(); renderPanel(); }
+  if(USERS.current===id){ USERS.current=USERS.list[0].id; saveUsers(); try{ sessionStorage.removeItem("frDIn.chosen"); sessionStorage.setItem("frDIn.showWho","1"); }catch(e){} Promise.race([clips, new Promise(r=>setTimeout(r, 2000))]).then(()=>location.reload()); } else { saveUsers(); renderPanel(); }
   return "";
 }
 
@@ -1934,10 +1941,11 @@ function unitClips(ex){ let slow=true; try{ slow=/"slow":true/.test(JSON.stringi
     if(it.type==="model" && it.voice && it.voice!=="teacher") urls.add(LEARNER_CLIP(say(it.voice, it.answerUnits)));
     if(it.cueVoice && it.questionUnits.length){ if(it.questionUnits.points) for(const u of it.questionUnits) urls.add(LEARNER_CLIP(say(it.cueVoice, [u])));      // (.90) a cue with cue points: each unit its own clip (cueAs)
       else urls.add(LEARNER_CLIP(say(it.cueVoice, it.questionUnits))); }
+    if(Array.isArray(it.cueVoices) && it.questionUnits.length){ it.questionUnits.forEach((u, idx)=>{ const v=it.cueVoices[idx]; if(v && v!=="teacher") urls.add(LEARNER_CLIP(say(v, [u]))); }); }
     if(it.introOnly) urls.add(LEARNER_CLIP(answerUnits(it).join(" "))); })); }catch(e){}
   try{ ex.parts.forEach(p=>p.items.forEach(it=>{ const a=(it.answerUnits||[]).join(" ").trim();      // (.91) the line Marie corrects "Je V." with (corrModel jeOwn: "Répète : je V."; answerUnits(it) needs the exercise playing, so the units are read here)
-    // (.94) and the line she corrects "Tu V." with, said to her of her own action ("Et moi ?" -> "Tu danses.", at "self": tuOwn, "Répète : tu V.")
-    if(!((it.at==="you" && /^Je \S+\.$/.test(a)) || (it.at==="self" && /^Tu \S+\.$/.test(a))) || /^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "))) return;
+    // (.94) and the line she corrects "Tu V." with, said to Marie or a model learner ("Et moi ?" -> "Tu danses."): tuOwn, "Répète : tu V."
+    if(!((youAt(it) && /^Je \S+\.$/.test(a)) || /^Tu \S+\.$/.test(a)) || /^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "))) return;
     clipsOf(["Répète : "+a.charAt(0).toLowerCase()+a.slice(1)], false).forEach(u=>urls.add(u)); })); }catch(e){}
   return [...urls]; }
 function commonClips(){ const urls=clipsOf(["Vas-y.", "Non.", "Oui.", "Touche.", "À toi.", "Lis.", "Compte.", "Écoute.", "Avec moi.", "Répète :", "Je m'appelle "+VOCAB.claire.name+"."]);
@@ -2231,6 +2239,7 @@ function learnerLines(lessons){
   lessons.forEach(i=>LESSONS[i].exercises.forEach(e=>e.parts.forEach(p=>p.items.forEach(it=>{
     if(it.type==="model" && it.voice && it.voice!=="teacher") want.add(say(it.voice, it.answerUnits));
     if(it.cueVoice && it.questionUnits.length){ if(it.questionUnits.points) for(const u of it.questionUnits) want.add(say(it.cueVoice, [u])); else want.add(say(it.cueVoice, it.questionUnits)); }      // a cue in a model learner's own voice ((.90) with cue points: each unit's clip)
+    if(Array.isArray(it.cueVoices) && it.questionUnits.length){ it.questionUnits.forEach((u, idx)=>{ const v=it.cueVoices[idx]; if(v && v!=="teacher") want.add(say(v, [u])); }); }
     if(it.introOnly) want.add(answerUnits(it).join(" ")); }))));        // the introduction: the model learner says it with the teacher
   return [...want];
 }
@@ -2298,8 +2307,18 @@ async function say(units, who="tutor", pause=S.settings.pause, tail=0){
   else for(let i=0;i<units.length;i++){
     if(CUT.on) break;                          // (.57) the cue was cut by a tap: the rest is not said
     if(units.points && units.points[i] && who!=="group") cueMark(units.points[i]);      // (.90) the gold on the one this sentence is about
-    const cp = who!=="group" && countParts(units[i]);
-    if(who==="group") await speakOne(units[i], {group:true}); else if(cp) await sayCount(cp); else await speakTeacher(units[i]);
+    const uv = units.voices && units.voices[i];
+    if(uv && uv!=="teacher"){
+      document.getElementById("tutor").classList.remove("talk");
+      const lw = uv in VOICE_PREFIX ? uv : "julie";
+      speakLit(lw, true); caption("["+voiceName(lw)+"] "+units[i]); trace("say["+voiceName(lw)+"]: "+units[i]);
+      if(!(await playLearner(voiceLine(lw, [units[i]])))){ trace("FAULT no recording of "+voiceName(lw)+" for \""+units[i]+"\": the phone's voice said it"); await speakOne(units[i], {group:true}); }
+      speakLit(lw, false);
+      if(tutorTalks && i<units.length-1) document.getElementById("tutor").classList.add("talk");
+    } else {
+      const cp = who!=="group" && countParts(units[i]);
+      if(who==="group") await speakOne(units[i], {group:true}); else if(cp) await sayCount(cp); else await speakTeacher(units[i]);
+    }
     if(i<units.length-1) await (TAPARM.cut ? sleepCut(pause) : sleep(pause));
   }
   document.getElementById("tutor").classList.remove("talk");
@@ -3518,7 +3537,7 @@ function genPicture(e){ if(e && e.is==="face"){ const g=document.createElementNS
   try{ return genPicture0(e); }catch(err){ trace("FAULT picture "+(e.person||e.is)+": "+err.message); return placeholder(e.person||e.is); } }
 function genPicture0(e){
   const blank=()=>document.createElementNS(svgNS,"g");
-  if(e.person==="you") return learnerCard();                // the learner's own card and name tag (.24, markOwn)
+  if(e.person==="you") return (e.doing && window.PICS) ? PICS.person(Object.assign({sex:S.learnerGender==="f"?"f":"m"}, e), learnerTagName()) : learnerCard();                // (.96) the learner's own card doing an action in a multi-person row (Lesson 11), or their still card (.24, markOwn)
   /* (.90; the coordinator's ruling (a) on Lesson 7's "Et <name> ?", 20 Nov 2026) Marie's own card in the row, doing her own action: the
      library's Marie (people.js PICS.person, spec.person "marie"), her name tag on the card */
   if(e.person==="claire") return window.PICS ? PICS.person(Object.assign({}, e, {person:"marie"}), "Marie") : portrait("claire");
@@ -4270,7 +4289,7 @@ function boardShow(b){
    (BOARD_FLOOR: the top of her hair, measured on the screen at 291), and between the side portraits when they are shown (their top at 258,
    their inner edges at 86 and 314: BOARD_SIDES) */
 const BOARD_FLOOR = 291, BOARD_SIDES = {top:254, x0:88, x1:312};
-const BOARD_LINE_MAX = 336;      // (.92) the widest a one-line board's text may be (scene units; the face adds 24 each side: 384 of 400)
+const BOARD_LINE_MAX = 328;      // (.92, .96) the widest a one-line board's text may be (scene units; the face adds 24 each side: 376 of 400)
 const boardRoomSig = () => { let h=0; try{ const b=frameRow.getBBox(); h=Math.round(b.y+b.height); }catch(e){} return (document.querySelectorAll("#sideBadges > g").length)+":"+h+":"+(ACTBOX.key||"")+":"+(HAND.at||""); };
 /* the bottom of an element in the board's own coordinates (the hand resting on a picture is drawn in another layer) */
 const bottomInBoard = el => { try{ const r=el.getBoundingClientRect(), m=TXT.g.getScreenCTM(); return r.height ? (r.bottom - m.f)/m.d : 0; }catch(e){ return 0; } };
@@ -5771,13 +5790,14 @@ const LONE_BY = {"Un.": "julie", "Il.": "julie", "Elle.": "paul"};
 /* (.91) an item whose answer is the learner's own "Je V." about their own figure ("Je danse. Et toi ?" -> "Je saute.": at "you", not a
    "Répète :" test): its correction is never Marie's plain "Je V." (corrModel); its right answers' recordings are kept (S.jeClips, as the
    own-name ones) for the model where no turn follows */
-const jeOwn = it => !!it && it.at==="you" && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
+const youAt = it => { if(!it) return false; if(it.at==="you") return true; const m=/^s(\d+)$/.exec(it.at||""), x=m && it.scene && it.scene.row && it.scene.row[+m[1]]; return !!(x && typeof x==="object" && x.person==="you"); };
+const jeOwn = it => !!it && youAt(it) && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
 /* (.91; reader 91's S-8) a "Répète : je V." item of the learner's own figure (Lesson 8 row 5): its no-turn model says no "Je V." (corrModel) */
-const jeRep = it => !!it && it.at==="you" && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : je \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
-/* (.94, Lesson 9) an item whose answer is "Tu V." said to Marie of her own action ("Et moi ?" -> "Tu danses.": at "self", not a "Répète :"
-   test): as jeOwn, its correction is never Marie's plain "Tu V." (corrModel); its right answers' recordings are kept (S.jeClips) */
-const tuOwn = it => !!it && it.at==="self" && /^Tu \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
-const tuRep = it => !!it && it.at==="self" && /^Tu \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : tu \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
+const jeRep = it => !!it && youAt(it) && /^Je \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : je \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
+/* (.94, Lesson 9; .96, Lesson 11) an item whose answer is "Tu V." said to Marie or a model learner ("Et moi ?" -> "Tu danses."):
+   as jeOwn, its correction is never Marie's plain "Tu V." (said to the learner, whose figure does another action); its right answers' recordings are kept (S.jeClips) */
+const tuOwn = it => !!it && it.at && it.at!=="you" && /^Tu \S+\.$/.test(answerUnits(it).join(" ").trim()) && !/^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "));
+const tuRep = it => !!it && it.at && it.at!=="you" && /^Tu \S+\.$/.test(answerUnits(it).join(" ").trim()) && /^R[ée]p[èe]te : tu \S+\.$/i.test((it.questionUnits||[]).join(" ").trim());
 async function jeRecording(task){
   audioUnlock(); if(!actx) return null;
   const want=answerUnits(task).join(" ").trim();
@@ -6015,7 +6035,12 @@ async function runParts(parts, {run="first", firstSeen=new Set(), errorsByTask={
       /* (.37, Jon 12 Nov 21:00: "for step 3 it should go back two 'things': two problems, sounds, pictures, etc. Where it is closer to the
          start of the part it should go back to the start of the part. This is a time saving device.") back two tasks from the one with
          the error, with what goes with the first of them; within the first two tasks of the part, back to its start */
-      { let j=i, back=0; while(j>0 && back<2){ j--; if(items[j].type==="task") back++; }
+      if(run && run.only && run.escalate){
+        // (.96; Jon, 22 Nov 2026 16:22 UTC) an error on a delayed test escalates back to Step 1 of the part-firming procedure:
+        // expand from the single delayed task to the full part's test tasks and repeat from the start of the part
+        run="test"; items=ask(itemsFor(part, "test", shown)); i=0;
+        trace("step 3 (delayed escalation): back to the start of part "+part.id+" ("+items.filter(x=>x.type==="task").length+" tasks)");
+      } else { let j=i, back=0; while(j>0 && back<2){ j--; if(items[j].type==="task") back++; }
         if(back<2){ items = ask(itemsFor(part, run==="first" ? "repeat" : run, shown)); i=0; trace("step 3: back to the start of the part"); }
         else { while(j>0 && goesBefore(items[j-1], j-1, items)) j--; i=j; rewound=true; trace("step 3: back two tasks, to "+(items[j].id||items[j].type)); } }
       prevTest=false; prevTarget=null; prevItem=null;
@@ -6033,7 +6058,7 @@ async function runExercise(li, ei){
   BOARD_TALL = ex.parts.some(p=>p.items.some(it=>it.board && String(it.board.text||"").split("\n").length>=4));
   S.lesson=li; S.ex=ei; save();
   curSceneKey=null;
-  const hadError = await exerciseRuns(ex, {afterEx: nextExId(ex.id), lessonStart: nextLessonId(lesson.id)});
+  const hadError = await exerciseRuns(ex, {afterEx: nextExId(ex.id), lessonStart: lessonAfterId(lesson.id)});
   S.exHadError[ex.id]=hadError; S.finished[ex.id]=true; save(); try{ UI.exerciseDone(); }catch(e){}
 }
 // an exercise's own run (every part, with its corrections) and, after an error, step 5; true when it had an error (runExercise; runCarried, R4c)
@@ -6097,7 +6122,7 @@ async function runCarried(id, anchor){
 }
 async function runR4c(lesson){
   const R=r4cFor(lesson); if(!R || !R.left.length) return;
-  const anchor={afterEx: lesson.exercises[0].id, lessonStart: nextLessonId(lesson.id)};
+  const anchor={afterEx: lesson.exercises[0].id, lessonStart: lessonAfterId(lesson.id)};
   while(R.left.length){ const id=R.left[0]; const had=await runCarried(id, anchor);
     R.left.shift(); if(had!==null){ R.had=R.had||{}; R.had[id]=had; } save(); }
   trace("R4c: done ("+R.ids.join(", ")+")");
@@ -6121,8 +6146,20 @@ async function runDelayed(d, anchor){
   curSceneKey=null;
   trace("delayed test "+d.key+" (passed so far "+(d.passed||0)+")");
   await checkShow(d.lesson, d.ex, d.part);      // (16 Nov) the label "From Lesson 4" over the stage (the first time, its card)
-  const hadError = await runParts([part], {run: (d.tasks && d.tasks.length) ? {only:new Set(d.tasks)} : "test", anchor});
-  if(!hadError){ d.passed=(d.passed||0)+1; if(d.passed>=2) S.delayed=S.delayed.filter(x=>x!==d); }
+  const firstSeen=new Set(), errorsByTask={};
+  const hadError = await runParts([part], {run: (d.tasks && d.tasks.length) ? {only:new Set(d.tasks), escalate:true} : "test", firstSeen, errorsByTask, anchor});
+  if(hadError){
+    // (.96; Jon, 22 Nov 2026 16:22 UTC) error on a delayed test escalates back to Step 1 of the part-firming procedure:
+    // repeat the part (done inside runParts via escalate:true), finish any remaining parts of the original exercise,
+    // then run Step 5 (repeat the erred task(s) of that exercise); scheduleDelayed has already reset d.passed=0 and queued
+    // the delayed check after the next exercise and at the start of the next lesson.
+    const pi=ex.parts.indexOf(part), rest=pi>=0 ? ex.parts.slice(pi+1) : [];
+    if(rest.length){ trace("delayed test error: continuing "+ex.id+" through remaining part(s): "+rest.map(p=>p.id).join(", "));
+      await runParts(rest, {run:"test", firstSeen, errorsByTask, anchor}); }
+    const only=new Set(Object.keys(errorsByTask).filter(k=>!k.startsWith("__") && !(errorsByTask.__limited||new Set()).has(k)));
+    if(only.size){ ph("the tasks with an error again (step 5)"); trace("delayed test error: step 5 on "+ex.id+": "+[...only].join(", "));
+      await runParts(ex.parts, {run:{only}, firstSeen, errorsByTask, anchor}); }
+  } else { d.passed=(d.passed||0)+1; if(d.passed>=2) S.delayed=S.delayed.filter(x=>x!==d); }
   save();
 }
 
@@ -6141,7 +6178,7 @@ async function main(){
   // start of a lesson: delayed tests due at the start of this lesson
   if(S.ex===0 && !S.finished[lesson.exercises[0].id]){
     await runR4c(lesson);      // (R4c) after a duplicate's last copy: its exercises that are not firm, first
-    for(const d of S.delayed.filter(x=>x.dueLessonStart===lesson.id)){ d.dueLessonStart=null; await runDelayed(d, {afterEx: lesson.exercises[0].id, lessonStart: nextLessonId(lesson.id)}); }
+    for(const d of S.delayed.filter(x=>x.dueLessonStart===lesson.id)){ d.dueLessonStart=null; await runDelayed(d, {afterEx: lesson.exercises[0].id, lessonStart: lessonAfterId(lesson.id)}); }
   }
   /* Every exercise of the lesson that is not finished, from the first: not only those from the saved place on. Run of 10 Nov
      16:06: Exercise 2 had been left unfinished and the place moved past it (the tester panel's jump); the lesson then
@@ -6152,7 +6189,7 @@ async function main(){
     if(!S.finished[exId]) await runExercise(S.lesson, ei);
     // end of an exercise: delayed tests due after it (also catches any left over if the app was closed here)
     if(ei===lesson.exercises.length-1){ carryPastEnd(lesson, exId); continue; }
-    for(const d of S.delayed.filter(x=>x.dueAfterEx===exId)){ d.dueAfterEx=null; await runDelayed(d, {afterEx: nextExId(exId), lessonStart: nextLessonId(lesson.id)}); }
+    for(const d of S.delayed.filter(x=>x.dueAfterEx===exId)){ d.dueAfterEx=null; await runDelayed(d, {afterEx: nextExId(exId), lessonStart: lessonAfterId(lesson.id)}); }
   }
   await endScreen();
 }
