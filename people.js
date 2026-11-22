@@ -888,8 +888,9 @@ const HOLD = { on: false, keep: null };
 const STAT = { frames: 0, ms: 0 };                                      // how long the drawing takes (for the measurements in dev/design)
 function tick(){
   let any = false; const t00 = performance.now();
-  for (const f of LIVE){ const g = f.ref.deref ? f.ref.deref() : f.ref; if (!g){ LIVE.delete(f); continue; } any = true;
+  for (const r of LIVE){ const g = r.deref ? r.deref() : r.g; if (!g){ LIVE.delete(r); continue; } any = true;
     if (!g.isConnected) continue;
+    const f = g.__clock;
     let t = 0; try { const svg = f.mark.ownerSVGElement; t = svg.getCurrentTime() - f.mark.getStartTime(); } catch (e){ t = -1; }
     if (t < 0){ if (f.t0 == null) continue; t = 0; }
     if (HOLD.on && !(HOLD.keep && HOLD.keep.contains && HOLD.keep.contains(g))){ if (!f.held){ f.held = true; f.last = null; f.draw(g, f.still || 0);
@@ -901,11 +902,16 @@ function tick(){
   STAT.frames++; STAT.ms += performance.now() - t00;
   if (any) requestAnimationFrame(tick); else ticking = false;
 }
-function play(g, mark, dur, draw, still){ LIVE.add({ ref: typeof WeakRef === "function" ? new WeakRef(g) : g, mark, dur, draw, still: still || 0 }); if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
+/* (.94; the held-pose test's browser ran out of memory, 21 Nov 2026) THE CLOCK KEEPS NO FIGURE ALIVE. The clock's list held, beside the weak
+   reference to the figure, its marker (an element inside the figure) and its drawing function (which keeps the figure's frames): so no figure
+   that had ever moved was let go, and a lesson's run ended with some 700 MB of them. What the clock needs is kept ON the figure (g.__clock);
+   the list holds the weak reference alone, and a figure that has left the page goes when nothing else holds it. */
+function play(g, mark, dur, draw, still){ g.__clock = { mark, dur, draw, still: still || 0 }; LIVE.add(typeof WeakRef === "function" ? new WeakRef(g) : { g }); if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
 function playKey(still, g, mark, dur, draw){ return play(g, mark, dur, draw, still); }      // (.90) the clip's key frame for the hold
 function holdFigures(on, keep){ HOLD.on = !!on; HOLD.keep = on ? (keep || null) : null;
-  if (!on) for (const f of LIVE){ if (f.held && f.smil) f.smil.forEach(el => { try { el.beginElement(); } catch (e) {} }); f.held = false; f.smil = null; } }
-function movingFigures(){ let n = 0; for (const f of LIVE){ const g = f.ref.deref ? f.ref.deref() : f.ref; if (g && g.isConnected) n++; } return n; }
+  if (!on) for (const r of LIVE){ const g = r.deref ? r.deref() : r.g, f = g && g.__clock; if (!f) continue; if (f.held && f.smil) f.smil.forEach(el => { try { el.beginElement(); } catch (e) {} }); f.held = false; f.smil = null; } }
+function movingFigures(){ let n = 0; for (const r of LIVE){ const g = r.deref ? r.deref() : r.g; if (g && g.isConnected) n++; } return n; }
+globalThis.__FIGCLOCK = () => LIVE.size;      // the figures the clock still lists (the memory test reads it)
 globalThis.__FIGHOLD = { hold: holdFigures, moving: movingFigures };      // (.90) the hold, for PICS (this clock is inside the figures' closure)
 
 /* FIG.figure(c, o): the <g> of a whole figure. c: the person (traits); o.clip: the action; o.still: one frame (o.phase, 0..1, default the
