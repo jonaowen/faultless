@@ -413,7 +413,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-21.94";      // must equal version.json
+const APP_VERSION="2026-11-22.95";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -984,7 +984,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:94, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:95, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1031,6 +1031,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=92)) migrate92();      // (.92) no new lesson: the records of the exercises that now carry the own-name frame are dropped (CHANGED_92)
   if(!(s.courseRev>=93)) migrate93();      // (.93) no new lesson: the naming of action words on "Dis." comes into Lessons 4-8; a learner past a new exercise does it first
   if(!(s.courseRev>=94)) migrate94();      // (.94) a state saved when Lessons 1-8 were served: a learner who passed Lesson 8 goes on to Lesson 9
+  if(!(s.courseRev>=95)) migrate95();      // (.95) fix release: names' gate in Lesson 2 (C'est Pierre. / Moi, c'est ... moved from L1 to L2), C7 F-NAME-12 in L5, dropped-word listening guard
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1155,6 +1156,13 @@ const NEW_BEHIND = [].concat(NEW_93);      // (.94) every fix release's new exer
    the .93 lessons item for item (CHANGED_94 is empty: release test changed). A learner who passed Lesson 8 goes on to Lesson 9. */
 const CHANGED_94 = [];
 function migrate94(){ carryOn(94, 8, CHANGED_94); }
+/* (.95) THE NAMES' GATE (the owner, 21 Nov 2026: "Yes, names and numbers should have the strict gate" / "All nouns") AND DROPPED-WORD
+   LISTENING GUARD (approved 22 Nov 2026). Lesson 1 introduces the three names, Danse/Saute, Deux/Trois, Un/Une, Combien ?, C'est qui ? -> Pierre.,
+   Pierre ou Sylvie ? (13 exercises; no grammar uses of names). Lesson 2 opens the names' gate (L2E7 tests-only C'est qui ? -> Pierre./Sylvie./Marie.)
+   before C'est Pierre., C'est qui ? -> C'est Pierre., Pierre et Sylvie, and Moi, c'est .... Lesson 5 adds C'est qui ? -> C'est Pierre. firming (L5E12)
+   for C7 (b). No lesson is added: carryOn(95, 10, CHANGED_95) moves nobody. */
+const CHANGED_95 = ["L1E5", "L1E6", "L1E7", "L1E8", "L1E9", "L1E10", "L1E11", "L1E12", "L1E13", "L1E14", "L1E15", "L1E16", "L1E17", "L2E5", "L2E6", "L2E7", "L2E8", "L2E9", "L2E10", "L2E11", "L2E12", "L2E14", "L2E15", "L2E16", "L3E3", "L3E10", "L4E1", "L5E12"];
+function migrate95(){ carryOn(95, 10, CHANGED_95); }
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
    already running gets them added before its way back). A learner in or before a lesson with a new exercise needs nothing: the lesson
@@ -1170,7 +1178,7 @@ function newFirst(rev, fresh){
   else S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}};
   (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+goesOnAt(place.lesson, place.ex), heard:[]});
 }
-const FIX_REVS = [92, 93];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
+const FIX_REVS = [92, 93, 95];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -2869,6 +2877,45 @@ function splitWordStart(text, words, expect, alsoOk=[]){
   if(dur>SPLIT_START.maxMs || gap>SPLIT_START.gapMs) return null;
   return {w, rest, dur, gap, conf:a.c, r};
 }
+/* (.95; the owner's run of 22 Nov 2026 09:49, Lesson 9 on the live .94, approved by the owner 22 Nov 2026)
+   DROPPED WORD LISTENING FAULT. In that run three right multi-word answers were written with a whole word missing and corrected
+   as errors: "Je saute." -> "saute" (L9E2-b1, 320 ms of speech at 1.47x volume before "saute"), "Tu sautes." -> "saute"
+   (L9E5-b6, 480 ms at 0.97x before "saute"), and "C'est Pierre." -> "c'est" (L9E1-a4, 400 ms at 0.98x after "c'est", which
+   also held the microphone open for 5.5 s waiting for a word already said). His real omission on the same run ("Pierre." for
+   "C'est Pierre.", L9E1-a1) had no speech before "pierre", and his real wrong verb ("Je danse." for "Je saute.") was not a
+   part of the expected answer.
+   So where the listener wrote a proper prefix or suffix of a multi-word expected answer (by the judge's own slot matcher,
+   never on REST) and the sound measure shows full-volume speech in the missing word's time window (at least 200 ms voiced
+   at 0.5x or more of the recognised word's peak), the turn is a listening fault (unscored, asked again; never auto-accepted).
+   A genuine omission has quiet in the missing slot and stays an error. Checked by dev/harness/tests/dropword_node.js. */
+const DROPPED_WORD = {minMs:200, minRatio:0.5, beforeMs:800, afterMs:900, padMs:40, echoMs:150};
+function droppedWordFault(text, expect, allW, sound){
+  if(!text || !sound || !allW || !allW.length || !Array.isArray(expect) || expect.includes("REST")) return null;
+  const whole = expect.filter(e=>e!=="REST");
+  if(whole.length < 2) return null;
+  const got = tokensOf(text);
+  if(got.length < 1 || got.length >= whole.length) return null;
+  const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (VOCAB[e] && VOCAB[e].accept.includes(w)) || (nameOf(w)||{}).n===e;
+  const isPrefix = whole.slice(0, got.length).every((e,i)=>fitsAt(e, got[i]));
+  const isSuffix = whole.slice(whole.length - got.length).every((e,i)=>fitsAt(e, got[i]));
+  if(isPrefix === isSuffix) return null;
+  const rawW = text.split(" ").filter(Boolean);
+  const ws = allW.map(x=>x.w);
+  let at = -1;
+  for(let k=ws.length-rawW.length; k>=0; k--) if(rawW.every((w,j)=>ws[k+j]===w)){ at=k; break; }
+  if(at < 0) return null;
+  const s0 = allW[at].s, e1 = allW[at + rawW.length - 1].e;
+  if(!(e1 > s0)) return null;
+  const wPeak = sound.peak(s0, e1);
+  if(!(wPeak > 0)) return null;
+  const side = isPrefix ? "after" : "before";
+  const win0 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - DROPPED_WORD.beforeMs) : e1 + DROPPED_WORD.padMs;
+  const win1 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - DROPPED_WORD.padMs) : e1 + DROPPED_WORD.afterMs;
+  if(!(win1 > win0)) return null;
+  const ms = sound.voicedMsBetween(win0, win1), pk = sound.peak(win0, win1), ratio = pk / wPeak;
+  if(ms < DROPPED_WORD.minMs || ratio < DROPPED_WORD.minRatio) return null;
+  return {side, ms, ratio:+ratio.toFixed(2), s0, e1, win0, win1};
+}
 async function listenVosk(expect, alsoOk=[]){
   stopRec();
   const cue=curCue, either=/(^| )ou( |$)/.test(normalise(cue||""));
@@ -3017,6 +3064,11 @@ async function listenVosk(expect, alsoOk=[]){
         if(after>=160){ trace("own name: "+after+" ms of sound after \"m'appelle\" (which ended at "+lastWordEnd+" ms) with no word for it: the name was said"); return false; }
         trace("own name: \"je m'appelle\" and then "+after+" ms of sound: waiting for the name"); return true;
       }
+      if(t && !expect.includes("REST") && partWay(t)){
+        await askTimes();
+        const dw = droppedWordFault(textNow(), expect, allW, voice);
+        if(dw && dw.side==="after"){ trace("dropped word in onSpeechEnd: "+dw.ms+" ms of sound after \""+textNow()+"\" ("+dw.ratio+"x): closing turn"); return false; }
+      }
       return !!t && (expect.includes("REST") ? rawNow===want : partWay(t) || hesitating(t)); } });
   clearInterval(watch); clearTimeout(sigT); signal(false); trace("mic closed: "+cap.status+(early?" ("+earlyWhy+")":""));
   /* The microphone swamped by a loud low noise (the phone lying on something that moves: LISTENER.swamp): nothing the
@@ -3048,6 +3100,9 @@ async function listenVosk(expect, alsoOk=[]){
     trace("IL / ELLE BY THE VOWEL: the listener wrote \""+vw.wrote+"\"; the vowel's F2/F1 is "+vw.ratio+" ("+(vw.said==="il"?"[i]":"[ɛ]")+"): heard as \""+vw.text+"\"");
     v={...r, reason:"the vowel decided: the listener wrote \""+text+"\"", vowel:vw.ratio}; } } }
   if(either && (repeatedCue(raw, cue) || (v.ok && /\S\s+\[unk\]\s*$/.test(raw)))) v={ok:false, reason:"repeated the question", repeatedCue:true};     // "un [unk]" after "Un ou une ?": the rest of the question, not a cough
+  if(!v.ok && !v.repeatedCue && sound){ const dw=droppedWordFault(text, expect, allW, sound); if(dw){
+    trace("FAULT DROPPED WORD: the listener wrote \""+text+"\" ("+dw.s0+"-"+dw.e1+" ms), missing word "+dw.side+" it, with "+dw.ms+" ms of speech ("+dw.ratio+"x peak) in "+dw.win0+"-"+dw.win1+" ms; the turn is not scored");
+    return Object.assign(base,{status:"silence", heard:[text], ok:false, reason:"dropped word (speech heard in missing slot)", speech:true, droppedWord:dw}); } }
   if(v.ok && expect.some(e=>VOCAB[e] && VOCAB[e].kind==="frag")) v.reason="sound piece: something was said; the listener cannot judge the sound itself";
   if(v.ok && letGoNote && !v.reason) v.reason=letGoNote;
   trace(`vosk: "${raw}" → ${v.ok?"correct":v.reason}`+(v.ok && v.hesitation ? " ("+v.reason+")" : ""));

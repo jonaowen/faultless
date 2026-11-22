@@ -85,6 +85,7 @@
       // how much sound there was after a moment (ms from the start of the capture): the recogniser's word times are on the
       // same clock, so the app can tell that the learner went on speaking after the last word the recogniser has
       const voicedMsAfter = ms => { let n=0; for(let i=Math.max(0, Math.ceil(ms/20)); i<voicedLog.length; i++) if(voicedLog[i]) n++; return n*20; };
+      const voicedMsBetween = (ms0, ms1) => { let n=0; for(let i=Math.max(0, Math.floor(ms0/20)); i<Math.min(voicedLog.length, Math.ceil(ms1/20)); i++) if(voicedLog[i]) n++; return n*20; };
       // loudness (above 300 Hz) between two moments: the mean level, and the loudest 20 ms
       const level = (ms0, ms1) => { let e=0, n=0; for(let i=Math.max(0, Math.floor(ms0/20)); i<Math.min(energies.length, Math.ceil(ms1/20)); i++){ e+=energies[i]*energies[i]; n++; } return n ? Math.sqrt(e/n) : 0; };
       const peak = (ms0, ms1) => { let m=0; for(let i=Math.max(0, Math.floor(ms0/20)); i<Math.min(energies.length, Math.ceil(ms1/20)); i++) if(energies[i]>m) m=energies[i]; return m; };
@@ -114,7 +115,7 @@
           if(speechStart>=0 && t-lastVoice>endSil && !checking){
             if(opts.onSpeechEnd){
               checking=true; const at=lastVoice;
-              Promise.resolve(opts.onSpeechEnd(join(chunks), {speechStart, lastVoice, voicedMsAfter, level, peak})).then(keep=>{ checking=false;
+              Promise.resolve(opts.onSpeechEnd(join(chunks), {speechStart, lastVoice, voicedMsAfter, voicedMsBetween, level, peak})).then(keep=>{ checking=false;
                 if(keep==="reset"){ if(lastVoice===at){ speechStart=-1; lastVoice=-1; voicedRun.length=0; } return; }
                 if(!keep && lastVoice===at) finish("heard");
                 else if(keep){ const wait=opts.extraSilenceMs||2200; setTimeout(()=>{ if(!done && lastVoice===at) finish("heard"); }, wait); } });
@@ -123,7 +124,7 @@
         }
       };
       opts.signal && opts.signal.addEventListener("abort", ()=>finish("aborted"));
-      opts.onStart && opts.onStart(()=>finish("heard"), {voicedMsAfter, level, peak, state:()=>({t, speechStart, lastVoice})});
+      opts.onStart && opts.onStart(()=>finish("heard"), {voicedMsAfter, voicedMsBetween, level, peak, state:()=>({t, speechStart, lastVoice})});
     });
   }
   function wav(audio){        // 16-bit WAV for the log
