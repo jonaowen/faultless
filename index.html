@@ -407,6 +407,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson10.js"></script>
 <script src="course/lesson11.js"></script>
 <script src="course/lesson12.js"></script>
+<script src="course/lesson13.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -415,7 +416,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-23.97";      // must equal version.json
+const APP_VERSION="2026-11-23.98";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -989,7 +990,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:97, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:98, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1038,7 +1039,8 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=94)) migrate94();      // (.94) a state saved when Lessons 1-8 were served: a learner who passed Lesson 8 goes on to Lesson 9
   if(!(s.courseRev>=95)) migrate95();      // (.95) fix release: names' gate in Lesson 2 (C'est Pierre. / Moi, c'est ... moved from L1 to L2), C7 F-NAME-12 in L5, dropped-word listening guard
   if(!(s.courseRev>=96)) migrate96();      // (.96) a state saved when Lessons 1-10 were served: a learner who passed Lesson 10 goes on to Lesson 11
-  if(!(s.courseRev>=97)) migrate97();      // (.97) a state saved when Lessons 1-11 were served: a learner who passed Lesson 11 goes on to Lesson 12
+  if(!(s.courseRev>=97)) migrate97();
+  if(!(s.courseRev>=98)) migrate98();      // (.97) a state saved when Lessons 1-11 were served: a learner who passed Lesson 11 goes on to Lesson 12
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1175,6 +1177,8 @@ const NEW_96 = [[6, "L7E12"], [9, "L10E5"]];
 function migrate96(){ carryOn(96, 10, CHANGED_96); newFirst(96, NEW_96); }
 const CHANGED_97 = [];
 function migrate97(){ carryOn(97, 11, CHANGED_97); }
+const CHANGED_98 = [];
+function migrate98(){ carryOn(98, 12, CHANGED_98); }
 const NEW_BEHIND = [].concat(NEW_93, NEW_96);
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
