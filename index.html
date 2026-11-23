@@ -416,7 +416,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-23.98";      // must equal version.json
+const APP_VERSION="2026-11-23.99";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -6574,27 +6574,48 @@ $("btnRestartEx").onclick=()=>{ if(running) return alertish("Wait until the exer
 $("btnDelayed").onclick=async ()=>{ if(running||!S.delayed.length) return; running=true; $("panel").hidden=true; showPlay(false); try{ for(const d of [...S.delayed]) await runDelayed(d, {afterEx:null, lessonStart:null}); await endScreen(); } finally{ running=false; } };
 $("btnReset").onclick=()=>{ if(running) return; const keep=S.settings; S=defaults(); S.settings=keep; save(); askWho(); };   // a new learner: name and gender are asked again
 /* Save (developer only): one file with the whole log and every recorded answer (audio linked to its log line by clip id).
-   Answers are stored on the phone as they happen, so closing the app loses nothing; this writes them out. */
+   Answers are stored on the phone as they happen, so closing the app loses nothing; this writes them out.
+   (.99) If the page was reloaded (e.g. tapping Leave or updating) before saving, this session has no exercise entries yet:
+   recover the most recent sitting from S.log/S.trace and its IndexedDB clips, and always include the shell record (frDIn.g.<user>). */
 async function saveRun(){
-  const inSession = new Set(SESSION.clips);
-  let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ if(!inSession.has(k)) continue; let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
+  const allLog = S.log || [], allTrace = S.trace || [];
+  let logFrom = SESSION.start, traceFrom = SESSION.start, recovered = false;
+  if(!allLog.some(e=>e.t>=SESSION.start && e.ex) && allLog.length){
+    let k = allLog.length - 1;
+    const tEnd = Date.parse(allLog[k].t) || Date.now();
+    while(k > 0 && (allLog.length - k) < 600){
+      const tCur = Date.parse(allLog[k].t), tPrev = Date.parse(allLog[k-1].t);
+      if(!isFinite(tCur) || !isFinite(tPrev) || (tCur - tPrev) > 45*60e3 || (tEnd - tPrev) > 3*3600e3) break;
+      k--;
+    }
+    logFrom = allLog[k].t || SESSION.start;
+    const t0 = Date.parse(logFrom);
+    traceFrom = isFinite(t0) ? new Date(t0 - 60e3).toISOString() : logFrom;
+    recovered = true;
+  }
+  const outLog = allLog.filter(e=>e.t>=logFrom), outTrace = allTrace.filter(e=>e.t>=traceFrom);
+  const clipIds = [];
+  for(const e of outLog){ if(e.clip) clipIds.push(e.clip); if(e.modelClip) clipIds.push(e.modelClip); }
+  for(const id of SESSION.clips) clipIds.push(id);
+  const wantClips = new Set(clipIds.slice(-250));
+  let clips={}; try{ const all=await clipStore("all"); for(const [k,v] of Object.entries(all)){ if(!wantClips.has(k)) continue; let b=""; const u=new Uint8Array(v); for(let i=0;i<u.length;i+=0x8000) b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); clips[k]="data:audio/wav;base64,"+btoa(b); } }catch(e){}
+  let shell = null; try{ const raw = localStorage.getItem("frDIn.g."+USERS.current); if(raw) shell = JSON.parse(raw); }catch(e){}
   const meta={app:APP_VERSION, user:{id:USERS.current, name:currentUser().name}, savedAt:new Date().toISOString(), listener: null, engine:S.settings.engine, ua:navigator.userAgent};
-  const since=e=>e.t>=SESSION.start;
-  const touched=[...new Set(S.log.filter(since).map(e=>e.ex).filter(Boolean))];
+  const touched=[...new Set(outLog.map(e=>e.ex).filter(Boolean))];
   // the app's own fault report for this session: anything a learner would notice, found without anyone reporting it
   const faults=[];
-  S.trace.filter(since).forEach(e=>{
+  outTrace.forEach(e=>{
     if(/FAULT/.test(e.ev)) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" "+e.ev);
     const m=/green border (\d+) ms after the cue ended/.exec(e.ev); if(m && +m[1]>150) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" SIGNAL LATE: green border "+m[1]+" ms after the teacher stopped (target 0)");
   });
-  S.log.filter(since).forEach(e=>{ if(/LISTENING FAULT|PROGRESS RESET/.test(e.result||"")) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" "+e.result); });
-  const run=Object.assign({}, S, meta, {session:{start:SESSION.start, end:new Date().toISOString(), exercises:touched, recordings:Object.keys(clips).length, faults},
-    log:S.log.filter(since), trace:S.trace.filter(since), clips});
+  outLog.forEach(e=>{ if(/LISTENING FAULT|PROGRESS RESET/.test(e.result||"")) faults.push(e.t.slice(11,19)+" "+(e.task||"")+" "+e.result); });
+  const run=Object.assign({}, S, meta, {shell, session:{start:SESSION.start, from:logFrom, recovered, end:new Date().toISOString(), exercises:touched, recordings:Object.keys(clips).length, faults},
+    log:outLog, trace:outTrace, clips});
   const blob=new Blob([JSON.stringify(run,null,1)],{type:"application/json"});
   const d=new Date(), pad=n=>String(n).padStart(2,"0");
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`faultless-run-${currentUser().name.normalize("NFD").replace(/[^A-Za-z0-9]/g,"").slice(0,20)||USERS.current}-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
   document.body.appendChild(a); a.click(); a.remove();
-  trace("saved run file: "+a.download+" ("+Object.keys(clips).length+" recordings)"); save();
+  trace("saved run file: "+a.download+" ("+Object.keys(clips).length+" recordings"+(recovered?"; recovered previous session":"")+")"); save();
   return Object.keys(clips).length;
 }
 $("btnDownload").onclick=saveRun;
