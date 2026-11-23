@@ -831,7 +831,7 @@ const SHELL = (()=>{
     try{ marie = `<svg class="rk-f rk-m" viewBox="0 0 160 190" aria-hidden="true">${PICS.action(still?"stop":"jump", "marie", still?{after:"jump"}:{}).outerHTML}</svg>`; }catch(e){}
     if(!you || !marie) return null;
     return {html:crop(marie)+crop(you), contact:760, dur:0, own:false}; }
-  const FIVE = (()=>{ let C=null, lastO=null; const HOLD=1300;
+  const FIVE = (()=>{ let C=null, lastO=null; const HOLD=650;      // (.99; the owner, 23 Nov: halved from 1300 ms alongside PICS.highFive 3200 -> 1600 ms)
     /* (hf3, 17 Nov; the owner: "it should just say magnifique Jon with the rosette and perfect lesson, without the 'every answer right, first
        time' and without everything underneath ... Then the rosette and other text I approved stays there like it currently does while the
        high five plays") EVERY end screen (a lesson, one exercise again, Go for perfect) opens on its mark (the rosette, the sun or the
@@ -852,11 +852,11 @@ const SHELL = (()=>{
       o.appendChild(root); try{ root.focus({preventScroll:true}); }catch(e){}
       root.addEventListener("click", e=>{ if(e.target.closest("button") && e.target.id!=="hfSkip") return; if(c.skippable) end(c, "skip"); });
       root.addEventListener("keydown", e=>{ if(e.key==="Escape"){ e.preventDefault(); end(c, "skip"); } });
-      at(600, ()=>{ c.skippable=true; });
+      at(300, ()=>{ c.skippable=true; });
       try{ trace(five ? "the high five: after the heading, before the tally" : "the heading alone first, then the tally"); }catch(e){}
       // the film is made once the heading has come in (a still moment: the making takes a little while), and shown at the end of the hold
-      if(five) at(calm ? 450 : 650, ()=>{ try{ F=pairFigs(); }catch(e){ F=null; } });
-      at(calm ? 900 : HOLD, ()=>{ if(!F){ end(c, "go"); return; }
+      if(five) at(calm ? 225 : 325, ()=>{ try{ F=pairFigs(); }catch(e){ F=null; } });
+      at(calm ? 450 : HOLD, ()=>{ if(!F){ end(c, "go"); return; }
         const hd=o.querySelector("h1"), vh=innerHeight, pr=root.querySelector(".rk-pair");
         // under the heading: the stage starts just below it (never so low that the two would not fit)
         let top=hd ? hd.getBoundingClientRect().bottom+14 : vh*0.3; top=Math.max(vh*0.2, Math.min(top, vh-330)); root.style.setProperty("--top", Math.round(top)+"px");
@@ -864,7 +864,7 @@ const SHELL = (()=>{
         if(F.own) pr.classList.add("own"); root.querySelector(".hf-at").outerHTML=F.html;      // put in now: the film's clock starts here
         root.classList.add("in","sA"); const sk=root.querySelector("#hfSkip"); if(sk){ sk.hidden=false; sk.onclick=()=>end(c, "skip"); }
         const lv=root.querySelector(".rk-live"); if(lv) lv.textContent="Marie: Bravo"+(nm?", "+nm:"")+" !";
-        if(calm){ root.classList.add("hit"); at(1500, ()=>end(c, "go")); return; }
+        if(calm){ root.classList.add("hit"); at(750, ()=>end(c, "go")); return; }
         const sv=root.querySelector(".rk-hf5"); let lag=0; try{ if(sv && sv.getCurrentTime) lag=sv.getCurrentTime()*1000; }catch(e){}
         const hit=()=>{ const h=root.querySelector(".rk-hit");
             // where the hands meet (the picture says so): the burst goes there
@@ -873,8 +873,8 @@ const SHELL = (()=>{
             root.classList.add("hit"); SFX.clap(); sparkAt(pr, h.offsetLeft, h.offsetTop, 16, {r0:40, r1:120, t0:700, t1:1100, fall:40});
             try{ if(UI.pref.haptics!==false && navigator.vibrate) navigator.vibrate(18); }catch(e){} };
         at(F.contact-lag, hit);
-        const D = F.own ? F.dur : 1800;
-        at(D-lag+200, ()=>end(c, "go")); }); }
+        const D = F.own ? F.dur : 900;
+        at(D-lag+100, ()=>end(c, "go")); }); }
     function release(c){ c.timers.forEach(clearTimeout); c.timers.clear(); if(c.inert) c.inert.forEach(x=>{ x.inert=false; }); c.o.style.overflow=c.ov||""; }
     // over: the tally is put in under it (or the summary is simply there), and it fades out over that, so the screen never goes back to the
     // summary in between (with less movement: a cut)

@@ -408,6 +408,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson11.js"></script>
 <script src="course/lesson12.js"></script>
 <script src="course/lesson13.js"></script>
+<script src="course/lesson14.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -416,7 +417,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-23.98";      // must equal version.json
+const APP_VERSION="2026-11-23.99";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -990,7 +991,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:98, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:99, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1040,7 +1041,8 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=95)) migrate95();      // (.95) fix release: names' gate in Lesson 2 (C'est Pierre. / Moi, c'est ... moved from L1 to L2), C7 F-NAME-12 in L5, dropped-word listening guard
   if(!(s.courseRev>=96)) migrate96();      // (.96) a state saved when Lessons 1-10 were served: a learner who passed Lesson 10 goes on to Lesson 11
   if(!(s.courseRev>=97)) migrate97();
-  if(!(s.courseRev>=98)) migrate98();      // (.97) a state saved when Lessons 1-11 were served: a learner who passed Lesson 11 goes on to Lesson 12
+  if(!(s.courseRev>=98)) migrate98();      // (.98) a state saved when Lessons 1-12 were served: a learner who passed Lesson 12 goes on to Lesson 13
+  if(!(s.courseRev>=99)) migrate99();      // (.99) a state saved when Lessons 1-13 were served: a learner who passed Lesson 13 goes on to Lesson 14
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1179,6 +1181,8 @@ const CHANGED_97 = [];
 function migrate97(){ carryOn(97, 11, CHANGED_97); }
 const CHANGED_98 = [];
 function migrate98(){ carryOn(98, 12, CHANGED_98); }
+const CHANGED_99 = [];
+function migrate99(){ carryOn(99, 13, CHANGED_99); }
 const NEW_BEHIND = [].concat(NEW_93, NEW_96);
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
@@ -2048,6 +2052,9 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
   try{
     // Pierre's and Sylvie's own pictures, by name: the introduction before Lesson 1 and every scene of two (sceneOf "L" / "R") draw them so
     ["paul","julie"].forEach(w=>add("who|"+w, ()=>picture(w)));
+    // (.99; truth99 PICTURE FIRST BUILT L14E2-a1) explanation cards (you_do / you_now / mirror_intro3) draw these figures before the lesson's first tap/action
+    if(!S.youDoSeen) fig("you", "dance");
+    if(!(S.conv && S.conv.mirror_intro3)) fig("marie", "jump");
     for(const X of runPlan()) for(const part of (X.parts||[])) for(const it of (part.items||[])){
       const sc=sceneOf(it.scene)||{}, row=sc.row||[];
       [sc.L, sc.R].forEach(w=>{ if(typeof w==="string") add("who|"+w, ()=>picture(w)); });
@@ -2075,6 +2082,8 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
           if(act && act!=="not smiling") fig("marie", act); }
         else if(it.tap.by==="paul" || it.tap.by==="julie")      // tapperScene: the picture cards show the one who taps doing each action
           row.forEach(x=>{ if(x && typeof x==="object" && x.is==="picture card"){ const y=Object.assign({}, x, {figure:it.tap.by}); add("row|"+JSON.stringify(y), ()=>picture(y)); } }); }
+      if(it.kind==="do" && it.act==="tap")      // (.99; truth99 PICTURE FIRST BUILT L14E2-a1) tapping any action card (wrong tap included) plays the learner's figure doing that card's action
+        row.forEach(x=>{ const a=x && typeof x==="object" && x.is==="picture card" && ACT_NAME[x.doing]; if(a && a!=="not smiling") fig("you", a); });
     }
     // (.90, taken from .91 l91-work abc7c9ec: truth91's PICTURE FIRST BUILT at the lesson's end) the lesson's end shows a tile of each exercise:
     // shell.js firstSvg, the first row picture of its items that is not the learner's own, still, count 1 (Lesson 7's L7E5 is Marie's own card): drawn ahead too
@@ -2919,7 +2928,7 @@ function splitWordStart(text, words, expect, alsoOk=[]){
    never on REST) and the sound measure shows full-volume speech in the missing word's time window (at least 200 ms voiced
    at 0.5x or more of the recognised word's peak), the turn is a listening fault (unscored, asked again; never auto-accepted).
    A genuine omission has quiet in the missing slot and stays an error. Checked by dev/harness/tests/dropword_node.js. */
-const DROPPED_WORD = {minMs:200, minRatio:0.5, beforeMs:800, afterMs:900, padMs:40, echoMs:150};
+const DROPPED_WORD = {minMs:200, minRatio:0.5, beforeMs:800, afterMs:900, padMs:40, echoMs:150, midMinMs:180, midMinRatio:0.3};
 function droppedWordFault(text, expect, allW, sound){
   if(!text || !sound || !allW || !allW.length || !Array.isArray(expect) || expect.includes("REST")) return null;
   const whole = expect.filter(e=>e!=="REST");
@@ -2929,7 +2938,16 @@ function droppedWordFault(text, expect, allW, sound){
   const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (VOCAB[e] && VOCAB[e].accept.includes(w)) || (nameOf(w)||{}).n===e;
   const isPrefix = whole.slice(0, got.length).every((e,i)=>fitsAt(e, got[i]));
   const isSuffix = whole.slice(whole.length - got.length).every((e,i)=>fitsAt(e, got[i]));
-  if(isPrefix === isSuffix) return null;
+  let mid = -1;
+  if(!isPrefix && !isSuffix && got.length === whole.length - 1 && got.length >= 2){
+    for(let m=1; m<got.length; m++){
+      if(whole.slice(0,m).every((e,i)=>fitsAt(e, got[i])) && whole.slice(m+1).every((e,i)=>fitsAt(e, got[m+i]))){
+        if(mid >= 0){ mid = -1; break; }
+        mid = m;
+      }
+    }
+  }
+  if(isPrefix === isSuffix && mid < 0) return null;
   const rawW = text.split(" ").filter(Boolean);
   const ws = allW.map(x=>x.w);
   let at = -1;
@@ -2939,6 +2957,14 @@ function droppedWordFault(text, expect, allW, sound){
   if(!(e1 > s0)) return null;
   const wPeak = sound.peak(s0, e1);
   if(!(wPeak > 0)) return null;
+  if(mid >= 0){
+    if(rawW.length !== got.length) return null;
+    const win0 = allW[at + mid - 1].e, win1 = allW[at + mid].s;
+    if(!(win1 - win0 >= DROPPED_WORD.midMinMs)) return null;
+    const ms = sound.voicedMsBetween(win0, win1), pk = sound.peak(win0, win1), ratio = pk / wPeak;
+    if(ms < DROPPED_WORD.midMinMs || ratio < DROPPED_WORD.midMinRatio) return null;
+    return {side:"between", ms, ratio:+ratio.toFixed(2), s0, e1, win0, win1};
+  }
   const side = isPrefix ? "after" : "before";
   const win0 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - DROPPED_WORD.beforeMs) : e1 + DROPPED_WORD.padMs;
   const win1 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - DROPPED_WORD.padMs) : e1 + DROPPED_WORD.afterMs;
@@ -6400,16 +6426,32 @@ function courseGrammar(expect){
   if(["UN","UNE","n1"].includes(lone)) base = base.filter(p=>!/^(il|elle)( |$)/.test(p));
   else if(["IL","ELLE"].includes(lone)) base = base.filter(p=>!/^(un|une)( |$)/.test(p));
   else if(["LE1","LA1"].includes(lone)) base = base.filter(p=>!/^(il|elle|un|une)( |$)/.test(p));      // (.84) "Le ou la ?": le and la heard against each other, not against the other small words alone
+  /* (.99; the owner's L12 run of 23 Nov 10:13: crisp "Parle." at L12E3 heard 19 times as "un deux" / "un" / "un elle" / "un livre")
+     A lone verb command ("Parle.", "Dors.", "Mange."…) is heard against the reached single-word verbs only, not against articles, numbers
+     or noun phrases. */
+  else if(lone && VOCAB[lone] && VOCAB[lone].verb){
+    const VERBW=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].verb).flatMap(k=>[VOCAB[k].name, VOCAB[k].tu, VOCAB[k].il, VOCAB[k].alone].filter(Boolean).map(norm)));
+    base = base.filter(p=>!p.includes(" ") && VERBW.has(p)); }
+  /* (.99; the owner's L11 run of 23 Nov 09:22: "Un livre." with a bark before it heard as "elle") A noun with its front word ("Un livre.",
+     "Une voiture.") is not heard against il / elle phrases. */
+  if((expect||[]).length===2 && ["UN","UNE"].includes(expect[0])) base = base.filter(p=>!/^(il|elle)( |$)/.test(p));
+  /* (.99; a tester's L2 run of 23 Nov 09:59: "Pierre et Sylvie." heard 4 times as "pierre c'est sylvie" / "pierre c'est") A pair of people
+     joined by "et" is not heard against bare "c'est", "moi c'est", or single-word "c'est <name>" (the names alone and "c'est X et Y" stay). */
+  if((expect||[]).length===3 && expect[1]==="ET" && VOCAB[expect[0]] && VOCAB[expect[0]].kind==="person" && VOCAB[expect[2]] && VOCAB[expect[2]].kind==="person")
+    base = base.filter(p=>p!=="c'est" && p!=="moi c'est" && !/^c'est [^ ]+$/.test(p));
   /* (.51) Where the answer is the front word alone ("Un." / "Une."), "deux" stays in the list before it is reached (Lesson 1
      Exercise 7). It is what the listener writes for the end of "une" let go (listenVosk, "said once and written as two
      words"): with it, such a "une" is "un deux" and is heard as "une"; without it the n is not written at all and three of a
      tester's five came out "un", a right answer corrected as the other word. */
   if((expect||[]).length===1 && ["UN","UNE","n1"].includes(expect[0]) && !base.includes("deux")) base = base.concat(["deux"]);
-  /* A count ("Un, deux, trois, quatre.") is heard against number words only (.24; tester H 11 Nov 21:08: her "trois" in a count
-     came out as "lève-toi", which is in the Lesson 1 list only because Lessons 1 and 2 share one list). */
+  /* A count ("Un, deux, trois, quatre.") is heard against number counts only (.24; tester H 11 Nov 21:08: her "trois" in a count
+     came out as "lève-toi"; .99, the owner's L11 run of 23 Nov 09:22: single number tokens broke a fluent 1..6 count; keep multi-word
+     counts and every shorter prefix from 2 words up so a count stopped early is still heard and refused). */
   if((expect||[]).length>=2 && expect.every(e=>VOCAB[e] && VOCAB[e].kind==="number")){
     const NUMW=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="number").map(k=>norm(VOCAB[k].say[0])));
-    base = base.filter(p=>p.split(" ").every(w=>NUMW.has(w))); }
+    base = base.filter(p=>(expect.length<3 || p.includes(" ")) && p.split(" ").every(w=>NUMW.has(w)));
+    const nw=expect.map(e=>norm(VOCAB[e].say[0]));
+    for(let i=2;i<nw.length;i++) base.push(nw.slice(0,i).join(" ")); }
   const own = (expect||[]).length ? norm(phraseOf(expect)) : "";
   if(own && !frag_(own)) { base=base.concat([own]); const w=own.split(" "); if(w.length<=2) base=base.concat(w.filter(x=>x!=="je" && x!=="m'appelle")); }
   /* (.90) "Tu" heard against "toi". The owner's run of 20 Nov 2026 10:47 (Lesson 5 on the live .89): his "too c'est Pierre" at L5E5-b2 (an
