@@ -3517,7 +3517,7 @@ function action0(act, who, opts){
   const word = x => firstWord(String(x || "").trim());
   act = ACT_OF[word(act)] || ACT2[word(act)] || "smile";
   who = who === "marie" || who === "paul" || who === "julie" ? who : "you";
-  const still = !!opts.still, spec = opts.spec && !opts.spec.person && opts.spec.is ? { is: opts.spec.is } : { person: who }, tag = who === "you" || spec.is ? "" : (opts.name || WHO_NAME[who]) || "";
+  const still = !!opts.still, spec = opts.spec && !opts.spec.person && opts.spec.is ? { is: opts.spec.is } : { person: who }, tag = spec.is ? "" : (opts.name || (who === "you" ? "" : WHO_NAME[who])) || "";
   if (opts.looks && opts.looks.length) spec.looks = opts.looks;
   if (opts.sex === "f" && spec.person === "you") spec.sex = "f";      // the learner as a woman (opts.sex "f"; "m", the default, is the man)
   const F = figOf(spec, undefined, { hold: !opts.card && !CLOSEFIG[act] && (opts.clip || FIGCLIP[act]) === "stand" });      // (figures 17: held things only where he stands with the arms free)
