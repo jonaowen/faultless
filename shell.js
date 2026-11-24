@@ -1207,6 +1207,7 @@ const SHELL = (()=>{
     if(lessonPerfect(L) && !G.lp[L.id]){ G.lp[L.id]=today; bonus=RULES.POINTS_PERFECT_LESSON; TY.bank("lesson", bonus); G.points+=bonus; badge=newBadge(today); }
     // (MASTERY) the lesson waiting on its yellows is all green now: it is passed, its words are the learner's, the next lesson opens
     const waits = RULES.MASTERY && G.why==="perfect" && G.next===R0.li, unlock = waits && lessonPerfect(L); let owned=[], lvUp=null;
+    if(S.lesson===R0.li){ for(const r of res) if(r.id && G.ex[r.id]) S.finished[r.id]=true; if(unlock) L.exercises.forEach(x=>{ S.finished[x.id]=true; }); save(); }
     if(unlock){ G.why=""; G.next=Math.min(R0.li+1, last); G.furthest=Math.max(G.furthest, R0.li+1); (G.lessons[L.id]=G.lessons[L.id]||[]).push({date:today, x:null, y:null, passed:true, perfect:true, via:"go for perfect"});
       owned=cardsOf(L.id); if(!G.wordsAt[L.id]) G.wordsAt[L.id]=today; lvUp=newLevel(today); if(!badge) badge=newBadge(today); try{ trace("mastery: Lesson "+(R0.li+1)+" all green: Lesson "+(G.next+1)+" opens"); }catch(e){} }
     delete G.lpts[L.id]; G.cur=null; const ranks=rankSync(); store(); look();

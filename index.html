@@ -410,6 +410,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson13.js"></script>
 <script src="course/lesson14.js"></script>
 <script src="course/lesson15.js"></script>
+<script src="course/lesson16.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -418,7 +419,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-24.101";      // must equal version.json
+const APP_VERSION="2026-11-24.102";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -601,7 +602,7 @@ const VOCAB = {
   touche: {name:"touche", kind:"word", verb:true, tu:"touches", say:[], accept:["touche","touches","touchent"]},
   nage: {name:"nage", kind:"word", verb:true, tu:"nages", say:[], accept:["nage","nages","nagent"]},
   chante: {name:"chante", kind:"word", verb:true, tu:"chantes", say:[], accept:["chante","chantes","chantent"]},      // "Il chante." took the place of "Il nage." (11 Nov, afternoon)
-  ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
+  ecrit: {name:"écrit", kind:"word", verb:true, tu:"écris", alone:"écris", say:[], accept:["écrit","écris","écrivent","écrire","écrits"]},      // (.60) écrire: "Écris." (Lesson 7)
   // (.83, D-08, D-17: the DI rebuild) grimper, dessiner (Lesson 3), applaudir (Lesson 7, in the place of "Arrive.", never a command now)
   grimpe: {name:"grimpe", kind:"word", verb:true, tu:"grimpes", say:[], accept:["grimpe","grimpes","grimpent"]},
   dessine: {name:"dessine", kind:"word", verb:true, tu:"dessines", say:[], accept:["dessine","dessines","dessinent"]},
@@ -992,7 +993,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:101, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:102, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1045,7 +1046,8 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=98)) migrate98();      // (.98) a state saved when Lessons 1-12 were served: a learner who passed Lesson 12 goes on to Lesson 13
   if(!(s.courseRev>=99)) migrate99();
   if(!(s.courseRev>=100)) migrate100();
-  if(!(s.courseRev>=101)) migrate101();      // (.101) Lesson 15 added; Dis. no-figure fix across L4-L14      // (.99) a state saved when Lessons 1-13 were served: a learner who passed Lesson 13 goes on to Lesson 14
+  if(!(s.courseRev>=101)) migrate101();      // (.101) Lesson 15 added; Dis. no-figure fix across L4-L14
+  if(!(s.courseRev>=102)) migrate102();      // (.102) Lesson 16 added; dropped interior "et" listening fault fix
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1190,6 +1192,8 @@ const CHANGED_100 = [];
 function migrate100(){ carryOn(100, 13, CHANGED_100); }
 const CHANGED_101 = ["L4E13", "L4E15", "L5E11", "L6E11", "L6E15", "L7E13", "L8E12", "L9E11", "L12E13", "L13E5", "L14E6", "L14E20"];
 function migrate101(){ carryOn(101, 14, CHANGED_101); }
+const CHANGED_102 = [];
+function migrate102(){ carryOn(102, 15, CHANGED_102); }
 const NEW_BEHIND = [].concat(NEW_93, NEW_96);
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
@@ -2940,7 +2944,7 @@ function splitWordStart(text, words, expect, alsoOk=[]){
    never on REST) and the sound measure shows full-volume speech in the missing word's time window (at least 200 ms voiced
    at 0.5x or more of the recognised word's peak), the turn is a listening fault (unscored, asked again; never auto-accepted).
    A genuine omission has quiet in the missing slot and stays an error. Checked by dev/harness/tests/dropword_node.js. */
-const DROPPED_WORD = {minMs:200, minRatio:0.5, beforeMs:800, afterMs:900, padMs:40, echoMs:150, midMinMs:180, midMinRatio:0.3};
+const DROPPED_WORD = {minMs:200, minRatio:0.5, beforeMs:800, afterMs:900, padMs:40, echoMs:150, midMinMs:180, midMinRatio:0.3, etMidMinMs:35, etMidVoicedMs:60, etMidMinRatio:0.18};
 function droppedWordFault(text, expect, allW, sound){
   if(!text || !sound || !allW || !allW.length || !Array.isArray(expect) || expect.includes("REST")) return null;
   const whole = expect.filter(e=>e!=="REST");
@@ -2972,9 +2976,13 @@ function droppedWordFault(text, expect, allW, sound){
   if(mid >= 0){
     if(rawW.length !== got.length) return null;
     const win0 = allW[at + mid - 1].e, win1 = allW[at + mid].s;
-    if(!(win1 - win0 >= DROPPED_WORD.midMinMs)) return null;
+    const isEt = whole[mid] === "ET";
+    const minGap = isEt ? DROPPED_WORD.etMidMinMs : DROPPED_WORD.midMinMs;
+    const minVoiced = isEt ? DROPPED_WORD.etMidVoicedMs : DROPPED_WORD.midMinMs;
+    const minRatio = isEt ? DROPPED_WORD.etMidMinRatio : DROPPED_WORD.midMinRatio;
+    if(!(win1 - win0 >= minGap)) return null;
     const ms = sound.voicedMsBetween(win0, win1), pk = sound.peak(win0, win1), ratio = pk / wPeak;
-    if(ms < DROPPED_WORD.midMinMs || ratio < DROPPED_WORD.midMinRatio) return null;
+    if(ms < minVoiced || ratio < minRatio) return null;
     return {side:"between", ms, ratio:+ratio.toFixed(2), s0, e1, win0, win1};
   }
   const side = isPrefix ? "after" : "before";

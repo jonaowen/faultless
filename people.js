@@ -205,7 +205,7 @@ function traits(spec, variant){
   }
   const kid = c.kind === "boy" || c.kind === "girl", fem = c.kind === "woman" || c.kind === "girl";
   // looks that change the person
-  if (L.old){ c.old = true; c.hair = HAIR.grey; if (!c.named && c.kind === "man"){ c.style = "old"; c.stache = true; } }
+  if (L.old){ c.old = true; c.hair = HAIR.grey; if (!c.named && c.kind === "man"){ c.style = "old"; c.beard = true; } }
   if (L.bald && !c.named) c.style = "bald";
   if (L.beard) c.beard = true;
   if (L["long hair"] && !c.named) c.style = kid ? "klong" : fem ? "xlong" : "longM";
