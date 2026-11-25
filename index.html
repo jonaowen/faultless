@@ -411,6 +411,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson14.js"></script>
 <script src="course/lesson15.js"></script>
 <script src="course/lesson16.js"></script>
+<script src="course/lesson17.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -419,7 +420,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-24.102";      // must equal version.json
+const APP_VERSION="2026-11-25.103";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -993,7 +994,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:102, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:103, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1048,6 +1049,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=100)) migrate100();
   if(!(s.courseRev>=101)) migrate101();      // (.101) Lesson 15 added; Dis. no-figure fix across L4-L14
   if(!(s.courseRev>=102)) migrate102();      // (.102) Lesson 16 added; dropped interior "et" listening fault fix
+  if(!(s.courseRev>=103)) migrate103();      // (.103) Lesson 17 added
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1194,6 +1196,8 @@ const CHANGED_101 = ["L4E13", "L4E15", "L5E11", "L6E11", "L6E15", "L7E13", "L8E1
 function migrate101(){ carryOn(101, 14, CHANGED_101); }
 const CHANGED_102 = [];
 function migrate102(){ carryOn(102, 15, CHANGED_102); }
+const CHANGED_103 = ["L1E4", "L1E7", "L1E11", "L1E12", "L1E13", "L2E4", "L2E8", "L2E11", "L2E12", "L2E14", "L2E16", "L2E17", "L2E18", "L3E4", "L3E5", "L3E8", "L3E10", "L3E11", "L3E12", "L3E13", "L4E1", "L4E4", "L4E5", "L4E6", "L4E7", "L4E8", "L4E9", "L4E10", "L4E11", "L4E12", "L4E13", "L4E14", "L4E15", "L5E1", "L5E2", "L5E4", "L5E5", "L5E6", "L5E7", "L5E8", "L5E9", "L5E10", "L5E11", "L5E12", "L5E13", "L6E1", "L6E2", "L6E3", "L6E4", "L6E5", "L6E6", "L6E7", "L6E8", "L6E9", "L6E10", "L6E11", "L6E12", "L6E13", "L6E14", "L6E15", "L7E1", "L7E2", "L7E3", "L7E4", "L7E5", "L7E6", "L7E7", "L7E9", "L7E10", "L7E11", "L7E12", "L7E13", "L7E14", "L7E15", "L7E16", "L7E17", "L8E1", "L8E2", "L8E3", "L8E4", "L8E6", "L8E7", "L8E8", "L8E9", "L8E10", "L8E11", "L8E12", "L8E13", "L9E1", "L9E3", "L9E5", "L9E6", "L9E7", "L9E8", "L9E9", "L9E10", "L9E11", "L10E1", "L10E2", "L10E3", "L10E4", "L10E5", "L10E6", "L10E7", "L10E8", "L10E9", "L10E10", "L10E11", "L10E12", "L10E13", "L11E2", "L11E4", "L11E5", "L11E6", "L11E8", "L11E9", "L11E10", "L11E11", "L11E12", "L11E13", "L12E1", "L12E2", "L12E3", "L12E4", "L12E5", "L12E6", "L12E7", "L12E8", "L12E9", "L12E10", "L12E11", "L12E12", "L12E13", "L13E2", "L13E3", "L13E4", "L13E5", "L13E7", "L13E8", "L13E9", "L13E10", "L13E13", "L13E14", "L13E15", "L13E16", "L13E17", "L13E18", "L13E19", "L14E1", "L14E2", "L14E4", "L14E6", "L14E8", "L14E9", "L14E10", "L14E11", "L14E13", "L14E14", "L14E15", "L14E16", "L14E17", "L14E18", "L14E19", "L14E20", "L15E1", "L15E2", "L15E4", "L15E5", "L15E6", "L15E8", "L15E9", "L15E11", "L15E12", "L15E13", "L15E14", "L15E15", "L15E16", "L15E17", "L15E18", "L15E19", "L15E20", "L15E21", "L15E22", "L16E1", "L16E2", "L16E3", "L16E5", "L16E6", "L16E8", "L16E10", "L16E11", "L16E12", "L16E13", "L16E14", "L16E15", "L16E16", "L16E17", "L16E18", "L16E19", "L16E20", "L16E21", "L16E22"];
+function migrate103(){ carryOn(103, 16, CHANGED_103); }
 const NEW_BEHIND = [].concat(NEW_93, NEW_96);
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
@@ -1967,7 +1971,8 @@ function unitClips(ex){ let slow=true; try{ slow=/"slow":true/.test(JSON.stringi
     if(it.cueVoice && it.questionUnits.length){ if(it.questionUnits.points) for(const u of it.questionUnits) urls.add(LEARNER_CLIP(say(it.cueVoice, [u])));      // (.90) a cue with cue points: each unit its own clip (cueAs)
       else urls.add(LEARNER_CLIP(say(it.cueVoice, it.questionUnits))); }
     if(Array.isArray(it.cueVoices) && it.questionUnits.length){ it.questionUnits.forEach((u, idx)=>{ const v=it.cueVoices[idx]; if(v && v!=="teacher") urls.add(LEARNER_CLIP(say(v, [u]))); }); }
-    if(it.introOnly) urls.add(LEARNER_CLIP(answerUnits(it).join(" "))); })); }catch(e){}
+    if(it.introOnly) urls.add(LEARNER_CLIP(answerUnits(it).join(" ")));
+    const cv=it.answerUnits && corrVoiceOf(it.answerUnits.join(" "), it); if(cv) urls.add(LEARNER_CLIP(say(cv, it.answerUnits))); })); }catch(e){}
   try{ ex.parts.forEach(p=>p.items.forEach(it=>{ const a=(it.answerUnits||[]).join(" ").trim();      // (.91) the line Marie corrects "Je V." with (corrModel jeOwn: "Répète : je V."; answerUnits(it) needs the exercise playing, so the units are read here)
     // (.94) and the line she corrects "Tu V." with, said to Marie or a model learner ("Et moi ?" -> "Tu danses."): tuOwn, "Répète : tu V."
     if(!((youAt(it) && /^Je \S+\.$/.test(a)) || /^Tu \S+\.$/.test(a)) || /^R[ée]p[èe]te\b/.test((it.questionUnits||[]).join(" "))) return;
