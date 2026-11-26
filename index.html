@@ -400,18 +400,6 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 <script src="course/lesson3.js"></script>
 <script src="course/lesson4.js"></script>
 <script src="course/lesson5.js"></script>
-<script src="course/lesson6.js"></script>
-<script src="course/lesson7.js"></script>
-<script src="course/lesson8.js"></script>
-<script src="course/lesson9.js"></script>
-<script src="course/lesson10.js"></script>
-<script src="course/lesson11.js"></script>
-<script src="course/lesson12.js"></script>
-<script src="course/lesson13.js"></script>
-<script src="course/lesson14.js"></script>
-<script src="course/lesson15.js"></script>
-<script src="course/lesson16.js"></script>
-<script src="course/lesson17.js"></script>
 <!-- (.84) the release serves the lessons whose rows are final, from Lesson 1 (.88: Lessons 1-5): the later lessons are shown as coming (shell.js COMING) until each is final -->
 <script src="people.js"></script>
 <script src="things.js"></script>
@@ -420,7 +408,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-25.103";      // must equal version.json
+const APP_VERSION="2026-11-26.104";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -629,6 +617,22 @@ const VOCAB = {
   comment: {name:"comment", kind:"word", say:[], accept:["comment"]},
   quoi: {name:"quoi", kind:"word", say:[], accept:["quoi"]},      // (.77, Lesson 14, F-Q-10: the learner asks "C'est quoi ?")
   qui: {name:"qui", kind:"word", say:[], accept:["qui"]},      // (.77, Lesson 14, F-Q-10: the learner asks "C'est qui ?")
+  // (.104) new nouns (verre, pizza), colours (rouge, bleu, vert, jaune, noir, blanc), and spatial prepositions (sur, sous, dans)
+  verre: {name:"verre", kind:"object", art:"UN", say:["Un","verre."], accept:["verre","verres","vers","vert","verts"]},
+  pizza: {name:"pizza", kind:"object", art:"UNE", say:["Une","pizza."], accept:["pizza","pizzas"]},
+  rouge: {name:"rouge", kind:"word", say:["Rouge."], accept:["rouge","rouges"]},
+  bleu: {name:"bleu", kind:"word", say:["Bleu."], accept:["bleu","bleue","bleus","bleues"]},
+  bleue: {name:"bleue", kind:"word", say:["Bleue."], accept:["bleue","bleu","bleues","bleus"]},
+  vert: {name:"vert", kind:"word", say:["Vert."], accept:["vert","verte","verts","vertes","verre","vers"]},
+  verte: {name:"verte", kind:"word", say:["Verte."], accept:["verte","vertes","vert"]},
+  jaune: {name:"jaune", kind:"word", say:["Jaune."], accept:["jaune","jaunes"]},
+  noir: {name:"noir", kind:"word", say:["Noir."], accept:["noir","noire","noirs","noires"]},
+  noire: {name:"noire", kind:"word", say:["Noire."], accept:["noire","noir","noires","noirs"]},
+  blanc: {name:"blanc", kind:"word", say:["Blanc."], accept:["blanc","blancs"]},
+  blanche: {name:"blanche", kind:"word", say:["Blanche."], accept:["blanche","blanches"]},
+  sur: {name:"sur", kind:"word", say:[], accept:["sur","sûr","sûre","sure"]},
+  sous: {name:"sous", kind:"word", say:[], accept:["sous","sou","soûl"]},
+  dans: {name:"dans", kind:"word", say:[], accept:["dans","dent","dents"]},
 };
 const PEOPLE = VOCAB;                       // the judge's word list (people and objects)
 // function-word slots in an expected answer, with the spellings Chrome may give them
@@ -994,7 +998,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:103, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:104, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1050,6 +1054,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=101)) migrate101();      // (.101) Lesson 15 added; Dis. no-figure fix across L4-L14
   if(!(s.courseRev>=102)) migrate102();      // (.102) Lesson 16 added; dropped interior "et" listening fault fix
   if(!(s.courseRev>=103)) migrate103();      // (.103) Lesson 17 added
+  if(!(s.courseRev>=104)) migrate104();      // (.104) Lean Lessons 1-5 served
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1198,6 +1203,8 @@ const CHANGED_102 = [];
 function migrate102(){ carryOn(102, 15, CHANGED_102); }
 const CHANGED_103 = ["L1E4", "L1E7", "L1E11", "L1E12", "L1E13", "L2E4", "L2E8", "L2E11", "L2E12", "L2E14", "L2E16", "L2E17", "L2E18", "L3E4", "L3E5", "L3E8", "L3E10", "L3E11", "L3E12", "L3E13", "L4E1", "L4E4", "L4E5", "L4E6", "L4E7", "L4E8", "L4E9", "L4E10", "L4E11", "L4E12", "L4E13", "L4E14", "L4E15", "L5E1", "L5E2", "L5E4", "L5E5", "L5E6", "L5E7", "L5E8", "L5E9", "L5E10", "L5E11", "L5E12", "L5E13", "L6E1", "L6E2", "L6E3", "L6E4", "L6E5", "L6E6", "L6E7", "L6E8", "L6E9", "L6E10", "L6E11", "L6E12", "L6E13", "L6E14", "L6E15", "L7E1", "L7E2", "L7E3", "L7E4", "L7E5", "L7E6", "L7E7", "L7E9", "L7E10", "L7E11", "L7E12", "L7E13", "L7E14", "L7E15", "L7E16", "L7E17", "L8E1", "L8E2", "L8E3", "L8E4", "L8E6", "L8E7", "L8E8", "L8E9", "L8E10", "L8E11", "L8E12", "L8E13", "L9E1", "L9E3", "L9E5", "L9E6", "L9E7", "L9E8", "L9E9", "L9E10", "L9E11", "L10E1", "L10E2", "L10E3", "L10E4", "L10E5", "L10E6", "L10E7", "L10E8", "L10E9", "L10E10", "L10E11", "L10E12", "L10E13", "L11E2", "L11E4", "L11E5", "L11E6", "L11E8", "L11E9", "L11E10", "L11E11", "L11E12", "L11E13", "L12E1", "L12E2", "L12E3", "L12E4", "L12E5", "L12E6", "L12E7", "L12E8", "L12E9", "L12E10", "L12E11", "L12E12", "L12E13", "L13E2", "L13E3", "L13E4", "L13E5", "L13E7", "L13E8", "L13E9", "L13E10", "L13E13", "L13E14", "L13E15", "L13E16", "L13E17", "L13E18", "L13E19", "L14E1", "L14E2", "L14E4", "L14E6", "L14E8", "L14E9", "L14E10", "L14E11", "L14E13", "L14E14", "L14E15", "L14E16", "L14E17", "L14E18", "L14E19", "L14E20", "L15E1", "L15E2", "L15E4", "L15E5", "L15E6", "L15E8", "L15E9", "L15E11", "L15E12", "L15E13", "L15E14", "L15E15", "L15E16", "L15E17", "L15E18", "L15E19", "L15E20", "L15E21", "L15E22", "L16E1", "L16E2", "L16E3", "L16E5", "L16E6", "L16E8", "L16E10", "L16E11", "L16E12", "L16E13", "L16E14", "L16E15", "L16E16", "L16E17", "L16E18", "L16E19", "L16E20", "L16E21", "L16E22"];
 function migrate103(){ carryOn(103, 16, CHANGED_103); }
+const CHANGED_104 = ["L1E7", "L1E9", "L1E10", "L1E11", "L1E12", "L1E13", "L1E14", "L1E15", "L2E1", "L2E2", "L2E3", "L2E4", "L2E5", "L2E6", "L2E7", "L2E8", "L2E9", "L2E10", "L2E11", "L2E12", "L2E13", "L2E14", "L2E15", "L2E16", "L2E17", "L2E18", "L2E19", "L2E20", "L2E21", "L3E1", "L3E2", "L3E3", "L3E4", "L3E5", "L3E6", "L3E7", "L3E8", "L3E9", "L3E10", "L3E11", "L3E12", "L3E13", "L3E14", "L3E15", "L3E16", "L3E17", "L3E18", "L3E19", "L3E20", "L3E21", "L3E22", "L4E1", "L4E2", "L4E3", "L4E4", "L4E5", "L4E6", "L4E7", "L4E8", "L4E9", "L4E10", "L4E11", "L4E12", "L4E13", "L4E14", "L4E15", "L4E16", "L4E17", "L4E18", "L4E19", "L4E20", "L4E21", "L4E22", "L4E23", "L4E24", "L4E25", "L4E26", "L4E27", "L4E28", "L4E29", "L4E30", "L4E31", "L4E32", "L5E1", "L5E2", "L5E3", "L5E4", "L5E5", "L5E6", "L5E7", "L5E8", "L5E9", "L5E10", "L5E11", "L5E12", "L5E13", "L5E14", "L5E15", "L5E16", "L5E17", "L5E18", "L5E19", "L5E20", "L5E21", "L5E22", "L5E23", "L5E24", "L5E25", "L5E26", "L5E27"];
+function migrate104(){ carryOn(104, 5, CHANGED_104); }
 const NEW_BEHIND = [].concat(NEW_93, NEW_96);
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
@@ -1214,7 +1221,7 @@ function newFirst(rev, fresh){
   else S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}};
   (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+goesOnAt(place.lesson, place.ex), heard:[]});
 }
-const FIX_REVS = [92, 93, 95, 99];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
+const FIX_REVS = [92, 93, 95, 99, 104];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -2075,6 +2082,8 @@ async function warmPictures(quiet){      // quiet: the loading screen's bar and 
       const sc=sceneOf(it.scene)||{}, row=sc.row||[];
       [sc.L, sc.R].forEach(w=>{ if(typeof w==="string") add("who|"+w, ()=>picture(w)); });
       row.forEach(x=>{ if(x) add("row|"+JSON.stringify(x), ()=>picture(x)); });
+      const l3 = row.length===2 && row.every(x=>x && typeof x==="object" && x.person) && sc.learnerDoing && !sc.teacherDoing && !sc.bothDoing;
+      if(l3){ const ing = Object.keys(ACT_NAME).find(k=>ACT_NAME[k]===sc.learnerDoing) || sc.learnerDoing; const y={person:"you", doing:ing}; add("row|"+JSON.stringify(y), ()=>picture(y)); }
       if(sc.strip){ const sp={is:sc.strip.is, looks:sc.strip.looks||[], count:1}; add("strip|"+JSON.stringify(sp), ()=>picture(sp)); add("strip|apple", ()=>picture({is:"apple", looks:[], count:1})); }
       const b=boxOf(sc);
       // (.91; truth91 PICTURE FIRST BUILT, Lesson 8 row 6's models) the box beside ONE person's card goes to the left half, as setScene draws it
@@ -2954,7 +2963,8 @@ function droppedWordFault(text, expect, allW, sound){
   if(!text || !sound || !allW || !allW.length || !Array.isArray(expect) || expect.includes("REST")) return null;
   const whole = expect.filter(e=>e!=="REST");
   if(whole.length < 2) return null;
-  const got = tokensOf(text);
+  const got0 = tokensOf(text), got = got0.filter((w,i)=>i===0 || w!==got0[i-1]);
+  const dupLead = got0.length > got.length && got0[0]===got0[1];
   if(got.length < 1 || got.length >= whole.length) return null;
   const fitsAt = (e,w)=> SLOT[e] ? SLOT[e].includes(w) : (VOCAB[e] && VOCAB[e].accept.includes(w)) || (nameOf(w)||{}).n===e;
   const isPrefix = whole.slice(0, got.length).every((e,i)=>fitsAt(e, got[i]));
@@ -2974,7 +2984,8 @@ function droppedWordFault(text, expect, allW, sound){
   let at = -1;
   for(let k=ws.length-rawW.length; k>=0; k--) if(rawW.every((w,j)=>ws[k+j]===w)){ at=k; break; }
   if(at < 0) return null;
-  const s0 = allW[at].s, e1 = allW[at + rawW.length - 1].e;
+  const atEff = (isSuffix && dupLead && rawW.length > got.length && rawW[0]===rawW[1]) ? at + 1 : at;
+  const s0 = allW[atEff].s, e1 = allW[at + rawW.length - 1].e;
   if(!(e1 > s0)) return null;
   const wPeak = sound.peak(s0, e1);
   if(!(wPeak > 0)) return null;
@@ -2991,11 +3002,12 @@ function droppedWordFault(text, expect, allW, sound){
     return {side:"between", ms, ratio:+ratio.toFixed(2), s0, e1, win0, win1};
   }
   const side = isPrefix ? "after" : "before";
+  const dupBefore = side==="before" && atEff > at;
   const win0 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - DROPPED_WORD.beforeMs) : e1 + DROPPED_WORD.padMs;
-  const win1 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - DROPPED_WORD.padMs) : e1 + DROPPED_WORD.afterMs;
+  const win1 = side==="before" ? Math.max(DROPPED_WORD.echoMs, s0 - (dupBefore ? 0 : DROPPED_WORD.padMs)) : e1 + DROPPED_WORD.afterMs;
   if(!(win1 > win0)) return null;
   const ms = sound.voicedMsBetween(win0, win1), pk = sound.peak(win0, win1), ratio = pk / wPeak;
-  if(ms < DROPPED_WORD.minMs || ratio < DROPPED_WORD.minRatio) return null;
+  if(ms < (dupBefore ? 120 : DROPPED_WORD.minMs) || ratio < DROPPED_WORD.minRatio) return null;
   return {side, ms, ratio:+ratio.toFixed(2), s0, e1, win0, win1};
 }
 async function listenVosk(expect, alsoOk=[]){
@@ -3175,6 +3187,11 @@ async function listenVosk(expect, alsoOk=[]){
     return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"no answer", speech:cap.status!=="silence"});
   }
   let v=judge(text, expect, [], alsoOk, {raw});
+  /* (.104; Jon 25 Nov 17:25 L3E4-b3, L3E8-a7: "Une." written as "mmm" -> judge "nothing heard", scored as ERROR) Speech that only
+     yielded fillers ("mmm", "hmm") and zero course words is a listening fault (unscored retry), never a learner error. */
+  if(!v.ok && v.reason==="nothing heard" && cap.status!=="silence"){
+    trace(`vosk: "${raw}" (filler only, nothing heard; unscored)`);
+    return Object.assign(base,{status:"silence", heard:[], ok:false, reason:"nothing heard (filler only)", speech:true}); }
   if(!v.ok){ const sp=splitWordStart(text, allW, expect, alsoOk); if(sp){
     trace("\""+sp.w+"\" "+sp.dur+" ms long (confidence "+(+sp.conf||0).toFixed(2)+"), the answer "+sp.gap+" ms after it, and not a word a learner might say here: the start of the answer written as a word; heard as \""+sp.rest+"\"");
     v={...sp.r, reason:"the start of the answer written as a word: the listener wrote \""+text+"\"", splitStart:sp.w}; } }
@@ -3631,10 +3648,10 @@ function genPicture0(e){
      could not be seen in L6E38, L7E34, L8E36, L9E38 either.) The place is now looked at first, for every kind, and the thing on or under
      the table is drawn as it is drawn anywhere else: this file's own picture for the book, apple, pen and shoe, the library's for the rest. */
   /* (.64) the ground can be a chair too (the rebuild of Lessons 6-10: sur / sous on tables and chairs); people.js draws both */
-  { const PL = (e.looks||[]).find(x=>/^(on|under) a (table|chair)$/.test(x)), REL = PL ? PL.split(" ")[0] : null, GR = PL ? PL.split(" ")[2] : null;
+  { const PL = (e.looks||[]).find(x=>/^(on|under|in) a (table|chair|box)$/.test(x)), REL = PL ? PL.split(" ")[0] : null, GR = PL ? PL.split(" ")[2] : null;
     if(REL && window.PICS && PICS.place){ const rest=Object.assign({}, e, {looks:(e.looks||[]).filter(x=>x!==PL)});
       const draw = x=>{ const el=placedThing(Object.assign({}, rest, x, {count:1})); if(el && el.setAttribute) el.setAttribute("data-placed","1"); return el; };
-      const pic = PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:GR, looks:GR==="table" ? ["wooden"] : []}}, draw);
+      const pic = PICS.place({thing:{is:e.is, looks:rest.looks}, rel:REL, ground:{is:GR, looks:GR==="table" ? ["wooden"] : GR==="box" ? ["red"] : []}}, draw);
       return GR==="chair" && REL==="under" ? underChair(pic) : pic; } }
   if(e.is==="key") return window.PICS ? PICS.key(e) : blank();
   if(e.is==="dog") return (window.PICS && PICS.dog) ? PICS.dog(e) : blank();
@@ -3772,6 +3789,10 @@ async function setPortraits(sc){
       const p0=sc.row[0], same = a => a && p0.doing && (ACT_NAME[p0.doing]||p0.doing)===a,
             withP = !sc.bothDoing && ((sc.learnerDoing && !sc.teacherDoing && same(sc.learnerDoing)) || (sc.teacherDoing && !sc.learnerDoing && same(sc.teacherDoing))) ? p0.person : null;      // (also Marie with Pierre or Sylvie: "Marie and Sylvie:", L8E22, E23)
       sc=Object.assign({}, sc, {row:[null, p0], boxLeft:true, alias:Object.assign({}, sc.alias||{}, {s0:"s1"})}, withP ? {boxWith:withP} : {}); }
+    /* (.104; L17 On: two moving persons + the learner doing it too) put the learner's moving card in the row as the third card so the action box never overlaps the two cards */
+    else if(sc.row.length===2 && sc.row.every(x=>x && typeof x==="object" && x.person) && sc.learnerDoing && !sc.teacherDoing && !sc.bothDoing){
+      const ing = Object.keys(ACT_NAME).find(k=>ACT_NAME[k]===sc.learnerDoing) || sc.learnerDoing;
+      sc=Object.assign({}, sc, {row:sc.row.concat([{person:"you", doing:ing}]), learnerDoing:null}); }
     else trace("FAULT LAYOUT: the action box and "+sc.row.length+" picture(s) are on the screen together"); }
   const first = curSceneKey===null;
   if(PAIR.on){ PAIR.on=null; selfTag(false); } goldOff(); tagLit(null); lastPoint=null;      // (.85) a new scene ends a pair's lighting, as pointAt does
@@ -6411,7 +6432,7 @@ function courseGrammar(expect){
     { let cpos=null; LESSONS.some((L,li)=>L.exercises.some((E,ei)=>E.parts.some(Pt=>Pt.items.some(it=>it.kind==="test" && (it.expect||[]).includes("CEST"))) && (cpos=[li,ei])));
       P.delete("c'est"); at("c'est", cpos||[0,0]); }       // "c'est" enters with its first sentence, not before
     P.delete(""); P.delete("je"); P.delete("m'appelle"); at("je m'appelle",[0,0]); at("m'appelle",[0,0]);
-    P.delete("moi c'est"); at("moi c'est",[0,0]);      // (.83, D-01) the own-name frame from the start, as "je m'appelle" was
+    P.delete("moi c'est"); at("moi c'est", keyAt["moicest"]||[0,0]);      // (.104; Jon 25 Nov 17:06 L1E1-a4) enters where Moi, c'est… is first tested, not L1E1
     VOSK.base=[...P.keys()].sort(); VOSK.from=P;
   }
   const extra = (expect||[]).flatMap(e=> VOCAB[e] && VOCAB[e].kind==="frag" ? (VOCAB[e].gram||[]) : []);
@@ -6422,7 +6443,7 @@ function courseGrammar(expect){
   if(extra.length) return JSON.stringify([...new Set(extra)]);
   /* "je m'appelle" is in the grammar only when the answer has it: otherwise its "je" takes the start of "Julie" (Jon's
      9 Nov 16:04 run: a correct "Julie" heard as "je") */
-  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire","moicest"].includes(e));
+  const self = (expect||[]).some(e=>["jemappelle","mappelle","jmclaire"].includes(e));
   let base = self ? VOSK.base : VOSK.base.filter(p=>!/m'appelle/.test(p));
   /* The greetings ("salut", "salut marie"…) are in the list only from the exercise that teaches them (Lesson 4), or when
      the answer is one. With them in, "c'est Marie / Pierre / Sylvie" was heard as "salut …" (same names, one short word
@@ -6448,7 +6469,7 @@ function courseGrammar(expect){
      "Il." or "Elle." alone, the phrases that begin with un / une. Each pair stays whole ("un" is still heard against "une", and the
      "deux" of a let-go "une" stays), so "un" said for "Une." is refused as before. See dev/qa/une82 for the replays. */
   const lone = (expect||[]).length===1 ? expect[0] : "";
-  if(["UN","UNE","n1"].includes(lone)) base = base.filter(p=>!/^(il|elle)( |$)/.test(p));
+  if(["UN","UNE","n1"].includes(lone)) base = base.filter(p=>["un","une","deux"].includes(p));
   else if(["IL","ELLE"].includes(lone)) base = base.filter(p=>!/^(un|une)( |$)/.test(p));
   else if(["LE1","LA1"].includes(lone)) base = base.filter(p=>!/^(il|elle|un|une)( |$)/.test(p));      // (.84) "Le ou la ?": le and la heard against each other, not against the other small words alone
   /* (.99; the owner's L12 run of 23 Nov 10:13: crisp "Parle." at L12E3 heard 19 times as "un deux" / "un" / "un elle" / "un livre")
@@ -6467,8 +6488,20 @@ function courseGrammar(expect){
   if((expect||[]).length===2 && ["UN","UNE"].includes(expect[0])) base = base.filter(p=>!/^(il|elle)( |$)/.test(p));
   /* (.99; a tester's L2 run of 23 Nov 09:59: "Pierre et Sylvie." heard 4 times as "pierre c'est sylvie" / "pierre c'est") A pair of people
      joined by "et" is not heard against bare "c'est", "moi c'est", or single-word "c'est <name>" (the names alone and "c'est X et Y" stay). */
-  if((expect||[]).length===3 && expect[1]==="ET" && VOCAB[expect[0]] && VOCAB[expect[0]].kind==="person" && VOCAB[expect[2]] && VOCAB[expect[2]].kind==="person")
-    base = base.filter(p=>p!=="c'est" && p!=="moi c'est" && !/^c'est [^ ]+$/.test(p));
+  /* (.104; Jon 25 Nov 17:18 L2E18-a5: "Pierre et Sylvie." heard as "pierre et saute" / "saute deux" / "saute") A pair of people
+     joined by "et" is heard against reached people, "et", and person-pair phrases (no verbs, numbers or objects). */
+  if((expect||[]).length===3 && expect[1]==="ET" && VOCAB[expect[0]] && VOCAB[expect[0]].kind==="person" && VOCAB[expect[2]] && VOCAB[expect[2]].kind==="person"){
+    const PPL=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="person").map(k=>norm(VOCAB[k].say[0])));
+    base = base.filter(p=>{ const ws=p.split(" ");
+      if(ws.length===1) return ws[0]==="et" || PPL.has(ws[0]);
+      if(ws.length===3 && ws[1]==="et") return PPL.has(ws[0]) && PPL.has(ws[2]);
+      if(ws.length===4 && ws[0]==="c'est" && ws[2]==="et") return PPL.has(ws[1]) && PPL.has(ws[3]);
+      return false; }); }
+  /* (.104; Jon 25 Nov 17:21 L2E21-a6: "Moi, c'est Jon." heard 4 times as "danse je") Own-name "Moi, c'est…" is heard against
+     moi/toi/c'est frames and reached people only (no verbs, numbers or objects). */
+  if((expect||[]).length===2 && expect[0]==="moicest" && expect[1]==="REST"){
+    const PPL=new Set(Object.keys(VOCAB).filter(k=>VOCAB[k].kind==="person").map(k=>norm(VOCAB[k].say[0])));
+    base = base.filter(p=>/^(moi c'est|c'est|moi|toi|toi c'est)/.test(p) || PPL.has(p)); }
   /* (.51) Where the answer is the front word alone ("Un." / "Une."), "deux" stays in the list before it is reached (Lesson 1
      Exercise 7). It is what the listener writes for the end of "une" let go (listenVosk, "said once and written as two
      words"): with it, such a "une" is "un deux" and is heard as "une"; without it the n is not written at all and three of a
