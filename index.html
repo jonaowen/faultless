@@ -408,7 +408,7 @@ html[data-motion="less"] .cardIn, html[data-motion="less"] .cardSh, html[data-mo
 /* Self-update: GitHub Pages lets phones keep a page for up to 10 minutes, and home-screen apps
    longer. On every open, ask the server for the current version, bypassing the cache, and reload
    onto it if this copy is older. */
-const APP_VERSION="2026-11-26.104";      // must equal version.json
+const APP_VERSION="2026-11-27.105";      // must equal version.json
 (function checkVersion(){
   try{
     fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
@@ -998,7 +998,7 @@ const USERS=loadUsers();
 const saveUsers=()=>{ try{ localStorage.setItem(USERS_KEY, JSON.stringify(USERS)); }catch(e){} };
 const currentUser=()=>USERS.list.find(x=>x.id===USERS.current) || USERS.list[0];
 const KEY=SAVE_NS+".u."+USERS.current, KEY_ID=USERS.current;
-const defaults = () => ({stateVer:12, courseRev:104, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
+const defaults = () => ({stateVer:12, courseRev:105, introSeen:false, qIntroSeen:false, lesson:0, ex:0, finished:{}, exHadError:{}, delayed:[], log:[], trace:[], ftc:{},
   settings:{caption:false, manual:false, voice:"", pause:550, rate:0.9, engine:"app", keepAudio:true}});
 let S = defaults();
 // one session = from opening the app to saving the run file; the run file holds only this session (Jon 9 Nov)
@@ -1055,6 +1055,7 @@ function load(){ try{ const raw=localStorage.getItem(KEY); if(raw){ const s=JSON
   if(!(s.courseRev>=102)) migrate102();      // (.102) Lesson 16 added; dropped interior "et" listening fault fix
   if(!(s.courseRev>=103)) migrate103();      // (.103) Lesson 17 added
   if(!(s.courseRev>=104)) migrate104();      // (.104) Lean Lessons 1-5 served
+  if(!(s.courseRev>=105)) migrate105();      // (.105) Structured Lessons 1-5 served
   /* (.84) a place in a lesson this app does not serve (Lessons 2 on are coming): the start of the last lesson it serves, never a dead end
      (a state of this version made elsewhere, a test's crafted state, an app that serves fewer lessons than the one that saved it) */
   if((S.lesson||0)>=LESSONS.length){ S.log.push({t:new Date().toISOString(), result:"PLACE NOT SERVED for version "+APP_VERSION+": Lesson "+(S.lesson+1)+" is not served yet; the start of Lesson "+LESSONS.length, heard:[]}); S.lesson=LESSONS.length-1; S.ex=0; S.detour=null; }
@@ -1205,6 +1206,8 @@ const CHANGED_103 = ["L1E4", "L1E7", "L1E11", "L1E12", "L1E13", "L2E4", "L2E8", 
 function migrate103(){ carryOn(103, 16, CHANGED_103); }
 const CHANGED_104 = ["L1E7", "L1E9", "L1E10", "L1E11", "L1E12", "L1E13", "L1E14", "L1E15", "L2E1", "L2E2", "L2E3", "L2E4", "L2E5", "L2E6", "L2E7", "L2E8", "L2E9", "L2E10", "L2E11", "L2E12", "L2E13", "L2E14", "L2E15", "L2E16", "L2E17", "L2E18", "L2E19", "L2E20", "L2E21", "L3E1", "L3E2", "L3E3", "L3E4", "L3E5", "L3E6", "L3E7", "L3E8", "L3E9", "L3E10", "L3E11", "L3E12", "L3E13", "L3E14", "L3E15", "L3E16", "L3E17", "L3E18", "L3E19", "L3E20", "L3E21", "L3E22", "L4E1", "L4E2", "L4E3", "L4E4", "L4E5", "L4E6", "L4E7", "L4E8", "L4E9", "L4E10", "L4E11", "L4E12", "L4E13", "L4E14", "L4E15", "L4E16", "L4E17", "L4E18", "L4E19", "L4E20", "L4E21", "L4E22", "L4E23", "L4E24", "L4E25", "L4E26", "L4E27", "L4E28", "L4E29", "L4E30", "L4E31", "L4E32", "L5E1", "L5E2", "L5E3", "L5E4", "L5E5", "L5E6", "L5E7", "L5E8", "L5E9", "L5E10", "L5E11", "L5E12", "L5E13", "L5E14", "L5E15", "L5E16", "L5E17", "L5E18", "L5E19", "L5E20", "L5E21", "L5E22", "L5E23", "L5E24", "L5E25", "L5E26", "L5E27"];
 function migrate104(){ carryOn(104, 5, CHANGED_104); }
+const CHANGED_105 = ["L1E1", "L1E2", "L1E3", "L1E4", "L1E5", "L1E6", "L1E7", "L1E8", "L1E9", "L1E10", "L1E11", "L1E12", "L1E13", "L1E14", "L2E1", "L2E2", "L2E3", "L2E4", "L2E5", "L2E6", "L2E7", "L2E8", "L2E9", "L2E10", "L2E11", "L2E12", "L2E13", "L2E14", "L3E1", "L3E2", "L3E3", "L3E4", "L3E5", "L3E6", "L3E7", "L3E8", "L3E9", "L3E10", "L3E11", "L3E12", "L3E13", "L3E14", "L3E15", "L3E16", "L4E1", "L4E2", "L4E3", "L4E4", "L4E5", "L4E6", "L4E7", "L4E8", "L4E9", "L4E10", "L4E11", "L4E12", "L4E13", "L4E14", "L4E15", "L4E16", "L4E17", "L4E18", "L4E19", "L5E1", "L5E2", "L5E3", "L5E4", "L5E5", "L5E6", "L5E7", "L5E8", "L5E9", "L5E10", "L5E11", "L5E12", "L5E13", "L5E14", "L5E15", "L5E16", "L5E17", "L5E18", "L5E19"];
+function migrate105(){ carryOn(105, 5, CHANGED_105); }
 const NEW_BEHIND = [].concat(NEW_93, NEW_96);
 /* (.93) newFirst(rev, fresh): fresh = [[lesson index, exercise id], ...], the exercises a release adds to lessons already served. The learner
    whose place is in a later lesson does each of them once, in order, then goes back to that place (S.detour: main() runs it; a detour
@@ -1221,7 +1224,7 @@ function newFirst(rev, fresh){
   else S.detour={lesson:legs[0].lesson, ids:legs[0].ids, more:legs.slice(1), back:{lesson:place.lesson, ex:place.ex}};
   (S.log=S.log||[]).push({t:new Date().toISOString(), result:"NEW EXERCISES FIRST for version "+APP_VERSION+": this learner does "+legs.map(l=>l.ids.join(", ")).join(", ")+" first (new since they passed those lessons), then goes back to Lesson "+(place.lesson+1)+", exercise "+goesOnAt(place.lesson, place.ex), heard:[]});
 }
-const FIX_REVS = [92, 93, 95, 99, 104];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
+const FIX_REVS = [92, 93, 95, 99, 104, 105];      // the releases that mend earlier lessons and add none (as dev/harness/tests/seedfor.js FIX)
 function carryOn(rev, served, changed){
   const ch = k => changed.includes(String(k).replace(/^(L\d+E\d+).*$/,"$1"));
   const keep = o => Object.fromEntries(Object.entries(o||{}).filter(([k])=>!ch(k)));
@@ -2299,7 +2302,9 @@ async function playLearner(text, delay=0){       // resolves when the clip has f
   { const k=LEARNER_CLIP(text).replace(/^.*\//,"").replace(/\.mp3$/,""), m=LEARNER.index && LEARNER.index[k];
     textUnit(text.replace(/^(?:julie|man|woman) /,""), m || {dur:buf.duration*1000}, delay+30+((actx.outputLatency||actx.baseLatency||0)*1000)); }
   return new Promise(res=>{ const src=actx.createBufferSource(); src.buffer=buf; const g=actx.createGain(); g.gain.value=0.9;
-    src.connect(g).connect(actx.destination); src.onended=()=>{ holdOff(held); res(true); }; src.start(actx.currentTime+delay/1000); });
+    const startAt=actx.currentTime+delay/1000;
+    clipMark(LEARNER_CLIP(text).replace(/^.*\//,"").replace(/\.mp3$/,""), startAt, buf.duration);
+    src.connect(g).connect(actx.destination); src.onended=()=>{ holdOff(held); res(true); }; src.start(startAt); });
 }
 function speakOne(text, opts={}){
   textUnit(text, null, 0);
