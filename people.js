@@ -897,8 +897,8 @@ function tick(){
         // its decorations that move by themselves (SMIL: the dancer's notes, the jumper's lines) stop too; the clock's own marker is left running
         const pic = g.parentNode && g.parentNode.namespaceURI === g.namespaceURI && g.parentNode.tagName !== "svg" ? g.parentNode : g;      // (the action's own group: the figure and what it draws round it, the notes)
         f.smil = [...pic.querySelectorAll("animate, animateTransform")].filter(el => el !== f.mark); f.smil.forEach(el => { try { el.endElement(); } catch (e) {} }); } continue; }
-    f.held = false;
-    const ph = t / f.dur; if (f.last === ph) continue; f.last = ph; f.t0 = 1; f.draw(g, ph); }
+    if (f.held || f.resume){ f.off = t - (f.still || 0) * f.dur; f.held = false; f.resume = false; }
+    const ph = (t - (f.off || 0)) / f.dur; if (f.last === ph) continue; f.last = ph; f.t0 = 1; f.draw(g, ph); }
   STAT.frames++; STAT.ms += performance.now() - t00;
   if (any) requestAnimationFrame(tick); else ticking = false;
 }
@@ -909,7 +909,7 @@ function tick(){
 function play(g, mark, dur, draw, still){ g.__clock = { mark, dur, draw, still: still || 0 }; LIVE.add(typeof WeakRef === "function" ? new WeakRef(g) : { g }); if (!ticking){ ticking = true; requestAnimationFrame(tick); } }
 function playKey(still, g, mark, dur, draw){ return play(g, mark, dur, draw, still); }      // (.90) the clip's key frame for the hold
 function holdFigures(on, keep){ HOLD.on = !!on; HOLD.keep = on ? (keep || null) : null;
-  if (!on) for (const r of LIVE){ const g = r.deref ? r.deref() : r.g, f = g && g.__clock; if (!f) continue; if (f.held && f.smil) f.smil.forEach(el => { try { el.beginElement(); } catch (e) {} }); f.held = false; f.smil = null; } }
+  if (!on) for (const r of LIVE){ const g = r.deref ? r.deref() : r.g, f = g && g.__clock; if (!f) continue; if (f.held){ f.resume = true; if (f.smil) f.smil.forEach(el => { try { el.beginElement(); } catch (e) {} }); } f.held = false; f.smil = null; } }
 function movingFigures(){ let n = 0; for (const r of LIVE){ const g = r.deref ? r.deref() : r.g; if (g && g.isConnected) n++; } return n; }
 globalThis.__FIGCLOCK = () => LIVE.size;      // the figures the clock still lists (the memory test reads it)
 globalThis.__FIGHOLD = { hold: holdFigures, moving: movingFigures };      // (.90) the hold, for PICS (this clock is inside the figures' closure)

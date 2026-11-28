@@ -133,7 +133,7 @@ const SHELL = (()=>{
      count of lessons done, never "N of M". */
   const stageEnd = s=>s.last==null ? Math.max(LESSONS.length+1, s.upto||0) : s.last;
   const stageOf = n=>(CW.stages||[]).find(s=>n>=s.first && n<=stageEnd(s)) || null;      // n: a lesson number (1-based)
-  const stageCount = s=>{ const done=Math.max(0, Math.min(stageEnd(s), G.furthest)-s.first+1), of = s.last==null ? 0 : s.last-s.first+1, segs = of || Math.max(done, Math.min(stageEnd(s), LESSONS.length)-s.first+1);
+  const stageCount = s=>{ const done=Math.max(0, Math.min(stageEnd(s), Math.min(G.furthest||0, LESSONS.length))-s.first+1), of = s.last==null ? 0 : s.last-s.first+1, segs = of || Math.max(done, Math.min(stageEnd(s), LESSONS.length)-s.first+1);
     return {done, of, segs, text: of ? `${done} of ${of} ${pl(of, "lesson")}` : `${done} ${pl(done, "lesson")} done`}; };
   function stageLine(n){ const s=stageOf(n); if(!s) return ""; return Object.assign({s}, stageCount(s)); }
   function stageBar(n){ const st=stageLine(n); if(!st) return ""; return `<div class="card stage"><div class="row"><span>Stage ${st.s.id}</span><span>${st.text}</span></div><div class="segs" aria-hidden="true">${Array.from({length:st.segs},(_,k)=>`<i class="${k<st.done?"on":""}"></i>`).join("")}</div></div>`; }
@@ -215,7 +215,7 @@ const SHELL = (()=>{
 
   /* ---- badges: for PERFECT lessons only (the owner): a lesson counts once all its exercises are perfect, however it got there ---- */
   const completions = ()=>Object.values(G.lessons).reduce((a,b)=>a+b.length,0);
-  const perfectCount = ()=>Math.max(Math.min(G.furthest||0, LESSONS.length), Object.keys(G.lp).length);      // (17 Nov) lessons completed: under mastery each is all perfect
+  const perfectCount = ()=>Math.max(Math.min(G.furthest||0, LESSONS.length), Object.keys(G.lp||{}).filter(k=>LESSONS.some(l=>l.id===k)).length);      // (17 Nov) lessons completed: under mastery each is all perfect
   function newBadge(today){ let got=null; for(const n of RULES.BADGES) if(perfectCount()>=n && !G.badges[n]){ G.badges[n]=today; got=n; } return got; }
   const badgeName = n=>`${n.toLocaleString("en-GB")} lessons`;
   function badgeSvg(n, cls="badge"){ return `<svg class="${cls}" viewBox="0 0 56 70" aria-hidden="true"><use href="#i-rosette"/><text x="28" y="${n>=1000?30.5:31.5}" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="${n>=1000?8.5:n>=100?11:14}" fill="#fff" style="font-variation-settings:'SOFT' 100">${n>=1000?(n/1000)+"k":n}</text></svg>`; }
@@ -226,7 +226,7 @@ const SHELL = (()=>{
      holds a level back). ---- */
   const LEVELS = (CW.levels||[]).map(x=>({id:x.id, lesson:x.lesson, canDo:[].concat(x.canDo||[])}));
   const perfectIn = (a,b)=>0;      // (17 Nov) no gold share in the level ring under mastery (every lesson passed is perfect); was the perfect lessons in a..b-1      // lesson indexes a..b-1; a lesson made all green by repairs counts (the gold share grows with repairs)
-  function levelNow(){ if(!LEVELS.length) return null; let from=0; const passed=G.furthest;
+  function levelNow(){ if(!LEVELS.length) return null; let from=0; const passed=Math.min(G.furthest||0, LESSONS.length);
     for(let k=0;k<LEVELS.length;k++){ const Lv=LEVELS[k], span=Lv.lesson-from;
       if(passed<Lv.lesson){ const done=Math.max(0, passed-from); return {k, Lv, from, span, done, pct:Math.max(0, Math.min(100, Math.floor(100*done/span))), perf:Math.floor(100*perfectIn(from, passed)/span)}; }
       from=Lv.lesson; }
